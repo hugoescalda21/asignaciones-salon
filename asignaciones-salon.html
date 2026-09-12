@@ -866,6 +866,10 @@
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
     const active = $('panel-' + tab);
     active.classList.remove('fade-in'); void active.offsetWidth; active.classList.add('fade-in');
+    // Estas pestañas muestran datos que pueden haber cambiado en otra pestaña durante la misma sesión
+    if (tab === 'ajustes') { renderYearlyReport(); checkStoragePersist(); }
+    else if (tab === 'hermanos') { renderBrothersTable(); }
+    else if (tab === 'programa') { renderRoleCards(); renderMonthTable(); renderMonthCalendar(); }
   }
   document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
 
