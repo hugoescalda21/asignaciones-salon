@@ -1738,11 +1738,10 @@
     const today = new Date().toISOString().slice(0, 10);
     const result = {};
     data.publishers.forEach(p => { if (Object.values(p.roles).some(Boolean)) result[p.id] = { total: 0, ocupado: 0, noDisponible: 0, libre: 0 }; });
-    let d = new Date(year, 0, 1);
-    while (d.getDay() !== 1) d.setDate(d.getDate() + 1);
-    while (d.getFullYear() <= year) {
-      if (d.getFullYear() > year) break;
-      const monday = d.toISOString().slice(0, 10);
+    let monday = mondayOf(`${year}-01-01`);
+    let guard = 0;
+    while (monday.slice(0, 4) <= String(year) && guard < 60) {
+      guard++;
       ['semana', 'finde'].forEach(t => {
         const date = dateForType(monday, t);
         if (date.slice(0, 4) !== String(year) || date > today) return;
@@ -1757,8 +1756,7 @@
           else result[pid].libre++;
         });
       });
-      d.setDate(d.getDate() + 7);
-      if (d.getFullYear() > year + 1) break; // salvavidas contra loops infinitos
+      monday = shiftDate(monday, 7);
     }
     return result;
   }
