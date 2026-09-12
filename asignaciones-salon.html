@@ -39,9 +39,25 @@
     --warn: #B8860B;
     --warn-bg: #FBF3E3;
     --ok: #3F7D4F;
+    --emphasis: #212C34;
+    --on-emphasis: #fff;
     --radius-s: 4px;
     --radius-m: 8px;
   }
+
+  html[data-theme="dark"] {
+    --bg: #14181C;
+    --surface: #1D2329;
+    --ink: #EDEFEF;
+    --ink-soft: #93A0A7;
+    --ink-faint: #5C6B74;
+    --line: #2A333B;
+    --danger-bg: #3A2320;
+    --warn-bg: #362D1A;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.25), 0 2px 6px rgba(0,0,0,0.2);
+    --shadow-md: 0 2px 6px rgba(0,0,0,0.25), 0 6px 18px rgba(0,0,0,0.3);
+  }
+
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); font-family: 'Public Sans', -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
   h1, h2, h3, .serif { font-family: 'Fraunces', Georgia, serif; font-weight: 500; letter-spacing: -0.01em; }
@@ -58,6 +74,14 @@
   }
   .btn:active, .pill:active, .preset-btn:active, .icon-only:active, .switch:active, .fab:active { transform: scale(0.96); }
   .tab-btn:active { opacity: 0.7; }
+
+  :focus-visible {
+    outline: none; border-radius: var(--radius-s);
+    box-shadow: 0 0 0 3px rgba(169,130,47,0.35), 0 0 0 1.5px var(--accent-gold) inset;
+  }
+  input:focus-visible, select:focus-visible, textarea:focus-visible {
+    outline: none; border-color: var(--accent-gold); box-shadow: 0 0 0 3px rgba(169,130,47,0.35);
+  }
 
   .role-card, .settings-card, .timer-panel, .modal, .br-table, .month-table, .log-row, #calendarWrap, .meeting-card {
     box-shadow: var(--shadow-sm);
@@ -96,7 +120,7 @@
     border: 1px solid var(--line); background: var(--surface); color: var(--ink);
     padding: 9px 15px; border-radius: var(--radius-s); font-size: 13.5px; font-weight: 600;
   }
-  .btn-primary { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .btn-primary { background: var(--emphasis); border-color: var(--emphasis); color: var(--on-emphasis); }
   .btn-danger { color: var(--danger); }
   .icon-only { padding: 9px 13px; font-size: 16px; }
 
@@ -118,7 +142,7 @@
     flex: 1; border: 1px solid var(--line); background: var(--surface); border-radius: 20px;
     padding: 9px; font-size: 13.5px; font-weight: 600; color: var(--ink-soft);
   }
-  .pill.active { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .pill.active { background: var(--emphasis); border-color: var(--emphasis); color: var(--on-emphasis); }
   .pill-date { display: block; font-size: 10.5px; font-weight: 500; opacity: 0.75; margin-top: 1px; }
 
   .action-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
@@ -169,6 +193,8 @@
   .switch.on { background: var(--ok); }
   .switch.on::after { left: 21px; }
   .share-menu-wrap { position: relative; }
+  .sheet-handle { display: none; }
+  .sheet-backdrop { display: none; }
   .share-menu {
     position: absolute; top: calc(100% + 6px); left: 0; z-index: 12;
     background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m);
@@ -221,13 +247,7 @@
   .timer-controls { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
   .timer-controls .btn { flex: 1; min-width: 90px; }
   .timer-extra { display: flex; gap: 8px; justify-content: center; margin-top: 12px; }
-  #panel-timer.dark-timer .timer-panel { background: #14181C; border-color: #2A333B; }
-  #panel-timer.dark-timer .timer-inputs input { background: #1D2329; border-color: #2A333B; color: #EDEFEF; }
-  #panel-timer.dark-timer .timer-progress-track { background: #232B31; }
-  #panel-timer.dark-timer .preset-btn { background: #1D2329; border-color: #2A333B; color: #EDEFEF; }
-  #panel-timer.dark-timer .preset-btn .pmin { color: #93A0A7; }
-  #panel-timer.dark-timer .log-row { background: #1D2329; border-color: #2A333B; color: #EDEFEF; }
-  #panel-timer.dark-timer .row-note { color: #93A0A7; }
+  /* El modo oscuro global (html[data-theme=dark]) ya cubre todo esto vía variables */
   .log-row { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-s); padding: 10px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; font-size: 13px; }
   .log-times { font-size: 12.5px; color: var(--ink-soft); white-space: nowrap; }
   .log-diff { font-weight: 700; margin-left: 6px; }
@@ -263,6 +283,9 @@
 
   /* ---------- Ajustes ---------- */
   .settings-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 18px 20px; margin-bottom: 16px; }
+  .theme-switcher { display: flex; gap: 6px; background: var(--bg); border-radius: 20px; padding: 4px; }
+  .theme-opt { flex: 1; border: none; background: none; color: var(--ink-soft); padding: 8px; border-radius: 16px; font-size: 12.5px; font-weight: 600; }
+  .theme-opt.active { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-sm); }
   .settings-card h3 { font-size: 14.5px; margin: 0 0 4px; }
   .settings-card .hint { font-size: 12px; color: var(--ink-soft); margin: 0 0 14px; }
   .persist-badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 12.5px; font-weight: 600; }
@@ -302,7 +325,7 @@
   /* ---------- Toasts ---------- */
   .toast-container { position: fixed; bottom: 18px; right: 18px; z-index: 40; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
   .toast {
-    background: var(--ink); color: #fff; padding: 10px 16px; border-radius: var(--radius-s); font-size: 13px;
+    background: var(--emphasis); color: var(--on-emphasis); padding: 10px 16px; border-radius: var(--radius-s); font-size: 13px;
     opacity: 0; transform: translateY(8px); transition: opacity 0.25s, transform 0.25s; box-shadow: 0 3px 10px rgba(0,0,0,0.2);
     display: flex; align-items: center; gap: 10px;
   }
@@ -334,7 +357,11 @@
   .onboarding-steps strong { color: var(--accent-gold); display: block; margin-bottom: 2px; font-family: 'Fraunces', serif; font-size: 14.5px; }
 
   /* ---------- Print ---------- */
-  #printArea { display: none; }
+  #printArea {
+    display: none; background: #fff;
+    --bg: #EDEFEF; --surface: #FFFFFF; --ink: #212C34; --ink-soft: #5C6B74; --ink-faint: #93A0A7; --line: #DDE1E2;
+    --emphasis: #212C34; --on-emphasis: #fff;
+  }
   #printArea h2 { font-size: 18px; margin: 0 0 2px; }
   #printArea h3 { font-size: 15px; margin: 0 0 2px; font-weight: 600; }
   #printArea p { margin: 0 0 16px; color: #555; font-size: 12px; }
@@ -365,6 +392,19 @@
     .bottom-tabs .tab-btn.active { border-top-color: var(--accent-gold); color: var(--ink); }
     .modal-overlay { padding: 0; align-items: flex-end; }
     .modal { max-width: 100%; width: 100%; max-height: 92vh; border-radius: 14px 14px 0 0; padding: 22px 18px calc(18px + env(safe-area-inset-bottom)); }
+
+    /* Compartir se convierte en una hoja que sube desde abajo */
+    .sheet-backdrop:not(.hidden) { display: block; position: fixed; inset: 0; background: rgba(20,24,28,0.45); z-index: 21; }
+    .share-menu {
+      position: fixed; left: 0; right: 0; bottom: 0; top: auto; margin: 0; z-index: 22;
+      border-radius: 16px 16px 0 0; min-width: 0; width: 100%;
+      padding: 10px 14px calc(16px + env(safe-area-inset-bottom));
+      box-shadow: 0 -8px 24px rgba(0,0,0,0.22);
+    }
+    .share-menu:not(.hidden) { animation: sheetUp 0.22s ease; }
+    @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .sheet-handle { display: block; width: 36px; height: 4px; border-radius: 4px; background: var(--line); margin: 2px auto 10px; }
+    .share-menu button { padding: 13px 12px; font-size: 14px; }
   }
 
   @media print {
@@ -420,7 +460,9 @@
       <button class="btn" id="excludeBtn">No disponibles hoy</button>
       <div class="share-menu-wrap">
         <button class="btn btn-primary" id="shareMenuBtn">Compartir ▾</button>
+        <div class="sheet-backdrop hidden" id="shareBackdrop"></div>
         <div class="share-menu hidden" id="shareMenu">
+          <div class="sheet-handle"></div>
           <button type="button" data-share="wa">WhatsApp</button>
           <button type="button" data-share="pdf">Descargar PDF</button>
           <button type="button" data-share="pdfmes">PDF del mes completo</button>
@@ -460,7 +502,6 @@
       <div class="timer-extra">
         <button class="btn" id="muteBtn">🔔 Sonido activado</button>
         <button class="btn" id="testBellBtn">Probar campanilla</button>
-        <button class="btn" id="darkModeBtn">🌙 Modo oscuro</button>
       </div>
     </div>
 
@@ -497,6 +538,16 @@
 
   <!-- ---------------- Ajustes ---------------- -->
   <section class="tab-panel hidden" id="panel-ajustes">
+    <div class="settings-card">
+      <h3>Apariencia</h3>
+      <p class="hint">"Automático" sigue la configuración de tu celular o computadora.</p>
+      <div class="theme-switcher" id="themeSwitcher">
+        <button type="button" data-theme-choice="auto" class="theme-opt">Automático</button>
+        <button type="button" data-theme-choice="light" class="theme-opt">Claro</button>
+        <button type="button" data-theme-choice="dark" class="theme-opt">Oscuro</button>
+      </div>
+    </div>
+
     <div class="settings-card">
       <h3>Guardado seguro</h3>
       <p class="hint">Verifica que este navegador no vaya a borrar los datos guardados por su cuenta.</p>
@@ -753,7 +804,7 @@
   function monthKey(iso) { const d = new Date(iso + 'T00:00:00'); return d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }); }
 
   /* ---------- Carga / normalización / migración ---------- */
-  function defaultSettings() { return { congregationName: 'Mi Congregación', micCount: 2, weekdaySemana: 4, weekdayFinde: 0, timerMuted: false, timerDark: false, remindersEnabled: false }; }
+  function defaultSettings() { return { congregationName: 'Mi Congregación', micCount: 2, weekdaySemana: 4, weekdayFinde: 0, timerMuted: false, themeMode: 'auto', remindersEnabled: false }; }
 
   function migrate(raw) {
     let out;
@@ -1138,6 +1189,25 @@
 
   function setWeek(monday) { currentMonday = monday; updateWeekLabel(); renderRoleCards(); renderMonthTable(); renderMonthCalendar(); updateTimerTopicLabel(); }
 
+  /* ---------- Deslizar para cambiar de semana ---------- */
+  (function setupWeekSwipe() {
+    const zone = $('panel-programa');
+    if (!zone) return;
+    let startX = null, startY = null;
+    zone.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1) return;
+      startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+    }, { passive: true });
+    zone.addEventListener('touchend', (e) => {
+      if (startX === null) return;
+      const dx = e.changedTouches[0].clientX - startX;
+      const dy = e.changedTouches[0].clientY - startY;
+      startX = null; startY = null;
+      if (Math.abs(dx) < 65 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
+      setWeek(shiftDate(currentMonday, dx < 0 ? 7 : -7));
+    }, { passive: true });
+  })();
+
   $('prevWeekBtn').addEventListener('click', () => setWeek(shiftDate(currentMonday, -7)));
   $('nextWeekBtn').addEventListener('click', () => setWeek(shiftDate(currentMonday, 7)));
   $('todayBtn').addEventListener('click', () => setWeek(mondayOf(new Date().toISOString().slice(0, 10))));
@@ -1356,9 +1426,10 @@
   }
   $('brPdfBtn').addEventListener('click', async () => { setButtonLoading($('brPdfBtn'), true); await downloadDirectoryPdf(); setButtonLoading($('brPdfBtn'), false); });
 
-  function openShareMenu(e) { e.stopPropagation(); $('shareMenu').classList.toggle('hidden'); }
-  function closeShareMenu() { $('shareMenu').classList.add('hidden'); }
+  function openShareMenu(e) { e.stopPropagation(); $('shareMenu').classList.toggle('hidden'); $('shareBackdrop').classList.toggle('hidden'); }
+  function closeShareMenu() { $('shareMenu').classList.add('hidden'); $('shareBackdrop').classList.add('hidden'); }
   $('shareMenuBtn').addEventListener('click', openShareMenu);
+  $('shareBackdrop').addEventListener('click', closeShareMenu);
   $('shareMenu').addEventListener('click', (e) => e.stopPropagation());
   document.addEventListener('click', closeShareMenu);
   $('shareMenu').querySelectorAll('[data-share]').forEach(btn => btn.addEventListener('click', () => {
@@ -1467,9 +1538,22 @@
   function updateMuteBtn() {
     $('muteBtn').innerHTML = svgIcon(data.settings.timerMuted ? 'bellOff' : 'bell', 15) + ' ' + (data.settings.timerMuted ? 'Sonido apagado' : 'Sonido activado');
   }
-  function updateDarkModeBtn() {
-    $('darkModeBtn').innerHTML = (data.settings.timerDark ? svgIcon('sun', 15) : moonIcon(15)) + ' ' + (data.settings.timerDark ? 'Modo claro' : 'Modo oscuro');
-    $('panel-timer').classList.toggle('dark-timer', !!data.settings.timerDark);
+
+  /* ---------- Tema (claro / oscuro / automático) ---------- */
+  const darkMediaQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  function applyTheme() {
+    const mode = (data.settings && data.settings.themeMode) || 'auto';
+    const effective = mode === 'auto' ? (darkMediaQuery && darkMediaQuery.matches ? 'dark' : 'light') : mode;
+    document.documentElement.setAttribute('data-theme', effective);
+    document.querySelectorAll('.theme-opt').forEach(b => b.classList.toggle('active', b.dataset.themeChoice === mode));
+  }
+  document.querySelectorAll('.theme-opt').forEach(b => b.addEventListener('click', () => {
+    data.settings.themeMode = b.dataset.themeChoice;
+    saveData();
+    applyTheme();
+  }));
+  if (darkMediaQuery) {
+    darkMediaQuery.addEventListener ? darkMediaQuery.addEventListener('change', applyTheme) : darkMediaQuery.addListener(applyTheme);
   }
 
   function finishAndLog() {
@@ -1551,7 +1635,6 @@
   $('secondsInput').addEventListener('change', () => { currentPresetLabel = 'Personalizado'; resetTimer(); });
   $('muteBtn').addEventListener('click', () => { data.settings.timerMuted = !data.settings.timerMuted; saveData(); updateMuteBtn(); });
   $('testBellBtn').addEventListener('click', async () => { await ensureTone(); playBell(); });
-  $('darkModeBtn').addEventListener('click', () => { data.settings.timerDark = !data.settings.timerDark; saveData(); updateDarkModeBtn(); });
 
   /* ---------- Hermanos ---------- */
   function computeMonthlyCounts() {
@@ -1702,7 +1785,7 @@
     $('weekdayFindeSelect').value = data.settings.weekdayFinde;
     $('congBadge').textContent = data.settings.congregationName;
     updateMuteBtn();
-    updateDarkModeBtn();
+    applyTheme();
     fillPresetGrid();
     resetTimer();
     renderTimerLog();
