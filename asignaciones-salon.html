@@ -419,6 +419,7 @@
         <div class="share-menu hidden" id="shareMenu">
           <button type="button" data-share="wa">WhatsApp</button>
           <button type="button" data-share="pdf">Descargar PDF</button>
+          <button type="button" data-share="pdfmes">PDF del mes completo</button>
           <button type="button" data-share="print">Imprimir</button>
         </div>
       </div>
@@ -961,7 +962,7 @@
     showToast('Auto-asignación completada');
   }
 
-  function monthTableHTML() {
+  function getMonthRows() {
     const prefix = currentMonday.slice(0, 7);
     const rows = [];
     Object.keys(data.weeks).sort().forEach(monday => {
@@ -975,6 +976,10 @@
       });
     });
     rows.sort((a, b) => a.date.localeCompare(b.date));
+    return rows;
+  }
+  function monthTableHTML() {
+    const rows = getMonthRows();
     if (!rows.length) return '<p class="empty-note">Todavía no hay asignaciones cargadas este mes.</p>';
     const roles = getRoles();
     let html = '<table class="month-table"><thead><tr><th>Fecha</th><th>Tipo</th>' + roles.map(r => `<th>${r.label}</th>`).join('') + '</tr></thead><tbody>';
@@ -985,6 +990,52 @@
     return html + '</tbody></table>';
   }
   function renderMonthTable() { $('monthTableWrap').innerHTML = monthTableHTML(); }
+
+  async function downloadMonthPdf() {
+    if (!window.jspdf) { showToast('No se pudo cargar el generador de PDF (revisá tu conexión)'); return; }
+    const rows = getMonthRows();
+    if (!rows.length) { showToast('No hay asignaciones cargadas este mes'); return; }
+    showToast('Generando PDF…');
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'landscape' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const congName = data.settings.congregationName || 'Congregación';
+    const roles = getRoles();
+
+    doc.setFillColor(33, 44, 52); doc.rect(0, 0, pageWidth, 70, 'F');
+    doc.setFillColor(169, 130, 47); doc.rect(0, 70, pageWidth, 3, 'F');
+    doc.setTextColor(216, 187, 130); doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
+    doc.text(`SALÓN DEL REINO — ${congName.toUpperCase()}`, 30, 24);
+    doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(19);
+    doc.text(monthKey(currentMonday), 30, 48);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(203, 211, 216);
+    doc.text('Programa completo del mes', 30, 62);
+
+    const body = rows.map(row => [
+      row.label, row.type === 'finde' ? 'Fin de semana' : 'Entre semana',
+      ...roles.map(r => { const p = data.publishers.find(pp => pp.id === row.roles[r.key]); return p ? p.name : '—'; })
+    ]);
+    doc.autoTable({
+      startY: 88, margin: { left: 20, right: 20 }, theme: 'striped',
+      head: [['Fecha', 'Tipo', ...roles.map(r => r.label)]],
+      body,
+      headStyles: { fillColor: [33, 44, 52], textColor: 255, fontStyle: 'bold', fontSize: 8.5 },
+      styles: { fontSize: 8, cellPadding: 5 },
+      columnStyles: { 0: { fontStyle: 'bold' }, 1: { fontStyle: 'bold' } }
+    });
+    doc.setFontSize(8.5); doc.setTextColor(140);
+    doc.text(`Generado el ${new Date().toLocaleDateString('es-ES')}`, 20, doc.internal.pageSize.getHeight() - 16);
+
+    const filename = `Asignaciones ${monthKey(currentMonday).replace(' de ', ' ')}.pdf`;
+    const blob = doc.output('blob');
+    const file = new File([blob], filename, { type: 'application/pdf' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: 'Programa del mes', text: congName }); return; }
+      catch (e) { /* el usuario canceló el panel de compartir; seguimos con la descarga */ }
+    }
+    doc.save(filename);
+    showToast('PDF generado');
+  }
 
   function renderMonthCalendar() {
     const y = parseInt(currentMonday.slice(0, 4)), m = parseInt(currentMonday.slice(5, 7)) - 1;
@@ -1264,6 +1315,7 @@
     const action = btn.dataset.share;
     if (action === 'wa') openWaModal();
     else if (action === 'pdf') downloadWeekPdf();
+    else if (action === 'pdfmes') downloadMonthPdf();
     else if (action === 'print') { buildPrintArea(); requestAnimationFrame(() => window.print()); }
   }));
 
