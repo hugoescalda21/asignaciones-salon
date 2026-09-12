@@ -951,11 +951,11 @@
     const week = ensureWeek(currentMonday);
     const typeObj = week[currentType];
     const counts = {};
-    data.publishers.forEach(p => counts[p.id] = { sonido: 0, video: 0, microfono: 0, plataforma: 0, cronometrista: 0 });
+    data.publishers.forEach(p => counts[p.id] = { sonido: 0, video: 0, microfono: 0, plataforma: 0, cronometrista: 0, total: 0 });
     Object.entries(data.weeks).forEach(([monday, w]) => {
       ['semana', 'finde'].forEach(t => {
         if (monday === currentMonday && t === currentType) return;
-        roles.forEach(r => { const id = w[t] && w[t].roles[r.key]; if (id && counts[id]) counts[id][r.cap]++; });
+        getRoles(t).forEach(r => { const id = w[t] && w[t].roles[r.key]; if (id && counts[id]) { counts[id][r.cap]++; counts[id].total++; } });
       });
     });
     const excludedToday = new Set(typeObj.excluded || []);
@@ -967,7 +967,8 @@
       let cands = activePubs.filter(p => !used.has(p.id));
       if (anyCaps) cands = cands.filter(p => p.roles[r.cap]);
       if (!cands.length) return;
-      cands.sort((a, b) => counts[a.id][r.cap] - counts[b.id][r.cap]);
+      // Primero por equidad dentro del puesto; si hay empate, gana quien tenga menos carga total
+      cands.sort((a, b) => (counts[a.id][r.cap] - counts[b.id][r.cap]) || (counts[a.id].total - counts[b.id].total));
       typeObj.roles[r.key] = cands[0].id;
       used.add(cands[0].id);
     });
