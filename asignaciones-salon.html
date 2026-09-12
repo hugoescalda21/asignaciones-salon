@@ -1386,6 +1386,14 @@
 
   function renderAll() { renderRoleCards(); renderMonthTable(); renderBrothersTable(); }
 
+  // Le pide al navegador que NO borre los datos de este sitio bajo presión de espacio
+  // o por "bajo compromiso" — sin esto, Chrome puede limpiarlos solo en algunos perfiles.
+  if (navigator.storage && navigator.storage.persist) {
+    navigator.storage.persisted().then((already) => {
+      if (!already) navigator.storage.persist();
+    }).catch(() => { /* API no disponible en este navegador */ });
+  }
+
   loadData();
 
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
@@ -1402,8 +1410,10 @@
         });
       }).catch(() => { /* sin service worker disponible */ });
     });
+    let hadControllerAlready = !!navigator.serviceWorker.controller;
     let refreshingPage = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!hadControllerAlready) { hadControllerAlready = true; return; } // primera activación: no hace falta recargar
       if (refreshingPage) return;
       refreshingPage = true;
       window.location.reload();
