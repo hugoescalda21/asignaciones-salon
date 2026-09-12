@@ -95,6 +95,49 @@
   .pill-date { display: block; font-size: 10.5px; font-weight: 500; opacity: 0.75; margin-top: 1px; }
 
   .action-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .topic-input {
+    width: 100%; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 9px 11px;
+    font-family: inherit; font-size: 13.5px; font-style: italic; color: var(--ink); background: var(--surface); margin-bottom: 14px;
+  }
+  .topic-input::placeholder { font-style: italic; }
+
+  /* Calendario mensual */
+  .cal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .cal-head h4 { font-size: 14px; margin: 0; text-transform: capitalize; font-family: 'Fraunces', serif; font-weight: 500; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 10px; }
+  .cal-dow { font-size: 10px; color: var(--ink-faint); text-align: center; font-weight: 700; padding-bottom: 2px; }
+  .cal-day { aspect-ratio: 1; border-radius: var(--radius-s); background: var(--bg); font-size: 11px; padding: 3px 5px; position: relative; color: var(--ink-soft); cursor: pointer; }
+  .cal-day.empty { background: none; cursor: default; }
+  .cal-day .n { font-weight: 600; }
+  .cal-day.has-meeting { background: var(--surface); border: 1px solid var(--line); }
+  .cal-day.has-meeting:hover { border-color: var(--accent-gold); }
+  .cal-day.today { outline: 2px solid var(--accent-gold); outline-offset: -1px; }
+  .cal-dot { width: 5px; height: 5px; border-radius: 50%; position: absolute; bottom: 4px; }
+  .cal-dot.semana { left: 5px; background: var(--accent-blue); }
+  .cal-dot.finde { left: 13px; background: var(--accent-gold); }
+  .cal-legend { display: flex; gap: 14px; font-size: 11px; color: var(--ink-soft); }
+  .cal-legend span { display: flex; align-items: center; gap: 5px; }
+  .cal-legend .dot { width: 7px; height: 7px; border-radius: 50%; }
+
+  /* Reporte anual */
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+  .bar-name { width: 120px; font-size: 12.5px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-track { flex: 1; height: 14px; background: var(--bg); border-radius: 8px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--accent-blue); border-radius: 8px; }
+  .bar-count { width: 26px; text-align: right; font-size: 11.5px; color: var(--ink-soft); font-weight: 600; flex-shrink: 0; }
+  .report-actions { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .year-switcher { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .year-switcher button { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius-s); width: 28px; height: 28px; font-size: 13px; }
+  .year-switcher span { font-family: 'Fraunces', serif; font-size: 15px; }
+
+  /* Recordatorio */
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .toggle-row p { margin: 0; font-size: 13px; font-weight: 600; }
+  .toggle-row .hint { font-size: 11.5px; color: var(--ink-soft); margin-top: 2px; font-weight: 400; }
+  .switch { position: relative; width: 42px; height: 24px; background: var(--line); border-radius: 20px; flex-shrink: 0; cursor: pointer; border: none; transition: background 0.15s; }
+  .switch::after { content: ''; position: absolute; width: 18px; height: 18px; background: #fff; border-radius: 50%; top: 3px; left: 3px; transition: left 0.15s; box-shadow: 0 1px 2px rgba(0,0,0,0.25); }
+  .switch.on { background: var(--ok); }
+  .switch.on::after { left: 21px; }
   .share-menu-wrap { position: relative; }
   .share-menu {
     position: absolute; top: calc(100% + 6px); left: 0; z-index: 12;
@@ -337,6 +380,8 @@
     </div>
     <div class="completeness-badge" id="completenessBadge"></div>
 
+    <input type="text" id="topicInput" class="topic-input" placeholder="Tema de esta reunión (opcional)…">
+
     <div class="action-row">
       <button class="btn" id="autoAssignBtn">Auto-asignar</button>
       <button class="btn" id="copyPrevBtn">Copiar semana anterior</button>
@@ -356,11 +401,13 @@
     <div class="role-cards" id="roleCardsContainer"></div>
 
     <h3 class="section-title">Resumen del mes</h3>
+    <div class="card" id="calendarWrap" style="background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-m); padding:16px 18px; margin-bottom:16px;"></div>
     <div class="month-table-wrap" id="monthTableWrap"></div>
   </section>
 
   <!-- ---------------- Cronómetro ---------------- -->
   <section class="tab-panel hidden" id="panel-timer">
+    <p class="hint" id="timerTopicLabel" style="margin:-6px 0 14px;"></p>
     <div class="preset-grid" id="presetGrid"></div>
     <div class="timer-panel">
       <div class="timer-display normal" id="timerDisplay">10:00</div>
@@ -425,6 +472,33 @@
     </div>
 
     <div class="settings-card">
+      <h3>Reporte anual de equidad</h3>
+      <p class="hint">Cuántas veces sirvió cada hermano durante el año, para repartir mejor las asignaciones.</p>
+      <div class="year-switcher">
+        <button type="button" id="reportYearPrev">‹</button>
+        <span id="reportYearLabel">2026</span>
+        <button type="button" id="reportYearNext">›</button>
+      </div>
+      <div id="reportBars"></div>
+      <div class="report-actions">
+        <button class="btn" id="reportCsvBtn">Exportar CSV</button>
+        <button class="btn btn-primary" id="reportPdfBtn">Descargar PDF</button>
+      </div>
+    </div>
+
+    <div class="settings-card">
+      <h3>Recordatorio del día anterior</h3>
+      <p class="hint">Una notificación del navegador si mañana hay reunión y todavía falta cubrir algo.</p>
+      <div class="toggle-row">
+        <div>
+          <p>Avisarme si falta cubrir algo</p>
+          <p class="hint">Solo funciona con la app abierta ese día — no es un aviso mientras está cerrada.</p>
+        </div>
+        <button type="button" class="switch" id="reminderSwitch" aria-label="Activar recordatorio"></button>
+      </div>
+    </div>
+
+    <div class="settings-card">
       <h3>Congregación</h3>
       <p class="hint">Se usa en el encabezado, la impresión y los mensajes de WhatsApp.</p>
       <div class="field"><label>Nombre de la congregación</label><input type="text" id="congNameInput"></div>
@@ -444,6 +518,7 @@
       <p class="hint">Todo se guarda solo en este navegador. Exportá seguido por las dudas.</p>
       <div class="settings-actions">
         <button class="btn btn-primary" id="exportBtn">Exportar copia (.json)</button>
+        <button class="btn" id="exportCsvAllBtn">Exportar a Excel (.csv)</button>
         <label class="file-label" for="importInput">Importar copia (.json)</label>
         <input type="file" id="importInput" accept="application/json" class="hidden">
         <button class="btn" id="loadSampleBtn">Cargar datos de ejemplo</button>
@@ -571,7 +646,7 @@
   const $ = (id) => document.getElementById(id);
   const emptyCaps = () => ({ sonido: false, video: false, microfono: false, plataforma: false, cronometrista: false });
   const blankRoles = () => ({ sonido: null, video: null, mic1: null, mic2: null, mic3: null, plataforma: null, cronometrista: null });
-  const blankWeek = () => ({ semana: { roles: blankRoles(), excluded: [] }, finde: { roles: blankRoles(), excluded: [] } });
+  const blankWeek = () => ({ semana: { roles: blankRoles(), excluded: [], topic: '' }, finde: { roles: blankRoles(), excluded: [], topic: '' } });
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   const escapeHtml = (str) => { const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML; };
 
@@ -596,7 +671,7 @@
   function monthKey(iso) { const d = new Date(iso + 'T00:00:00'); return d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }); }
 
   /* ---------- Carga / normalización / migración ---------- */
-  function defaultSettings() { return { congregationName: 'Mi Congregación', micCount: 2, weekdaySemana: 4, weekdayFinde: 0, timerMuted: false, timerDark: false }; }
+  function defaultSettings() { return { congregationName: 'Mi Congregación', micCount: 2, weekdaySemana: 4, weekdayFinde: 0, timerMuted: false, timerDark: false, remindersEnabled: false }; }
 
   function migrate(raw) {
     let out;
@@ -632,6 +707,7 @@
     renderAll();
     maybeShowOnboarding();
     checkBackupReminder();
+    checkMeetingReminder();
   }
   async function saveData() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) { console.error('No se pudo guardar', e); } }
 
@@ -640,6 +716,7 @@
     ['semana', 'finde'].forEach(t => {
       data.weeks[monday][t].roles = Object.assign(blankRoles(), data.weeks[monday][t].roles || {});
       data.weeks[monday][t].excluded = data.weeks[monday][t].excluded || [];
+      data.weeks[monday][t].topic = data.weeks[monday][t].topic || '';
     });
     return data.weeks[monday];
   }
@@ -647,8 +724,8 @@
     const w = data.weeks[monday];
     if (!w) return blankWeek();
     return {
-      semana: { roles: Object.assign(blankRoles(), w.semana.roles), excluded: w.semana.excluded || [] },
-      finde: { roles: Object.assign(blankRoles(), w.finde.roles), excluded: w.finde.excluded || [] }
+      semana: { roles: Object.assign(blankRoles(), w.semana.roles), excluded: w.semana.excluded || [], topic: w.semana.topic || '' },
+      finde: { roles: Object.assign(blankRoles(), w.finde.roles), excluded: w.finde.excluded || [], topic: w.finde.topic || '' }
     };
   }
 
@@ -734,6 +811,7 @@
     const roles = getRoles(currentType);
     const week = weekView(currentMonday);
     const typeObj = week[currentType];
+    $('topicInput').value = typeObj.topic || '';
     $('roleCardsContainer').innerHTML = roles.map(r => {
       const capable = data.publishers.filter(p => p.roles[r.cap]).sort((a, b) => a.name.localeCompare(b.name, 'es'));
       const opts = capable.map(p => {
@@ -841,7 +919,55 @@
   }
   function renderMonthTable() { $('monthTableWrap').innerHTML = monthTableHTML(); }
 
-  function setWeek(monday) { currentMonday = monday; updateWeekLabel(); renderRoleCards(); renderMonthTable(); }
+  function renderMonthCalendar() {
+    const y = parseInt(currentMonday.slice(0, 4)), m = parseInt(currentMonday.slice(5, 7)) - 1;
+    const first = new Date(y, m, 1);
+    const startOffset = (first.getDay() + 6) % 7; // Lunes = 0
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const todayIso = new Date().toISOString().slice(0, 10);
+    let cells = '';
+    for (let i = 0; i < startOffset; i++) cells += '<div class="cal-day empty"></div>';
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateIso = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const dow = new Date(dateIso + 'T00:00:00').getDay();
+      const isSemana = dow === data.settings.weekdaySemana;
+      const isFinde = dow === data.settings.weekdayFinde;
+      const isToday = dateIso === todayIso;
+      cells += `<div class="cal-day ${(isSemana || isFinde) ? 'has-meeting' : ''} ${isToday ? 'today' : ''}" data-date="${dateIso}">
+        <span class="n">${d}</span>
+        ${isSemana ? '<span class="cal-dot semana"></span>' : ''}
+        ${isFinde ? '<span class="cal-dot finde"></span>' : ''}
+      </div>`;
+    }
+    $('calendarWrap').innerHTML = `
+      <div class="cal-head"><h4>${monthKey(currentMonday)}</h4></div>
+      <div class="cal-grid">
+        <div class="cal-dow">L</div><div class="cal-dow">M</div><div class="cal-dow">M</div><div class="cal-dow">J</div><div class="cal-dow">V</div><div class="cal-dow">S</div><div class="cal-dow">D</div>
+        ${cells}
+      </div>
+      <div class="cal-legend">
+        <span><span class="dot" style="background:var(--accent-blue)"></span>Entre semana</span>
+        <span><span class="dot" style="background:var(--accent-gold)"></span>Fin de semana</span>
+      </div>`;
+    $('calendarWrap').querySelectorAll('[data-date]').forEach(el => el.addEventListener('click', () => {
+      const date = el.dataset.date;
+      const dow = new Date(date + 'T00:00:00').getDay();
+      if (dow === data.settings.weekdayFinde) currentType = 'finde';
+      else if (dow === data.settings.weekdaySemana) currentType = 'semana';
+      $('pillSemana').classList.toggle('active', currentType === 'semana');
+      $('pillFinde').classList.toggle('active', currentType === 'finde');
+      setWeek(mondayOf(date));
+    }));
+  }
+
+  $('topicInput').addEventListener('change', (e) => {
+    const week = ensureWeek(currentMonday);
+    week[currentType].topic = e.target.value.trim();
+    saveData();
+    updateTimerTopicLabel();
+  });
+
+  function setWeek(monday) { currentMonday = monday; updateWeekLabel(); renderRoleCards(); renderMonthTable(); renderMonthCalendar(); updateTimerTopicLabel(); }
 
   $('prevWeekBtn').addEventListener('click', () => setWeek(shiftDate(currentMonday, -7)));
   $('nextWeekBtn').addEventListener('click', () => setWeek(shiftDate(currentMonday, 7)));
@@ -866,8 +992,8 @@
   }
   $('copyPrevBtn').addEventListener('click', copyPreviousWeek);
   $('weekDateInput').addEventListener('change', (e) => setWeek(mondayOf(e.target.value)));
-  $('pillSemana').addEventListener('click', () => { currentType = 'semana'; $('pillSemana').classList.add('active'); $('pillFinde').classList.remove('active'); renderRoleCards(); });
-  $('pillFinde').addEventListener('click', () => { currentType = 'finde'; $('pillFinde').classList.add('active'); $('pillSemana').classList.remove('active'); renderRoleCards(); });
+  $('pillSemana').addEventListener('click', () => { currentType = 'semana'; $('pillSemana').classList.add('active'); $('pillFinde').classList.remove('active'); renderRoleCards(); updateTimerTopicLabel(); });
+  $('pillFinde').addEventListener('click', () => { currentType = 'finde'; $('pillFinde').classList.add('active'); $('pillSemana').classList.remove('active'); renderRoleCards(); updateTimerTopicLabel(); });
   $('autoAssignBtn').addEventListener('click', autoAssign);
 
   /* ---------- No disponibles solo esta reunión ---------- */
@@ -971,12 +1097,18 @@
       doc.setTextColor(33, 44, 52);
       doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
       doc.text(`${t === 'finde' ? 'Fin de semana' : 'Entre semana'} — ${dayName} ${day} de ${MESES[new Date(date + 'T00:00:00').getMonth()]}`, 40, y);
+      let tableStartY = y + 12;
+      if (week.topic) {
+        doc.setFont('helvetica', 'italic'); doc.setFontSize(10.5); doc.setTextColor(90, 100, 108);
+        doc.text(week.topic, 40, y + 16);
+        tableStartY = y + 26;
+      }
       const body = roles.filter(r => t !== 'finde' || r.key !== 'cronometrista').map(r => {
         const p = data.publishers.find(pp => pp.id === week.roles[r.key]);
         return [r.label, p ? p.name : '—'];
       });
       doc.autoTable({
-        startY: y + 12, margin: { left: 40, right: 40 }, theme: 'grid',
+        startY: tableStartY, margin: { left: 40, right: 40 }, theme: 'grid',
         head: [['Asignación', 'Hermano asignado']],
         body,
         headStyles: { fillColor: [33, 44, 52], textColor: 255, fontStyle: 'bold' },
@@ -1072,8 +1204,11 @@
     const date = dateForType(currentMonday, currentType);
     const { dayName, day } = formatDate(date);
     const congName = data.settings.congregationName || 'la congregación';
-    const week = weekView(currentMonday)[currentType].roles;
-    const lines = [`🏛️ *${congName}*`, `*Asignaciones — ${dayName} ${day} de ${monthKey(date)}*`, ''];
+    const typeObj = weekView(currentMonday)[currentType];
+    const week = typeObj.roles;
+    const lines = [`🏛️ *${congName}*`, `*Asignaciones — ${dayName} ${day} de ${monthKey(date)}*`];
+    if (typeObj.topic) lines.push(`_Tema: ${typeObj.topic}_`);
+    lines.push('');
     getRoles(currentType).forEach(r => { const p = data.publishers.find(pp => pp.id === week[r.key]); lines.push(`${r.emoji} *${r.label}:* ${p ? p.name : '—'}`); });
     lines.push('', 'Si no podés cubrir tu asignación, por favor avisá con anticipación para buscar un reemplazo.');
     $('waModalSub').textContent = `${currentType === 'finde' ? 'Fin de semana' : 'Entre semana'} — ${dayName} ${day}`;
@@ -1093,6 +1228,14 @@
   /* ---------- Cronómetro ---------- */
   let currentPresetLabel = 'Personalizado';
   let overtimeBellPlayed = false;
+
+  function updateTimerTopicLabel() {
+    const topic = weekView(currentMonday)[currentType].topic;
+    const { dayName, day } = formatDate(dateForType(currentMonday, currentType));
+    $('timerTopicLabel').textContent = topic
+      ? `${currentType === 'finde' ? 'Fin de semana' : 'Entre semana'} — ${dayName} ${day}: ${topic}`
+      : `${currentType === 'finde' ? 'Fin de semana' : 'Entre semana'} — ${dayName} ${day} (sin tema cargado)`;
+  }
 
   function fillPresetGrid() {
     $('presetGrid').innerHTML = PRESETS.map((p, i) => `<button type="button" class="btn preset-btn" data-preset="${i}">${p.label}<span class="pmin">${p.min} min</span></button>`).join('');
@@ -1391,7 +1534,11 @@
     resetTimer();
     renderTimerLog();
     updateWeekLabel();
+    updateTimerTopicLabel();
+    renderMonthCalendar();
     checkStoragePersist();
+    renderYearlyReport();
+    updateReminderToggle();
   }
 
   /* ---------- Guardado seguro ---------- */
@@ -1424,8 +1571,8 @@
   });
   $('congNameInput').addEventListener('change', (e) => { data.settings.congregationName = e.target.value.trim() || 'Mi Congregación'; $('congBadge').textContent = data.settings.congregationName; saveData(); });
   $('micCountSelect').addEventListener('change', (e) => { data.settings.micCount = parseInt(e.target.value); saveData(); renderRoleCards(); renderMonthTable(); });
-  $('weekdaySemanaSelect').addEventListener('change', (e) => { data.settings.weekdaySemana = parseInt(e.target.value); saveData(); renderMonthTable(); updatePillDates(); });
-  $('weekdayFindeSelect').addEventListener('change', (e) => { data.settings.weekdayFinde = parseInt(e.target.value); saveData(); renderMonthTable(); updatePillDates(); });
+  $('weekdaySemanaSelect').addEventListener('change', (e) => { data.settings.weekdaySemana = parseInt(e.target.value); saveData(); renderMonthTable(); renderMonthCalendar(); updatePillDates(); });
+  $('weekdayFindeSelect').addEventListener('change', (e) => { data.settings.weekdayFinde = parseInt(e.target.value); saveData(); renderMonthTable(); renderMonthCalendar(); updatePillDates(); });
 
   function exportBackup() {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -1436,6 +1583,167 @@
     showToast('Copia exportada');
   }
   $('exportBtn').addEventListener('click', exportBackup);
+
+  /* ---------- Reporte anual de equidad ---------- */
+  let reportYear = new Date().getFullYear();
+  function computeYearlyCounts(year) {
+    const counts = {};
+    data.publishers.forEach(p => counts[p.id] = { sonido: 0, video: 0, microfono: 0, plataforma: 0, cronometrista: 0, total: 0 });
+    Object.entries(data.weeks).forEach(([monday, w]) => {
+      ['semana', 'finde'].forEach(t => {
+        if (!w[t]) return;
+        const date = dateForType(monday, t);
+        if (parseInt(date.slice(0, 4)) !== year) return;
+        getRoles(t).forEach(r => {
+          const pid = w[t].roles[r.key];
+          if (pid && counts[pid]) { counts[pid][r.cap]++; counts[pid].total++; }
+        });
+      });
+    });
+    return counts;
+  }
+  function renderYearlyReport() {
+    $('reportYearLabel').textContent = reportYear;
+    const counts = computeYearlyCounts(reportYear);
+    const rows = data.publishers.map(p => ({ name: p.name, total: counts[p.id] ? counts[p.id].total : 0 }))
+      .filter(r => r.total > 0).sort((a, b) => b.total - a.total);
+    const wrap = $('reportBars');
+    if (!rows.length) { wrap.innerHTML = '<p class="empty-note">Sin asignaciones registradas ese año.</p>'; return; }
+    const max = rows[0].total;
+    wrap.innerHTML = rows.map(r => `
+      <div class="bar-row">
+        <div class="bar-name">${escapeHtml(r.name)}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.max(6, r.total / max * 100)}%"></div></div>
+        <div class="bar-count">${r.total}</div>
+      </div>`).join('');
+  }
+  $('reportYearPrev').addEventListener('click', () => { reportYear--; renderYearlyReport(); });
+  $('reportYearNext').addEventListener('click', () => { reportYear++; renderYearlyReport(); });
+
+  function exportYearlyCsv() {
+    const counts = computeYearlyCounts(reportYear);
+    const rows = [['Hermano', 'Sonido', 'Video', 'Micrófonos', 'Plataforma', 'Cronometrista', 'Total']];
+    data.publishers.forEach(p => {
+      const c = counts[p.id] || { sonido: 0, video: 0, microfono: 0, plataforma: 0, cronometrista: 0, total: 0 };
+      rows.push([p.name, c.sonido, c.video, c.microfono, c.plataforma, c.cronometrista, c.total]);
+    });
+    downloadCsv(rows, `reporte-anual-${reportYear}.csv`);
+    showToast('CSV exportado');
+  }
+  $('reportCsvBtn').addEventListener('click', exportYearlyCsv);
+
+  async function downloadYearlyPdf() {
+    if (!window.jspdf) { showToast('No se pudo cargar el generador de PDF (revisá tu conexión)'); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const congName = data.settings.congregationName || 'Congregación';
+    doc.setFillColor(33, 44, 52); doc.rect(0, 0, pageWidth, 92, 'F');
+    doc.setFillColor(169, 130, 47); doc.rect(0, 92, pageWidth, 4, 'F');
+    doc.setTextColor(216, 187, 130); doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
+    doc.text(`SALÓN DEL REINO — ${congName.toUpperCase()}`, 40, 32);
+    doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(22);
+    doc.text(`Reporte anual de equidad — ${reportYear}`, 40, 64);
+    const counts = computeYearlyCounts(reportYear);
+    const body = data.publishers.map(p => {
+      const c = counts[p.id] || { sonido: 0, video: 0, microfono: 0, plataforma: 0, cronometrista: 0, total: 0 };
+      return [p.name, c.sonido, c.video, c.microfono, c.plataforma, c.cronometrista, c.total];
+    }).sort((a, b) => b[6] - a[6]);
+    doc.autoTable({
+      startY: 130, margin: { left: 40, right: 40 }, theme: 'grid',
+      head: [['Hermano', 'Sonido', 'Video', 'Micrófonos', 'Plataforma', 'Cronometrista', 'Total']],
+      body, headStyles: { fillColor: [33, 44, 52], textColor: 255, fontStyle: 'bold' },
+      styles: { fontSize: 10, cellPadding: 6 }
+    });
+    doc.setFontSize(9); doc.setTextColor(130);
+    doc.text(`Generado el ${new Date().toLocaleDateString('es-ES')}`, 40, doc.internal.pageSize.getHeight() - 30);
+    doc.save(`reporte-anual-${reportYear}.pdf`);
+    showToast('PDF generado');
+  }
+  $('reportPdfBtn').addEventListener('click', downloadYearlyPdf);
+
+  /* ---------- Recordatorio local ---------- */
+  function updateReminderToggle() { $('reminderSwitch').classList.toggle('on', !!data.settings.remindersEnabled); }
+  $('reminderSwitch').addEventListener('click', async () => {
+    if (!data.settings.remindersEnabled) {
+      if (!('Notification' in window)) { showToast('Este navegador no soporta notificaciones'); return; }
+      let perm = Notification.permission;
+      if (perm === 'default') perm = await Notification.requestPermission();
+      if (perm !== 'granted') { showToast('Hace falta el permiso de notificaciones para avisarte'); return; }
+      data.settings.remindersEnabled = true;
+    } else {
+      data.settings.remindersEnabled = false;
+    }
+    saveData();
+    updateReminderToggle();
+  });
+  function checkMeetingReminder() {
+    if (!data.settings.remindersEnabled) return;
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    const REM_KEY = 'kh-last-reminder-date';
+    const today = new Date().toISOString().slice(0, 10);
+    let lastNotified = null;
+    try { lastNotified = localStorage.getItem(REM_KEY); } catch (e) { /* sin acceso */ }
+    if (lastNotified === today) return;
+    const tomorrow = shiftDate(today, 1);
+    const dow = new Date(tomorrow + 'T00:00:00').getDay();
+    let type = null;
+    if (dow === data.settings.weekdaySemana) type = 'semana';
+    else if (dow === data.settings.weekdayFinde) type = 'finde';
+    if (!type) return;
+    const week = weekView(mondayOf(tomorrow))[type];
+    const missing = getRoles(type).filter(r => !week.roles[r.key]);
+    if (!missing.length) return;
+    try {
+      new Notification('Asignaciones — Salón del Reino', {
+        body: `Mañana es la reunión (${type === 'finde' ? 'fin de semana' : 'entre semana'}) y todavía falta cubrir: ${missing.map(r => r.label).join(', ')}.`,
+        icon: 'icon-192.png'
+      });
+      try { localStorage.setItem(REM_KEY, today); } catch (e) { /* sin acceso */ }
+    } catch (e) { /* no se pudo mostrar la notificación */ }
+  }
+
+  /* ---------- Exportar todo a Excel/CSV ---------- */
+  function csvEscape(v) { v = String(v); return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+  function downloadCsv(rows, filename) {
+    const csv = rows.map(r => r.map(csvEscape).join(',')).join('\r\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  }
+  function exportAllCsv() {
+    const rows = [];
+    rows.push(['PUBLICADORES']);
+    rows.push(['Nombre', 'Notas', 'Estado', 'Sonido', 'Video', 'Micrófonos', 'Plataforma', 'Cronometrista']);
+    data.publishers.forEach(p => {
+      rows.push([p.name, p.notes || '', p.status === 'no_disponible' ? 'No disponible' : 'Activo',
+        p.roles.sonido ? 'Sí' : '', p.roles.video ? 'Sí' : '', p.roles.microfono ? 'Sí' : '', p.roles.plataforma ? 'Sí' : '', p.roles.cronometrista ? 'Sí' : '']);
+    });
+    rows.push([]);
+    rows.push(['HISTORIAL DE ASIGNACIONES']);
+    rows.push(['Fecha', 'Tipo', 'Tema', 'Asignación', 'Hermano']);
+    const entries = [];
+    Object.entries(data.weeks).forEach(([monday, w]) => {
+      ['semana', 'finde'].forEach(t => {
+        if (!w[t]) return;
+        const date = dateForType(monday, t);
+        getRoles(t).forEach(r => {
+          const pid = w[t].roles[r.key];
+          if (pid) {
+            const p = data.publishers.find(pp => pp.id === pid);
+            entries.push([date, t === 'finde' ? 'Fin de semana' : 'Entre semana', w[t].topic || '', r.label, p ? p.name : '']);
+          }
+        });
+      });
+    });
+    entries.sort((a, b) => a[0].localeCompare(b[0]));
+    entries.forEach(e => rows.push(e));
+    downloadCsv(rows, `asignaciones-export-${new Date().toISOString().slice(0, 10)}.csv`);
+    showToast('Excel exportado');
+  }
+  $('exportCsvAllBtn').addEventListener('click', exportAllCsv);
+
   $('importInput').addEventListener('change', (e) => {
     const file = e.target.files[0]; if (!file) return;
     const reader = new FileReader();
