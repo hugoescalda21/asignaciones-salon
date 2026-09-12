@@ -320,6 +320,8 @@
   }
   .top-banner.update { background: #2E3D48; color: #fff; }
   .top-banner.backup { background: var(--warn-bg); color: #7A5A0E; }
+  .top-banner.error { background: var(--danger-bg); color: var(--danger); }
+  .top-banner.error button { background: rgba(0,0,0,0.08); color: var(--danger); }
   .top-banner .tb-actions { display: flex; gap: 8px; flex-shrink: 0; }
   .top-banner button {
     border: none; padding: 6px 13px; border-radius: 20px; font-size: 12px; font-weight: 700; white-space: nowrap;
@@ -648,6 +650,22 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
+  /* ---------- Red de seguridad: errores inesperados ---------- */
+  let fatalErrorShown = false;
+  function showFatalErrorBanner() {
+    if (fatalErrorShown) return;
+    fatalErrorShown = true;
+    const bar = document.createElement('div');
+    bar.className = 'top-banner error';
+    bar.innerHTML = `<span>Ocurrió un error inesperado. Si algo se ve raro en la pantalla, recargá la página.</span>
+      <div class="tb-actions"><button type="button" id="fatalReloadBtn">Recargar</button><button type="button" id="fatalDismissBtn">Cerrar</button></div>`;
+    document.body.insertBefore(bar, document.body.firstChild);
+    document.getElementById('fatalReloadBtn').addEventListener('click', () => window.location.reload());
+    document.getElementById('fatalDismissBtn').addEventListener('click', () => bar.remove());
+  }
+  window.addEventListener('error', showFatalErrorBanner);
+  window.addEventListener('unhandledrejection', showFatalErrorBanner);
+
   const STORAGE_KEY = 'kh-schedule-data-v2';
   const OLD_STORAGE_KEY = 'kh-schedule-data';
   const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -773,7 +791,24 @@
     checkBackupReminder();
     checkMeetingReminder();
   }
-  async function saveData() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) { console.error('No se pudo guardar', e); } }
+  async function saveData() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (e) {
+      console.error('No se pudo guardar', e);
+      showSaveErrorBanner();
+    }
+  }
+  function showSaveErrorBanner() {
+    if (document.getElementById('saveErrorBanner')) return;
+    const bar = document.createElement('div');
+    bar.id = 'saveErrorBanner';
+    bar.className = 'top-banner error';
+    bar.innerHTML = `<span>No se pudo guardar el último cambio — puede que el almacenamiento del navegador esté lleno.</span>
+      <div class="tb-actions"><button type="button" id="saveErrorDismiss">Entendido</button></div>`;
+    document.body.insertBefore(bar, document.body.firstChild);
+    $('saveErrorDismiss').addEventListener('click', () => bar.remove());
+  }
 
   function ensureWeek(monday) {
     if (!data.weeks[monday]) data.weeks[monday] = blankWeek();
@@ -1942,17 +1977,35 @@
   }
   $('exportCsvAllBtn').addEventListener('click', exportAllCsv);
 
+  function isValidBackup(obj) {
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return false;
+    // Formato nuevo (con "weeks") o formato viejo (con "meetings") son ambos aceptables — migrate() los normaliza.
+    const hasNewShape = obj.weeks && typeof obj.weeks === 'object' && !Array.isArray(obj.weeks);
+    const hasOldShape = Array.isArray(obj.meetings);
+    if (!hasNewShape && !hasOldShape) return false;
+    if (obj.publishers !== undefined && !Array.isArray(obj.publishers)) return false;
+    if (Array.isArray(obj.publishers) && !obj.publishers.every(p => p && typeof p === 'object' && typeof p.id === 'string' && typeof p.name === 'string')) return false;
+    return true;
+  }
+
   $('importInput').addEventListener('change', (e) => {
     const file = e.target.files[0]; if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
+      let parsed;
+      try { parsed = JSON.parse(reader.result); }
+      catch (err) { alert('El archivo no es un JSON válido.'); return; }
+      if (!isValidBackup(parsed)) { alert('El archivo no tiene el formato esperado de una copia de seguridad de esta app.'); return; }
+      if (!confirm('Esto reemplaza todos los datos actuales por los de la copia. ¿Continuar?')) return;
+      const previousData = data;
       try {
-        const parsed = JSON.parse(reader.result);
-        if (!confirm('Esto reemplaza todos los datos actuales por los de la copia. ¿Continuar?')) return;
         data = migrate(parsed); window.data = data;
         saveData(); initUiFromData(); renderAll();
         showToast('Respaldo importado');
-      } catch (err) { alert('El archivo no es una copia de seguridad válida.'); }
+      } catch (err) {
+        data = previousData; window.data = data;
+        alert('El archivo tiene el formato correcto pero no se pudo procesar. No se modificaron tus datos actuales.');
+      }
     };
     reader.readAsText(file); e.target.value = '';
   });
