@@ -283,6 +283,14 @@
 
   /* ---------- Ajustes ---------- */
   .settings-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 18px 20px; margin-bottom: 16px; }
+  .settings-card summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
+  .settings-card summary::-webkit-details-marker { display: none; }
+  .settings-card summary h3 { margin: 0; }
+  .settings-card .chev { color: var(--ink-faint); font-size: 18px; transition: transform 0.18s ease; flex-shrink: 0; }
+  .settings-card[open] .chev { transform: rotate(90deg); }
+  .settings-card[open] summary { margin-bottom: 4px; }
+  .settings-card > *:not(summary) { margin-top: 14px; }
+  .settings-card summary + p.hint { margin-top: 0; }
   .theme-switcher { display: flex; gap: 6px; background: var(--bg); border-radius: 20px; padding: 4px; }
   .theme-opt { flex: 1; border: none; background: none; color: var(--ink-soft); padding: 8px; border-radius: 16px; font-size: 12.5px; font-weight: 600; }
   .theme-opt.active { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-sm); }
@@ -538,25 +546,25 @@
 
   <!-- ---------------- Ajustes ---------------- -->
   <section class="tab-panel hidden" id="panel-ajustes">
-    <div class="settings-card">
-      <h3>Apariencia</h3>
+    <details class="settings-card">
+      <summary><h3>Apariencia</h3><span class="chev">›</span></summary>
       <p class="hint">"Automático" sigue la configuración de tu celular o computadora.</p>
       <div class="theme-switcher" id="themeSwitcher">
         <button type="button" data-theme-choice="auto" class="theme-opt">Automático</button>
         <button type="button" data-theme-choice="light" class="theme-opt">Claro</button>
         <button type="button" data-theme-choice="dark" class="theme-opt">Oscuro</button>
       </div>
-    </div>
+    </details>
 
-    <div class="settings-card">
-      <h3>Guardado seguro</h3>
+    <details class="settings-card" open>
+      <summary><h3>Guardado seguro</h3><span class="chev">›</span></summary>
       <p class="hint">Verifica que este navegador no vaya a borrar los datos guardados por su cuenta.</p>
       <div id="persistStatus"></div>
       <button class="btn hidden" id="persistBtn" style="margin-top:10px;">Asegurar guardado</button>
-    </div>
+    </details>
 
-    <div class="settings-card">
-      <h3>Reporte anual de equidad</h3>
+    <details class="settings-card">
+      <summary><h3>Reporte anual de equidad</h3><span class="chev">›</span></summary>
       <p class="hint">Cuántas veces sirvió cada hermano durante el año, para repartir mejor las asignaciones.</p>
       <div class="year-switcher">
         <button type="button" id="reportYearPrev">‹</button>
@@ -576,11 +584,10 @@
         <button class="btn" id="reportCsvBtn">Exportar CSV</button>
         <button class="btn btn-primary" id="reportPdfBtn">Descargar PDF</button>
       </div>
-    </div>
+    </details>
 
-    <div class="settings-card">
-      <h3>Recordatorio del día anterior</h3>
-      <p class="hint">Una notificación del navegador si mañana hay reunión y todavía falta cubrir algo.</p>
+    <details class="settings-card">
+      <summary><h3>Recordatorio del día anterior</h3><span class="chev">›</span></summary>
       <div class="toggle-row">
         <div>
           <p>Avisarme si falta cubrir algo</p>
@@ -588,10 +595,10 @@
         </div>
         <button type="button" class="switch" id="reminderSwitch" aria-label="Activar recordatorio"></button>
       </div>
-    </div>
+    </details>
 
-    <div class="settings-card">
-      <h3>Congregación</h3>
+    <details class="settings-card">
+      <summary><h3>Congregación</h3><span class="chev">›</span></summary>
       <p class="hint">Se usa en el encabezado, la impresión y los mensajes de WhatsApp.</p>
       <div class="field"><label>Nombre de la congregación</label><input type="text" id="congNameInput"></div>
       <div class="two-col">
@@ -603,10 +610,10 @@
         <div class="field"><label>Día — Entre semana</label><select id="weekdaySemanaSelect"></select></div>
         <div class="field"><label>Día — Fin de semana</label><select id="weekdayFindeSelect"></select></div>
       </div>
-    </div>
+    </details>
 
-    <div class="settings-card">
-      <h3>Copia de seguridad</h3>
+    <details class="settings-card">
+      <summary><h3>Copia de seguridad</h3><span class="chev">›</span></summary>
       <p class="hint">Todo se guarda solo en este navegador. Exportá seguido por las dudas.</p>
       <div class="settings-actions">
         <button class="btn btn-primary" id="exportBtn">Exportar copia (.json)</button>
@@ -615,7 +622,7 @@
         <input type="file" id="importInput" accept="application/json" class="hidden">
         <button class="btn" id="loadSampleBtn">Cargar datos de ejemplo</button>
       </div>
-    </div>
+    </details>
   </section>
 
 </main>
@@ -841,6 +848,7 @@
     maybeShowOnboarding();
     checkBackupReminder();
     checkMeetingReminder();
+    updateOnlineStatus();
   }
   async function saveData() {
     try {
@@ -907,6 +915,23 @@
       btn.disabled = false;
     }
   }
+
+  /* ---------- Aviso de sin conexión ---------- */
+  function updateOnlineStatus() {
+    const existing = document.getElementById('offlineBanner');
+    if (navigator.onLine) { if (existing) existing.remove(); return; }
+    if (existing) return;
+    const bar = document.createElement('div');
+    bar.id = 'offlineBanner';
+    bar.className = 'top-banner backup';
+    bar.innerHTML = '<span>Estás sin conexión. El programa sigue funcionando, pero WhatsApp, PDF y el sonido del cronómetro podrían no andar hasta que vuelva la señal.</span>';
+    document.body.insertBefore(bar, document.body.firstChild);
+  }
+  window.addEventListener('online', updateOnlineStatus);
+  window.addEventListener('offline', updateOnlineStatus);
+
+  /* ---------- Vibración táctil ---------- */
+  function hapticTap() { try { if (navigator.vibrate) navigator.vibrate(8); } catch (e) { /* no soportado */ } }
 
   /* ---------- Copias de seguridad: recordatorio ---------- */
   const LAST_BACKUP_KEY = 'kh-last-backup-date';
@@ -1033,6 +1058,7 @@
   }
 
   function autoAssign() {
+    hapticTap();
     const roles = getRoles(currentType);
     const week = ensureWeek(currentMonday);
     const typeObj = week[currentType];
@@ -1213,6 +1239,7 @@
   $('todayBtn').addEventListener('click', () => setWeek(mondayOf(new Date().toISOString().slice(0, 10))));
 
   function copyPreviousWeek() {
+    hapticTap();
     const prevMonday = shiftDate(currentMonday, -7);
     const prevWeek = data.weeks[prevMonday];
     if (!prevWeek || !Object.values(prevWeek[currentType].roles).some(Boolean)) {
@@ -1557,6 +1584,7 @@
   }
 
   function finishAndLog() {
+    hapticTap();
     if (timerTotal <= 0) { showToast('Iniciá el cronómetro primero'); return; }
     pauseTimer();
     const elapsed = Math.max(0, timerTotal - timerRemaining);
@@ -1627,6 +1655,7 @@
   $('shareLogBtn').addEventListener('click', shareTimerHistory);
   $('clearLogBtn').addEventListener('click', () => {
     if (!confirm('¿Borrar todo el historial de tiempos registrados?')) return;
+    hapticTap();
     const backupLog = data.timerLog || [];
     data.timerLog = []; saveData(); renderTimerLog();
     showToast('Historial borrado', () => { data.timerLog = backupLog; saveData(); renderTimerLog(); });
@@ -1763,6 +1792,7 @@
     if (idx === -1) return;
     const removed = data.publishers[idx];
     if (!confirm(`¿Quitar a ${removed.name} de la lista de hermanos?`)) return;
+    hapticTap();
     data.publishers.splice(idx, 1);
     saveData(); closePubModal(); renderBrothersTable(); renderRoleCards();
     showToast('Hermano eliminado', () => {
@@ -1831,6 +1861,7 @@
   $('weekdayFindeSelect').addEventListener('change', (e) => { data.settings.weekdayFinde = parseInt(e.target.value); saveData(); renderMonthTable(); renderMonthCalendar(); updatePillDates(); });
 
   function exportBackup() {
+    hapticTap();
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = `asignaciones-backup-${new Date().toISOString().slice(0, 10)}.json`;
@@ -2029,6 +2060,7 @@
     document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
   }
   function exportAllCsv() {
+    hapticTap();
     const rows = [];
     rows.push(['PUBLICADORES']);
     rows.push(['Nombre', 'Notas', 'Estado', 'Sonido', 'Video', 'Micrófonos', 'Plataforma', 'Cronometrista']);
