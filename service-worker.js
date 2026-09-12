@@ -1,4 +1,4 @@
-const CACHE_NAME = 'asignaciones-salon-v2';
+const CACHE_NAME = 'asignaciones-salon-v3';
 const ASSETS = [
   './asignaciones-salon.html',
   './manifest.json',
@@ -11,9 +11,15 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (event) => {
+  // No skipWaiting acá: se queda "esperando" hasta que la página lo confirme,
+  // así podemos avisarle al usuario antes de activar la versión nueva.
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
   );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {

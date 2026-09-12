@@ -224,8 +224,32 @@
   .toast {
     background: var(--ink); color: #fff; padding: 10px 16px; border-radius: var(--radius-s); font-size: 13px;
     opacity: 0; transform: translateY(8px); transition: opacity 0.25s, transform 0.25s; box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+    display: flex; align-items: center; gap: 10px;
   }
   .toast.show { opacity: 1; transform: translateY(0); }
+  .toast-undo {
+    border: none; background: rgba(255,255,255,0.18); color: #fff; padding: 4px 11px; border-radius: 14px;
+    font-size: 12px; font-weight: 700; flex-shrink: 0;
+  }
+  .toast-undo:hover { background: rgba(255,255,255,0.28); }
+
+  /* ---------- Banners superiores (actualización / backup) ---------- */
+  .top-banner {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 10px 20px; font-size: 12.5px; font-weight: 600;
+  }
+  .top-banner.update { background: #2E3D48; color: #fff; }
+  .top-banner.backup { background: var(--warn-bg); color: #7A5A0E; }
+  .top-banner .tb-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .top-banner button {
+    border: none; padding: 6px 13px; border-radius: 20px; font-size: 12px; font-weight: 700; white-space: nowrap;
+  }
+  .top-banner.update button { background: var(--accent-gold); color: #1D2329; }
+  .top-banner.backup button { background: rgba(0,0,0,0.08); color: #7A5A0E; }
+
+  /* ---------- Bienvenida ---------- */
+  .onboarding-steps { list-style: none; padding: 0; margin: 0 0 4px; display: flex; flex-direction: column; gap: 14px; font-size: 13.5px; line-height: 1.4; }
+  .onboarding-steps strong { color: var(--accent-gold); display: block; margin-bottom: 2px; font-family: 'Fraunces', serif; font-size: 14.5px; }
 
   /* ---------- Print ---------- */
   #printArea { display: none; }
@@ -422,6 +446,20 @@
   <button class="tab-btn" data-tab="ajustes">⚙️<br>Ajustes</button>
 </nav>
 
+<!-- Modal: bienvenida -->
+<div class="modal-overlay hidden" id="onboardingOverlay">
+  <div class="modal">
+    <h3>¡Bienvenido!</h3>
+    <p class="modal-sub">Tres pasos para arrancar:</p>
+    <ol class="onboarding-steps">
+      <li><strong>1. Hermanos</strong> — cargá a los publicadores y marcá qué asignaciones puede cubrir cada uno.</li>
+      <li><strong>2. Programa</strong> — elegí la semana y completá Audio, Video, Micrófonos, Plataforma y Cronometrista (o usá Auto-asignar).</li>
+      <li><strong>3. Compartir</strong> — mandalo por WhatsApp o descargalo en PDF para el tablero de anuncios.</li>
+    </ol>
+    <div class="modal-footer"><button type="button" class="btn btn-primary" id="onboardingCloseBtn">Entendido</button></div>
+  </div>
+</div>
+
 <!-- Modal: hermano -->
 <div class="modal-overlay hidden" id="pubModalOverlay">
   <div class="modal">
@@ -572,6 +610,8 @@
     saveData();
     initUiFromData();
     renderAll();
+    maybeShowOnboarding();
+    checkBackupReminder();
   }
   async function saveData() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) { console.error('No se pudo guardar', e); } }
 
@@ -593,13 +633,60 @@
   }
 
   /* ---------- Toasts ---------- */
-  function showToast(msg) {
+  function showToast(msg, undoFn) {
     const c = $('toastContainer');
-    const el = document.createElement('div'); el.className = 'toast'; el.textContent = msg;
+    const el = document.createElement('div'); el.className = 'toast';
+    if (undoFn) {
+      el.innerHTML = `<span>${escapeHtml(msg)}</span>`;
+      const undoBtn = document.createElement('button');
+      undoBtn.type = 'button'; undoBtn.className = 'toast-undo'; undoBtn.textContent = 'Deshacer';
+      undoBtn.addEventListener('click', () => { undoFn(); el.classList.remove('show'); setTimeout(() => el.remove(), 300); });
+      el.appendChild(undoBtn);
+    } else {
+      el.textContent = msg;
+    }
     c.appendChild(el);
     requestAnimationFrame(() => el.classList.add('show'));
-    setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); }, 2200);
+    setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); }, undoFn ? 5000 : 2200);
   }
+
+  /* ---------- Copias de seguridad: recordatorio ---------- */
+  const LAST_BACKUP_KEY = 'kh-last-backup-date';
+  function getLastBackupDate() { try { return localStorage.getItem(LAST_BACKUP_KEY); } catch (e) { return null; } }
+  function setLastBackupDate(iso) { try { localStorage.setItem(LAST_BACKUP_KEY, iso); } catch (e) { /* no se pudo guardar la fecha */ } }
+  function checkBackupReminder() {
+    const hasData = data.publishers.length > 0 || Object.keys(data.weeks).length > 0;
+    if (!hasData) return;
+    const last = getLastBackupDate();
+    let daysSince = null;
+    if (last) daysSince = Math.floor((new Date() - new Date(last + 'T00:00:00')) / 86400000);
+    if (last && daysSince < 14) return;
+    if (document.getElementById('backupBanner')) return;
+    const bar = document.createElement('div');
+    bar.id = 'backupBanner';
+    bar.className = 'top-banner backup';
+    const msg = last ? `Hace ${daysSince} días que no hacés una copia de seguridad.` : 'Todavía no hiciste ninguna copia de seguridad.';
+    bar.innerHTML = `<span>${msg}</span>
+      <div class="tb-actions"><button type="button" id="backupReminderExport">Exportar ahora</button><button type="button" id="backupReminderDismiss">Ahora no</button></div>`;
+    document.body.insertBefore(bar, document.body.firstChild);
+    $('backupReminderExport').addEventListener('click', () => { exportBackup(); bar.remove(); });
+    $('backupReminderDismiss').addEventListener('click', () => bar.remove());
+  }
+
+  /* ---------- Bienvenida (primera vez) ---------- */
+  const ONBOARDING_KEY = 'kh-onboarding-seen';
+  function maybeShowOnboarding() {
+    let seen = false;
+    try { seen = localStorage.getItem(ONBOARDING_KEY) === '1'; } catch (e) { /* sin acceso a localStorage */ }
+    if (seen) return;
+    const hasData = data.publishers.length > 0 || Object.keys(data.weeks).length > 0;
+    if (hasData) { try { localStorage.setItem(ONBOARDING_KEY, '1'); } catch (e) { /* no se pudo guardar */ } return; }
+    $('onboardingOverlay').classList.remove('hidden');
+  }
+  $('onboardingCloseBtn').addEventListener('click', () => {
+    $('onboardingOverlay').classList.add('hidden');
+    try { localStorage.setItem(ONBOARDING_KEY, '1'); } catch (e) { /* no se pudo guardar */ }
+  });
 
   /* ---------- Tabs ---------- */
   function switchTab(tab) {
@@ -1096,7 +1183,9 @@
   $('shareLogBtn').addEventListener('click', shareTimerHistory);
   $('clearLogBtn').addEventListener('click', () => {
     if (!confirm('¿Borrar todo el historial de tiempos registrados?')) return;
-    data.timerLog = []; saveData(); renderTimerLog(); showToast('Historial borrado');
+    const backupLog = data.timerLog || [];
+    data.timerLog = []; saveData(); renderTimerLog();
+    showToast('Historial borrado', () => { data.timerLog = backupLog; saveData(); renderTimerLog(); });
   });
   $('minutesInput').addEventListener('change', () => { currentPresetLabel = 'Personalizado'; resetTimer(); });
   $('secondsInput').addEventListener('change', () => { currentPresetLabel = 'Personalizado'; resetTimer(); });
@@ -1196,12 +1285,16 @@
   $('pubCancelBtn').addEventListener('click', closePubModal);
   $('pubModalOverlay').addEventListener('click', (e) => { if (e.target.id === 'pubModalOverlay') closePubModal(); });
   $('pubDeleteBtn').addEventListener('click', () => {
-    const p = data.publishers.find(x => x.id === pubEditingId);
-    if (!p) return;
-    if (!confirm(`¿Quitar a ${p.name} de la lista de hermanos?`)) return;
-    data.publishers = data.publishers.filter(x => x.id !== pubEditingId);
+    const idx = data.publishers.findIndex(x => x.id === pubEditingId);
+    if (idx === -1) return;
+    const removed = data.publishers[idx];
+    if (!confirm(`¿Quitar a ${removed.name} de la lista de hermanos?`)) return;
+    data.publishers.splice(idx, 1);
     saveData(); closePubModal(); renderBrothersTable(); renderRoleCards();
-    showToast('Hermano eliminado');
+    showToast('Hermano eliminado', () => {
+      data.publishers.splice(idx, 0, removed);
+      saveData(); renderBrothersTable(); renderRoleCards();
+    });
   });
 
   /* ---------- Ajustes ---------- */
@@ -1229,13 +1322,15 @@
   $('weekdaySemanaSelect').addEventListener('change', (e) => { data.settings.weekdaySemana = parseInt(e.target.value); saveData(); renderMonthTable(); });
   $('weekdayFindeSelect').addEventListener('change', (e) => { data.settings.weekdayFinde = parseInt(e.target.value); saveData(); renderMonthTable(); });
 
-  $('exportBtn').addEventListener('click', () => {
+  function exportBackup() {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = `asignaciones-backup-${new Date().toISOString().slice(0, 10)}.json`;
     document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    setLastBackupDate(new Date().toISOString().slice(0, 10));
     showToast('Copia exportada');
-  });
+  }
+  $('exportBtn').addEventListener('click', exportBackup);
   $('importInput').addEventListener('change', (e) => {
     const file = e.target.files[0]; if (!file) return;
     const reader = new FileReader();
@@ -1272,7 +1367,36 @@
 
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('service-worker.js').catch(() => { /* sin service worker disponible */ });
+      navigator.serviceWorker.register('service-worker.js').then((reg) => {
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          if (!newWorker) return;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              showUpdateBanner(reg);
+            }
+          });
+        });
+      }).catch(() => { /* sin service worker disponible */ });
+    });
+    let refreshingPage = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshingPage) return;
+      refreshingPage = true;
+      window.location.reload();
+    });
+  }
+
+  function showUpdateBanner(reg) {
+    if (document.getElementById('updateBanner')) return;
+    const bar = document.createElement('div');
+    bar.id = 'updateBanner';
+    bar.className = 'top-banner update';
+    bar.innerHTML = `<span>Hay una versión nueva de la app disponible.</span>
+      <div class="tb-actions"><button type="button" id="updateReloadBtn">Actualizar ahora</button></div>`;
+    document.body.insertBefore(bar, document.body.firstChild);
+    $('updateReloadBtn').addEventListener('click', () => {
+      if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
     });
   }
 </script>
