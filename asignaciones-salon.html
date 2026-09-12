@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asignaciones — Salón del Reino</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#212C34">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Asignaciones">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+  :root{
+    --bg: #EDEFEF;
+    --surface: #FFFFFF;
+    --ink: #212C34;
+    --ink-soft: #5C6B74;
+    --ink-faint: #93A0A7;
+    --line: #DDE1E2;
+    --accent-gold: #A9822F;
+    --accent-blue: #3E6B8A;
+    --role-mic: #B4633F;
+    --role-plat: #4C7A5E;
+    --role-sonido: #3E6B8A;
+    --role-video: #3F8A80;
+    --role-crono: #7A5C86;
+    --danger: #A8433A;
+    --danger-bg: #FBEDEC;
+    --warn: #B8860B;
+    --warn-bg: #FBF3E3;
+    --ok: #3F7D4F;
+    --radius-s: 4px;
+    --radius-m: 8px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); font-family: 'Public Sans', -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+  h1, h2, h3, .serif { font-family: 'Fraunces', Georgia, serif; font-weight: 500; letter-spacing: -0.01em; }
+  button { font-family: inherit; cursor: pointer; }
+  .hidden { display: none !important; }
+  table { border-collapse: collapse; width: 100%; }
+
+  /* ---------- Topbar ---------- */
+  .topbar { background: var(--surface); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 10; }
+  .topbar-inner { max-width: 980px; margin: 0 auto; padding: 16px 24px 0; }
+  .brand-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .brand-mark { width: 10px; height: 10px; border-radius: 50%; background: var(--accent-gold); flex-shrink: 0; }
+  .brand-row h1 { font-size: 19px; margin: 0; }
+  .cong-badge { font-size: 12px; color: var(--ink-soft); background: var(--bg); border-radius: 20px; padding: 4px 12px; margin-left: 2px; }
+
+  .tabs { display: flex; gap: 4px; }
+  .tab-btn {
+    border: none; background: none; padding: 10px 16px; font-size: 13.5px; font-weight: 600;
+    color: var(--ink-soft); border-bottom: 2px solid transparent; white-space: nowrap;
+  }
+  .tab-btn.active { color: var(--ink); border-bottom-color: var(--accent-gold); }
+
+  .content { max-width: 980px; margin: 0 auto; padding: 26px 24px 60px; }
+  .section-title { font-size: 16px; margin: 30px 0 12px; }
+
+  .btn {
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+    padding: 9px 15px; border-radius: var(--radius-s); font-size: 13.5px; font-weight: 600;
+  }
+  .btn-primary { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .btn-danger { color: var(--danger); }
+  .icon-only { padding: 9px 13px; font-size: 16px; }
+
+  /* ---------- Programa: navegador de semana ---------- */
+  .week-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .week-label-wrap { flex: 1; text-align: center; }
+  .week-label { font-family: 'Fraunces', serif; font-size: 17px; margin-top: 2px; }
+  .week-bar input[type="date"] {
+    border: 1px solid var(--line); border-radius: var(--radius-s); padding: 7px 9px; font-family: inherit;
+    font-size: 13px; color: var(--ink-soft); background: var(--surface);
+  }
+
+  .type-pills { display: flex; gap: 8px; margin-bottom: 12px; }
+  .completeness-badge { display: inline-block; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px; margin-bottom: 16px; }
+  .completeness-badge.complete { background: #E4EFE6; color: var(--ok); }
+  .completeness-badge.incomplete { background: var(--warn-bg); color: #7A5A0E; }
+  .completeness-badge:empty { display: none; }
+  .pill {
+    flex: 1; border: 1px solid var(--line); background: var(--surface); border-radius: 20px;
+    padding: 9px; font-size: 13.5px; font-weight: 600; color: var(--ink-soft);
+  }
+  .pill.active { background: var(--ink); border-color: var(--ink); color: #fff; }
+
+  .action-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .share-menu-wrap { position: relative; }
+  .share-menu {
+    position: absolute; top: calc(100% + 6px); left: 0; z-index: 12;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m);
+    box-shadow: 0 6px 18px rgba(33,44,52,0.16); padding: 6px; min-width: 170px; display: flex; flex-direction: column; gap: 2px;
+  }
+  .share-menu button {
+    text-align: left; border: none; background: none; padding: 9px 12px; font-size: 13.5px; font-weight: 600;
+    color: var(--ink); border-radius: var(--radius-s);
+  }
+  .share-menu button:hover { background: var(--bg); }
+
+  .conflict-banner {
+    background: var(--warn-bg); color: #7A5A0E; border: 1px solid #E3C77A; border-radius: var(--radius-s);
+    padding: 10px 14px; font-size: 13px; font-weight: 600; margin-bottom: 16px;
+  }
+
+  .role-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+  .role-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 12px 14px; border-top: 3px solid var(--rc); }
+  .role-card.conflict-card { border-color: var(--danger); box-shadow: 0 0 0 1px var(--danger); }
+  .role-card-head { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); margin-bottom: 8px; }
+  .role-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .role-card select { width: 100%; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 8px; font-size: 13.5px; font-family: inherit; background: var(--bg); color: var(--ink); }
+  .role-count { font-size: 11px; color: var(--ink-faint); margin-top: 6px; }
+
+  .month-table-wrap { overflow-x: auto; }
+  .month-table { font-size: 12.5px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m); overflow: hidden; }
+  .month-table th, .month-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .month-table th { background: var(--bg); color: var(--ink-soft); font-weight: 600; font-size: 11.5px; }
+  .month-table tr:last-child td { border-bottom: none; }
+  .empty-note { font-size: 13px; color: var(--ink-faint); font-style: italic; }
+
+  /* ---------- Cronómetro ---------- */
+  .preset-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-bottom: 22px; }
+  .preset-btn { text-align: left; font-size: 12.5px; }
+  .preset-btn .pmin { display: block; font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+
+  .timer-panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 24px; text-align: center; }
+  .timer-display { font-family: 'Fraunces', serif; font-variant-numeric: tabular-nums; font-size: 58px; color: var(--ok); line-height: 1; margin-bottom: 12px; }
+  .timer-display.warning { color: var(--warn); }
+  .timer-display.danger { color: var(--danger); animation: blinkRed 1s infinite; }
+  @keyframes blinkRed { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  .timer-progress-track { height: 6px; background: var(--bg); border-radius: 4px; overflow: hidden; margin-bottom: 18px; }
+  .timer-progress-bar { height: 100%; background: var(--ok); width: 0%; transition: width 1s linear; }
+  .timer-progress-bar.warning { background: var(--warn); }
+  .timer-progress-bar.danger { background: var(--danger); }
+
+  .timer-inputs { display: flex; gap: 8px; align-items: center; justify-content: center; margin-bottom: 16px; }
+  .timer-inputs input { width: 60px; text-align: center; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 7px; font-family: inherit; font-size: 13.5px; }
+  .timer-controls { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .timer-controls .btn { flex: 1; min-width: 90px; }
+  .timer-extra { display: flex; gap: 8px; justify-content: center; margin-top: 12px; }
+  #panel-timer.dark-timer .timer-panel { background: #14181C; border-color: #2A333B; }
+  #panel-timer.dark-timer .timer-inputs input { background: #1D2329; border-color: #2A333B; color: #EDEFEF; }
+  #panel-timer.dark-timer .timer-progress-track { background: #232B31; }
+  #panel-timer.dark-timer .preset-btn { background: #1D2329; border-color: #2A333B; color: #EDEFEF; }
+  #panel-timer.dark-timer .preset-btn .pmin { color: #93A0A7; }
+  #panel-timer.dark-timer .log-row { background: #1D2329; border-color: #2A333B; color: #EDEFEF; }
+  #panel-timer.dark-timer .row-note { color: #93A0A7; }
+  .log-row { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-s); padding: 10px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+  .log-times { font-size: 12.5px; color: var(--ink-soft); white-space: nowrap; }
+  .log-diff { font-weight: 700; margin-left: 6px; }
+  .log-diff.over { color: var(--danger); }
+  .log-diff.under { color: var(--ok); }
+  .log-diff.ontime { color: var(--ink-soft); }
+
+  /* ---------- Hermanos ---------- */
+  .br-toolbar { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .br-toolbar input, .br-toolbar select {
+    border: 1px solid var(--line); border-radius: var(--radius-s); padding: 8px 10px; font-family: inherit; font-size: 13.5px;
+  }
+  .br-toolbar input { flex: 1; min-width: 160px; }
+  .br-add { margin-left: auto; }
+
+  .br-table-wrap { overflow-x: auto; }
+  .br-table { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m); overflow: hidden; font-size: 13px; }
+  .br-table th, .br-table td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  .br-table th { background: var(--bg); color: var(--ink-soft); font-size: 11.5px; font-weight: 600; }
+  .br-table tr:last-child td { border-bottom: none; }
+  .row-note { font-size: 11.5px; color: var(--ink-soft); margin-top: 2px; }
+
+  .status-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; cursor: pointer; }
+  .status-badge.active { background: #E4EFE6; color: var(--ok); }
+  .status-badge.inactive { background: var(--danger-bg); color: var(--danger); }
+
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10.5px; font-weight: 600; margin: 1px 3px 1px 0; color: #fff; }
+  .tag-sonido { background: var(--role-sonido); }
+  .tag-video { background: var(--role-video); }
+  .tag-microfono { background: var(--role-mic); }
+  .tag-plataforma { background: var(--role-plat); }
+  .tag-cronometrista { background: var(--role-crono); }
+
+  /* ---------- Ajustes ---------- */
+  .settings-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 18px 20px; margin-bottom: 16px; }
+  .settings-card h3 { font-size: 14.5px; margin: 0 0 4px; }
+  .settings-card .hint { font-size: 12px; color: var(--ink-soft); margin: 0 0 14px; }
+  .field { margin-bottom: 12px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label { display: block; font-size: 12px; color: var(--ink-soft); font-weight: 600; margin-bottom: 5px; }
+  .field input[type="text"], .field select {
+    width: 100%; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 8px 9px;
+    font-size: 13.5px; font-family: inherit; background: var(--surface); color: var(--ink);
+  }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .settings-actions { display: flex; flex-direction: column; gap: 10px; }
+  .file-label {
+    display: inline-block; border: 1px solid var(--line); border-radius: var(--radius-s);
+    padding: 9px 15px; font-size: 13.5px; font-weight: 600; text-align: center; cursor: pointer;
+  }
+
+  /* ---------- Modal ---------- */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(33, 44, 52, 0.45); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 30; }
+  .modal { background: var(--surface); border-radius: var(--radius-m); padding: 26px 26px 22px; width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto; }
+  .modal h3 { font-size: 19px; margin: 0 0 6px; }
+  .modal-sub { font-size: 12.5px; color: var(--ink-soft); margin: 0 0 18px; }
+  .cap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .cap-item { display: flex; align-items: center; gap: 7px; font-size: 13px; }
+  .cap-item input { accent-color: var(--ink); }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
+  .modal-footer .btn-danger { margin-right: auto; }
+  #waPreview { width: 100%; font-family: 'Public Sans', sans-serif; font-size: 13px; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 10px; resize: vertical; color: var(--ink); background: var(--bg); }
+  .copy-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+  .copied-msg { font-size: 12.5px; color: var(--ok); font-weight: 600; }
+
+  /* ---------- Toasts ---------- */
+  .toast-container { position: fixed; bottom: 18px; right: 18px; z-index: 40; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+  .toast {
+    background: var(--ink); color: #fff; padding: 10px 16px; border-radius: var(--radius-s); font-size: 13px;
+    opacity: 0; transform: translateY(8px); transition: opacity 0.25s, transform 0.25s; box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* ---------- Print ---------- */
+  #printArea { display: none; }
+  #printArea h2 { font-size: 18px; margin: 0 0 2px; }
+  #printArea h3 { font-size: 15px; margin: 0 0 2px; font-weight: 600; }
+  #printArea p { margin: 0 0 16px; color: #555; font-size: 12px; }
+
+  /* ---------- Bottom tabs (mobile) ---------- */
+  .bottom-tabs { display: none; }
+
+  @media (max-width: 760px) {
+    body { padding-bottom: 66px; }
+    .topbar-inner { padding: 14px 16px 0; }
+    .tabs { display: none; }
+    .content { padding: 18px 16px 30px; }
+    .role-cards { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+    .two-col { grid-template-columns: 1fr; }
+    .cap-grid { grid-template-columns: 1fr; }
+    input, select, textarea { font-size: 16px !important; }
+    .btn { padding: 11px 15px; }
+
+    .bottom-tabs {
+      display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 25;
+      background: var(--surface); border-top: 1px solid var(--line);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .bottom-tabs .tab-btn {
+      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+      padding: 9px 4px; font-size: 10.5px; border-bottom: none; border-top: 2px solid transparent;
+    }
+    .bottom-tabs .tab-btn.active { border-top-color: var(--accent-gold); color: var(--ink); }
+    .modal-overlay { padding: 0; align-items: flex-end; }
+    .modal { max-width: 100%; width: 100%; max-height: 92vh; border-radius: 14px 14px 0 0; padding: 22px 18px calc(18px + env(safe-area-inset-bottom)); }
+  }
+
+  @media print {
+    body > *:not(#printArea) { display: none !important; }
+    #printArea { display: block !important; }
+    body { background: #fff; padding: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand-row">
+      <span class="brand-mark"></span>
+      <h1>Asignaciones</h1>
+      <span class="cong-badge" id="congBadge">Mi Congregación</span>
+    </div>
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="programa">Programa</button>
+      <button class="tab-btn" data-tab="timer">Cronómetro</button>
+      <button class="tab-btn" data-tab="hermanos">Hermanos</button>
+      <button class="tab-btn" data-tab="ajustes">Ajustes</button>
+    </nav>
+  </div>
+</div>
+
+<main class="content">
+
+  <!-- ---------------- Programa ---------------- -->
+  <section class="tab-panel" id="panel-programa">
+    <div class="week-bar">
+      <button class="btn icon-only" id="prevWeekBtn">‹</button>
+      <div class="week-label-wrap">
+        <input type="date" id="weekDateInput">
+        <div class="week-label" id="weekLabel"></div>
+      </div>
+      <button class="btn icon-only" id="nextWeekBtn">›</button>
+      <button class="btn" id="todayBtn">Hoy</button>
+    </div>
+
+    <div class="type-pills">
+      <button class="pill active" data-type="semana" id="pillSemana">Entre semana</button>
+      <button class="pill" data-type="finde" id="pillFinde">Fin de semana</button>
+    </div>
+    <div class="completeness-badge" id="completenessBadge"></div>
+
+    <div class="action-row">
+      <button class="btn" id="autoAssignBtn">Auto-asignar</button>
+      <button class="btn" id="copyPrevBtn">Copiar semana anterior</button>
+      <button class="btn" id="excludeBtn">No disponibles hoy</button>
+      <div class="share-menu-wrap">
+        <button class="btn btn-primary" id="shareMenuBtn">Compartir ▾</button>
+        <div class="share-menu hidden" id="shareMenu">
+          <button type="button" data-share="wa">WhatsApp</button>
+          <button type="button" data-share="pdf">Descargar PDF</button>
+          <button type="button" data-share="print">Imprimir</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="conflict-banner hidden" id="conflictBanner"></div>
+
+    <div class="role-cards" id="roleCardsContainer"></div>
+
+    <h3 class="section-title">Resumen del mes</h3>
+    <div class="month-table-wrap" id="monthTableWrap"></div>
+  </section>
+
+  <!-- ---------------- Cronómetro ---------------- -->
+  <section class="tab-panel hidden" id="panel-timer">
+    <div class="preset-grid" id="presetGrid"></div>
+    <div class="timer-panel">
+      <div class="timer-display normal" id="timerDisplay">10:00</div>
+      <div class="timer-progress-track"><div class="timer-progress-bar" id="timerProgressBar"></div></div>
+      <div class="timer-inputs">
+        <input type="number" id="minutesInput" min="0" value="10"><span>min</span>
+        <input type="number" id="secondsInput" min="0" max="59" value="0"><span>seg</span>
+      </div>
+      <div class="timer-controls">
+        <button class="btn" id="timerResetBtn">Reiniciar</button>
+        <button class="btn" id="timerPauseBtn">Pausar</button>
+        <button class="btn btn-primary" id="timerStartBtn">Iniciar</button>
+      </div>
+      <div class="timer-extra">
+        <button class="btn btn-primary" id="timerFinishBtn">Marcar fin y guardar</button>
+      </div>
+      <div class="timer-extra">
+        <button class="btn" id="muteBtn">🔔 Sonido activado</button>
+        <button class="btn" id="testBellBtn">Probar campanilla</button>
+        <button class="btn" id="darkModeBtn">🌙 Modo oscuro</button>
+      </div>
+    </div>
+
+    <h3 class="section-title">Historial de tiempos</h3>
+    <div id="timerLogWrap"></div>
+    <div class="action-row" style="margin-top:10px;">
+      <button class="btn" id="shareLogBtn">Compartir historial</button>
+      <button class="btn btn-danger" id="clearLogBtn">Borrar historial</button>
+    </div>
+  </section>
+
+  <!-- ---------------- Hermanos ---------------- -->
+  <section class="tab-panel hidden" id="panel-hermanos">
+    <div class="br-toolbar">
+      <input type="text" id="brSearch" placeholder="Buscar por nombre o nota…">
+      <select id="brFilter">
+        <option value="">Todas las asignaciones</option>
+        <option value="sonido">Consola de audio</option>
+        <option value="video">Video y Zoom</option>
+        <option value="microfono">Micrófonos</option>
+        <option value="plataforma">Plataforma</option>
+        <option value="cronometrista">Cronometrista</option>
+      </select>
+      <button class="btn" id="brPdfBtn">Descargar PDF</button>
+      <button class="btn btn-primary br-add" id="addBrotherBtn">+ Agregar hermano</button>
+    </div>
+    <div class="br-table-wrap">
+      <table class="br-table">
+        <thead><tr><th>Nombre</th><th>Estado</th><th>Privilegios</th><th>Este mes</th><th></th></tr></thead>
+        <tbody id="brothersTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ---------------- Ajustes ---------------- -->
+  <section class="tab-panel hidden" id="panel-ajustes">
+    <div class="settings-card">
+      <h3>Congregación</h3>
+      <p class="hint">Se usa en el encabezado, la impresión y los mensajes de WhatsApp.</p>
+      <div class="field"><label>Nombre de la congregación</label><input type="text" id="congNameInput"></div>
+      <div class="two-col">
+        <div class="field"><label>Micrófonos de pasillo</label>
+          <select id="micCountSelect"><option value="2">2 micrófonos</option><option value="3">3 micrófonos</option></select>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="field"><label>Día — Entre semana</label><select id="weekdaySemanaSelect"></select></div>
+        <div class="field"><label>Día — Fin de semana</label><select id="weekdayFindeSelect"></select></div>
+      </div>
+    </div>
+
+    <div class="settings-card">
+      <h3>Copia de seguridad</h3>
+      <p class="hint">Todo se guarda solo en este navegador. Exportá seguido por las dudas.</p>
+      <div class="settings-actions">
+        <button class="btn btn-primary" id="exportBtn">Exportar copia (.json)</button>
+        <label class="file-label" for="importInput">Importar copia (.json)</label>
+        <input type="file" id="importInput" accept="application/json" class="hidden">
+        <button class="btn" id="loadSampleBtn">Cargar datos de ejemplo</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<nav class="bottom-tabs">
+  <button class="tab-btn active" data-tab="programa">📅<br>Programa</button>
+  <button class="tab-btn" data-tab="timer">⏱️<br>Cronómetro</button>
+  <button class="tab-btn" data-tab="hermanos">👥<br>Hermanos</button>
+  <button class="tab-btn" data-tab="ajustes">⚙️<br>Ajustes</button>
+</nav>
+
+<!-- Modal: hermano -->
+<div class="modal-overlay hidden" id="pubModalOverlay">
+  <div class="modal">
+    <h3 id="pubModalTitle">Agregar hermano</h3>
+    <p class="modal-sub">Marcá las asignaciones que puede cubrir para que entre en la auto-asignación.</p>
+    <form id="pubEditForm">
+      <div class="field"><label>Nombre</label><input type="text" id="pubEditName" required></div>
+      <div class="field"><label>Notas</label><input type="text" id="pubEditNotes" placeholder="Ej: joven, solo domingos, teléfono…"></div>
+      <div class="field"><label>Estado</label>
+        <select id="pubEditStatus"><option value="activo">Activo</option><option value="no_disponible">No disponible</option></select>
+      </div>
+      <div class="field">
+        <label>Puede cubrir</label>
+        <div class="cap-grid">
+          <label class="cap-item"><input type="checkbox" id="capSonido"> Consola de audio</label>
+          <label class="cap-item"><input type="checkbox" id="capVideo"> Video y Zoom</label>
+          <label class="cap-item"><input type="checkbox" id="capMicrofono"> Micrófonos</label>
+          <label class="cap-item"><input type="checkbox" id="capPlataforma"> Plataforma</label>
+          <label class="cap-item"><input type="checkbox" id="capCronometrista"> Cronometrista</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger hidden" id="pubDeleteBtn">Quitar</button>
+        <button type="button" class="btn" id="pubCancelBtn">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: no disponibles solo esta reunión -->
+<div class="modal-overlay hidden" id="excludeModalOverlay">
+  <div class="modal">
+    <h3>No disponibles hoy</h3>
+    <p class="modal-sub" id="excludeModalSub">Marcá a quienes tienen otra participación o no pueden estar solo esta reunión. No cambia su estado general, y si ya estaban asignados se les libera la asignación.</p>
+    <div id="excludeList" class="cap-grid" style="grid-template-columns:1fr;"></div>
+    <div class="modal-footer"><button type="button" class="btn btn-primary" id="excludeCloseBtn">Listo</button></div>
+  </div>
+</div>
+
+<!-- Modal: WhatsApp -->
+<div class="modal-overlay hidden" id="waModalOverlay">
+  <div class="modal">
+    <h3>Generar para WhatsApp</h3>
+    <p class="modal-sub" id="waModalSub"></p>
+    <textarea id="waPreview" rows="10" readonly></textarea>
+    <div class="copy-row">
+      <button class="btn btn-primary" id="waCopyBtn">Copiar</button>
+      <span class="copied-msg hidden" id="waCopiedMsg">Copiado ✓</span>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn" id="waCloseBtn">Cerrar</button></div>
+  </div>
+</div>
+
+<div id="printArea"></div>
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+  const STORAGE_KEY = 'kh-schedule-data-v2';
+  const OLD_STORAGE_KEY = 'kh-schedule-data';
+  const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const CAP_LABEL = { sonido: 'Sonido', video: 'Video', microfono: 'Micrófonos', plataforma: 'Plataforma', cronometrista: 'Cronómetro' };
+  const PRESETS = [
+    { label: 'Tesoros de la Biblia', min: 10 },
+    { label: 'Busquemos Perlas Espirituales', min: 10 },
+    { label: 'Lectura de la Biblia', min: 4 },
+    { label: 'Seamos Mejores Maestros', min: 5 },
+    { label: 'Nuestra Vida Cristiana', min: 15 },
+    { label: 'Estudio Bíblico de la Congregación', min: 30 },
+    { label: 'Discurso Público', min: 30 },
+    { label: 'Estudio de La Atalaya', min: 60 }
+  ];
+
+  function getRoles() {
+    const roles = [
+      { key: 'sonido', label: 'Consola de audio', cap: 'sonido', color: 'var(--role-sonido)', emoji: '🎧' },
+      { key: 'video', label: 'Video y Zoom', cap: 'video', color: 'var(--role-video)', emoji: '📹' }
+    ];
+    const n = (window.data && data.settings.micCount) || 2;
+    for (let i = 1; i <= n; i++) roles.push({ key: 'mic' + i, label: 'Micrófono de pasillo ' + i, cap: 'microfono', color: 'var(--role-mic)', emoji: '🎤' });
+    roles.push({ key: 'plataforma', label: 'Acomodador de plataforma', cap: 'plataforma', color: 'var(--role-plat)', emoji: '🧍' });
+    roles.push({ key: 'cronometrista', label: 'Cronometrista', cap: 'cronometrista', color: 'var(--role-crono)', emoji: '⏱️' });
+    return roles;
+  }
+
+  let data = { settings: {}, publishers: [], weeks: {} };
+  let currentMonday = mondayOf(new Date().toISOString().slice(0, 10));
+  let currentType = 'semana';
+  let pubEditingId = null;
+  let timerInterval = null, timerRemaining = 0, timerTotal = 0;
+  let synth = null, toneReady = false;
+
+  const $ = (id) => document.getElementById(id);
+  const emptyCaps = () => ({ sonido: false, video: false, microfono: false, plataforma: false, cronometrista: false });
+  const blankRoles = () => ({ sonido: null, video: null, mic1: null, mic2: null, mic3: null, plataforma: null, cronometrista: null });
+  const blankWeek = () => ({ semana: { roles: blankRoles(), excluded: [] }, finde: { roles: blankRoles(), excluded: [] } });
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const escapeHtml = (str) => { const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML; };
+
+  function mondayOf(iso) {
+    const d = new Date(iso + 'T00:00:00');
+    const day = d.getDay();
+    d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
+    return d.toISOString().slice(0, 10);
+  }
+  function shiftDate(iso, days) { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + days); return d.toISOString().slice(0, 10); }
+  function dateForType(monday, type) {
+    const dow = type === 'semana' ? data.settings.weekdaySemana : data.settings.weekdayFinde;
+    const offset = (dow - 1 + 7) % 7;
+    const d = new Date(monday + 'T00:00:00'); d.setDate(d.getDate() + offset);
+    return d.toISOString().slice(0, 10);
+  }
+  function formatDate(iso) {
+    const d = new Date(iso + 'T00:00:00');
+    const dayName = d.toLocaleDateString('es-ES', { weekday: 'long' });
+    return { dayName: dayName.charAt(0).toUpperCase() + dayName.slice(1), day: d.getDate() };
+  }
+  function monthKey(iso) { const d = new Date(iso + 'T00:00:00'); return d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }); }
+
+  /* ---------- Carga / normalización / migración ---------- */
+  function defaultSettings() { return { congregationName: 'Mi Congregación', micCount: 2, weekdaySemana: 4, weekdayFinde: 0, timerMuted: false, timerDark: false }; }
+
+  function migrate(raw) {
+    if (raw && raw.weeks) {
+      raw.settings = Object.assign(defaultSettings(), raw.settings || {});
+      raw.publishers = (raw.publishers || []).map(p => ({ id: p.id, name: p.name, notes: p.notes || '', status: p.status || 'activo', roles: Object.assign(emptyCaps(), p.roles || {}) }));
+      return raw;
+    }
+    // formato viejo (reuniones sueltas) -> semanas
+    const out = { settings: defaultSettings(), publishers: (raw && raw.publishers || []).map(p => ({ id: p.id, name: p.name, notes: '', status: 'activo', roles: Object.assign(emptyCaps(), p.roles || {}) })), weeks: {} };
+    (raw && raw.meetings || []).forEach(m => {
+      const monday = mondayOf(m.date);
+      if (!out.weeks[monday]) out.weeks[monday] = blankWeek();
+      const t = m.type === 'finde' ? 'finde' : 'semana';
+      out.weeks[monday][t].roles = Object.assign(blankRoles(), m.roles || {});
+    });
+    return out;
+  }
+
+  async function loadData() {
+    let raw = null;
+    try { const val = localStorage.getItem(STORAGE_KEY); if (val) raw = JSON.parse(val); } catch (e) { /* sin datos guardados con la clave nueva */ }
+    if (!raw) {
+      try { const old = localStorage.getItem(OLD_STORAGE_KEY); if (old) raw = JSON.parse(old); } catch (e) { /* tampoco hay datos viejos */ }
+    }
+    data = migrate(raw || {});
+    window.data = data;
+    saveData();
+    initUiFromData();
+    renderAll();
+  }
+  async function saveData() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) { console.error('No se pudo guardar', e); } }
+
+  function ensureWeek(monday) {
+    if (!data.weeks[monday]) data.weeks[monday] = blankWeek();
+    ['semana', 'finde'].forEach(t => {
+      data.weeks[monday][t].roles = Object.assign(blankRoles(), data.weeks[monday][t].roles || {});
+      data.weeks[monday][t].excluded = data.weeks[monday][t].excluded || [];
+    });
+    return data.weeks[monday];
+  }
+  function weekView(monday) {
+    const w = data.weeks[monday];
+    if (!w) return blankWeek();
+    return {
+      semana: { roles: Object.assign(blankRoles(), w.semana.roles), excluded: w.semana.excluded || [] },
+      finde: { roles: Object.assign(blankRoles(), w.finde.roles), excluded: w.finde.excluded || [] }
+    };
+  }
+
+  /* ---------- Toasts ---------- */
+  function showToast(msg) {
+    const c = $('toastContainer');
+    const el = document.createElement('div'); el.className = 'toast'; el.textContent = msg;
+    c.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('show'));
+    setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); }, 2200);
+  }
+
+  /* ---------- Tabs ---------- */
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('hidden', p.id !== 'panel-' + tab));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  }
+  document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+
+  /* ---------- Programa ---------- */
+  function updateWeekLabel() {
+    const start = new Date(currentMonday + 'T00:00:00');
+    const end = new Date(start); end.setDate(end.getDate() + 6);
+    $('weekLabel').textContent = `Semana del ${start.getDate()} al ${end.getDate()} de ${monthKey(currentMonday)}`;
+    $('weekDateInput').value = currentMonday;
+  }
+
+  function renderRoleCards() {
+    const roles = getRoles();
+    const week = weekView(currentMonday);
+    const typeObj = week[currentType];
+    $('roleCardsContainer').innerHTML = roles.map(r => {
+      const capable = data.publishers.filter(p => p.roles[r.cap]).sort((a, b) => a.name.localeCompare(b.name, 'es'));
+      const opts = capable.map(p => {
+        const tag = typeObj.excluded.includes(p.id) ? ' (no disponible hoy)' : (p.status === 'no_disponible' ? ' (no disponible)' : '');
+        return `<option value="${p.id}" ${typeObj.roles[r.key] === p.id ? 'selected' : ''}>${escapeHtml(p.name)}${tag}</option>`;
+      }).join('');
+      return `<div class="role-card" style="--rc:${r.color}">
+        <div class="role-card-head"><span class="role-dot" style="background:${r.color}"></span>${r.label}</div>
+        <select data-role="${r.key}"><option value="">— Sin asignar —</option>${opts}</select>
+        <div class="role-count">${capable.length} hermano${capable.length === 1 ? '' : 's'} habilitado${capable.length === 1 ? '' : 's'}</div>
+      </div>`;
+    }).join('');
+    $('roleCardsContainer').querySelectorAll('select[data-role]').forEach(sel => sel.addEventListener('change', onRoleChange));
+    updateCompletenessBadge(roles, typeObj);
+    checkConflicts();
+  }
+
+  function updateCompletenessBadge(roles, typeObj) {
+    const filled = roles.filter(r => typeObj.roles[r.key]).length;
+    const badge = $('completenessBadge');
+    if (filled === roles.length) { badge.textContent = '✓ Completo'; badge.className = 'completeness-badge complete'; }
+    else { badge.textContent = `Faltan ${roles.length - filled} de ${roles.length} asignaciones`; badge.className = 'completeness-badge incomplete'; }
+  }
+
+  function onRoleChange(e) {
+    const week = ensureWeek(currentMonday);
+    week[currentType].roles[e.target.dataset.role] = e.target.value || null;
+    saveData();
+    checkConflicts();
+    renderMonthTable();
+    showToast('Asignación actualizada');
+  }
+
+  function checkConflicts() {
+    const week = weekView(currentMonday);
+    const rolesObj = week[currentType].roles;
+    const counts = {};
+    getRoles().forEach(r => { const id = rolesObj[r.key]; if (id) counts[id] = (counts[id] || 0) + 1; });
+    const dupIds = Object.keys(counts).filter(id => counts[id] > 1);
+    const banner = $('conflictBanner');
+    if (dupIds.length) {
+      const names = dupIds.map(id => (data.publishers.find(p => p.id === id) || {}).name || 'Alguien');
+      banner.textContent = `⚠ Doble asignación: ${names.join(', ')} tiene dos asignaciones esta reunión.`;
+      banner.classList.remove('hidden');
+    } else banner.classList.add('hidden');
+    document.querySelectorAll('.role-card').forEach(card => {
+      const val = card.querySelector('select').value;
+      card.classList.toggle('conflict-card', !!val && dupIds.includes(val));
+    });
+  }
+
+  function autoAssign() {
+    const roles = getRoles();
+    const week = ensureWeek(currentMonday);
+    const typeObj = week[currentType];
+    const counts = {};
+    data.publishers.forEach(p => counts[p.id] = { sonido: 0, video: 0, microfono: 0, plataforma: 0, cronometrista: 0 });
+    Object.entries(data.weeks).forEach(([monday, w]) => {
+      ['semana', 'finde'].forEach(t => {
+        if (monday === currentMonday && t === currentType) return;
+        roles.forEach(r => { const id = w[t] && w[t].roles[r.key]; if (id && counts[id]) counts[id][r.cap]++; });
+      });
+    });
+    const excludedToday = new Set(typeObj.excluded || []);
+    const activePubs = data.publishers.filter(p => p.status !== 'no_disponible' && !excludedToday.has(p.id));
+    const anyCaps = activePubs.some(p => Object.values(p.roles).some(Boolean));
+    const used = new Set(Object.values(typeObj.roles).filter(Boolean));
+    roles.forEach(r => {
+      if (typeObj.roles[r.key]) return;
+      let cands = activePubs.filter(p => !used.has(p.id));
+      if (anyCaps) cands = cands.filter(p => p.roles[r.cap]);
+      if (!cands.length) return;
+      cands.sort((a, b) => counts[a.id][r.cap] - counts[b.id][r.cap]);
+      typeObj.roles[r.key] = cands[0].id;
+      used.add(cands[0].id);
+    });
+    saveData();
+    renderRoleCards();
+    renderMonthTable();
+    showToast('Auto-asignación completada');
+  }
+
+  function monthTableHTML() {
+    const prefix = currentMonday.slice(0, 7);
+    const rows = [];
+    Object.keys(data.weeks).sort().forEach(monday => {
+      if (monday.slice(0, 7) !== prefix) return;
+      ['semana', 'finde'].forEach(t => {
+        const w = data.weeks[monday][t];
+        if (!w || !Object.values(w.roles).some(Boolean)) return;
+        const date = dateForType(monday, t);
+        const { dayName, day } = formatDate(date);
+        rows.push({ date, label: `${dayName} ${day}`, type: t, roles: w.roles });
+      });
+    });
+    rows.sort((a, b) => a.date.localeCompare(b.date));
+    if (!rows.length) return '<p class="empty-note">Todavía no hay asignaciones cargadas este mes.</p>';
+    const roles = getRoles();
+    let html = '<table class="month-table"><thead><tr><th>Fecha</th><th>Tipo</th>' + roles.map(r => `<th>${r.label}</th>`).join('') + '</tr></thead><tbody>';
+    rows.forEach(row => {
+      html += `<tr><td>${row.label}</td><td>${row.type === 'finde' ? 'Fin de semana' : 'Entre semana'}</td>` +
+        roles.map(r => { const p = data.publishers.find(pp => pp.id === row.roles[r.key]); return `<td>${p ? escapeHtml(p.name) : '—'}</td>`; }).join('') + '</tr>';
+    });
+    return html + '</tbody></table>';
+  }
+  function renderMonthTable() { $('monthTableWrap').innerHTML = monthTableHTML(); }
+
+  function setWeek(monday) { currentMonday = monday; updateWeekLabel(); renderRoleCards(); renderMonthTable(); }
+
+  $('prevWeekBtn').addEventListener('click', () => setWeek(shiftDate(currentMonday, -7)));
+  $('nextWeekBtn').addEventListener('click', () => setWeek(shiftDate(currentMonday, 7)));
+  $('todayBtn').addEventListener('click', () => setWeek(mondayOf(new Date().toISOString().slice(0, 10))));
+
+  function copyPreviousWeek() {
+    const prevMonday = shiftDate(currentMonday, -7);
+    const prevWeek = data.weeks[prevMonday];
+    if (!prevWeek || !Object.values(prevWeek[currentType].roles).some(Boolean)) {
+      showToast('La semana anterior no tiene asignaciones para copiar');
+      return;
+    }
+    const week = ensureWeek(currentMonday);
+    const hasCurrent = Object.values(week[currentType].roles).some(Boolean);
+    if (hasCurrent && !confirm('Esto reemplaza las asignaciones actuales de esta reunión por las de la semana pasada. ¿Continuar?')) return;
+    week[currentType].roles = Object.assign(blankRoles(), prevWeek[currentType].roles);
+    saveData();
+    renderRoleCards();
+    renderMonthTable();
+    showToast('Asignaciones copiadas de la semana anterior');
+  }
+  $('copyPrevBtn').addEventListener('click', copyPreviousWeek);
+  $('weekDateInput').addEventListener('change', (e) => setWeek(mondayOf(e.target.value)));
+  $('pillSemana').addEventListener('click', () => { currentType = 'semana'; $('pillSemana').classList.add('active'); $('pillFinde').classList.remove('active'); renderRoleCards(); });
+  $('pillFinde').addEventListener('click', () => { currentType = 'finde'; $('pillFinde').classList.add('active'); $('pillSemana').classList.remove('active'); renderRoleCards(); });
+  $('autoAssignBtn').addEventListener('click', autoAssign);
+
+  /* ---------- No disponibles solo esta reunión ---------- */
+  function openExcludeModal() {
+    const week = ensureWeek(currentMonday);
+    const typeObj = week[currentType];
+    const { dayName, day } = formatDate(dateForType(currentMonday, currentType));
+    $('excludeModalSub').textContent = `${dayName} ${day} de ${monthKey(currentMonday)} — ${currentType === 'finde' ? 'Fin de semana' : 'Entre semana'}. No cambia el estado general del hermano, y si ya estaba asignado se le libera la asignación.`;
+    const sorted = data.publishers.slice().sort((a, b) => a.name.localeCompare(b.name, 'es'));
+    $('excludeList').innerHTML = sorted.length ? sorted.map(p => `
+      <label class="cap-item"><input type="checkbox" data-exclude-id="${p.id}" ${typeObj.excluded.includes(p.id) ? 'checked' : ''}> ${escapeHtml(p.name)}</label>
+    `).join('') : '<p class="empty-note">Todavía no hay hermanos cargados.</p>';
+    $('excludeList').querySelectorAll('[data-exclude-id]').forEach(chk => chk.addEventListener('change', (e) => {
+      const id = e.target.dataset.excludeId;
+      const w = ensureWeek(currentMonday);
+      const t = w[currentType];
+      if (e.target.checked) {
+        if (!t.excluded.includes(id)) t.excluded.push(id);
+        Object.keys(t.roles).forEach(k => { if (t.roles[k] === id) t.roles[k] = null; });
+      } else {
+        t.excluded = t.excluded.filter(x => x !== id);
+      }
+      saveData();
+      renderRoleCards();
+      renderMonthTable();
+    }));
+    $('excludeModalOverlay').classList.remove('hidden');
+  }
+  $('excludeBtn').addEventListener('click', openExcludeModal);
+  $('excludeCloseBtn').addEventListener('click', () => { $('excludeModalOverlay').classList.add('hidden'); showToast('Cambios guardados'); });
+  $('excludeModalOverlay').addEventListener('click', (e) => { if (e.target.id === 'excludeModalOverlay') $('excludeModalOverlay').classList.add('hidden'); });
+
+  /* ---------- Impresión ---------- */
+  function buildPrintArea() {
+    const congName = data.settings.congregationName || 'Congregación';
+    $('printArea').innerHTML = `<h2>Salón del Reino de los Testigos de Jehová</h2><h3>${escapeHtml(congName)}</h3><p>${monthKey(currentMonday)}</p>` + monthTableHTML();
+  }
+
+  /* ---------- PDF de la semana ---------- */
+  async function downloadWeekPdf() {
+    if (!window.jspdf) { showToast('No se pudo cargar el generador de PDF (revisá tu conexión)'); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const congName = data.settings.congregationName || 'Congregación';
+    const start = new Date(currentMonday + 'T00:00:00');
+    const end = new Date(start); end.setDate(end.getDate() + 6);
+
+    const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    const MESES_ABBR = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    const sameMonth = start.getMonth() === end.getMonth();
+    const rangeLabel = sameMonth
+      ? `${start.getDate()} – ${end.getDate()} de ${MESES[start.getMonth()]} ${end.getFullYear()}`
+      : `${start.getDate()} de ${MESES[start.getMonth()]} – ${end.getDate()} de ${MESES[end.getMonth()]} ${end.getFullYear()}`;
+    const filenameRange = sameMonth
+      ? `${start.getDate()}-${end.getDate()} ${MESES_ABBR[start.getMonth()]}`
+      : `${start.getDate()} ${MESES_ABBR[start.getMonth()]}-${end.getDate()} ${MESES_ABBR[end.getMonth()]}`;
+
+    const roles = getRoles();
+    const shortLabel = { sonido: 'Audio', video: 'Video', mic1: 'Micrófono 1', mic2: 'Micrófono 2', mic3: 'Micrófono 3', plataforma: 'Plataforma', cronometrista: 'Cronometrista' };
+    const contentsText = 'Incluye: ' + roles.map(r => shortLabel[r.key] || r.label).join('   •   ');
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5);
+    const contentLines = doc.splitTextToSize(contentsText, pageWidth - 80);
+    const headerHeight = 78 + contentLines.length * 14;
+
+    // Encabezado: la semana es el elemento más grande y visible
+    doc.setFillColor(33, 44, 52);
+    doc.rect(0, 0, pageWidth, headerHeight, 'F');
+    doc.setFillColor(169, 130, 47);
+    doc.rect(0, headerHeight, pageWidth, 4, 'F');
+
+    doc.setTextColor(216, 187, 130);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
+    doc.text(`SALÓN DEL REINO — ${congName.toUpperCase()}`, 40, 32);
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(25);
+    doc.text(rangeLabel, 40, 62);
+
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5);
+    doc.setTextColor(216, 221, 224);
+    doc.text(contentLines, 40, 82);
+
+    let y = headerHeight + 38;
+    let any = false;
+    ['semana', 'finde'].forEach(t => {
+      const week = weekView(currentMonday)[t];
+      if (!Object.values(week.roles).some(Boolean)) return;
+      any = true;
+      const date = dateForType(currentMonday, t);
+      const { dayName, day } = formatDate(date);
+      doc.setTextColor(33, 44, 52);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
+      doc.text(`${t === 'finde' ? 'Fin de semana' : 'Entre semana'} — ${dayName} ${day} de ${MESES[new Date(date + 'T00:00:00').getMonth()]}`, 40, y);
+      const body = roles.map(r => {
+        const p = data.publishers.find(pp => pp.id === week.roles[r.key]);
+        return [r.label, p ? p.name : '—'];
+      });
+      doc.autoTable({
+        startY: y + 12, margin: { left: 40, right: 40 }, theme: 'grid',
+        head: [['Asignación', 'Hermano asignado']],
+        body,
+        headStyles: { fillColor: [33, 44, 52], textColor: 255, fontStyle: 'bold' },
+        styles: { fontSize: 11, cellPadding: 7 },
+        columnStyles: { 0: { fontStyle: 'bold', cellWidth: 200 } }
+      });
+      y = doc.lastAutoTable.finalY + 30;
+    });
+
+    if (!any) { showToast('No hay asignaciones cargadas esta semana'); return; }
+
+    doc.setFontSize(9); doc.setTextColor(130);
+    doc.text(`Generado el ${new Date().toLocaleDateString('es-ES')}`, 40, doc.internal.pageSize.getHeight() - 30);
+
+    const filename = `Asignaciones ${filenameRange}.pdf`;
+    const blob = doc.output('blob');
+    const file = new File([blob], filename, { type: 'application/pdf' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: 'Asignaciones de la semana', text: congName }); return; }
+      catch (e) { /* el usuario canceló el panel de compartir; seguimos con la descarga */ }
+    }
+    doc.save(filename);
+    showToast('PDF generado');
+  }
+
+  async function downloadDirectoryPdf() {
+    if (!window.jspdf) { showToast('No se pudo cargar el generador de PDF (revisá tu conexión)'); return; }
+    if (!data.publishers.length) { showToast('Todavía no hay hermanos cargados'); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const congName = data.settings.congregationName || 'Congregación';
+
+    doc.setFillColor(33, 44, 52);
+    doc.rect(0, 0, pageWidth, 96, 'F');
+    doc.setFillColor(169, 130, 47);
+    doc.rect(0, 96, pageWidth, 4, 'F');
+    doc.setTextColor(216, 187, 130);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
+    doc.text(`SALÓN DEL REINO — ${congName.toUpperCase()}`, 40, 32);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(22);
+    doc.text('Hermanos por asignación', 40, 64);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5);
+    doc.setTextColor(216, 221, 224);
+    doc.text(`${data.publishers.length} hermano${data.publishers.length === 1 ? '' : 's'} en el directorio`, 40, 84);
+
+    const roles = getRoles();
+    const body = roles.map(r => {
+      const names = data.publishers.filter(p => p.roles[r.cap]).sort((a, b) => a.name.localeCompare(b.name, 'es'))
+        .map(p => p.status === 'no_disponible' ? `${p.name} (no disponible)` : p.name);
+      return [r.label, names.length ? names.join(', ') : '—'];
+    });
+    doc.autoTable({
+      startY: 130, margin: { left: 40, right: 40 }, theme: 'grid',
+      head: [['Asignación', 'Hermanos habilitados']],
+      body,
+      headStyles: { fillColor: [33, 44, 52], textColor: 255, fontStyle: 'bold' },
+      styles: { fontSize: 10.5, cellPadding: 8, valign: 'top' },
+      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 150 } }
+    });
+
+    doc.setFontSize(9); doc.setTextColor(130);
+    doc.text(`Generado el ${new Date().toLocaleDateString('es-ES')}`, 40, doc.internal.pageSize.getHeight() - 30);
+
+    const filename = 'Hermanos por asignación.pdf';
+    const blob = doc.output('blob');
+    const file = new File([blob], filename, { type: 'application/pdf' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: 'Hermanos por asignación', text: congName }); return; }
+      catch (e) { /* el usuario canceló el panel de compartir; seguimos con la descarga */ }
+    }
+    doc.save(filename);
+    showToast('PDF generado');
+  }
+  $('brPdfBtn').addEventListener('click', downloadDirectoryPdf);
+
+  function openShareMenu(e) { e.stopPropagation(); $('shareMenu').classList.toggle('hidden'); }
+  function closeShareMenu() { $('shareMenu').classList.add('hidden'); }
+  $('shareMenuBtn').addEventListener('click', openShareMenu);
+  $('shareMenu').addEventListener('click', (e) => e.stopPropagation());
+  document.addEventListener('click', closeShareMenu);
+  $('shareMenu').querySelectorAll('[data-share]').forEach(btn => btn.addEventListener('click', () => {
+    closeShareMenu();
+    const action = btn.dataset.share;
+    if (action === 'wa') openWaModal();
+    else if (action === 'pdf') downloadWeekPdf();
+    else if (action === 'print') { buildPrintArea(); requestAnimationFrame(() => window.print()); }
+  }));
+
+  /* ---------- WhatsApp ---------- */
+  function openWaModal() {
+    const date = dateForType(currentMonday, currentType);
+    const { dayName, day } = formatDate(date);
+    const congName = data.settings.congregationName || 'la congregación';
+    const week = weekView(currentMonday)[currentType].roles;
+    const lines = [`🏛️ *${congName}*`, `*Asignaciones — ${dayName} ${day} de ${monthKey(date)}*`, ''];
+    getRoles().forEach(r => { const p = data.publishers.find(pp => pp.id === week[r.key]); lines.push(`${r.emoji} *${r.label}:* ${p ? p.name : '—'}`); });
+    lines.push('', 'Si no podés cubrir tu asignación, por favor avisá con anticipación para buscar un reemplazo.');
+    $('waModalSub').textContent = `${currentType === 'finde' ? 'Fin de semana' : 'Entre semana'} — ${dayName} ${day}`;
+    $('waPreview').value = lines.join('\n');
+    $('waCopiedMsg').classList.add('hidden');
+    $('waModalOverlay').classList.remove('hidden');
+  }
+  $('waCloseBtn').addEventListener('click', () => $('waModalOverlay').classList.add('hidden'));
+  $('waModalOverlay').addEventListener('click', (e) => { if (e.target.id === 'waModalOverlay') $('waModalOverlay').classList.add('hidden'); });
+  $('waCopyBtn').addEventListener('click', () => {
+    const text = $('waPreview').value;
+    const done = () => { $('waCopiedMsg').classList.remove('hidden'); showToast('Copiado al portapapeles'); setTimeout(() => $('waCopiedMsg').classList.add('hidden'), 2000); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done).catch(() => { $('waPreview').select(); document.execCommand('copy'); done(); });
+    else { $('waPreview').select(); document.execCommand('copy'); done(); }
+  });
+
+  /* ---------- Cronómetro ---------- */
+  let currentPresetLabel = 'Personalizado';
+  let overtimeBellPlayed = false;
+
+  function fillPresetGrid() {
+    $('presetGrid').innerHTML = PRESETS.map((p, i) => `<button type="button" class="btn preset-btn" data-preset="${i}">${p.label}<span class="pmin">${p.min} min</span></button>`).join('');
+    $('presetGrid').querySelectorAll('[data-preset]').forEach(btn => btn.addEventListener('click', () => {
+      const p = PRESETS[btn.dataset.preset];
+      $('minutesInput').value = p.min; $('secondsInput').value = 0;
+      currentPresetLabel = p.label;
+      resetTimer();
+    }));
+  }
+  function fmtMinSec(totalSeconds) {
+    const s = Math.max(0, Math.round(totalSeconds));
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  }
+  function updateTimerDisplay() {
+    const disp = $('timerDisplay'), bar = $('timerProgressBar');
+    const over = timerRemaining < 0;
+    const abs = Math.abs(timerRemaining);
+    const m = Math.floor(abs / 60), s = abs % 60;
+    disp.textContent = (over ? '+' : '') + `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    disp.classList.remove('warning', 'danger'); bar.classList.remove('warning', 'danger');
+    if (over) { disp.classList.add('danger'); bar.classList.add('danger'); }
+    else if (timerRemaining <= 60 && timerTotal > 0) { disp.classList.add('warning'); bar.classList.add('warning'); }
+    const pct = timerTotal > 0 ? Math.min(100, Math.max(0, (timerTotal - Math.max(timerRemaining, 0)) / timerTotal * 100)) : 0;
+    bar.style.width = pct + '%';
+  }
+  async function ensureTone() { if (toneReady) return; try { await Tone.start(); synth = new Tone.Synth().toDestination(); toneReady = true; } catch (e) { /* audio no disponible */ } }
+  function playBell() { if (!synth) return; synth.triggerAttackRelease('C6', '8n'); setTimeout(() => synth.triggerAttackRelease('G6', '8n'), 300); }
+  async function startTimer() {
+    await ensureTone();
+    if (timerInterval) return;
+    if (timerTotal <= 0) {
+      const mins = parseInt($('minutesInput').value) || 0, secs = parseInt($('secondsInput').value) || 0;
+      timerRemaining = mins * 60 + secs; timerTotal = timerRemaining; overtimeBellPlayed = false;
+    }
+    timerInterval = setInterval(() => {
+      timerRemaining--; updateTimerDisplay();
+      if (timerRemaining === 0 && !overtimeBellPlayed) {
+        overtimeBellPlayed = true;
+        if (!data.settings.timerMuted) playBell();
+      }
+    }, 1000);
+  }
+  function pauseTimer() { if (timerInterval) { clearInterval(timerInterval); timerInterval = null; } }
+  function resetTimer() {
+    pauseTimer();
+    const mins = parseInt($('minutesInput').value) || 0, secs = parseInt($('secondsInput').value) || 0;
+    timerRemaining = mins * 60 + secs; timerTotal = timerRemaining; overtimeBellPlayed = false;
+    updateTimerDisplay();
+  }
+  function updateMuteBtn() { $('muteBtn').textContent = data.settings.timerMuted ? '🔕 Sonido apagado' : '🔔 Sonido activado'; }
+  function updateDarkModeBtn() {
+    $('darkModeBtn').textContent = data.settings.timerDark ? '☀️ Modo claro' : '🌙 Modo oscuro';
+    $('panel-timer').classList.toggle('dark-timer', !!data.settings.timerDark);
+  }
+
+  function finishAndLog() {
+    if (timerTotal <= 0) { showToast('Iniciá el cronómetro primero'); return; }
+    pauseTimer();
+    const elapsed = Math.max(0, timerTotal - timerRemaining);
+    data.timerLog = data.timerLog || [];
+    data.timerLog.unshift({
+      id: uid(), date: new Date().toISOString().slice(0, 10), type: currentType,
+      label: currentPresetLabel, plannedSeconds: timerTotal, actualSeconds: elapsed
+    });
+    if (data.timerLog.length > 50) data.timerLog = data.timerLog.slice(0, 50);
+    saveData();
+    renderTimerLog();
+    showToast('Tiempo registrado');
+    timerRemaining = 0; timerTotal = 0; overtimeBellPlayed = false;
+    $('timerDisplay').textContent = '00:00';
+    $('timerDisplay').classList.remove('warning', 'danger');
+    $('timerProgressBar').style.width = '0%';
+    $('timerProgressBar').classList.remove('warning', 'danger');
+  }
+
+  function renderTimerLog() {
+    const log = data.timerLog || [];
+    const wrap = $('timerLogWrap');
+    if (!log.length) { wrap.innerHTML = '<p class="empty-note">Todavía no se registró ningún tiempo.</p>'; return; }
+    wrap.innerHTML = log.map(e => {
+      const diff = e.actualSeconds - e.plannedSeconds;
+      const diffMin = Math.round(Math.abs(diff) / 6) / 10;
+      const diffClass = diff > 0 ? 'over' : (diff < 0 ? 'under' : 'ontime');
+      const diffLabel = diff === 0 ? 'a tiempo' : (diff > 0 ? `+${diffMin} min` : `-${diffMin} min`);
+      const { dayName, day } = formatDate(e.date);
+      return `<div class="log-row">
+        <div><strong>${escapeHtml(e.label)}</strong><div class="row-note">${dayName} ${day} de ${monthKey(e.date)} — ${e.type === 'finde' ? 'Fin de semana' : 'Entre semana'}</div></div>
+        <div class="log-times">${fmtMinSec(e.plannedSeconds)} plan. → ${fmtMinSec(e.actualSeconds)} real <span class="log-diff ${diffClass}">${diffLabel}</span></div>
+      </div>`;
+    }).join('');
+  }
+
+  async function shareTimerHistory() {
+    const today = new Date().toISOString().slice(0, 10);
+    const entries = (data.timerLog || []).filter(e => e.date === today && e.type === currentType);
+    if (!entries.length) { showToast('No hay tiempos registrados hoy para esta reunión'); return; }
+    const { dayName, day } = formatDate(today);
+    const lines = [`⏱️ *Tiempos — ${dayName} ${day} de ${monthKey(today)}*`, currentType === 'finde' ? 'Fin de semana' : 'Entre semana', ''];
+    entries.slice().reverse().forEach(e => {
+      const diff = e.actualSeconds - e.plannedSeconds;
+      const diffMin = Math.round(Math.abs(diff) / 6) / 10;
+      const tag = diff === 0 ? 'a tiempo' : (diff > 0 ? `+${diffMin} min` : `-${diffMin} min`);
+      lines.push(`• ${e.label}: ${fmtMinSec(e.plannedSeconds)} → ${fmtMinSec(e.actualSeconds)} (${tag})`);
+    });
+    const text = lines.join('\n');
+    if (navigator.share) {
+      try { await navigator.share({ title: 'Historial de tiempos', text }); return; }
+      catch (e) { /* el usuario canceló el panel de compartir; seguimos a copiar */ }
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('Copiado al portapapeles');
+    } catch (e) {
+      const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta);
+      ta.select(); document.execCommand('copy'); ta.remove();
+      showToast('Copiado al portapapeles');
+    }
+  }
+
+  $('timerStartBtn').addEventListener('click', startTimer);
+  $('timerPauseBtn').addEventListener('click', pauseTimer);
+  $('timerResetBtn').addEventListener('click', resetTimer);
+  $('timerFinishBtn').addEventListener('click', finishAndLog);
+  $('shareLogBtn').addEventListener('click', shareTimerHistory);
+  $('clearLogBtn').addEventListener('click', () => {
+    if (!confirm('¿Borrar todo el historial de tiempos registrados?')) return;
+    data.timerLog = []; saveData(); renderTimerLog(); showToast('Historial borrado');
+  });
+  $('minutesInput').addEventListener('change', () => { currentPresetLabel = 'Personalizado'; resetTimer(); });
+  $('secondsInput').addEventListener('change', () => { currentPresetLabel = 'Personalizado'; resetTimer(); });
+  $('muteBtn').addEventListener('click', () => { data.settings.timerMuted = !data.settings.timerMuted; saveData(); updateMuteBtn(); });
+  $('testBellBtn').addEventListener('click', async () => { await ensureTone(); playBell(); });
+  $('darkModeBtn').addEventListener('click', () => { data.settings.timerDark = !data.settings.timerDark; saveData(); updateDarkModeBtn(); });
+
+  /* ---------- Hermanos ---------- */
+  function computeMonthlyCounts() {
+    const ym = new Date().toISOString().slice(0, 7);
+    const counts = {};
+    Object.entries(data.weeks).forEach(([monday, w]) => {
+      ['semana', 'finde'].forEach(t => {
+        const date = dateForType(monday, t);
+        if (date.slice(0, 7) !== ym) return;
+        getRoles().forEach(r => { const id = w[t].roles[r.key]; if (id) counts[id] = (counts[id] || 0) + 1; });
+      });
+    });
+    return counts;
+  }
+
+  function renderBrothersTable() {
+    const q = $('brSearch').value.trim().toLowerCase();
+    const filterRole = $('brFilter').value;
+    const monthCounts = computeMonthlyCounts();
+    const rows = data.publishers.filter(p => {
+      const matchesQ = !q || p.name.toLowerCase().includes(q) || (p.notes || '').toLowerCase().includes(q);
+      const matchesRole = !filterRole || p.roles[filterRole];
+      return matchesQ && matchesRole;
+    }).sort((a, b) => a.name.localeCompare(b.name, 'es'));
+
+    $('brothersTableBody').innerHTML = rows.length ? rows.map(p => {
+      const tags = Object.keys(CAP_LABEL).filter(k => p.roles[k]).map(k => `<span class="tag tag-${k}">${CAP_LABEL[k]}</span>`).join('');
+      return `<tr>
+        <td><strong>${escapeHtml(p.name)}</strong>${p.notes ? `<div class="row-note">${escapeHtml(p.notes)}</div>` : ''}</td>
+        <td><span class="status-badge ${p.status === 'no_disponible' ? 'inactive' : 'active'}" data-toggle-status="${p.id}">${p.status === 'no_disponible' ? 'No disponible' : 'Activo'}</span></td>
+        <td>${tags || '<span class="empty-note">—</span>'}</td>
+        <td>${monthCounts[p.id] || 0}</td>
+        <td><button class="btn icon-only" data-edit-pub="${p.id}" title="Editar">✎</button></td>
+      </tr>`;
+    }).join('') : `<tr><td colspan="5" class="empty-note">Sin resultados</td></tr>`;
+
+    $('brothersTableBody').querySelectorAll('[data-toggle-status]').forEach(el => el.addEventListener('click', () => {
+      const p = data.publishers.find(x => x.id === el.dataset.toggleStatus);
+      p.status = p.status === 'no_disponible' ? 'activo' : 'no_disponible';
+      saveData(); renderBrothersTable(); renderRoleCards(); showToast('Estado actualizado');
+    }));
+    $('brothersTableBody').querySelectorAll('[data-edit-pub]').forEach(el => el.addEventListener('click', () => openPubModal(el.dataset.editPub)));
+  }
+  $('brSearch').addEventListener('input', renderBrothersTable);
+  $('brFilter').addEventListener('change', renderBrothersTable);
+  $('addBrotherBtn').addEventListener('click', () => openPubModal(null));
+
+  function openPubModal(id) {
+    pubEditingId = id;
+    if (id) {
+      const p = data.publishers.find(x => x.id === id);
+      $('pubModalTitle').textContent = 'Editar hermano';
+      $('pubEditName').value = p.name;
+      $('pubEditNotes').value = p.notes || '';
+      $('pubEditStatus').value = p.status || 'activo';
+      $('capSonido').checked = !!p.roles.sonido;
+      $('capVideo').checked = !!p.roles.video;
+      $('capMicrofono').checked = !!p.roles.microfono;
+      $('capPlataforma').checked = !!p.roles.plataforma;
+      $('capCronometrista').checked = !!p.roles.cronometrista;
+      $('pubDeleteBtn').classList.remove('hidden');
+    } else {
+      $('pubModalTitle').textContent = 'Agregar hermano';
+      $('pubEditForm').reset();
+      $('pubDeleteBtn').classList.add('hidden');
+    }
+    $('pubModalOverlay').classList.remove('hidden');
+  }
+  function closePubModal() { $('pubModalOverlay').classList.add('hidden'); pubEditingId = null; }
+
+  $('pubEditForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = $('pubEditName').value.trim();
+    if (!name) return;
+    const roles = { sonido: $('capSonido').checked, video: $('capVideo').checked, microfono: $('capMicrofono').checked, plataforma: $('capPlataforma').checked, cronometrista: $('capCronometrista').checked };
+    const notes = $('pubEditNotes').value.trim(), status = $('pubEditStatus').value;
+    if (pubEditingId) {
+      const p = data.publishers.find(x => x.id === pubEditingId);
+      p.name = name; p.notes = notes; p.status = status; p.roles = roles;
+    } else {
+      const duplicate = data.publishers.find(p => p.name.trim().toLowerCase() === name.toLowerCase());
+      if (duplicate) {
+        const goAhead = confirm(`Ya hay un hermano cargado como "${duplicate.name}". ¿Es una persona distinta y querés agregarlo igual?\n\nSi es la misma persona, cancelá y buscalo en la lista para editarlo.`);
+        if (!goAhead) return;
+      }
+      data.publishers.push({ id: uid(), name, notes, status, roles });
+    }
+    saveData(); renderBrothersTable(); renderRoleCards(); closePubModal();
+    showToast(pubEditingId ? 'Hermano actualizado' : 'Hermano agregado');
+  });
+  $('pubCancelBtn').addEventListener('click', closePubModal);
+  $('pubModalOverlay').addEventListener('click', (e) => { if (e.target.id === 'pubModalOverlay') closePubModal(); });
+  $('pubDeleteBtn').addEventListener('click', () => {
+    const p = data.publishers.find(x => x.id === pubEditingId);
+    if (!p) return;
+    if (!confirm(`¿Quitar a ${p.name} de la lista de hermanos?`)) return;
+    data.publishers = data.publishers.filter(x => x.id !== pubEditingId);
+    saveData(); closePubModal(); renderBrothersTable(); renderRoleCards();
+    showToast('Hermano eliminado');
+  });
+
+  /* ---------- Ajustes ---------- */
+  function fillWeekdaySelects() {
+    const opts = DAY_NAMES.map((n, i) => `<option value="${i}">${n}</option>`).join('');
+    $('weekdaySemanaSelect').innerHTML = opts;
+    $('weekdayFindeSelect').innerHTML = opts;
+  }
+  function initUiFromData() {
+    fillWeekdaySelects();
+    $('congNameInput').value = data.settings.congregationName;
+    $('micCountSelect').value = data.settings.micCount;
+    $('weekdaySemanaSelect').value = data.settings.weekdaySemana;
+    $('weekdayFindeSelect').value = data.settings.weekdayFinde;
+    $('congBadge').textContent = data.settings.congregationName;
+    updateMuteBtn();
+    updateDarkModeBtn();
+    fillPresetGrid();
+    resetTimer();
+    renderTimerLog();
+    updateWeekLabel();
+  }
+  $('congNameInput').addEventListener('change', (e) => { data.settings.congregationName = e.target.value.trim() || 'Mi Congregación'; $('congBadge').textContent = data.settings.congregationName; saveData(); });
+  $('micCountSelect').addEventListener('change', (e) => { data.settings.micCount = parseInt(e.target.value); saveData(); renderRoleCards(); renderMonthTable(); });
+  $('weekdaySemanaSelect').addEventListener('change', (e) => { data.settings.weekdaySemana = parseInt(e.target.value); saveData(); renderMonthTable(); });
+  $('weekdayFindeSelect').addEventListener('change', (e) => { data.settings.weekdayFinde = parseInt(e.target.value); saveData(); renderMonthTable(); });
+
+  $('exportBtn').addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `asignaciones-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    showToast('Copia exportada');
+  });
+  $('importInput').addEventListener('change', (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        if (!confirm('Esto reemplaza todos los datos actuales por los de la copia. ¿Continuar?')) return;
+        data = migrate(parsed); window.data = data;
+        saveData(); initUiFromData(); renderAll();
+        showToast('Respaldo importado');
+      } catch (err) { alert('El archivo no es una copia de seguridad válida.'); }
+    };
+    reader.readAsText(file); e.target.value = '';
+  });
+  $('loadSampleBtn').addEventListener('click', () => {
+    if (!confirm('Esto reemplaza los hermanos y asignaciones actuales por datos de ejemplo. ¿Continuar?')) return;
+    const names = ['Juan Pérez', 'Carlos Gómez', 'Miguel Rodríguez', 'Diego Fernández', 'Pablo Martínez', 'Andrés López', 'Federico Díaz', 'Nicolás Torres'];
+    data.publishers = names.map((n, i) => ({
+      id: uid(), name: n, notes: i === 3 ? 'joven' : '', status: i === 6 ? 'no_disponible' : 'activo',
+      roles: { sonido: i % 3 === 0, video: i % 4 === 0, microfono: true, plataforma: i % 2 === 0, cronometrista: i % 3 === 1 }
+    }));
+    data.weeks = {};
+    const w = ensureWeek(currentMonday);
+    w.semana.roles = { sonido: data.publishers[0].id, video: data.publishers[3].id, mic1: data.publishers[1].id, mic2: data.publishers[2].id, mic3: null, plataforma: data.publishers[4].id, cronometrista: data.publishers[5].id };
+    w.finde.roles = { sonido: data.publishers[3].id, video: data.publishers[0].id, mic1: data.publishers[2].id, mic2: data.publishers[7].id, mic3: null, plataforma: data.publishers[1].id, cronometrista: data.publishers[4].id };
+    data.settings.congregationName = data.settings.congregationName === 'Mi Congregación' ? 'Congregación Central' : data.settings.congregationName;
+    saveData(); initUiFromData(); renderAll();
+    showToast('Datos de ejemplo cargados');
+  });
+
+  function renderAll() { renderRoleCards(); renderMonthTable(); renderBrothersTable(); }
+
+  loadData();
+
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js').catch(() => { /* sin service worker disponible */ });
+    });
+  }
+</script>
+
+</body>
+</html>

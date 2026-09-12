@@ -1,0 +1,16 @@
+{
+  "name": "Asignaciones — Salón del Reino",
+  "short_name": "Asignaciones",
+  "description": "Organizador de asignaciones de audio, video, micrófonos, plataforma y cronometrista.",
+  "start_url": "./asignaciones-salon.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#EDEFEF",
+  "theme_color": "#212C34",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
