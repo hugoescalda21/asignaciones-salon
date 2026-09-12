@@ -192,6 +192,12 @@
   .settings-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 18px 20px; margin-bottom: 16px; }
   .settings-card h3 { font-size: 14.5px; margin: 0 0 4px; }
   .settings-card .hint { font-size: 12px; color: var(--ink-soft); margin: 0 0 14px; }
+  .persist-badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 12.5px; font-weight: 600; }
+  .persist-badge.ok { background: #E4EFE6; color: var(--ok); }
+  .persist-badge.warn { background: var(--warn-bg); color: #7A5A0E; }
+  .persist-badge.unknown { background: var(--bg); color: var(--ink-soft); }
+  .last-served { font-size: 12px; color: var(--ink-soft); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); line-height: 1.7; }
+  .last-served strong { color: var(--ink); }
   .field { margin-bottom: 12px; }
   .field:last-child { margin-bottom: 0; }
   .field label { display: block; font-size: 12px; color: var(--ink-soft); font-weight: 600; margin-bottom: 5px; }
@@ -316,12 +322,12 @@
   <!-- ---------------- Programa ---------------- -->
   <section class="tab-panel" id="panel-programa">
     <div class="week-bar">
-      <button class="btn icon-only" id="prevWeekBtn">‹</button>
+      <button class="btn icon-only" id="prevWeekBtn" aria-label="Semana anterior" title="Semana anterior">‹</button>
       <div class="week-label-wrap">
         <input type="date" id="weekDateInput">
         <div class="week-label" id="weekLabel"></div>
       </div>
-      <button class="btn icon-only" id="nextWeekBtn">›</button>
+      <button class="btn icon-only" id="nextWeekBtn" aria-label="Semana siguiente" title="Semana siguiente">›</button>
       <button class="btn" id="todayBtn">Hoy</button>
     </div>
 
@@ -412,6 +418,13 @@
   <!-- ---------------- Ajustes ---------------- -->
   <section class="tab-panel hidden" id="panel-ajustes">
     <div class="settings-card">
+      <h3>Guardado seguro</h3>
+      <p class="hint">Verifica que este navegador no vaya a borrar los datos guardados por su cuenta.</p>
+      <div id="persistStatus"></div>
+      <button class="btn hidden" id="persistBtn" style="margin-top:10px;">Asegurar guardado</button>
+    </div>
+
+    <div class="settings-card">
       <h3>Congregación</h3>
       <p class="hint">Se usa en el encabezado, la impresión y los mensajes de WhatsApp.</p>
       <div class="field"><label>Nombre de la congregación</label><input type="text" id="congNameInput"></div>
@@ -482,6 +495,7 @@
           <label class="cap-item"><input type="checkbox" id="capCronometrista"> Cronometrista</label>
         </div>
       </div>
+      <div class="last-served hidden" id="pubLastServed"></div>
       <div class="modal-footer">
         <button type="button" class="btn btn-danger hidden" id="pubDeleteBtn">Quitar</button>
         <button type="button" class="btn" id="pubCancelBtn">Cancelar</button>
@@ -728,7 +742,7 @@
       }).join('');
       return `<div class="role-card" style="--rc:${r.color}">
         <div class="role-card-head"><span class="role-dot" style="background:${r.color}"></span>${r.label}</div>
-        <select data-role="${r.key}"><option value="">— Sin asignar —</option>${opts}</select>
+        <select data-role="${r.key}" aria-label="${r.label}"><option value="">— Sin asignar —</option>${opts}</select>
         <div class="role-count">${capable.length} hermano${capable.length === 1 ? '' : 's'} habilitado${capable.length === 1 ? '' : 's'}</div>
       </div>`;
     }).join('');
@@ -1105,7 +1119,14 @@
     const pct = timerTotal > 0 ? Math.min(100, Math.max(0, (timerTotal - Math.max(timerRemaining, 0)) / timerTotal * 100)) : 0;
     bar.style.width = pct + '%';
   }
-  async function ensureTone() { if (toneReady) return; try { await Tone.start(); synth = new Tone.Synth().toDestination(); toneReady = true; } catch (e) { /* audio no disponible */ } }
+  let toneFailNotified = false;
+  async function ensureTone() {
+    if (toneReady) return;
+    try { await Tone.start(); synth = new Tone.Synth().toDestination(); toneReady = true; }
+    catch (e) {
+      if (!toneFailNotified) { toneFailNotified = true; showToast('No se pudo activar el sonido del cronómetro (revisá los permisos de audio del navegador)'); }
+    }
+  }
   function playBell() { if (!synth) return; synth.triggerAttackRelease('C6', '8n'); setTimeout(() => synth.triggerAttackRelease('G6', '8n'), 300); }
   async function startTimer() {
     await ensureTone();
@@ -1262,6 +1283,35 @@
   $('brFilter').addEventListener('change', renderBrothersTable);
   $('addBrotherBtn').addEventListener('click', () => openPubModal(null));
 
+  function getLastServedByCap(pubId) {
+    const result = {};
+    Object.entries(data.weeks).forEach(([monday, w]) => {
+      ['semana', 'finde'].forEach(t => {
+        if (!w[t]) return;
+        getRoles(t).forEach(r => {
+          if (w[t].roles[r.key] === pubId) {
+            const date = dateForType(monday, t);
+            if (!result[r.cap] || date > result[r.cap]) result[r.cap] = date;
+          }
+        });
+      });
+    });
+    return result;
+  }
+
+  function renderLastServed(p) {
+    const box = $('pubLastServed');
+    const last = getLastServedByCap(p.id);
+    const rows = Object.entries(CAP_LABEL).filter(([cap]) => p.roles[cap]).map(([cap, label]) => {
+      const date = last[cap];
+      const shown = date ? (() => { const { dayName, day } = formatDate(date); return `${dayName} ${day} de ${monthKey(date)}`; })() : 'sin registro todavía';
+      return `<div><strong>${label}:</strong> última vez — ${shown}</div>`;
+    });
+    if (!rows.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+    box.innerHTML = rows.join('');
+    box.classList.remove('hidden');
+  }
+
   function openPubModal(id) {
     pubEditingId = id;
     if (id) {
@@ -1276,10 +1326,12 @@
       $('capPlataforma').checked = !!p.roles.plataforma;
       $('capCronometrista').checked = !!p.roles.cronometrista;
       $('pubDeleteBtn').classList.remove('hidden');
+      renderLastServed(p);
     } else {
       $('pubModalTitle').textContent = 'Agregar hermano';
       $('pubEditForm').reset();
       $('pubDeleteBtn').classList.add('hidden');
+      $('pubLastServed').classList.add('hidden');
     }
     $('pubModalOverlay').classList.remove('hidden');
   }
@@ -1339,7 +1391,37 @@
     resetTimer();
     renderTimerLog();
     updateWeekLabel();
+    checkStoragePersist();
   }
+
+  /* ---------- Guardado seguro ---------- */
+  function renderPersistStatus(persisted) {
+    const box = $('persistStatus');
+    if (persisted) {
+      box.innerHTML = '<span class="persist-badge ok">✓ Tus datos están protegidos — este navegador no los va a borrar solo.</span>';
+      $('persistBtn').classList.add('hidden');
+    } else {
+      box.innerHTML = '<span class="persist-badge warn">⚠ Este navegador podría borrar los datos guardados sin avisar.</span>';
+      $('persistBtn').classList.remove('hidden');
+    }
+  }
+  async function checkStoragePersist() {
+    if (!(navigator.storage && navigator.storage.persisted)) {
+      $('persistStatus').innerHTML = '<span class="persist-badge unknown">No se pudo verificar en este navegador.</span>';
+      $('persistBtn').classList.add('hidden');
+      return;
+    }
+    try { renderPersistStatus(await navigator.storage.persisted()); }
+    catch (e) { $('persistStatus').innerHTML = '<span class="persist-badge unknown">No se pudo verificar en este navegador.</span>'; }
+  }
+  $('persistBtn').addEventListener('click', async () => {
+    if (!(navigator.storage && navigator.storage.persist)) return;
+    try {
+      const granted = await navigator.storage.persist();
+      renderPersistStatus(granted);
+      showToast(granted ? 'Almacenamiento asegurado' : 'Todavía no concedido — usá la app un poco más y volvé a intentar');
+    } catch (e) { showToast('No se pudo completar el pedido'); }
+  });
   $('congNameInput').addEventListener('change', (e) => { data.settings.congregationName = e.target.value.trim() || 'Mi Congregación'; $('congBadge').textContent = data.settings.congregationName; saveData(); });
   $('micCountSelect').addEventListener('change', (e) => { data.settings.micCount = parseInt(e.target.value); saveData(); renderRoleCards(); renderMonthTable(); });
   $('weekdaySemanaSelect').addEventListener('change', (e) => { data.settings.weekdaySemana = parseInt(e.target.value); saveData(); renderMonthTable(); updatePillDates(); });
