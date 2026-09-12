@@ -918,6 +918,7 @@
     const week = ensureWeek(currentMonday);
     week[currentType].roles[e.target.dataset.role] = e.target.value || null;
     saveData();
+    updateCompletenessBadge(getRoles(currentType), weekView(currentMonday)[currentType]);
     checkConflicts();
     renderMonthTable();
     showToast('Asignación actualizada');
