@@ -495,7 +495,8 @@
   <div class="modal">
     <h3>No disponibles hoy</h3>
     <p class="modal-sub" id="excludeModalSub">Marcá a quienes tienen otra participación o no pueden estar solo esta reunión. No cambia su estado general, y si ya estaban asignados se les libera la asignación.</p>
-    <div id="excludeList" class="cap-grid" style="grid-template-columns:1fr;"></div>
+    <input type="text" id="excludeSearch" placeholder="Buscar por nombre o apellido…" style="width:100%; border:1px solid var(--line); border-radius:var(--radius-s); padding:8px 10px; font-family:inherit; font-size:13.5px; margin-bottom:12px;">
+    <div id="excludeList" class="cap-grid" style="grid-template-columns:1fr; max-height:320px; overflow-y:auto;"></div>
     <div class="modal-footer"><button type="button" class="btn btn-primary" id="excludeCloseBtn">Listo</button></div>
   </div>
 </div>
@@ -850,7 +851,7 @@
     $('excludeModalSub').textContent = `${dayName} ${day} de ${monthKey(currentMonday)} — ${currentType === 'finde' ? 'Fin de semana' : 'Entre semana'}. No cambia el estado general del hermano, y si ya estaba asignado se le libera la asignación.`;
     const sorted = data.publishers.slice().sort((a, b) => a.name.localeCompare(b.name, 'es'));
     $('excludeList').innerHTML = sorted.length ? sorted.map(p => `
-      <label class="cap-item"><input type="checkbox" data-exclude-id="${p.id}" ${typeObj.excluded.includes(p.id) ? 'checked' : ''}> ${escapeHtml(p.name)}</label>
+      <label class="cap-item" data-name="${escapeHtml(p.name.toLowerCase())}"><input type="checkbox" data-exclude-id="${p.id}" ${typeObj.excluded.includes(p.id) ? 'checked' : ''}> ${escapeHtml(p.name)}</label>
     `).join('') : '<p class="empty-note">Todavía no hay hermanos cargados.</p>';
     $('excludeList').querySelectorAll('[data-exclude-id]').forEach(chk => chk.addEventListener('change', (e) => {
       const id = e.target.dataset.excludeId;
@@ -866,9 +867,18 @@
       renderRoleCards();
       renderMonthTable();
     }));
+    $('excludeSearch').value = '';
+    $('excludeList').querySelectorAll('[data-name]').forEach(el => el.classList.remove('hidden'));
     $('excludeModalOverlay').classList.remove('hidden');
+    $('excludeSearch').focus();
   }
   $('excludeBtn').addEventListener('click', openExcludeModal);
+  $('excludeSearch').addEventListener('input', (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    $('excludeList').querySelectorAll('[data-name]').forEach(el => {
+      el.classList.toggle('hidden', !el.dataset.name.includes(q));
+    });
+  });
   $('excludeCloseBtn').addEventListener('click', () => { $('excludeModalOverlay').classList.add('hidden'); showToast('Cambios guardados'); });
   $('excludeModalOverlay').addEventListener('click', (e) => { if (e.target.id === 'excludeModalOverlay') $('excludeModalOverlay').classList.add('hidden'); });
 
