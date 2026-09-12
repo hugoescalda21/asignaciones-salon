@@ -92,6 +92,7 @@
     padding: 9px; font-size: 13.5px; font-weight: 600; color: var(--ink-soft);
   }
   .pill.active { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .pill-date { display: block; font-size: 10.5px; font-weight: 500; opacity: 0.75; margin-top: 1px; }
 
   .action-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
   .share-menu-wrap { position: relative; }
@@ -325,8 +326,8 @@
     </div>
 
     <div class="type-pills">
-      <button class="pill active" data-type="semana" id="pillSemana">Entre semana</button>
-      <button class="pill" data-type="finde" id="pillFinde">Fin de semana</button>
+      <button class="pill active" data-type="semana" id="pillSemana">Entre semana<span class="pill-date" id="pillSemanaDate"></span></button>
+      <button class="pill" data-type="finde" id="pillFinde">Fin de semana<span class="pill-date" id="pillFindeDate"></span></button>
     </div>
     <div class="completeness-badge" id="completenessBadge"></div>
 
@@ -534,7 +535,7 @@
     { label: 'Estudio de La Atalaya', min: 60 }
   ];
 
-  function getRoles() {
+  function getRoles(type) {
     const roles = [
       { key: 'sonido', label: 'Consola de audio', cap: 'sonido', color: 'var(--role-sonido)', emoji: '🎧' },
       { key: 'video', label: 'Video y Zoom', cap: 'video', color: 'var(--role-video)', emoji: '📹' }
@@ -542,7 +543,7 @@
     const n = (window.data && data.settings.micCount) || 2;
     for (let i = 1; i <= n; i++) roles.push({ key: 'mic' + i, label: 'Micrófono de pasillo ' + i, cap: 'microfono', color: 'var(--role-mic)', emoji: '🎤' });
     roles.push({ key: 'plataforma', label: 'Acomodador de plataforma', cap: 'plataforma', color: 'var(--role-plat)', emoji: '🧍' });
-    roles.push({ key: 'cronometrista', label: 'Cronometrista', cap: 'cronometrista', color: 'var(--role-crono)', emoji: '⏱️' });
+    if (type !== 'finde') roles.push({ key: 'cronometrista', label: 'Cronometrista', cap: 'cronometrista', color: 'var(--role-crono)', emoji: '⏱️' });
     return roles;
   }
 
@@ -584,19 +585,23 @@
   function defaultSettings() { return { congregationName: 'Mi Congregación', micCount: 2, weekdaySemana: 4, weekdayFinde: 0, timerMuted: false, timerDark: false }; }
 
   function migrate(raw) {
+    let out;
     if (raw && raw.weeks) {
       raw.settings = Object.assign(defaultSettings(), raw.settings || {});
       raw.publishers = (raw.publishers || []).map(p => ({ id: p.id, name: p.name, notes: p.notes || '', status: p.status || 'activo', roles: Object.assign(emptyCaps(), p.roles || {}) }));
-      return raw;
+      out = raw;
+    } else {
+      // formato viejo (reuniones sueltas) -> semanas
+      out = { settings: defaultSettings(), publishers: (raw && raw.publishers || []).map(p => ({ id: p.id, name: p.name, notes: '', status: 'activo', roles: Object.assign(emptyCaps(), p.roles || {}) })), weeks: {} };
+      (raw && raw.meetings || []).forEach(m => {
+        const monday = mondayOf(m.date);
+        if (!out.weeks[monday]) out.weeks[monday] = blankWeek();
+        const t = m.type === 'finde' ? 'finde' : 'semana';
+        out.weeks[monday][t].roles = Object.assign(blankRoles(), m.roles || {});
+      });
     }
-    // formato viejo (reuniones sueltas) -> semanas
-    const out = { settings: defaultSettings(), publishers: (raw && raw.publishers || []).map(p => ({ id: p.id, name: p.name, notes: '', status: 'activo', roles: Object.assign(emptyCaps(), p.roles || {}) })), weeks: {} };
-    (raw && raw.meetings || []).forEach(m => {
-      const monday = mondayOf(m.date);
-      if (!out.weeks[monday]) out.weeks[monday] = blankWeek();
-      const t = m.type === 'finde' ? 'finde' : 'semana';
-      out.weeks[monday][t].roles = Object.assign(blankRoles(), m.roles || {});
-    });
+    // Los fines de semana ya no llevan cronometrista: se limpia cualquier valor viejo.
+    Object.values(out.weeks).forEach(w => { if (w.finde && w.finde.roles) w.finde.roles.cronometrista = null; });
     return out;
   }
 
@@ -702,10 +707,17 @@
     const end = new Date(start); end.setDate(end.getDate() + 6);
     $('weekLabel').textContent = `Semana del ${start.getDate()} al ${end.getDate()} de ${monthKey(currentMonday)}`;
     $('weekDateInput').value = currentMonday;
+    updatePillDates();
+  }
+  function updatePillDates() {
+    const sd = formatDate(dateForType(currentMonday, 'semana'));
+    const fd = formatDate(dateForType(currentMonday, 'finde'));
+    $('pillSemanaDate').textContent = `${sd.dayName} ${sd.day}`;
+    $('pillFindeDate').textContent = `${fd.dayName} ${fd.day}`;
   }
 
   function renderRoleCards() {
-    const roles = getRoles();
+    const roles = getRoles(currentType);
     const week = weekView(currentMonday);
     const typeObj = week[currentType];
     $('roleCardsContainer').innerHTML = roles.map(r => {
@@ -745,7 +757,7 @@
     const week = weekView(currentMonday);
     const rolesObj = week[currentType].roles;
     const counts = {};
-    getRoles().forEach(r => { const id = rolesObj[r.key]; if (id) counts[id] = (counts[id] || 0) + 1; });
+    getRoles(currentType).forEach(r => { const id = rolesObj[r.key]; if (id) counts[id] = (counts[id] || 0) + 1; });
     const dupIds = Object.keys(counts).filter(id => counts[id] > 1);
     const banner = $('conflictBanner');
     if (dupIds.length) {
@@ -760,7 +772,7 @@
   }
 
   function autoAssign() {
-    const roles = getRoles();
+    const roles = getRoles(currentType);
     const week = ensureWeek(currentMonday);
     const typeObj = week[currentType];
     const counts = {};
@@ -832,6 +844,7 @@
     const hasCurrent = Object.values(week[currentType].roles).some(Boolean);
     if (hasCurrent && !confirm('Esto reemplaza las asignaciones actuales de esta reunión por las de la semana pasada. ¿Continuar?')) return;
     week[currentType].roles = Object.assign(blankRoles(), prevWeek[currentType].roles);
+    if (currentType === 'finde') week[currentType].roles.cronometrista = null;
     saveData();
     renderRoleCards();
     renderMonthTable();
@@ -944,7 +957,7 @@
       doc.setTextColor(33, 44, 52);
       doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
       doc.text(`${t === 'finde' ? 'Fin de semana' : 'Entre semana'} — ${dayName} ${day} de ${MESES[new Date(date + 'T00:00:00').getMonth()]}`, 40, y);
-      const body = roles.map(r => {
+      const body = roles.filter(r => t !== 'finde' || r.key !== 'cronometrista').map(r => {
         const p = data.publishers.find(pp => pp.id === week.roles[r.key]);
         return [r.label, p ? p.name : '—'];
       });
@@ -1047,7 +1060,7 @@
     const congName = data.settings.congregationName || 'la congregación';
     const week = weekView(currentMonday)[currentType].roles;
     const lines = [`🏛️ *${congName}*`, `*Asignaciones — ${dayName} ${day} de ${monthKey(date)}*`, ''];
-    getRoles().forEach(r => { const p = data.publishers.find(pp => pp.id === week[r.key]); lines.push(`${r.emoji} *${r.label}:* ${p ? p.name : '—'}`); });
+    getRoles(currentType).forEach(r => { const p = data.publishers.find(pp => pp.id === week[r.key]); lines.push(`${r.emoji} *${r.label}:* ${p ? p.name : '—'}`); });
     lines.push('', 'Si no podés cubrir tu asignación, por favor avisá con anticipación para buscar un reemplazo.');
     $('waModalSub').textContent = `${currentType === 'finde' ? 'Fin de semana' : 'Entre semana'} — ${dayName} ${day}`;
     $('waPreview').value = lines.join('\n');
@@ -1329,8 +1342,8 @@
   }
   $('congNameInput').addEventListener('change', (e) => { data.settings.congregationName = e.target.value.trim() || 'Mi Congregación'; $('congBadge').textContent = data.settings.congregationName; saveData(); });
   $('micCountSelect').addEventListener('change', (e) => { data.settings.micCount = parseInt(e.target.value); saveData(); renderRoleCards(); renderMonthTable(); });
-  $('weekdaySemanaSelect').addEventListener('change', (e) => { data.settings.weekdaySemana = parseInt(e.target.value); saveData(); renderMonthTable(); });
-  $('weekdayFindeSelect').addEventListener('change', (e) => { data.settings.weekdayFinde = parseInt(e.target.value); saveData(); renderMonthTable(); });
+  $('weekdaySemanaSelect').addEventListener('change', (e) => { data.settings.weekdaySemana = parseInt(e.target.value); saveData(); renderMonthTable(); updatePillDates(); });
+  $('weekdayFindeSelect').addEventListener('change', (e) => { data.settings.weekdayFinde = parseInt(e.target.value); saveData(); renderMonthTable(); updatePillDates(); });
 
   function exportBackup() {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
