@@ -154,6 +154,8 @@
   .bar-row { cursor: default; }
   .bar-count { width: 26px; text-align: right; font-size: 11.5px; color: var(--ink-soft); font-weight: 600; flex-shrink: 0; }
   .report-actions { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .free-title { font-size: 13.5px; margin: 22px 0 2px; padding-top: 18px; border-top: 1px solid var(--line); }
+  .free-highlight { font-weight: 700; color: var(--ok); }
   .year-switcher { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
   .year-switcher button { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius-s); width: 28px; height: 28px; font-size: 13px; }
   .year-switcher span { font-family: 'Fraunces', serif; font-size: 15px; }
@@ -509,6 +511,14 @@
         <button type="button" id="reportYearNext">›</button>
       </div>
       <div id="reportBars"></div>
+      <h4 class="free-title">Reuniones libres para escuchar</h4>
+      <p class="hint" style="margin-bottom:10px;">De las reuniones ya pasadas este año: en cuántas no tenía ninguna asignación ni estaba marcado como no disponible.</p>
+      <div class="br-table-wrap">
+        <table class="br-table" id="freeMeetingsTable">
+          <thead><tr><th>Hermano</th><th>Ocupado</th><th>No disponible</th><th>Libre</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
       <div class="report-actions">
         <button class="btn" id="reportCsvBtn">Exportar CSV</button>
         <button class="btn btn-primary" id="reportPdfBtn">Descargar PDF</button>
@@ -1724,33 +1734,77 @@
     });
     return counts;
   }
+  function computeFreeMeetings(year) {
+    const today = new Date().toISOString().slice(0, 10);
+    const result = {};
+    data.publishers.forEach(p => { if (Object.values(p.roles).some(Boolean)) result[p.id] = { total: 0, ocupado: 0, noDisponible: 0, libre: 0 }; });
+    let d = new Date(year, 0, 1);
+    while (d.getDay() !== 1) d.setDate(d.getDate() + 1);
+    while (d.getFullYear() <= year) {
+      if (d.getFullYear() > year) break;
+      const monday = d.toISOString().slice(0, 10);
+      ['semana', 'finde'].forEach(t => {
+        const date = dateForType(monday, t);
+        if (date.slice(0, 4) !== String(year) || date > today) return;
+        const week = weekView(monday)[t];
+        const roles = getRoles(t);
+        Object.keys(result).forEach(pid => {
+          result[pid].total++;
+          const assigned = roles.some(r => week.roles[r.key] === pid);
+          const excluded = week.excluded.includes(pid);
+          if (assigned) result[pid].ocupado++;
+          else if (excluded) result[pid].noDisponible++;
+          else result[pid].libre++;
+        });
+      });
+      d.setDate(d.getDate() + 7);
+      if (d.getFullYear() > year + 1) break; // salvavidas contra loops infinitos
+    }
+    return result;
+  }
+  function renderFreeMeetingsTable() {
+    const free = computeFreeMeetings(reportYear);
+    const tbody = document.querySelector('#freeMeetingsTable tbody');
+    const rows = data.publishers.filter(p => free[p.id] && free[p.id].total > 0)
+      .map(p => ({ name: p.name, ...free[p.id] })).sort((a, b) => a.libre - b.libre);
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="4" class="empty-note">Todavía no hay reuniones pasadas registradas ese año.</td></tr>'; return; }
+    tbody.innerHTML = rows.map(r => `
+      <tr><td>${escapeHtml(r.name)}</td><td>${r.ocupado}</td><td>${r.noDisponible}</td><td class="free-highlight">${r.libre} de ${r.total}</td></tr>
+    `).join('');
+  }
+
   function renderYearlyReport() {
     $('reportYearLabel').textContent = reportYear;
     const counts = computeYearlyCounts(reportYear);
     const rows = data.publishers.map(p => ({ name: p.name, total: counts[p.id] ? counts[p.id].total : 0 }))
       .filter(r => r.total > 0).sort((a, b) => b.total - a.total);
     const wrap = $('reportBars');
-    if (!rows.length) { wrap.innerHTML = '<p class="empty-note">Sin asignaciones registradas ese año.</p>'; return; }
-    const max = rows[0].total;
-    wrap.innerHTML = rows.map((r, i) => `
-      <div class="bar-row" title="${escapeHtml(r.name)}: ${r.total} asignación${r.total === 1 ? '' : 'es'}">
-        <div class="bar-name">${escapeHtml(r.name)}</div>
-        <div class="bar-track"><div class="bar-fill" data-target="${Math.max(6, r.total / max * 100)}" style="width:0%; transition-delay:${i * 30}ms"></div></div>
-        <div class="bar-count">${r.total}</div>
-      </div>`).join('');
-    requestAnimationFrame(() => {
-      wrap.querySelectorAll('.bar-fill').forEach(el => { el.style.width = el.dataset.target + '%'; });
-    });
+    if (!rows.length) { wrap.innerHTML = '<p class="empty-note">Sin asignaciones registradas ese año.</p>'; }
+    else {
+      const max = rows[0].total;
+      wrap.innerHTML = rows.map((r, i) => `
+        <div class="bar-row" title="${escapeHtml(r.name)}: ${r.total} asignación${r.total === 1 ? '' : 'es'}">
+          <div class="bar-name">${escapeHtml(r.name)}</div>
+          <div class="bar-track"><div class="bar-fill" data-target="${Math.max(6, r.total / max * 100)}" style="width:0%; transition-delay:${i * 30}ms"></div></div>
+          <div class="bar-count">${r.total}</div>
+        </div>`).join('');
+      requestAnimationFrame(() => {
+        wrap.querySelectorAll('.bar-fill').forEach(el => { el.style.width = el.dataset.target + '%'; });
+      });
+    }
+    renderFreeMeetingsTable();
   }
   $('reportYearPrev').addEventListener('click', () => { reportYear--; renderYearlyReport(); });
   $('reportYearNext').addEventListener('click', () => { reportYear++; renderYearlyReport(); });
 
   function exportYearlyCsv() {
     const counts = computeYearlyCounts(reportYear);
-    const rows = [['Hermano', 'Sonido', 'Video', 'Micrófonos', 'Plataforma', 'Cronometrista', 'Total']];
+    const free = computeFreeMeetings(reportYear);
+    const rows = [['Hermano', 'Sonido', 'Video', 'Micrófonos', 'Plataforma', 'Cronometrista', 'Total asignaciones', 'Reuniones ocupado', 'No disponible', 'Libre para escuchar']];
     data.publishers.forEach(p => {
       const c = counts[p.id] || { sonido: 0, video: 0, microfono: 0, plataforma: 0, cronometrista: 0, total: 0 };
-      rows.push([p.name, c.sonido, c.video, c.microfono, c.plataforma, c.cronometrista, c.total]);
+      const f = free[p.id] || { ocupado: 0, noDisponible: 0, libre: 0 };
+      rows.push([p.name, c.sonido, c.video, c.microfono, c.plataforma, c.cronometrista, c.total, f.ocupado, f.noDisponible, f.libre]);
     });
     downloadCsv(rows, `reporte-anual-${reportYear}.csv`);
     showToast('CSV exportado');
@@ -1780,6 +1834,21 @@
       body, headStyles: { fillColor: [33, 44, 52], textColor: 255, fontStyle: 'bold' },
       styles: { fontSize: 10, cellPadding: 6 }
     });
+
+    const free = computeFreeMeetings(reportYear);
+    const freeBody = data.publishers.filter(p => free[p.id] && free[p.id].total > 0)
+      .map(p => [p.name, free[p.id].ocupado, free[p.id].noDisponible, `${free[p.id].libre} de ${free[p.id].total}`])
+      .sort((a, b) => a[3].localeCompare(b[3]));
+    if (freeBody.length) {
+      doc.setTextColor(33, 44, 52); doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
+      doc.text('Reuniones libres para escuchar', 40, doc.lastAutoTable.finalY + 26);
+      doc.autoTable({
+        startY: doc.lastAutoTable.finalY + 36, margin: { left: 40, right: 40 }, theme: 'grid',
+        head: [['Hermano', 'Ocupado', 'No disponible', 'Libre']],
+        body: freeBody, headStyles: { fillColor: [33, 44, 52], textColor: 255, fontStyle: 'bold' },
+        styles: { fontSize: 10, cellPadding: 6 }
+      });
+    }
     doc.setFontSize(9); doc.setTextColor(130);
     doc.text(`Generado el ${new Date().toLocaleDateString('es-ES')}`, 40, doc.internal.pageSize.getHeight() - 30);
     doc.save(`reporte-anual-${reportYear}.pdf`);
