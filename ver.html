@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Programa — Salón del Reino</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<meta name="robots" content="noindex, nofollow">
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<style>
+  :root{
+    --bg: #EDEFEF; --surface: #FFFFFF; --ink: #212C34; --ink-soft: #5C6B74; --ink-faint: #93A0A7;
+    --line: #DDE1E2; --accent-gold: #A9822F; --accent-blue: #3E6B8A;
+    --role-mic: #B4633F; --role-plat: #4C7A5E; --role-sonido: #3E6B8A; --role-video: #3F8A80; --role-crono: #7A5C86;
+    --radius-s: 4px; --radius-m: 8px;
+    --shadow-sm: 0 1px 2px rgba(33,44,52,0.05), 0 2px 6px rgba(33,44,52,0.05);
+  }
+  * { box-sizing: border-box; }
+  .hidden { display: none !important; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); font-family: 'Public Sans', -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+  h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 500; letter-spacing: -0.01em; }
+  button { font-family: inherit; cursor: pointer; }
+
+  .topbar { background: var(--ink); color: #fff; padding: 18px 20px 14px; }
+  .topbar-inner { max-width: 560px; margin: 0 auto; }
+  .eyebrow { font-size: 10px; letter-spacing: 0.05em; color: #D8BB82; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; }
+  .cong-title { font-size: 21px; margin: 0 0 4px; }
+  .readonly-tag { display: inline-block; background: rgba(255,255,255,0.12); font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 12px; margin-top: 6px; }
+  .gold-bar { height: 3px; background: var(--accent-gold); }
+
+  .content { max-width: 560px; margin: 0 auto; padding: 18px 18px 60px; }
+
+  .month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .month-nav button { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius-s); width: 34px; height: 34px; font-size: 15px; }
+  .month-nav h2 { font-size: 17px; margin: 0; text-transform: capitalize; }
+
+  .agenda-item { display: flex; gap: 12px; padding: 13px 2px; border-bottom: 1px solid var(--line); }
+  .agenda-item:last-child { border-bottom: none; }
+  .agenda-date { width: 52px; flex-shrink: 0; text-align: center; }
+  .agenda-date .dow { font-size: 9.5px; color: var(--ink-faint); font-weight: 700; text-transform: uppercase; }
+  .agenda-date .num { font-family: 'Fraunces', serif; font-size: 21px; line-height: 1.1; }
+  .agenda-body { flex: 1; min-width: 0; border-left: 3px solid var(--accent-blue); padding-left: 12px; }
+  .agenda-item.finde .agenda-body { border-left-color: var(--accent-gold); }
+  .agenda-type { font-size: 10.5px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.03em; }
+  .agenda-topic { font-size: 12px; font-style: italic; color: var(--ink-soft); margin: 2px 0 8px; }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { display: flex; align-items: center; gap: 5px; background: var(--bg); border-radius: 20px; padding: 4px 10px 4px 5px; font-size: 11.5px; font-weight: 600; }
+  .chip .ic { width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #fff; }
+  .chip.empty { color: var(--ink-faint); font-weight: 400; font-style: italic; background: none; border: 1px dashed var(--line); }
+
+  .empty-note { font-size: 13px; color: var(--ink-faint); font-style: italic; padding: 20px 0; text-align: center; }
+
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 18px; box-shadow: var(--shadow-sm); }
+  .gate { max-width: 360px; margin: 60px auto; padding: 0 20px; text-align: center; }
+  .gate h1 { font-size: 20px; margin: 0 0 6px; }
+  .gate p { font-size: 13px; color: var(--ink-soft); margin: 0 0 18px; }
+  .gate input {
+    width: 100%; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 11px 12px;
+    font-family: inherit; font-size: 14px; text-align: center; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 10px;
+  }
+  .gate button { width: 100%; border: none; background: var(--ink); color: #fff; padding: 11px; border-radius: var(--radius-s); font-size: 14px; font-weight: 600; }
+  .gate .err { color: #A8433A; font-size: 12.5px; margin-top: 10px; }
+
+  .footer-note { text-align: center; font-size: 11px; color: var(--ink-faint); padding: 20px 0 4px; }
+  .live-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #3F7D4F; margin-right: 5px; animation: pulse 1.6s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+</style>
+</head>
+<body>
+
+<div id="gateView" class="gate hidden">
+  <h1>Ver el programa</h1>
+  <p>Ingresá el código que te compartieron para ver las asignaciones de esa congregación.</p>
+  <input type="text" id="gateCodeInput" placeholder="CÓDIGO" autocapitalize="characters" autocomplete="off">
+  <button type="button" id="gateBtn">Ver</button>
+  <p class="err hidden" id="gateErr">No se encontró ninguna congregación con ese código.</p>
+</div>
+
+<div id="mainView" class="hidden">
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="eyebrow">Salón del Reino</div>
+      <h1 class="cong-title" id="congTitle">Congregación</h1>
+      <span class="readonly-tag">Solo lectura</span>
+    </div>
+  </div>
+  <div class="gold-bar"></div>
+  <div class="content">
+    <div class="month-nav">
+      <button type="button" id="prevBtn">‹</button>
+      <h2 id="monthLabel">Mes</h2>
+      <button type="button" id="nextBtn">›</button>
+    </div>
+    <div class="card" id="agendaCard"></div>
+    <p class="footer-note"><span class="live-dot"></span>Se actualiza solo — generado con Asignaciones · Salón del Reino</p>
+  </div>
+</div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyCw014ucHQKqwsVTq1lEKAnZBl_9gAR01I",
+    authDomain: "asignaciones-salon.firebaseapp.com",
+    projectId: "asignaciones-salon",
+    storageBucket: "asignaciones-salon.firebasestorage.app",
+    messagingSenderId: "167010071335",
+    appId: "1:167010071335:web:0aca9b8cac2bbf5fd2ef02"
+  };
+
+  const ROLE_META = {
+    sonido: { label: 'Consola de audio', color: 'var(--role-sonido)' },
+    video: { label: 'Video y Zoom', color: 'var(--role-video)' },
+    mic1: { label: 'Micrófono de pasillo 1', color: 'var(--role-mic)' },
+    mic2: { label: 'Micrófono de pasillo 2', color: 'var(--role-mic)' },
+    mic3: { label: 'Micrófono de pasillo 3', color: 'var(--role-mic)' },
+    plataforma: { label: 'Acomodador de plataforma', color: 'var(--role-plat)' },
+    cronometrista: { label: 'Cronometrista', color: 'var(--role-crono)' }
+  };
+
+  let data = null;
+  let currentMonday = null;
+  const $ = (id) => document.getElementById(id);
+  const escapeHtml = (s) => { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; };
+
+  function mondayOf(iso) {
+    const d = new Date(iso + 'T00:00:00');
+    const day = d.getDay();
+    d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
+    return d.toISOString().slice(0, 10);
+  }
+  function shiftDate(iso, days) { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + days); return d.toISOString().slice(0, 10); }
+  function dateForType(monday, type, settings) {
+    const dow = type === 'semana' ? settings.weekdaySemana : settings.weekdayFinde;
+    const offset = (dow - 1 + 7) % 7;
+    const d = new Date(monday + 'T00:00:00'); d.setDate(d.getDate() + offset);
+    return d.toISOString().slice(0, 10);
+  }
+  function formatDate(iso) {
+    const d = new Date(iso + 'T00:00:00');
+    const dayName = d.toLocaleDateString('es-ES', { weekday: 'long' });
+    return { dayName: dayName.charAt(0).toUpperCase() + dayName.slice(1), day: d.getDate() };
+  }
+  function monthKey(iso) { const d = new Date(iso + 'T00:00:00'); return d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }); }
+  function getRoles(type, micCount) {
+    const keys = ['sonido', 'video'];
+    for (let i = 1; i <= (micCount || 2); i++) keys.push('mic' + i);
+    keys.push('plataforma');
+    if (type !== 'finde') keys.push('cronometrista');
+    return keys.map(k => ({ key: k, ...ROLE_META[k] }));
+  }
+
+  function getCode() {
+    const params = new URLSearchParams(location.search);
+    return (params.get('codigo') || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+  }
+
+  function initFirebase() {
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    return firebase.firestore();
+  }
+
+  function renderMonth() {
+    $('monthLabel').textContent = monthKey(currentMonday);
+    $('congTitle').textContent = (data.settings && data.settings.congregationName) || 'Congregación';
+    const prefix = currentMonday.slice(0, 7);
+    const settings = data.settings || { weekdaySemana: 4, weekdayFinde: 0, micCount: 2 };
+    const rows = [];
+    Object.keys(data.weeks || {}).sort().forEach(monday => {
+      ['semana', 'finde'].forEach(t => {
+        const w = data.weeks[monday][t];
+        if (!w || !w.roles || !Object.values(w.roles).some(Boolean)) return;
+        const date = dateForType(monday, t, settings);
+        if (date.slice(0, 7) !== prefix) return;
+        const { dayName, day } = formatDate(date);
+        rows.push({ date, dayName, day, type: t, roles: w.roles, topic: w.topic || '' });
+      });
+    });
+    rows.sort((a, b) => a.date.localeCompare(b.date));
+
+    if (!rows.length) { $('agendaCard').innerHTML = '<p class="empty-note">Sin asignaciones cargadas este mes.</p>'; return; }
+
+    $('agendaCard').innerHTML = rows.map(row => {
+      const roles = getRoles(row.type, settings.micCount);
+      const chips = roles.map(r => {
+        const pid = row.roles[r.key];
+        const p = pid && (data.publishers || []).find(pp => pp.id === pid);
+        if (p) return `<div class="chip"><span class="ic" style="background:${r.color}"></span>${escapeHtml(p.name)}</div>`;
+        return `<div class="chip empty">${r.label} vacío</div>`;
+      }).join('');
+      return `<div class="agenda-item ${row.type === 'finde' ? 'finde' : ''}">
+        <div class="agenda-date"><div class="dow">${row.dayName.slice(0, 3)}</div><div class="num">${row.day}</div></div>
+        <div class="agenda-body">
+          <div class="agenda-type">${row.type === 'finde' ? 'Fin de semana' : 'Entre semana'}</div>
+          ${row.topic ? `<div class="agenda-topic">${escapeHtml(row.topic)}</div>` : ''}
+          <div class="chip-row">${chips}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function showGateError() {
+    $('gateErr').classList.remove('hidden');
+    $('gateView').classList.remove('hidden');
+    $('mainView').classList.add('hidden');
+  }
+
+  function startViewing(code) {
+    const db = initFirebase();
+    currentMonday = mondayOf(new Date().toISOString().slice(0, 10));
+    db.collection('congregations').doc(code).onSnapshot((snap) => {
+      if (!snap.exists) { showGateError(); return; }
+      data = snap.data() || {};
+      $('gateView').classList.add('hidden');
+      $('mainView').classList.remove('hidden');
+      renderMonth();
+      const url = new URL(location);
+      url.searchParams.set('codigo', code);
+      history.replaceState(null, '', url);
+    }, () => showGateError());
+  }
+
+  $('prevBtn').addEventListener('click', () => { currentMonday = shiftDate(currentMonday, -28); renderMonth(); });
+  $('nextBtn').addEventListener('click', () => { currentMonday = shiftDate(currentMonday, 28); renderMonth(); });
+  $('gateBtn').addEventListener('click', () => {
+    const code = $('gateCodeInput').value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (!code) return;
+    $('gateErr').classList.add('hidden');
+    startViewing(code);
+  });
+  $('gateCodeInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('gateBtn').click(); });
+
+  const codeFromUrl = getCode();
+  if (codeFromUrl) { startViewing(codeFromUrl); }
+  else { $('gateView').classList.remove('hidden'); }
+</script>
+
+</body>
+</html>

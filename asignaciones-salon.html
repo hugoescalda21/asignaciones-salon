@@ -499,6 +499,7 @@
           <button type="button" data-share="wa">WhatsApp</button>
           <button type="button" data-share="pdf">Descargar PDF</button>
           <button type="button" data-share="pdfmes">PDF del mes completo</button>
+          <button type="button" data-share="viewlink">Copiar link para ver (solo lectura)</button>
           <button type="button" data-share="print">Imprimir</button>
         </div>
       </div>
@@ -1296,6 +1297,19 @@
   }
   function renderMonthTable() { $('monthTableWrap').innerHTML = monthTableHTML(); }
 
+  async function copyViewLink() {
+    if (!accessCode) { showToast('Conectate con un código primero (Ajustes → Sincronización)'); return; }
+    const url = new URL('ver.html', location.href);
+    url.searchParams.set('codigo', accessCode);
+    const link = url.toString();
+    if (navigator.share) {
+      try { await navigator.share({ title: 'Programa — Salón del Reino', text: 'Mirá el programa de asignaciones (solo lectura):', url: link }); return; }
+      catch (e) { /* el usuario canceló el panel de compartir; seguimos copiando */ }
+    }
+    try { await navigator.clipboard.writeText(link); showToast('Link copiado al portapapeles'); }
+    catch (e) { prompt('Copiá este link:', link); }
+  }
+
   async function downloadMonthPdf() {
     if (!window.jspdf) { showToast('No se pudo cargar el generador de PDF (revisá tu conexión)'); return; }
     const rows = getMonthRows();
@@ -1656,6 +1670,7 @@
     if (action === 'wa') openWaModal();
     else if (action === 'pdf') downloadWeekPdf();
     else if (action === 'pdfmes') downloadMonthPdf();
+    else if (action === 'viewlink') copyViewLink();
     else if (action === 'print') { buildPrintArea(); requestAnimationFrame(() => window.print()); }
   }));
 
