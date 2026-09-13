@@ -173,6 +173,11 @@
   .cal-legend .bar { width: 12px; height: 3px; border-radius: 2px; }
 
   /* Agenda mensual (reemplaza la tabla) */
+  .month-heading {
+    font-family: 'Fraunces', serif; font-size: 13px; font-weight: 600; color: var(--accent-gold);
+    text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 8px; padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+  }
   .agenda-item { display: flex; gap: 12px; padding: 12px 2px; border-bottom: 1px solid var(--line); }
   .agenda-item:last-child { border-bottom: none; }
   .agenda-date { width: 50px; flex-shrink: 0; text-align: center; }
@@ -1113,11 +1118,11 @@
     const prefix = currentMonday.slice(0, 7);
     const rows = [];
     Object.keys(data.weeks).sort().forEach(monday => {
-      if (monday.slice(0, 7) !== prefix) return;
       ['semana', 'finde'].forEach(t => {
         const w = data.weeks[monday][t];
         if (!w || !Object.values(w.roles).some(Boolean)) return;
         const date = dateForType(monday, t);
+        if (date.slice(0, 7) !== prefix) return; // agrupar por la fecha real de la reunión, no por el lunes
         const { dayName, day } = formatDate(date);
         rows.push({ date, label: `${dayName} ${day}`, dayName, day, type: t, roles: w.roles, topic: w.topic || '' });
       });
@@ -1127,8 +1132,9 @@
   }
   function monthTableHTML() {
     const rows = getMonthRows();
-    if (!rows.length) return '<p class="empty-note">Todavía no hay asignaciones cargadas este mes.</p>';
-    return rows.map(row => {
+    if (!rows.length) return `<div class="month-heading">${monthKey(currentMonday)}</div><p class="empty-note">Todavía no hay asignaciones cargadas este mes.</p>`;
+    let html = `<div class="month-heading">${monthKey(currentMonday)}</div>`;
+    html += rows.map(row => {
       const roles = getRoles(row.type);
       const chips = roles.map(r => {
         const p = data.publishers.find(pp => pp.id === row.roles[r.key]);
@@ -1144,6 +1150,7 @@
         </div>
       </div>`;
     }).join('');
+    return html;
   }
   function renderMonthTable() { $('monthTableWrap').innerHTML = monthTableHTML(); }
 
