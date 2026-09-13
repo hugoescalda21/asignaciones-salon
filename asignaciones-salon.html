@@ -17,6 +17,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 <style>
   :root{
     --shadow-sm: 0 1px 2px rgba(33,44,52,0.05), 0 2px 6px rgba(33,44,52,0.05);
@@ -319,6 +321,7 @@
   .settings-card h3 { font-size: 14.5px; margin: 0 0 4px; }
   .settings-card .hint { font-size: 12px; color: var(--ink-soft); margin: 0 0 14px; }
   .persist-badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 12.5px; font-weight: 600; }
+  .sync-code-display { font-family: monospace; font-size: 15px; font-weight: 700; letter-spacing: 0.06em; background: var(--bg); padding: 8px 12px; border-radius: 6px; display: inline-block; margin-top: 8px; }
   .persist-badge.ok { background: #E4EFE6; color: var(--ok); }
   .persist-badge.warn { background: var(--warn-bg); color: #7A5A0E; }
   .persist-badge.unknown { background: var(--bg); color: var(--ink-soft); }
@@ -568,6 +571,15 @@
 
   <!-- ---------------- Ajustes ---------------- -->
   <section class="tab-panel hidden" id="panel-ajustes">
+    <details class="settings-card" open>
+      <summary><h3>Sincronización entre dispositivos</h3><span class="chev">›</span></summary>
+      <p class="hint">El mismo código conecta tu celular, tablet y PC con el mismo programa.</p>
+      <div id="syncStatus"></div>
+      <div class="settings-actions" style="margin-top:12px;">
+        <button class="btn" id="changeCodeBtn">Cambiar código</button>
+      </div>
+    </details>
+
     <details class="settings-card">
       <summary><h3>Apariencia</h3><span class="chev">›</span></summary>
       <p class="hint">"Automático" sigue la configuración de tu celular o computadora.</p>
@@ -655,6 +667,23 @@
   <button class="tab-btn" data-tab="hermanos"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20v-1.2a5.8 5.8 0 0 1 11.6 0V20"/><circle cx="17" cy="9" r="2.6"/><path d="M16 13.2c2.4.4 4 1.9 4 4V20h-3.2"/></svg><br>Hermanos</button>
   <button class="tab-btn" data-tab="ajustes"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="6" r="2"/><line x1="11" y1="6" x2="20" y2="6"/><line x1="4" y1="6" x2="7" y2="6"/><circle cx="15" cy="12" r="2"/><line x1="17" y1="12" x2="20" y2="12"/><line x1="4" y1="12" x2="13" y2="12"/><circle cx="9" cy="18" r="2"/><line x1="11" y1="18" x2="20" y2="18"/><line x1="4" y1="18" x2="7" y2="18"/></svg><br>Ajustes</button>
 </nav>
+
+<!-- Modal: código de sincronización -->
+<div class="modal-overlay hidden" id="codeModalOverlay">
+  <div class="modal">
+    <h3>Sincronizar esta app</h3>
+    <p class="modal-sub">Todos los dispositivos que usen el mismo código ven y editan el mismo programa, actualizado en el momento. Guardalo para conectar tu celular, tablet o PC.</p>
+    <div class="field">
+      <label>Código de la congregación</label>
+      <input type="text" id="accessCodeInput" placeholder="Ej: SALONCENTRAL26" autocapitalize="characters" autocomplete="off">
+    </div>
+    <p class="hint" id="codeStatusMsg" style="margin-bottom:10px;"></p>
+    <div class="modal-footer">
+      <button type="button" class="btn" id="genCodeBtn">Generar uno nuevo</button>
+      <button type="button" class="btn btn-primary" id="connectCodeBtn">Conectar</button>
+    </div>
+  </div>
+</div>
 
 <!-- Modal: bienvenida -->
 <div class="modal-overlay hidden" id="onboardingOverlay">
@@ -867,10 +896,12 @@
     saveData();
     initUiFromData();
     renderAll();
-    maybeShowOnboarding();
     checkBackupReminder();
     checkMeetingReminder();
     updateOnlineStatus();
+    await initCloudSync();
+    // El modal de código tiene prioridad; recién si no hace falta mostrarlo, se ofrece la bienvenida.
+    if ($('codeModalOverlay').classList.contains('hidden')) maybeShowOnboarding();
   }
   async function saveData() {
     try {
@@ -879,7 +910,118 @@
       console.error('No se pudo guardar', e);
       showSaveErrorBanner();
     }
+    if (fbDb && accessCode && !applyingRemoteUpdate) {
+      try {
+        await fbDb.collection('congregations').doc(accessCode).set(data);
+        setSyncStatus('ok');
+      } catch (e) {
+        console.error('No se pudo sincronizar con la nube', e);
+        setSyncStatus('error');
+      }
+    }
   }
+
+  /* ---------- Sincronización entre dispositivos (Firebase) ---------- */
+  const firebaseConfig = {
+    apiKey: "AIzaSyCw014ucHQKqwsVTq1lEKAnZBl_9gAR01I",
+    authDomain: "asignaciones-salon.firebaseapp.com",
+    projectId: "asignaciones-salon",
+    storageBucket: "asignaciones-salon.firebasestorage.app",
+    messagingSenderId: "167010071335",
+    appId: "1:167010071335:web:0aca9b8cac2bbf5fd2ef02"
+  };
+  const ACCESS_CODE_KEY = 'kh-access-code';
+  let fbDb = null;
+  let fbUnsubscribe = null;
+  let accessCode = null;
+  let applyingRemoteUpdate = false; // evita que un cambio recibido de la nube dispare otro guardado
+
+  function normalizeCode(s) { return (s || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+  function randomCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let out = '';
+    for (let i = 0; i < 8; i++) out += chars[Math.floor(Math.random() * chars.length)];
+    return out;
+  }
+
+  function initFirebase() {
+    if (fbDb) return true;
+    try {
+      if (!window.firebase || !firebase.initializeApp) return false;
+      if (!firebase.apps || !firebase.apps.length) firebase.initializeApp(firebaseConfig);
+      fbDb = firebase.firestore();
+      try { fbDb.enablePersistence({ synchronizeTabs: true }).catch(() => { /* ya habilitado en otra pestaña, ignorar */ }); } catch (e) { /* no disponible en este navegador */ }
+      return true;
+    } catch (e) { console.error('No se pudo iniciar Firebase', e); return false; }
+  }
+
+  function setSyncStatus(kind, msg) {
+    const box = $('syncStatus');
+    if (!box) return;
+    if (kind === 'ok') {
+      box.innerHTML = `<span class="persist-badge ok">✓ Sincronizado</span><div class="sync-code-display">${escapeHtml(accessCode || '')}</div>`;
+    } else if (kind === 'connecting') {
+      box.innerHTML = '<span class="persist-badge unknown">Conectando…</span>';
+    } else if (kind === 'error') {
+      box.innerHTML = `<span class="persist-badge warn">⚠ Sin conexión con la nube — usando la última copia guardada en este dispositivo.</span><div class="sync-code-display">${escapeHtml(accessCode || '')}</div>`;
+    } else {
+      box.innerHTML = '<span class="persist-badge unknown">Sin sincronizar — solo en este dispositivo.</span>';
+    }
+  }
+
+  async function startSync(code) {
+    accessCode = code;
+    if (!initFirebase()) { setSyncStatus('error'); return; }
+    setSyncStatus('connecting');
+    if (fbUnsubscribe) { fbUnsubscribe(); fbUnsubscribe = null; }
+    const docRef = fbDb.collection('congregations').doc(code);
+    try {
+      const snap = await docRef.get();
+      if (!snap.exists) await docRef.set(data); // primera vez: sube lo que ya había en este dispositivo
+    } catch (e) { console.error(e); setSyncStatus('error'); }
+    fbUnsubscribe = docRef.onSnapshot((snap) => {
+      if (!snap.exists) return;
+      applyingRemoteUpdate = true;
+      data = migrate(snap.data());
+      window.data = data;
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) { /* sin acceso */ }
+      initUiFromData();
+      renderAll();
+      applyingRemoteUpdate = false;
+      setSyncStatus('ok');
+    }, (err) => {
+      console.error('Error de sincronización', err);
+      setSyncStatus('error');
+    });
+  }
+
+  async function connectWithCode(code) {
+    code = normalizeCode(code);
+    if (!code) { showToast('Ingresá un código'); return; }
+    try { localStorage.setItem(ACCESS_CODE_KEY, code); } catch (e) { /* sin acceso */ }
+    $('codeModalOverlay').classList.add('hidden');
+    await startSync(code);
+    showToast('Conectado');
+  }
+
+  async function initCloudSync() {
+    let saved = null;
+    try { saved = localStorage.getItem(ACCESS_CODE_KEY); } catch (e) { /* sin acceso */ }
+    if (saved) {
+      await startSync(saved);
+    } else {
+      setSyncStatus('none');
+      $('accessCodeInput').value = '';
+      $('codeModalOverlay').classList.remove('hidden');
+    }
+  }
+  $('genCodeBtn').addEventListener('click', () => { $('accessCodeInput').value = randomCode(); });
+  $('connectCodeBtn').addEventListener('click', () => connectWithCode($('accessCodeInput').value));
+  $('changeCodeBtn').addEventListener('click', () => {
+    $('accessCodeInput').value = accessCode || '';
+    $('codeModalOverlay').classList.remove('hidden');
+  });
+
   function showSaveErrorBanner() {
     if (document.getElementById('saveErrorBanner')) return;
     const bar = document.createElement('div');
