@@ -157,18 +157,35 @@
   .cal-head h4 { font-size: 14px; margin: 0; text-transform: capitalize; font-family: 'Fraunces', serif; font-weight: 500; }
   .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 10px; }
   .cal-dow { font-size: 10px; color: var(--ink-faint); text-align: center; font-weight: 700; padding-bottom: 2px; }
-  .cal-day { aspect-ratio: 1; border-radius: var(--radius-s); background: var(--bg); font-size: 11px; padding: 3px 5px; position: relative; color: var(--ink-soft); cursor: pointer; }
-  .cal-day.empty { background: none; cursor: default; }
-  .cal-day .n { font-weight: 600; }
-  .cal-day.has-meeting { background: var(--surface); border: 1px solid var(--line); }
-  .cal-day.has-meeting:hover { border-color: var(--accent-gold); }
+  .cal-day { min-height: 46px; border-radius: var(--radius-s); background: var(--bg); font-size: 11px; padding: 4px 5px; position: relative; color: var(--ink-soft); cursor: pointer; border-top: 3px solid transparent; }
+  .cal-day.empty { background: none; cursor: default; border-top-color: transparent; }
+  .cal-day .n { font-weight: 600; display: block; }
+  .cal-day.has-meeting { background: var(--surface); border: 1px solid var(--line); border-top-width: 3px; }
+  .cal-day.has-meeting.semana-day { border-top-color: var(--accent-blue); }
+  .cal-day.has-meeting.finde-day { border-top-color: var(--accent-gold); }
+  .cal-day.has-meeting:hover { filter: brightness(0.97); }
   .cal-day.today { outline: 2px solid var(--accent-gold); outline-offset: -1px; }
-  .cal-dot { width: 5px; height: 5px; border-radius: 50%; position: absolute; bottom: 4px; }
-  .cal-dot.semana { left: 5px; background: var(--accent-blue); }
-  .cal-dot.finde { left: 13px; background: var(--accent-gold); }
-  .cal-legend { display: flex; gap: 14px; font-size: 11px; color: var(--ink-soft); }
+  .cal-dotrow { display: flex; flex-wrap: wrap; gap: 2px; margin-top: 3px; }
+  .cal-role-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+  .cal-legend { display: flex; flex-wrap: wrap; gap: 10px 14px; font-size: 10.5px; color: var(--ink-soft); margin-top: 4px; }
   .cal-legend span { display: flex; align-items: center; gap: 5px; }
   .cal-legend .dot { width: 7px; height: 7px; border-radius: 50%; }
+  .cal-legend .bar { width: 12px; height: 3px; border-radius: 2px; }
+
+  /* Agenda mensual (reemplaza la tabla) */
+  .agenda-item { display: flex; gap: 12px; padding: 12px 2px; border-bottom: 1px solid var(--line); }
+  .agenda-item:last-child { border-bottom: none; }
+  .agenda-date { width: 50px; flex-shrink: 0; text-align: center; }
+  .agenda-date .dow { font-size: 9px; color: var(--ink-faint); font-weight: 700; text-transform: uppercase; }
+  .agenda-date .num { font-family: 'Fraunces', serif; font-size: 20px; line-height: 1.1; }
+  .agenda-body { flex: 1; min-width: 0; border-left: 3px solid var(--accent-blue); padding-left: 12px; }
+  .agenda-item.finde .agenda-body { border-left-color: var(--accent-gold); }
+  .agenda-type { font-size: 10px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.03em; }
+  .agenda-topic { font-size: 11.5px; font-style: italic; color: var(--ink-soft); margin: 2px 0 7px; }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { display: flex; align-items: center; gap: 5px; background: var(--bg); border-radius: 20px; padding: 4px 10px 4px 5px; font-size: 11px; font-weight: 600; }
+  .chip .ic { width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #fff; }
+  .chip.empty { color: var(--ink-faint); font-weight: 400; font-style: italic; background: none; border: 1px dashed var(--line); }
 
   /* Reporte anual */
   .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
@@ -1036,6 +1053,7 @@
     updateCompletenessBadge(getRoles(currentType), weekView(currentMonday)[currentType]);
     checkConflicts();
     renderMonthTable();
+    renderMonthCalendar();
     showToast('Asignación actualizada');
   }
 
@@ -1087,6 +1105,7 @@
     saveData();
     renderRoleCards();
     renderMonthTable();
+    renderMonthCalendar();
     showToast('Auto-asignación completada');
   }
 
@@ -1100,7 +1119,7 @@
         if (!w || !Object.values(w.roles).some(Boolean)) return;
         const date = dateForType(monday, t);
         const { dayName, day } = formatDate(date);
-        rows.push({ date, label: `${dayName} ${day}`, type: t, roles: w.roles });
+        rows.push({ date, label: `${dayName} ${day}`, dayName, day, type: t, roles: w.roles, topic: w.topic || '' });
       });
     });
     rows.sort((a, b) => a.date.localeCompare(b.date));
@@ -1109,13 +1128,22 @@
   function monthTableHTML() {
     const rows = getMonthRows();
     if (!rows.length) return '<p class="empty-note">Todavía no hay asignaciones cargadas este mes.</p>';
-    const roles = getRoles();
-    let html = '<table class="month-table"><thead><tr><th>Fecha</th><th>Tipo</th>' + roles.map(r => `<th>${r.label}</th>`).join('') + '</tr></thead><tbody>';
-    rows.forEach(row => {
-      html += `<tr><td>${row.label}</td><td>${row.type === 'finde' ? 'Fin de semana' : 'Entre semana'}</td>` +
-        roles.map(r => { const p = data.publishers.find(pp => pp.id === row.roles[r.key]); return `<td>${p ? escapeHtml(p.name) : '—'}</td>`; }).join('') + '</tr>';
-    });
-    return html + '</tbody></table>';
+    return rows.map(row => {
+      const roles = getRoles(row.type);
+      const chips = roles.map(r => {
+        const p = data.publishers.find(pp => pp.id === row.roles[r.key]);
+        if (p) return `<div class="chip"><span class="ic" style="background:${r.color}">${svgIcon(r.icon, 9)}</span>${escapeHtml(p.name)}</div>`;
+        return `<div class="chip empty">${r.label} vacío</div>`;
+      }).join('');
+      return `<div class="agenda-item ${row.type === 'finde' ? 'finde' : ''}">
+        <div class="agenda-date"><div class="dow">${row.dayName.slice(0, 3)}</div><div class="num">${row.day}</div></div>
+        <div class="agenda-body">
+          <div class="agenda-type">${row.type === 'finde' ? 'Fin de semana' : 'Entre semana'}</div>
+          ${row.topic ? `<div class="agenda-topic">${escapeHtml(row.topic)}</div>` : ''}
+          <div class="chip-row">${chips}</div>
+        </div>
+      </div>`;
+    }).join('');
   }
   function renderMonthTable() { $('monthTableWrap').innerHTML = monthTableHTML(); }
 
@@ -1179,10 +1207,17 @@
       const isSemana = dow === data.settings.weekdaySemana;
       const isFinde = dow === data.settings.weekdayFinde;
       const isToday = dateIso === todayIso;
-      cells += `<div class="cal-day ${(isSemana || isFinde) ? 'has-meeting' : ''} ${isToday ? 'today' : ''}" data-date="${dateIso}">
-        <span class="n">${d}</span>
-        ${isSemana ? '<span class="cal-dot semana"></span>' : ''}
-        ${isFinde ? '<span class="cal-dot finde"></span>' : ''}
+      let dotsHtml = '';
+      let typeClass = '';
+      if (isSemana || isFinde) {
+        const type = isFinde ? 'finde' : 'semana';
+        typeClass = isFinde ? 'finde-day' : 'semana-day';
+        const week = weekView(mondayOf(dateIso))[type];
+        const filled = getRoles(type).filter(r => week.roles[r.key]);
+        if (filled.length) dotsHtml = '<div class="cal-dotrow">' + filled.map(r => `<span class="cal-role-dot" style="background:${r.color}"></span>`).join('') + '</div>';
+      }
+      cells += `<div class="cal-day ${(isSemana || isFinde) ? 'has-meeting' : ''} ${typeClass} ${isToday ? 'today' : ''}" data-date="${dateIso}">
+        <span class="n">${d}</span>${dotsHtml}
       </div>`;
     }
     $('calendarWrap').innerHTML = `
@@ -1192,8 +1227,13 @@
         ${cells}
       </div>
       <div class="cal-legend">
-        <span><span class="dot" style="background:var(--accent-blue)"></span>Entre semana</span>
-        <span><span class="dot" style="background:var(--accent-gold)"></span>Fin de semana</span>
+        <span><span class="bar" style="background:var(--accent-blue)"></span>Entre semana</span>
+        <span><span class="bar" style="background:var(--accent-gold)"></span>Fin de semana</span>
+        <span><span class="dot" style="background:var(--role-sonido)"></span>Audio</span>
+        <span><span class="dot" style="background:var(--role-video)"></span>Video</span>
+        <span><span class="dot" style="background:var(--role-mic)"></span>Micrófonos</span>
+        <span><span class="dot" style="background:var(--role-plat)"></span>Plataforma</span>
+        <span><span class="dot" style="background:var(--role-crono)"></span>Cronometrista</span>
       </div>`;
     $('calendarWrap').querySelectorAll('[data-date]').forEach(el => el.addEventListener('click', () => {
       const date = el.dataset.date;
@@ -1254,6 +1294,7 @@
     saveData();
     renderRoleCards();
     renderMonthTable();
+    renderMonthCalendar();
     showToast('Asignaciones copiadas de la semana anterior');
   }
   $('copyPrevBtn').addEventListener('click', copyPreviousWeek);
@@ -1285,6 +1326,7 @@
       saveData();
       renderRoleCards();
       renderMonthTable();
+      renderMonthCalendar();
     }));
     $('excludeSearch').value = '';
     $('excludeList').querySelectorAll('[data-name]').forEach(el => el.classList.remove('hidden'));
@@ -1856,7 +1898,7 @@
     } catch (e) { showToast('No se pudo completar el pedido'); }
   });
   $('congNameInput').addEventListener('change', (e) => { data.settings.congregationName = e.target.value.trim() || 'Mi Congregación'; $('congBadge').textContent = data.settings.congregationName; saveData(); });
-  $('micCountSelect').addEventListener('change', (e) => { data.settings.micCount = parseInt(e.target.value); saveData(); renderRoleCards(); renderMonthTable(); });
+  $('micCountSelect').addEventListener('change', (e) => { data.settings.micCount = parseInt(e.target.value); saveData(); renderRoleCards(); renderMonthTable(); renderMonthCalendar(); });
   $('weekdaySemanaSelect').addEventListener('change', (e) => { data.settings.weekdaySemana = parseInt(e.target.value); saveData(); renderMonthTable(); renderMonthCalendar(); updatePillDates(); });
   $('weekdayFindeSelect').addEventListener('change', (e) => { data.settings.weekdayFinde = parseInt(e.target.value); saveData(); renderMonthTable(); renderMonthCalendar(); updatePillDates(); });
 
@@ -2140,7 +2182,7 @@
     showToast('Datos de ejemplo cargados');
   });
 
-  function renderAll() { renderRoleCards(); renderMonthTable(); renderBrothersTable(); }
+  function renderAll() { renderRoleCards(); renderMonthTable(); renderMonthCalendar(); renderBrothersTable(); }
 
   // Le pide al navegador que NO borre los datos de este sitio bajo presión de espacio
   // o por "bajo compromiso" — sin esto, Chrome puede limpiarlos solo en algunos perfiles.
