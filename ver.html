@@ -110,14 +110,25 @@
   };
 
   const ROLE_META = {
-    sonido: { label: 'Consola de audio', color: 'var(--role-sonido)' },
-    video: { label: 'Video y Zoom', color: 'var(--role-video)' },
-    mic1: { label: 'Micrófono de pasillo 1', color: 'var(--role-mic)' },
-    mic2: { label: 'Micrófono de pasillo 2', color: 'var(--role-mic)' },
-    mic3: { label: 'Micrófono de pasillo 3', color: 'var(--role-mic)' },
-    plataforma: { label: 'Acomodador de plataforma', color: 'var(--role-plat)' },
-    cronometrista: { label: 'Cronometrista', color: 'var(--role-crono)' }
+    sonido: { label: 'Consola de audio', color: 'var(--role-sonido)', icon: 'sonido' },
+    video: { label: 'Video y Zoom', color: 'var(--role-video)', icon: 'video' },
+    mic1: { label: 'Micrófono de pasillo 1', color: 'var(--role-mic)', icon: 'mic' },
+    mic2: { label: 'Micrófono de pasillo 2', color: 'var(--role-mic)', icon: 'mic' },
+    mic3: { label: 'Micrófono de pasillo 3', color: 'var(--role-mic)', icon: 'mic' },
+    plataforma: { label: 'Acomodador de plataforma', color: 'var(--role-plat)', icon: 'plataforma' },
+    cronometrista: { label: 'Cronometrista', color: 'var(--role-crono)', icon: 'cronometrista' }
   };
+  const ICON_PATHS = {
+    sonido: '<path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="2" y="14" width="5" height="7" rx="1.5"/><rect x="17" y="14" width="5" height="7" rx="1.5"/>',
+    video: '<rect x="2" y="5" width="14" height="14" rx="2"/><path d="M16 10l6-4v12l-6-4"/>',
+    mic: '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/>',
+    plataforma: '<circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',
+    cronometrista: '<circle cx="12" cy="13" r="8"/><line x1="12" y1="13" x2="12" y2="9"/><line x1="12" y1="13" x2="15" y2="14"/><line x1="9" y1="2" x2="15" y2="2"/><line x1="12" y1="2" x2="12" y2="5"/>'
+  };
+  function svgIcon(name, size) {
+    size = size || 11;
+    return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[name] || ''}</svg>`;
+  }
 
   let data = null;
   let currentMonday = null;
@@ -186,7 +197,7 @@
       const chips = roles.map(r => {
         const pid = row.roles[r.key];
         const p = pid && (data.publishers || []).find(pp => pp.id === pid);
-        if (p) return `<div class="chip"><span class="ic" style="background:${r.color}"></span>${escapeHtml(p.name)}</div>`;
+        if (p) return `<div class="chip"><span class="ic" style="background:${r.color}">${svgIcon(r.icon, 10)}</span>${escapeHtml(p.name)}</div>`;
         return `<div class="chip empty">${r.label} vacío</div>`;
       }).join('');
       return `<div class="agenda-item ${row.type === 'finde' ? 'finde' : ''}">
