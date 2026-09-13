@@ -37,6 +37,18 @@
   .month-nav button { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius-s); width: 34px; height: 34px; font-size: 15px; }
   .month-nav h2 { font-size: 17px; margin: 0; text-transform: capitalize; }
 
+  .search-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .search-toggle { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius-s); width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; color: var(--ink-soft); flex-shrink: 0; }
+  .search-input { flex: 1; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 8px 11px; font-family: inherit; font-size: 13.5px; }
+  .search-clear { border: none; background: none; color: var(--ink-faint); font-size: 15px; padding: 6px; flex-shrink: 0; }
+  .search-heading { font-size: 12.5px; color: var(--ink-soft); margin: 0 0 12px; }
+  .search-heading strong { color: var(--ink); }
+  .search-month-heading {
+    font-family: 'Fraunces', serif; font-size: 12px; font-weight: 600; color: var(--accent-gold);
+    text-transform: uppercase; letter-spacing: 0.04em; margin: 16px 0 6px; padding-bottom: 6px; border-bottom: 1px solid var(--line);
+  }
+  .search-month-heading:first-of-type { margin-top: 0; }
+
   .agenda-item { display: flex; gap: 12px; padding: 13px 2px; border-bottom: 1px solid var(--line); }
   .agenda-item:last-child { border-bottom: none; }
   .agenda-date { width: 52px; flex-shrink: 0; text-align: center; }
@@ -89,7 +101,14 @@
   </div>
   <div class="gold-bar"></div>
   <div class="content">
-    <div class="month-nav">
+    <div class="search-row">
+      <button type="button" class="search-toggle" id="searchToggleBtn" aria-label="Buscar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.2" y2="16.2"/></svg>
+      </button>
+      <input type="text" id="searchInput" class="search-input hidden" placeholder="Buscar por nombre… (próximas asignaciones)">
+      <button type="button" class="search-clear hidden" id="searchClearBtn" aria-label="Cerrar búsqueda">✕</button>
+    </div>
+    <div class="month-nav" id="monthNav">
       <button type="button" id="prevBtn">‹</button>
       <h2 id="monthLabel">Mes</h2>
       <button type="button" id="nextBtn">›</button>
@@ -211,6 +230,83 @@
     }).join('');
   }
 
+  function computeSearchResults(query) {
+    const q = query.trim().toLowerCase();
+    if (!q) return null;
+    const settings = data.settings || { weekdaySemana: 4, weekdayFinde: 0, micCount: 2 };
+    const matchedIds = new Set((data.publishers || []).filter(p => p.name.toLowerCase().includes(q)).map(p => p.id));
+    if (!matchedIds.size) return [];
+    const today = new Date().toISOString().slice(0, 10);
+    const rows = [];
+    Object.keys(data.weeks || {}).sort().forEach(monday => {
+      ['semana', 'finde'].forEach(t => {
+        const w = data.weeks[monday][t];
+        if (!w || !w.roles) return;
+        const date = dateForType(monday, t, settings);
+        if (date < today) return;
+        const roles = getRoles(t, settings.micCount);
+        const matches = roles.filter(r => matchedIds.has(w.roles[r.key]));
+        if (!matches.length) return;
+        const { dayName, day } = formatDate(date);
+        const names = matches.map(r => {
+          const p = data.publishers.find(pp => pp.id === w.roles[r.key]);
+          return { role: r, name: p ? p.name : '' };
+        });
+        rows.push({ date, dayName, day, type: t, names, topic: w.topic || '' });
+      });
+    });
+    rows.sort((a, b) => a.date.localeCompare(b.date));
+    return rows;
+  }
+
+  function renderSearchResults(query) {
+    const rows = computeSearchResults(query);
+    if (rows === null) return;
+    $('monthLabel').textContent = 'Búsqueda';
+    if (!rows.length) {
+      $('agendaCard').innerHTML = `<p class="search-heading">Próximas asignaciones para <strong>"${escapeHtml(query)}"</strong></p><p class="empty-note">No se encontraron próximas asignaciones.</p>`;
+      return;
+    }
+    let lastMonth = '';
+    let html = `<p class="search-heading">Próximas asignaciones para <strong>"${escapeHtml(query)}"</strong></p>`;
+    rows.forEach(row => {
+      const mk = monthKey(row.date);
+      if (mk !== lastMonth) { html += `<div class="search-month-heading">${mk}</div>`; lastMonth = mk; }
+      const chips = row.names.map(n => `<div class="chip"><span class="ic" style="background:${n.role.color}">${svgIcon(n.role.icon, 10)}</span>${n.role.label}: ${escapeHtml(n.name)}</div>`).join('');
+      html += `<div class="agenda-item ${row.type === 'finde' ? 'finde' : ''}">
+        <div class="agenda-date"><div class="dow">${row.dayName.slice(0, 3)}</div><div class="num">${row.day}</div></div>
+        <div class="agenda-body">
+          <div class="agenda-type">${row.type === 'finde' ? 'Fin de semana' : 'Entre semana'}</div>
+          ${row.topic ? `<div class="agenda-topic">${escapeHtml(row.topic)}</div>` : ''}
+          <div class="chip-row">${chips}</div>
+        </div>
+      </div>`;
+    });
+    $('agendaCard').innerHTML = html;
+  }
+
+  function renderCurrent() {
+    const q = $('searchInput').value;
+    if (q && q.trim()) renderSearchResults(q); else renderMonth();
+  }
+
+  $('searchToggleBtn').addEventListener('click', () => {
+    const showing = $('searchInput').classList.toggle('hidden') === false;
+    $('searchClearBtn').classList.toggle('hidden', !showing);
+    if (showing) { $('searchInput').focus(); }
+    else { $('searchInput').value = ''; $('monthNav').classList.remove('hidden'); renderMonth(); }
+  });
+  $('searchClearBtn').addEventListener('click', () => {
+    $('searchInput').value = ''; $('searchInput').classList.add('hidden'); $('searchClearBtn').classList.add('hidden');
+    $('monthNav').classList.remove('hidden'); renderMonth();
+  });
+  $('searchInput').addEventListener('input', (e) => {
+    const q = e.target.value;
+    if (!q.trim()) { $('monthNav').classList.remove('hidden'); renderMonth(); return; }
+    $('monthNav').classList.add('hidden');
+    renderSearchResults(q);
+  });
+
   function showGateError() {
     $('gateErr').classList.remove('hidden');
     $('gateView').classList.remove('hidden');
@@ -225,7 +321,7 @@
       data = snap.data() || {};
       $('gateView').classList.add('hidden');
       $('mainView').classList.remove('hidden');
-      renderMonth();
+      renderCurrent();
       const url = new URL(location);
       url.searchParams.set('codigo', code);
       history.replaceState(null, '', url);
