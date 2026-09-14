@@ -39,6 +39,7 @@
     --role-crono: #7A5C86;
     --role-usher: #7A8C63;
     --danger: #A8433A;
+    --danger-bg: #FBECEA;
     --ok: #3F7D4F;
     --ok-bg: #EAF4EC;
     --danger-bg: #FBEDEC;
@@ -244,13 +245,25 @@
     background: var(--warn-bg); color: #7A5A0E; border: 1px solid #E3C77A; border-radius: var(--radius-s);
     padding: 10px 14px; font-size: 13px; font-weight: 600; margin-bottom: 16px;
   }
+  .conflict-banner.danger { background: var(--danger-bg); color: var(--danger); border-color: rgba(168,67,58,0.35); }
+  .cb-suggest-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-top: 1px solid rgba(168,67,58,0.18); font-size: 12.5px; font-weight: 500; }
+  .cb-suggest-row:first-of-type { border-top: none; margin-top: 6px; }
+  .cb-role-label { color: var(--ink-soft); width: 150px; flex-shrink: 0; }
+  .cb-current-name { font-weight: 700; }
+  .cb-arrow { color: var(--ink-faint); }
+  .cb-suggest-name { flex: 1; font-weight: 700; }
+  .cb-use-btn { border: 1px solid var(--ok); background: var(--ok-bg); color: var(--ok); font-size: 11px; font-weight: 700; padding: 4px 11px; border-radius: 14px; flex-shrink: 0; }
+  .cb-use-btn:disabled { opacity: 0.5; }
 
   .role-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
   .role-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 12px 14px; border-top: 3px solid var(--rc); }
-  .role-card.conflict-card { border-color: var(--danger); box-shadow: 0 0 0 1px var(--danger); }
   .role-card.rc-complete { box-shadow: 0 0 0 1px var(--ok); }
+  .role-card.conflict-card { box-shadow: 0 0 0 1.5px var(--danger); background: var(--danger-bg, #FBECEA); }
+  .role-card.conflict-card .role-card-head { color: var(--danger); }
   .role-card-head { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); margin-bottom: 8px; }
   .role-card-head .rc-check { color: var(--ok); font-size: 12px; margin-left: auto; }
+  .role-card.conflict-card .rc-check { color: var(--danger); }
+  .role-card.conflict-card .pub-combo.filled .pub-combo-input { border-color: var(--danger); background: #fff; color: var(--danger); }
   .role-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
   .role-card select { width: 100%; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 8px; font-size: 13.5px; font-family: inherit; background: var(--bg); color: var(--ink); }
   .role-count { font-size: 11px; color: var(--ink-faint); margin-top: 6px; }
@@ -1519,6 +1532,7 @@
     $('programSection').innerHTML = html;
     enhanceCombos($('programSection'));
     updateCardCompleteness();
+    checkConflicts();
   }
 
   function readProgramValue(el) {
@@ -1631,6 +1645,7 @@
       clearBtn.style.display = sel.value ? '' : 'none';
       closeList();
       updateCardCompleteness();
+      checkConflicts();
     }
 
     input.addEventListener('focus', () => { input.select(); renderList(''); });
@@ -1726,6 +1741,27 @@
     showToast('Asignación actualizada');
   }
 
+  function computeRoleCounts() {
+    const counts = {};
+    data.publishers.forEach(p => counts[p.id] = { sonido: 0, video: 0, microfono: 0, plataforma: 0, acomodador: 0, cronometrista: 0, total: 0 });
+    Object.entries(data.weeks).forEach(([monday, w]) => {
+      ['semana', 'finde'].forEach(t => {
+        getRoles(t).forEach(r => { const id = w[t] && w[t].roles[r.key]; if (id && counts[id]) { counts[id][r.cap] = (counts[id][r.cap] || 0) + 1; counts[id].total++; } });
+      });
+    });
+    return counts;
+  }
+  function suggestReplacementFor(roleKey, usedIds) {
+    const week = weekView(currentMonday)[currentType];
+    const r = getRoles(currentType).find(x => x.key === roleKey);
+    if (!r) return null;
+    const excludedToday = new Set(week.excluded || []);
+    const cands = data.publishers.filter(p => p.status !== 'no_disponible' && !excludedToday.has(p.id) && !usedIds.has(p.id) && p.roles[r.cap]);
+    if (!cands.length) return null;
+    const counts = computeRoleCounts();
+    cands.sort((a, b) => (counts[a.id][r.cap] - counts[b.id][r.cap]) || (counts[a.id].total - counts[b.id].total));
+    return cands[0];
+  }
   function checkConflicts() {
     const week = weekView(currentMonday);
     const rolesObj = week[currentType].roles;
@@ -1735,22 +1771,55 @@
     const progIds = programAssignedIds(week[currentType].program, currentType);
     const overlapIds = Object.keys(counts).filter(id => progIds.has(id) && !dupIds.includes(id));
     const banner = $('conflictBanner');
-    const msgs = [];
+    let html = '';
     if (dupIds.length) {
       const names = dupIds.map(id => (data.publishers.find(p => p.id === id) || {}).name || 'Alguien');
-      msgs.push(`Doble asignación: ${names.join(', ')} tiene dos asignaciones esta reunión.`);
+      html += `<div>⚠ Doble asignación: ${names.join(', ')} tiene dos asignaciones esta reunión.</div>`;
     }
     if (overlapIds.length) {
-      const names = overlapIds.map(id => (data.publishers.find(p => p.id === id) || {}).name || 'Alguien');
-      msgs.push(`${names.join(', ')} ya tiene una parte del Programa esta reunión.`);
+      const usedIds = new Set(Object.values(rolesObj).filter(Boolean));
+      progIds.forEach(id => usedIds.add(id));
+      const roles = getRoles(currentType);
+      const rows = [];
+      roles.forEach(r => {
+        const heldBy = rolesObj[r.key];
+        if (!heldBy || !overlapIds.includes(heldBy)) return;
+        const name = (data.publishers.find(p => p.id === heldBy) || {}).name || 'Alguien';
+        const suggestion = suggestReplacementFor(r.key, usedIds);
+        rows.push(`<div class="cb-suggest-row">
+          <span class="cb-role-label">${r.label}</span>
+          <span class="cb-current-name">${escapeHtml(name)}</span>
+          <span class="cb-arrow">→</span>
+          <span class="cb-suggest-name">${suggestion ? escapeHtml(suggestion.name) : 'sin candidatos libres'}</span>
+          <button type="button" class="cb-use-btn" data-use-role="${r.key}" data-use-pub="${suggestion ? suggestion.id : ''}" ${suggestion ? '' : 'disabled'}>Usar</button>
+        </div>`);
+        if (suggestion) usedIds.add(suggestion.id);
+      });
+      html += `<div>⚠ ${overlapIds.length} persona${overlapIds.length > 1 ? 's' : ''} ya tiene${overlapIds.length > 1 ? 'n' : ''} una parte del Programa esta reunión</div>` + rows.join('');
     }
-    if (msgs.length) { banner.textContent = '⚠ ' + msgs.join(' '); banner.classList.remove('hidden'); }
+    if (html) { banner.innerHTML = html; banner.classList.remove('hidden'); banner.classList.toggle('danger', overlapIds.length > 0); }
     else banner.classList.add('hidden');
     document.querySelectorAll('.role-card').forEach(card => {
-      const val = card.querySelector('select').value;
-      card.classList.toggle('conflict-card', !!val && (dupIds.includes(val) || overlapIds.includes(val)));
+      const sel = card.querySelector('select');
+      const val = sel ? sel.value : '';
+      const head = card.querySelector('.role-card-head');
+      const check = head ? head.querySelector('.rc-check') : null;
+      const inConflict = !!val && (dupIds.includes(val) || overlapIds.includes(val));
+      card.classList.toggle('conflict-card', inConflict);
+      if (check) check.textContent = inConflict ? '⚠' : '✓';
     });
   }
+  $('conflictBanner').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-use-role]');
+    if (!btn || !btn.dataset.usePub) return;
+    const week = ensureWeek(currentMonday);
+    week[currentType].roles[btn.dataset.useRole] = btn.dataset.usePub;
+    saveData();
+    renderRoleCards();
+    renderMonthTable();
+    renderMonthCalendar();
+    showToast('Reemplazo aplicado');
+  });
 
   function autoAssign() {
     hapticTap();
