@@ -112,6 +112,16 @@
   .brand-mark { width: 10px; height: 10px; border-radius: 50%; background: var(--accent-gold); flex-shrink: 0; }
   .brand-row h1 { font-size: 19px; margin: 0; }
   .cong-badge { font-size: 12px; color: var(--ink-soft); background: var(--bg); border-radius: 20px; padding: 4px 12px; margin-left: 2px; }
+  .help-btn { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-left: auto; flex-shrink: 0; }
+  .guide-body { max-height: 65vh; overflow-y: auto; margin: 0 -8px; }
+  .guide-item { border-bottom: 1px solid var(--line); }
+  .guide-item:last-child { border-bottom: none; }
+  .guide-item summary { padding: 11px 8px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 9px; cursor: pointer; list-style: none; }
+  .guide-item summary::-webkit-details-marker { display: none; }
+  .guide-item summary .gicon { width: 20px; text-align: center; flex-shrink: 0; }
+  .guide-item summary .chev { margin-left: auto; color: var(--ink-faint); font-size: 11px; transition: transform 0.15s; }
+  .guide-item[open] summary .chev { transform: rotate(90deg); }
+  .guide-item p { font-size: 12px; color: var(--ink-soft); margin: 0 8px 13px 37px; line-height: 1.55; }
 
   .tabs { display: flex; gap: 4px; }
   .tab-btn {
@@ -563,6 +573,7 @@
       <span class="brand-mark"></span>
       <h1>Asignaciones</h1>
       <span class="cong-badge" id="congBadge">Mi Congregación</span>
+      <button type="button" class="help-btn" id="helpBtn" aria-label="Guía de uso" title="Guía de uso">?</button>
     </div>
     <nav class="tabs">
       <button class="tab-btn active" data-tab="programa">Programa</button>
@@ -691,6 +702,10 @@
 
   <!-- ---------------- Ajustes ---------------- -->
   <section class="tab-panel hidden" id="panel-ajustes">
+    <button type="button" class="settings-card" id="guideOpenBtn" style="width:100%; display:flex; align-items:center; justify-content:space-between; text-align:left; font:inherit; cursor:pointer;">
+      <span style="font-size:14px; font-weight:600; color:var(--ink);">❓ Guía de uso</span>
+      <span class="chev">›</span>
+    </button>
     <details class="settings-card" open>
       <summary><h3>Sincronización entre dispositivos</h3><span class="chev">›</span></summary>
       <p class="hint">El mismo código conecta tu celular, tablet y PC con el mismo programa. Además de este código, cada persona necesita su email autorizado (ver la tarjeta "Acceso" más abajo).</p>
@@ -833,6 +848,49 @@
 </div>
 
 <!-- Modal: bienvenida -->
+<div class="modal-overlay hidden" id="guideOverlay">
+  <div class="modal" style="max-width:480px; max-height:82vh; overflow-y:auto;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+      <h3 style="margin:0;">Guía de uso</h3>
+      <button type="button" id="guideCloseBtn" style="border:none; background:none; color:var(--ink-faint); font-size:18px;">✕</button>
+    </div>
+    <div class="guide-body">
+      <details class="guide-item" open>
+        <summary><span class="gicon">👥</span>Cargar hermanos<span class="chev">›</span></summary>
+        <p>Pestaña Hermanos → "+ Agregar". Tildá qué puede cubrir cada uno (Sonido, Video, Micrófonos, Plataforma, Acomodadores, Cronometrista) — eso decide quién aparece como opción en cada puesto. Sin capacitación marcada, no va a salir en la lista.</p>
+      </details>
+      <details class="guide-item">
+        <summary><span class="gicon">🎧</span>Equipo técnico<span class="chev">›</span></summary>
+        <p>Pestaña Programa → subpestaña "Equipo técnico". Elegís cada puesto con el buscador (escribís el nombre y filtra), o tocás "Auto-asignar" para que lo reparta solo, por equidad. El campo se pone verde apenas queda cubierto.</p>
+      </details>
+      <details class="guide-item">
+        <summary><span class="gicon">📖</span>Programa de la reunión<span class="chev">›</span></summary>
+        <p>Subpestaña "Programa": Presidente, oraciones, cánticos, Tesoros de la Biblia, Seamos mejores maestros y Nuestra Vida Cristiana. Los números de cada parte (1, 2, 3...) se acomodan solos según cuántas partes cargues. "Auto-asignar" del equipo técnico evita poner ahí a alguien que ya tiene una parte acá.</p>
+      </details>
+      <details class="guide-item">
+        <summary><span class="gicon">🏫</span>Sala auxiliar<span class="chev">›</span></summary>
+        <p>Ajustes → Congregación → interruptor "Usar sala auxiliar". Al activarla, la Lectura de la Biblia y cada parte de "Seamos mejores maestros" se dividen en Auditorio principal / Sala auxiliar, con su propio estudiante. Apagarla no borra lo ya cargado.</p>
+      </details>
+      <details class="guide-item">
+        <summary><span class="gicon">📤</span>Compartir<span class="chev">›</span></summary>
+        <p>Botón "Compartir" en la pestaña Programa: WhatsApp (con Equipo técnico y Programa juntos), PDF de la semana o del mes, y el link de solo lectura para quien no necesita editar.</p>
+      </details>
+      <details class="guide-item">
+        <summary><span class="gicon">🔐</span>Quién puede entrar<span class="chev">›</span></summary>
+        <p>Ajustes → Acceso. Cada persona inicia sesión con su email (link o Google, sin contraseña) — solo entran los que agregues ahí. "Pueden editar" ve y modifica todo; "Solo pueden ver" únicamente accede al link de lectura. Sacar a alguien de la lista le corta el acceso al instante.</p>
+      </details>
+      <details class="guide-item">
+        <summary><span class="gicon">⏱️</span>Cronómetro<span class="chev">›</span></summary>
+        <p>Presets fijos para las partes estándar (Tesoros, Perlas, Estudio bíblico, etc.), y una sección "Partes de esta semana" que trae automáticamente el tiempo de las partes de estudiante que cargaste con minutos en el Programa.</p>
+      </details>
+      <details class="guide-item">
+        <summary><span class="gicon">📊</span>Reportes y copia de seguridad<span class="chev">›</span></summary>
+        <p>Ajustes → Reporte anual de equidad (quién cubrió qué a lo largo del año) y Copia de seguridad (exportar/importar todo en un archivo, por si necesitás restaurar algo).</p>
+      </details>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="onboardingOverlay">
   <div class="modal">
     <h3>¡Bienvenido!</h3>
@@ -1429,6 +1487,13 @@
     if (hasData) { try { localStorage.setItem(ONBOARDING_KEY, '1'); } catch (e) { /* no se pudo guardar */ } return; }
     $('onboardingOverlay').classList.remove('hidden');
   }
+  function openGuide() { $('guideOverlay').classList.remove('hidden'); }
+  function closeGuide() { $('guideOverlay').classList.add('hidden'); }
+  $('helpBtn').addEventListener('click', openGuide);
+  $('guideOpenBtn').addEventListener('click', openGuide);
+  $('guideCloseBtn').addEventListener('click', closeGuide);
+  $('guideOverlay').addEventListener('click', (e) => { if (e.target.id === 'guideOverlay') closeGuide(); });
+
   $('onboardingCloseBtn').addEventListener('click', () => {
     $('onboardingOverlay').classList.add('hidden');
     try { localStorage.setItem(ONBOARDING_KEY, '1'); } catch (e) { /* no se pudo guardar */ }
