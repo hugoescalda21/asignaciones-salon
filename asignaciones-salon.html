@@ -549,6 +549,7 @@
   <!-- ---------------- Cronómetro ---------------- -->
   <section class="tab-panel hidden" id="panel-timer">
     <p class="hint" id="timerTopicLabel" style="margin:-6px 0 14px;"></p>
+    <div id="weeklyPartsWrap"></div>
     <div class="preset-grid" id="presetGrid"></div>
     <div class="timer-panel">
       <div class="timer-display normal" id="timerDisplay">10:00</div>
@@ -1204,6 +1205,7 @@
     if (tab === 'ajustes') { renderYearlyReport(); checkStoragePersist(); }
     else if (tab === 'hermanos') { renderBrothersTable(); }
     else if (tab === 'programa') { renderRoleCards(); renderMonthTable(); renderMonthCalendar(); if (currentSubtab === 'programa') renderProgramSection(); }
+    else if (tab === 'timer') { renderWeeklyPartsGrid(); }
   }
   document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
 
@@ -1269,7 +1271,8 @@
       html += '<div class="program-card"><div class="program-subhead" style="margin-top:0;">Seamos mejores maestros</div>';
       (program.estudiantes || []).forEach((s) => {
         html += `<div class="student-block" data-student-id="${s.id}">
-          <div class="program-row"><label>Tema</label><input type="text" data-student-field="tema" value="${escapeHtml(s.tema || '')}" placeholder="Tema de la parte"></div>`;
+          <div class="program-row"><label>Tema</label><input type="text" data-student-field="tema" value="${escapeHtml(s.tema || '')}" placeholder="Tema de la parte"></div>
+          <div class="program-row"><label>Minutos</label><input type="number" min="1" max="60" data-student-field="minutos" value="${s.minutos || ''}" placeholder="Ej: 5"></div>`;
         if (aux) {
           html += `<div class="split-block"><div class="split-label">Auditorio principal</div>
               <div class="program-row"><label>Estudiante</label><select data-student-field="estudiante">${allPubOptionsHTML(s.estudiante)}</select></div>
@@ -1293,6 +1296,7 @@
       (program.vidaCristiana || []).forEach((v) => {
         html += `<div class="student-block" data-vida-id="${v.id}">
           <div class="program-row"><label>Tema</label><input type="text" data-vida-field="tema" value="${escapeHtml(v.tema || '')}" placeholder="Tema de la parte"></div>
+          <div class="program-row"><label>Minutos</label><input type="number" min="1" max="60" data-vida-field="minutos" value="${v.minutos || ''}" placeholder="Ej: 15"></div>
           <div class="program-row"><label>Presentador</label><select data-vida-field="presentador">${allPubOptionsHTML(v.presentador)}</select></div>
           <button type="button" class="remove-part-btn" data-remove-vida="${v.id}">✕ Quitar esta parte</button>
         </div>`;
@@ -1305,18 +1309,22 @@
     $('programSection').innerHTML = html;
   }
 
+  function readProgramValue(el) {
+    if (el.type === 'number') { const n = parseInt(el.value); return isNaN(n) ? null : n; }
+    return el.value || (el.tagName === 'INPUT' ? '' : null);
+  }
   $('programSection').addEventListener('change', (e) => {
     const week = ensureWeek(currentMonday);
     const program = week[currentType].program;
     if (e.target.dataset.programField) {
-      program[e.target.dataset.programField] = e.target.value || (e.target.tagName === 'INPUT' ? '' : null);
+      program[e.target.dataset.programField] = readProgramValue(e.target);
       saveData();
       showToast('Asignación actualizada');
     } else if (e.target.dataset.studentField) {
       const block = e.target.closest('[data-student-id]');
       const entry = program.estudiantes.find(s => s.id === block.dataset.studentId);
       if (entry) {
-        entry[e.target.dataset.studentField] = e.target.value || (e.target.tagName === 'INPUT' ? '' : null);
+        entry[e.target.dataset.studentField] = readProgramValue(e.target);
         saveData();
         showToast('Asignación actualizada');
       }
@@ -1324,7 +1332,7 @@
       const block = e.target.closest('[data-vida-id]');
       const entry = program.vidaCristiana.find(v => v.id === block.dataset.vidaId);
       if (entry) {
-        entry[e.target.dataset.vidaField] = e.target.value || (e.target.tagName === 'INPUT' ? '' : null);
+        entry[e.target.dataset.vidaField] = readProgramValue(e.target);
         saveData();
         showToast('Asignación actualizada');
       }
@@ -1333,7 +1341,7 @@
   $('programSection').addEventListener('click', (e) => {
     if (e.target.id === 'addStudentPartBtn') {
       const week = ensureWeek(currentMonday);
-      week[currentType].program.estudiantes.push({ id: uid(), estudiante: null, ayudante: null, estudianteAux: null, ayudanteAux: null, tema: '' });
+      week[currentType].program.estudiantes.push({ id: uid(), estudiante: null, ayudante: null, estudianteAux: null, ayudanteAux: null, tema: '', minutos: null });
       saveData();
       renderProgramSection();
     } else if (e.target.dataset.removeStudent) {
@@ -1343,7 +1351,7 @@
       renderProgramSection();
     } else if (e.target.id === 'addVidaPartBtn') {
       const week = ensureWeek(currentMonday);
-      week[currentType].program.vidaCristiana.push({ id: uid(), tema: '', presentador: null });
+      week[currentType].program.vidaCristiana.push({ id: uid(), tema: '', presentador: null, minutos: null });
       saveData();
       renderProgramSection();
     } else if (e.target.dataset.removeVida) {
@@ -1902,6 +1910,26 @@
       : `${currentType === 'finde' ? 'Fin de semana' : 'Entre semana'} — ${dayName} ${day} (sin tema cargado)`;
   }
 
+  function renderWeeklyPartsGrid() {
+    const wrap = $('weeklyPartsWrap');
+    if (!wrap) return;
+    if (currentType !== 'semana') { wrap.innerHTML = ''; return; }
+    const program = weekView(currentMonday).semana.program;
+    const parts = [];
+    (program.estudiantes || []).forEach(s => { if (s.tema && s.minutos) parts.push({ label: s.tema, min: s.minutos }); });
+    (program.vidaCristiana || []).forEach(v => { if (v.tema && v.minutos) parts.push({ label: v.tema, min: v.minutos }); });
+    if (!parts.length) { wrap.innerHTML = ''; return; }
+    wrap.innerHTML = '<div class="program-subhead" style="margin:0 0 8px;">Partes de esta semana</div><div class="preset-grid" id="weeklyPartsGrid" style="margin-bottom:18px;">' +
+      parts.map((p, i) => `<button type="button" class="btn preset-btn" data-weekly-part="${i}">${escapeHtml(p.label)}<span class="pmin">${p.min} min</span></button>`).join('') +
+      '</div>';
+    wrap.querySelectorAll('[data-weekly-part]').forEach(btn => btn.addEventListener('click', () => {
+      const p = parts[btn.dataset.weeklyPart];
+      $('minutesInput').value = p.min; $('secondsInput').value = 0;
+      currentPresetLabel = p.label;
+      resetTimer();
+    }));
+  }
+
   function fillPresetGrid() {
     $('presetGrid').innerHTML = PRESETS.map((p, i) => `<button type="button" class="btn preset-btn" data-preset="${i}">${p.label}<span class="pmin">${p.min} min</span></button>`).join('');
     $('presetGrid').querySelectorAll('[data-preset]').forEach(btn => btn.addEventListener('click', () => {
@@ -2215,6 +2243,7 @@
     updateMuteBtn();
     applyTheme();
     fillPresetGrid();
+    renderWeeklyPartsGrid();
     resetTimer();
     renderTimerLog();
     updateWeekLabel();
