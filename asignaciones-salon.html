@@ -890,7 +890,7 @@
   const blankRoles = () => ({ sonido: null, video: null, mic1: null, mic2: null, mic3: null, plataforma: null, usher1: null, usher2: null, usher3: null, usher4: null, cronometrista: null });
   const blankProgram = (type) => type === 'finde'
     ? { presidente: null, oracionInicial: null, oradorPublico: null, temaPublico: '', atalayaConductor: null, atalayaLector: null, oracionFinal: null }
-    : { presidente: null, oracionInicial: null, consejeroAux: null, tesoros: null, temaTesoros: '', perlas: null, lectura: null, lecturaAux: null, estudiantes: [], vidaCristiana: [], estudioConductor: null, estudioLector: null, oracionFinal: null };
+    : { presidente: null, oracionInicial: null, consejeroAux: null, cancionInicial: '', tesoros: null, temaTesoros: '', perlas: null, lectura: null, lecturaAux: null, estudiantes: [], cancionIntermedia: '', vidaCristiana: [], estudioConductor: null, estudioLector: null, cancionFinal: '', oracionFinal: null };
   const blankWeek = () => ({
     semana: { roles: blankRoles(), excluded: [], topic: '', program: blankProgram('semana') },
     finde: { roles: blankRoles(), excluded: [], topic: '', program: blankProgram('finde') }
@@ -1262,6 +1262,7 @@
       html += '</div>';
     } else {
       if (aux) html += programRowHTML('consejeroAux', 'Consejero de la sala auxiliar', program.consejeroAux);
+      html += `<div class="program-row"><label>🎵 Canción inicial</label><input type="text" data-program-field="cancionInicial" value="${escapeHtml(program.cancionInicial || '')}" placeholder="N.° de cántico"></div>`;
       html += programRowHTML('tesoros', `${numTag(1)} Tesoros de la Biblia`, program.tesoros, '10 min');
       html += `<div class="program-row"><label>Tema</label><input type="text" data-program-field="temaTesoros" value="${escapeHtml(program.temaTesoros || '')}" placeholder="Tema (opcional)"></div>`;
       html += programRowHTML('perlas', `${numTag(2)} Busquemos perlas escondidas`, program.perlas, '10 min');
@@ -1271,7 +1272,6 @@
       } else {
         html += programRowHTML('lectura', `${numTag(3)} Lectura de la Biblia`, program.lectura, '4 min');
       }
-      html += programRowHTML('oracionFinal', 'Oración final', program.oracionFinal);
       html += '</div>';
 
       const estudiantes = program.estudiantes || [];
@@ -1302,7 +1302,9 @@
       });
       html += '<button type="button" class="add-part-btn" id="addStudentPartBtn">+ Agregar parte de estudiante</button></div>';
 
-      html += '<div class="program-card" style="margin-top:14px;">';
+      html += `<div class="program-card" style="margin-top:14px;"><div class="program-row" style="border:none;"><label>🎵 Canción intermedia</label><input type="text" data-program-field="cancionIntermedia" value="${escapeHtml(program.cancionIntermedia || '')}" placeholder="N.° de cántico"></div></div>
+
+      <div class="program-card" style="margin-top:14px;">`;
       html += '<div class="program-subhead" style="margin-top:0;">Nuestra Vida Cristiana</div>';
       vidaCristiana.forEach((v) => {
         const partN = n++;
@@ -1316,6 +1318,8 @@
       html += '<button type="button" class="add-part-btn" id="addVidaPartBtn">+ Agregar parte</button>';
       html += `<div class="program-row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);"><label>${numTag(n)} Estudio bíblico — Conductor<span class="min-tag">30 min</span></label><select data-program-field="estudioConductor">${allPubOptionsHTML(program.estudioConductor)}</select></div>`;
       html += `<div class="program-row"><label>Estudio bíblico — Lector</label><select data-program-field="estudioLector">${allPubOptionsHTML(program.estudioLector)}</select></div>`;
+      html += `<div class="program-row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);"><label>🎵 Canción final</label><input type="text" data-program-field="cancionFinal" value="${escapeHtml(program.cancionFinal || '')}" placeholder="N.° de cántico"></div>`;
+      html += programRowHTML('oracionFinal', 'Oración final', program.oracionFinal);
       html += '</div>';
     }
     $('programSection').innerHTML = html;
@@ -1802,6 +1806,8 @@
       const pEntries = programEntries(week.program, t);
       if (pEntries.length) {
         const progBody = pEntries.map(e => {
+          if (e.section) return [{ content: e.section, colSpan: 2, styles: { fillColor: [237, 239, 239], textColor: [92, 107, 116], fontStyle: 'bold', fontSize: 8.5 } }];
+          if (e.song) return [e.label, e.value];
           let label = e.label;
           if (e.tema) label += ` — ${e.tema}`;
           if (e.min) label += ` (${e.min} min)`;
@@ -1920,30 +1926,48 @@
       entries.push({ label: 'Discurso público', name: nameOf(program.oradorPublico), tema: program.temaPublico, min: 30 });
       entries.push({ label: 'Atalaya — Conductor', name: nameOf(program.atalayaConductor), min: 60 });
       entries.push({ label: 'Atalaya — Lector', name: nameOf(program.atalayaLector) });
-    } else {
-      if (program.consejeroAux) entries.push({ label: 'Consejero sala aux.', name: nameOf(program.consejeroAux) });
-      entries.push({ num: 1, label: 'Tesoros de la Biblia', name: nameOf(program.tesoros), tema: program.temaTesoros, min: 10 });
-      entries.push({ num: 2, label: 'Perlas escondidas', name: nameOf(program.perlas), min: 10 });
-      entries.push({ num: 3, label: 'Lectura de la Biblia', name: nameOf(program.lectura), min: 4 });
-      if (program.lecturaAux) entries.push({ label: '   (Sala auxiliar)', name: nameOf(program.lecturaAux) });
-      let n = 4;
-      (program.estudiantes || []).forEach(s => {
-        const nm = pairName(s.estudiante, s.ayudante);
-        if (s.tema || nm) entries.push({ num: n, label: s.tema || 'Seamos mejores maestros', name: nm, min: s.minutos });
-        const nmAux = pairName(s.estudianteAux, s.ayudanteAux);
-        if (nmAux) entries.push({ label: '   (Sala auxiliar)', name: nmAux });
-        n++;
-      });
-      (program.vidaCristiana || []).forEach(v => {
-        const nm = nameOf(v.presentador);
-        if (v.tema || nm) entries.push({ num: n, label: v.tema || 'Nuestra Vida Cristiana', name: nm, min: v.minutos });
-        n++;
-      });
-      const estudioNm = pairName(program.estudioConductor, program.estudioLector);
-      if (estudioNm) entries.push({ num: n, label: 'Estudio bíblico', name: estudioNm, min: 30 });
+      entries.push({ label: 'Oración final', name: nameOf(program.oracionFinal) });
+      return entries.filter(e => e.name);
     }
+    if (program.consejeroAux) entries.push({ label: 'Consejero sala aux.', name: nameOf(program.consejeroAux) });
+    if (program.cancionInicial) entries.push({ song: true, label: 'Canción inicial', value: program.cancionInicial });
+
+    const tesorosGroup = [];
+    tesorosGroup.push({ num: 1, label: 'Tesoros de la Biblia', name: nameOf(program.tesoros), tema: program.temaTesoros, min: 10 });
+    tesorosGroup.push({ num: 2, label: 'Perlas escondidas', name: nameOf(program.perlas), min: 10 });
+    tesorosGroup.push({ num: 3, label: 'Lectura de la Biblia', name: nameOf(program.lectura), min: 4 });
+    if (program.lecturaAux) tesorosGroup.push({ label: '   (Sala auxiliar)', name: nameOf(program.lecturaAux) });
+    const tesorosFilled = tesorosGroup.filter(e => e.name);
+    if (tesorosFilled.length) { entries.push({ section: 'TESOROS DE LA BIBLIA' }); entries.push(...tesorosFilled); }
+
+    let n = 4;
+    const maestrosGroup = [];
+    (program.estudiantes || []).forEach(s => {
+      const nm = pairName(s.estudiante, s.ayudante);
+      if (s.tema || nm) maestrosGroup.push({ num: n, label: s.tema || 'Seamos mejores maestros', name: nm, min: s.minutos });
+      const nmAux = pairName(s.estudianteAux, s.ayudanteAux);
+      if (nmAux) maestrosGroup.push({ label: '   (Sala auxiliar)', name: nmAux });
+      n++;
+    });
+    const maestrosFilled = maestrosGroup.filter(e => e.name);
+    if (maestrosFilled.length) { entries.push({ section: 'SEAMOS MEJORES MAESTROS' }); entries.push(...maestrosFilled); }
+
+    if (program.cancionIntermedia) entries.push({ song: true, label: 'Canción intermedia', value: program.cancionIntermedia });
+
+    const vidaGroup = [];
+    (program.vidaCristiana || []).forEach(v => {
+      const nm = nameOf(v.presentador);
+      if (v.tema || nm) vidaGroup.push({ num: n, label: v.tema || 'Nuestra Vida Cristiana', name: nm, min: v.minutos });
+      n++;
+    });
+    const estudioNm = pairName(program.estudioConductor, program.estudioLector);
+    if (estudioNm) vidaGroup.push({ num: n, label: 'Estudio bíblico', name: estudioNm, min: 30 });
+    const vidaFilled = vidaGroup.filter(e => e.name);
+    if (vidaFilled.length) { entries.push({ section: 'NUESTRA VIDA CRISTIANA' }); entries.push(...vidaFilled); }
+
+    if (program.cancionFinal) entries.push({ song: true, label: 'Canción final', value: program.cancionFinal });
     entries.push({ label: 'Oración final', name: nameOf(program.oracionFinal) });
-    return entries.filter(e => e.name);
+    return entries.filter(e => e.section || e.song || e.name);
   }
 
   function openWaModal() {
@@ -1960,6 +1984,8 @@
     if (pEntries.length) {
       lines.push('', '📖 *Programa*', '');
       pEntries.forEach(e => {
+        if (e.section) { lines.push('', `*${e.section}*`); return; }
+        if (e.song) { lines.push(`🎵 *${e.label}:* ${e.value}`); return; }
         const icon = e.num ? numEmoji(e.num) : (/oración/i.test(e.label) ? '🙏' : '👤');
         let line = `${icon} *${e.label}*`;
         if (e.min) line += ` (${e.min} min)`;
