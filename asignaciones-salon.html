@@ -1190,7 +1190,12 @@
         await docRef.set(data); // primera vez: sube lo que ya había en este dispositivo, con quien la crea como primer editor
       } else {
         const remoteSettings = (snap.data() || {}).settings || {};
-        if (!(remoteSettings.editorEmails || []).includes(currentUser.email) && !(remoteSettings.viewerEmails || []).includes(currentUser.email)) {
+        const isEditor = (remoteSettings.editorEmails || []).includes(currentUser.email);
+        const isViewer = (remoteSettings.viewerEmails || []).includes(currentUser.email);
+        const orphaned = !(remoteSettings.editorEmails || []).length; // congregación de antes del login: nadie es editor todavía
+        if (orphaned) {
+          await docRef.update({ 'settings.editorEmails': firebase.firestore.FieldValue.arrayUnion(currentUser.email) });
+        } else if (!isEditor && !isViewer) {
           showAuthDenied('Tu email no está autorizado para editar esta congregación. Pedile a quien la administra que te agregue en Ajustes → Acceso.');
           setSyncStatus('error');
           return;
