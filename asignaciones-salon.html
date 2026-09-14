@@ -19,6 +19,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
 <style>
   :root{
     --shadow-sm: 0 1px 2px rgba(33,44,52,0.05), 0 2px 6px rgba(33,44,52,0.05);
@@ -502,6 +503,35 @@
 </head>
 <body>
 
+<div id="authGateOverlay" class="modal-overlay">
+  <div class="modal" id="authStepEmail">
+    <h3>Iniciar sesión</h3>
+    <p class="modal-sub">Para editar o ver las asignaciones necesitás iniciar sesión con tu email — sin contraseña, te mandamos un link.</p>
+    <div class="field">
+      <label>Tu email</label>
+      <input type="email" id="authEmailInput" placeholder="tu@email.com" autocomplete="email">
+    </div>
+    <p class="hint err hidden" id="authEmailErr" style="color:var(--danger); margin-bottom:10px;"></p>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-primary" id="authSendLinkBtn" style="width:100%;">Enviarme el link</button>
+    </div>
+  </div>
+  <div class="modal hidden" id="authStepSent">
+    <h3>Revisá tu correo</h3>
+    <p class="modal-sub">Te mandamos un link a <strong id="authSentEmail"></strong>. Tocalo desde este mismo celular o computadora para entrar.</p>
+    <div class="modal-footer">
+      <button type="button" class="btn" id="authChangeEmailBtn" style="width:100%;">Usar otro email</button>
+    </div>
+  </div>
+  <div class="modal hidden" id="authStepDenied">
+    <h3>Sin acceso todavía</h3>
+    <p class="modal-sub" id="authDeniedMsg">Tu email no está autorizado para esta congregación. Pedile a quien administra la app que te agregue.</p>
+    <div class="modal-footer">
+      <button type="button" class="btn" id="authSignOutBtn" style="width:100%;">Probar con otro email</button>
+    </div>
+  </div>
+</div>
+
 <div class="topbar">
   <div class="topbar-inner">
     <div class="brand-row">
@@ -638,27 +668,28 @@
   <section class="tab-panel hidden" id="panel-ajustes">
     <details class="settings-card" open>
       <summary><h3>Sincronización entre dispositivos</h3><span class="chev">›</span></summary>
-      <p class="hint">El mismo código conecta tu celular, tablet y PC con el mismo programa.</p>
+      <p class="hint">El mismo código conecta tu celular, tablet y PC con el mismo programa. Además de este código, cada persona necesita su email autorizado (ver la tarjeta "Acceso" más abajo).</p>
       <div id="syncStatus"></div>
       <div class="settings-actions" style="margin-top:12px;">
         <button class="btn" id="changeCodeBtn">Cambiar código</button>
       </div>
-      <div class="toggle-row" style="margin-top:14px; padding-top:14px; border-top:1px solid var(--line);">
-        <div>
-          <p>Pedir código para ver</p>
-          <p class="hint">Sin esto, cualquiera con el link de solo lectura puede ver los nombres y asignaciones.</p>
-        </div>
-        <button type="button" class="switch" id="viewPinSwitch" aria-label="Pedir código para ver"></button>
+    </details>
+
+    <details class="settings-card" open>
+      <summary><h3>Acceso — quién puede editar o ver</h3><span class="chev">›</span></summary>
+      <p class="hint">Cada persona inicia sesión con su email (le llega un link, sin contraseña). Solo entran los que agregues acá — sacar a alguien le corta el acceso al instante.</p>
+      <h4 style="font-size:12.5px; margin:14px 0 6px;">Pueden editar</h4>
+      <div id="editorEmailsList"></div>
+      <div class="add-row" style="display:flex; gap:8px; margin-top:8px;">
+        <input type="email" id="newEditorEmail" placeholder="email@ejemplo.com" style="flex:1; border:1px solid var(--line); border-radius:var(--radius-s); padding:8px 10px; font-family:inherit; font-size:13px;">
+        <button class="btn" id="addEditorBtn">+ Agregar</button>
       </div>
-      <div id="viewPinRow" class="pin-row hidden">
-        <div class="pin-display" id="viewPinDisplay">••••</div>
-        <div class="pin-actions">
-          <button type="button" class="pin-btn" id="regenPinBtn">🔄 Generar otro</button>
-          <button type="button" class="pin-btn" id="copyLinkOnlyBtn">📋 Copiar solo el link</button>
-          <button type="button" class="pin-btn" id="copyPinOnlyBtn">🔑 Copiar solo el código</button>
-        </div>
+      <h4 style="font-size:12.5px; margin:18px 0 6px;">Solo pueden ver (link de solo lectura)</h4>
+      <div id="viewerEmailsList"></div>
+      <div class="add-row" style="display:flex; gap:8px; margin-top:8px;">
+        <input type="email" id="newViewerEmail" placeholder="email@ejemplo.com" style="flex:1; border:1px solid var(--line); border-radius:var(--radius-s); padding:8px 10px; font-family:inherit; font-size:13px;">
+        <button class="btn" id="addViewerBtn">+ Agregar</button>
       </div>
-      <p class="hint" id="pinSplitHint" style="margin-top:8px;">Mandalos por separado (el link en el grupo, el código aparte) — si van juntos en el mismo mensaje, alguien puede reenviarlo completo y el código no sirve de nada.</p>
     </details>
 
     <details class="settings-card">
@@ -963,7 +994,7 @@
   function monthKey(iso) { const d = new Date(iso + 'T00:00:00'); return d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }); }
 
   /* ---------- Carga / normalización / migración ---------- */
-  function defaultSettings() { return { congregationName: 'Mi Congregación', micCount: 2, usherCount: 2, weekdaySemana: 4, weekdayFinde: 0, timerMuted: false, themeMode: 'auto', remindersEnabled: false, useAuxRoom: false, requireViewPin: false, viewPin: '' }; }
+  function defaultSettings() { return { congregationName: 'Mi Congregación', micCount: 2, usherCount: 2, weekdaySemana: 4, weekdayFinde: 0, timerMuted: false, themeMode: 'auto', remindersEnabled: false, useAuxRoom: false, editorEmails: [], viewerEmails: [] }; }
 
   function migrate(raw) {
     let out;
@@ -1032,9 +1063,12 @@
     appId: "1:167010071335:web:0aca9b8cac2bbf5fd2ef02"
   };
   const ACCESS_CODE_KEY = 'kh-access-code';
+  const AUTH_EMAIL_KEY = 'kh-auth-email';
   let fbDb = null;
+  let fbAuth = null;
   let fbUnsubscribe = null;
   let accessCode = null;
+  let currentUser = null;
   let applyingRemoteUpdate = false; // evita que un cambio recibido de la nube dispare otro guardado
 
   function normalizeCode(s) { return (s || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, ''); }
@@ -1054,6 +1088,69 @@
       try { fbDb.enablePersistence({ synchronizeTabs: true }).catch(() => { /* ya habilitado en otra pestaña, ignorar */ }); } catch (e) { /* no disponible en este navegador */ }
       return true;
     } catch (e) { console.error('No se pudo iniciar Firebase', e); return false; }
+  }
+
+  /* ---------- Autenticación (link por email) ---------- */
+  function authStep(step) {
+    ['authStepEmail', 'authStepSent', 'authStepDenied'].forEach(id => $(id).classList.toggle('hidden', id !== step));
+  }
+  function initAuth() {
+    return new Promise((resolve) => {
+      if (!initFirebase()) { $('authGateOverlay').classList.add('hidden'); resolve(null); return; }
+      if (!firebase.auth) { $('authGateOverlay').classList.add('hidden'); resolve(null); return; }
+      fbAuth = firebase.auth();
+      const actionCodeSettings = { url: location.href.split('?')[0], handleCodeInApp: true };
+
+      const finishIfLink = async () => {
+        if (fbAuth.isSignInWithEmailLink(window.location.href)) {
+          let email = null;
+          try { email = localStorage.getItem(AUTH_EMAIL_KEY); } catch (e) { /* sin acceso */ }
+          if (!email) email = window.prompt('Confirmá tu email para completar el ingreso:');
+          if (email) {
+            try {
+              await fbAuth.signInWithEmailLink(email, window.location.href);
+              try { localStorage.removeItem(AUTH_EMAIL_KEY); } catch (e) { /* sin acceso */ }
+              const url = new URL(location); url.search = ''; history.replaceState(null, '', url);
+            } catch (e) { $('authEmailErr').textContent = 'Ese link ya no es válido. Pedí uno nuevo.'; $('authEmailErr').classList.remove('hidden'); }
+          }
+        }
+      };
+
+      fbAuth.onAuthStateChanged((user) => {
+        currentUser = user;
+        if (user) { $('authGateOverlay').classList.add('hidden'); resolve(user); }
+        else {
+          $('authGateOverlay').classList.remove('hidden');
+          let saved = null;
+          try { saved = localStorage.getItem(AUTH_EMAIL_KEY); } catch (e) { /* sin acceso */ }
+          if (saved && !fbAuth.isSignInWithEmailLink(window.location.href)) { $('authSentEmail').textContent = saved; authStep('authStepSent'); }
+          else authStep('authStepEmail');
+        }
+      });
+      finishIfLink();
+    });
+  }
+  $('authSendLinkBtn').addEventListener('click', async () => {
+    const email = $('authEmailInput').value.trim();
+    $('authEmailErr').classList.add('hidden');
+    if (!email || !email.includes('@')) { $('authEmailErr').textContent = 'Ingresá un email válido.'; $('authEmailErr').classList.remove('hidden'); return; }
+    try {
+      const actionCodeSettings = { url: location.href.split('?')[0], handleCodeInApp: true };
+      await fbAuth.sendSignInLinkToEmail(email, actionCodeSettings);
+      try { localStorage.setItem(AUTH_EMAIL_KEY, email); } catch (e) { /* sin acceso */ }
+      $('authSentEmail').textContent = email;
+      authStep('authStepSent');
+    } catch (e) { $('authEmailErr').textContent = 'No se pudo enviar el link. Revisá el email e intentá de nuevo.'; $('authEmailErr').classList.remove('hidden'); }
+  });
+  $('authChangeEmailBtn').addEventListener('click', () => {
+    try { localStorage.removeItem(AUTH_EMAIL_KEY); } catch (e) { /* sin acceso */ }
+    authStep('authStepEmail');
+  });
+  $('authSignOutBtn').addEventListener('click', () => { if (fbAuth) fbAuth.signOut(); authStep('authStepEmail'); });
+  function showAuthDenied(msg) {
+    $('authDeniedMsg').textContent = msg || 'Tu email no está autorizado para esta congregación. Pedile a quien administra la app que te agregue.';
+    $('authGateOverlay').classList.remove('hidden');
+    authStep('authStepDenied');
   }
 
   function setSyncStatus(kind, msg) {
@@ -1078,7 +1175,18 @@
     const docRef = fbDb.collection('congregations').doc(code);
     try {
       const snap = await docRef.get();
-      if (!snap.exists) await docRef.set(data); // primera vez: sube lo que ya había en este dispositivo
+      if (!snap.exists) {
+        data.settings.editorEmails = [currentUser.email];
+        data.settings.viewerEmails = data.settings.viewerEmails || [];
+        await docRef.set(data); // primera vez: sube lo que ya había en este dispositivo, con quien la crea como primer editor
+      } else {
+        const remoteSettings = (snap.data() || {}).settings || {};
+        if (!(remoteSettings.editorEmails || []).includes(currentUser.email) && !(remoteSettings.viewerEmails || []).includes(currentUser.email)) {
+          showAuthDenied('Tu email no está autorizado para editar esta congregación. Pedile a quien la administra que te agregue en Ajustes → Acceso.');
+          setSyncStatus('error');
+          return;
+        }
+      }
     } catch (e) { console.error(e); setSyncStatus('error'); }
     fbUnsubscribe = docRef.onSnapshot((snap) => {
       if (!snap.exists) return;
@@ -1092,6 +1200,7 @@
       setSyncStatus('ok');
     }, (err) => {
       console.error('Error de sincronización', err);
+      if (err && err.code === 'permission-denied') { showAuthDenied(); }
       setSyncStatus('error');
     });
   }
@@ -1671,7 +1780,6 @@
     if (!accessCode) { showToast('Conectate con un código primero (Ajustes → Sincronización)'); return; }
     const url = new URL('ver.html', location.href);
     url.searchParams.set('codigo', accessCode);
-    if (data.settings.requireViewPin && data.settings.viewPin) url.searchParams.set('pin', data.settings.viewPin);
     const link = url.toString();
     if (navigator.share) {
       try { await navigator.share({ title: 'Programa — Salón del Reino', text: 'Mirá el programa de asignaciones (solo lectura):', url: link }); return; }
@@ -2537,7 +2645,7 @@
     renderYearlyReport();
     updateReminderToggle();
     updateAuxRoomToggle();
-    updateViewPinUI();
+    renderAccessLists();
   }
 
   /* ---------- Guardado seguro ---------- */
@@ -2733,38 +2841,42 @@
     if (currentSubtab === 'programa') renderProgramSection();
   });
 
-  function generatePin() { return String(Math.floor(1000 + Math.random() * 9000)); }
-  function updateViewPinUI() {
-    const on = !!data.settings.requireViewPin;
-    $('viewPinSwitch').classList.toggle('on', on);
-    $('viewPinRow').classList.toggle('hidden', !on);
-    if (on) $('viewPinDisplay').textContent = (data.settings.viewPin || '').split('').join(' ');
+  function renderEmailList(field, containerId) {
+    const list = data.settings[field] || [];
+    $(containerId).innerHTML = list.length
+      ? list.map(email => `<div class="role-mini" style="display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--line); font-size:12.5px;"><span style="flex:1;">${escapeHtml(email)}</span><button type="button" class="rm-btn" data-remove-email="${escapeHtml(email)}" data-field="${field}" style="border:none; background:none; color:var(--ink-faint); font-size:13px;">✕</button></div>`).join('')
+      : '<p class="hint" style="margin:0;">Todavía no agregaste a nadie.</p>';
   }
-  $('viewPinSwitch').addEventListener('click', () => {
-    data.settings.requireViewPin = !data.settings.requireViewPin;
-    if (data.settings.requireViewPin && !data.settings.viewPin) data.settings.viewPin = generatePin();
-    saveData();
-    updateViewPinUI();
-  });
-  $('regenPinBtn').addEventListener('click', () => {
-    data.settings.viewPin = generatePin();
-    saveData();
-    updateViewPinUI();
-    showToast('Código nuevo generado');
-  });
-  async function copyTextGeneric(text, label) {
-    try { await navigator.clipboard.writeText(text); showToast(`${label} copiado`); }
-    catch (e) { prompt(`Copiá esto (${label}):`, text); }
+  function renderAccessLists() {
+    renderEmailList('editorEmails', 'editorEmailsList');
+    renderEmailList('viewerEmails', 'viewerEmailsList');
   }
-  $('copyLinkOnlyBtn').addEventListener('click', () => {
-    if (!accessCode) { showToast('Conectate con un código primero (Ajustes → Sincronización)'); return; }
-    const url = new URL('ver.html', location.href);
-    url.searchParams.set('codigo', accessCode);
-    copyTextGeneric(url.toString(), 'Link');
-  });
-  $('copyPinOnlyBtn').addEventListener('click', () => {
-    if (!data.settings.viewPin) return;
-    copyTextGeneric(data.settings.viewPin, 'Código');
+  function addEmailTo(field, inputId) {
+    const email = $(inputId).value.trim().toLowerCase();
+    if (!email || !email.includes('@')) { showToast('Ingresá un email válido'); return; }
+    data.settings[field] = data.settings[field] || [];
+    if (data.settings[field].includes(email)) { showToast('Ese email ya está en la lista'); return; }
+    data.settings[field].push(email);
+    $(inputId).value = '';
+    saveData();
+    renderAccessLists();
+    showToast('Agregado');
+  }
+  $('addEditorBtn').addEventListener('click', () => addEmailTo('editorEmails', 'newEditorEmail'));
+  $('addViewerBtn').addEventListener('click', () => addEmailTo('viewerEmails', 'newViewerEmail'));
+  ['editorEmailsList', 'viewerEmailsList'].forEach(id => {
+    $(id).addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-remove-email]');
+      if (!btn) return;
+      const field = btn.dataset.field;
+      if (currentUser && btn.dataset.removeEmail === currentUser.email && field === 'editorEmails' && data.settings.editorEmails.length === 1) {
+        showToast('No podés sacarte a vos mismo si sos el único editor');
+        return;
+      }
+      data.settings[field] = data.settings[field].filter(e2 => e2 !== btn.dataset.removeEmail);
+      saveData();
+      renderAccessLists();
+    });
   });
   $('reminderSwitch').addEventListener('click', async () => {
     if (!data.settings.remindersEnabled) {
@@ -2905,7 +3017,10 @@
     }).catch(() => { /* API no disponible en este navegador */ });
   }
 
-  loadData();
+  (async () => {
+    await initAuth();
+    loadData();
+  })();
 
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     window.addEventListener('load', () => {

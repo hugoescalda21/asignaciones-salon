@@ -10,6 +10,7 @@
 <meta name="robots" content="noindex, nofollow">
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
 <style>
   :root{
     --bg: #EDEFEF; --surface: #FFFFFF; --ink: #212C34; --ink-soft: #5C6B74; --ink-faint: #93A0A7;
@@ -101,13 +102,26 @@
   <p class="err hidden" id="gateErr">No se encontró ninguna congregación con ese código.</p>
 </div>
 
-<div id="pinGateView" class="gate hidden">
-  <div style="font-size:26px; margin-bottom:6px;">🔒</div>
-  <h1>Código de acceso</h1>
-  <p>Esta congregación pidió un código para ver las asignaciones. Pedíselo a quien te compartió el link.</p>
-  <input type="text" id="pinInput" placeholder="••••" inputmode="numeric" maxlength="4" autocomplete="off">
-  <button type="button" id="pinBtn">Ver</button>
-  <p class="err hidden" id="pinErr">Ese código no es correcto.</p>
+<div id="authGateView" class="gate hidden">
+  <div id="authStepEmail">
+    <div style="font-size:26px; margin-bottom:6px;">🔒</div>
+    <h1>Iniciar sesión</h1>
+    <p>Para ver las asignaciones, ingresá tu email — te mandamos un link, sin contraseña.</p>
+    <input type="email" id="authEmailInput" placeholder="tu@email.com" autocomplete="email">
+    <button type="button" id="authSendLinkBtn">Enviarme el link</button>
+    <p class="err hidden" id="authEmailErr"></p>
+  </div>
+  <div id="authStepSent" class="hidden">
+    <div style="font-size:26px; margin-bottom:6px;">✉️</div>
+    <h1>Revisá tu correo</h1>
+    <p>Te mandamos un link a <strong id="authSentEmail"></strong>. Tocalo desde este mismo celular o computadora.</p>
+  </div>
+  <div id="authStepDenied" class="hidden">
+    <div style="font-size:26px; margin-bottom:6px;">🚫</div>
+    <h1>Sin acceso todavía</h1>
+    <p>Tu email no está autorizado para ver esta congregación. Pedile a quien administra la app que te agregue.</p>
+    <button type="button" id="authRetryBtn">Probar con otro email</button>
+  </div>
 </div>
 
 <div id="mainView" class="hidden">
@@ -296,22 +310,76 @@
     const params = new URLSearchParams(location.search);
     return (params.get('codigo') || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
   }
-  function getPin() {
-    const params = new URLSearchParams(location.search);
-    return (params.get('pin') || '').trim();
-  }
-  let verifiedPin = false;
-  function pinGateOk() {
-    if (!(data && data.settings && data.settings.requireViewPin)) return true;
-    const correct = data.settings.viewPin || '';
-    if (getPin() && getPin() === correct) return true;
-    return verifiedPin;
-  }
 
+  const AUTH_EMAIL_KEY = 'kh-auth-email';
+  let fbAuth = null;
+  let currentUser = null;
   function initFirebase() {
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     return firebase.firestore();
   }
+  function authStep(step) {
+    ['authStepEmail', 'authStepSent', 'authStepDenied'].forEach(id => $(id).classList.toggle('hidden', id !== step));
+  }
+  function initAuth() {
+    return new Promise((resolve) => {
+      if (!firebase.auth) { resolve(null); return; }
+      fbAuth = firebase.auth();
+      const finishIfLink = async () => {
+        if (fbAuth.isSignInWithEmailLink(window.location.href)) {
+          let email = null;
+          try { email = localStorage.getItem(AUTH_EMAIL_KEY); } catch (e) { /* sin acceso */ }
+          if (!email) email = window.prompt('Confirmá tu email para completar el ingreso:');
+          if (email) {
+            try {
+              await fbAuth.signInWithEmailLink(email, window.location.href);
+              try { localStorage.removeItem(AUTH_EMAIL_KEY); } catch (e) { /* sin acceso */ }
+              const url = new URL(location); url.search = getCode() ? `?codigo=${getCode()}` : ''; history.replaceState(null, '', url);
+            } catch (e) { $('authEmailErr').textContent = 'Ese link ya no es válido. Pedí uno nuevo.'; $('authEmailErr').classList.remove('hidden'); }
+          }
+        }
+      };
+      fbAuth.onAuthStateChanged((user) => {
+        currentUser = user;
+        if (user) resolve(user);
+        else {
+          $('gateView').classList.add('hidden');
+          $('mainView').classList.add('hidden');
+          $('authGateView').classList.remove('hidden');
+          let saved = null;
+          try { saved = localStorage.getItem(AUTH_EMAIL_KEY); } catch (e) { /* sin acceso */ }
+          if (saved && !fbAuth.isSignInWithEmailLink(window.location.href)) { $('authSentEmail').textContent = saved; authStep('authStepSent'); }
+          else authStep('authStepEmail');
+        }
+      });
+      finishIfLink();
+    });
+  }
+  function showAccessDenied() {
+    $('gateView').classList.add('hidden');
+    $('mainView').classList.add('hidden');
+    $('authGateView').classList.remove('hidden');
+    authStep('authStepDenied');
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    $('authSendLinkBtn').addEventListener('click', async () => {
+      const email = $('authEmailInput').value.trim();
+      $('authEmailErr').classList.add('hidden');
+      if (!email || !email.includes('@')) { $('authEmailErr').textContent = 'Ingresá un email válido.'; $('authEmailErr').classList.remove('hidden'); return; }
+      try {
+        const actionCodeSettings = { url: location.href.split('?')[0] + (getCode() ? `?codigo=${getCode()}` : ''), handleCodeInApp: true };
+        await fbAuth.sendSignInLinkToEmail(email, actionCodeSettings);
+        try { localStorage.setItem(AUTH_EMAIL_KEY, email); } catch (e) { /* sin acceso */ }
+        $('authSentEmail').textContent = email;
+        authStep('authStepSent');
+      } catch (e) { $('authEmailErr').textContent = 'No se pudo enviar el link. Revisá el email e intentá de nuevo.'; $('authEmailErr').classList.remove('hidden'); }
+    });
+    $('authRetryBtn').addEventListener('click', () => {
+      try { localStorage.removeItem(AUTH_EMAIL_KEY); } catch (e) { /* sin acceso */ }
+      if (fbAuth) fbAuth.signOut();
+      authStep('authStepEmail');
+    });
+  });
 
   function renderMonth() {
     $('monthLabel').textContent = monthKey(currentMonday);
@@ -492,37 +560,18 @@
     db.collection('congregations').doc(code).onSnapshot((snap) => {
       if (!snap.exists) { showGateError(); return; }
       data = snap.data() || {};
-      if (!pinGateOk()) {
-        $('gateView').classList.add('hidden');
-        $('mainView').classList.add('hidden');
-        $('pinGateView').classList.remove('hidden');
-        return;
-      }
       $('gateView').classList.add('hidden');
-      $('pinGateView').classList.add('hidden');
+      $('authGateView').classList.add('hidden');
       $('mainView').classList.remove('hidden');
       renderCurrent();
       const url = new URL(location);
       url.searchParams.set('codigo', code);
       history.replaceState(null, '', url);
-    }, () => showGateError());
+    }, (err) => {
+      if (err && err.code === 'permission-denied') showAccessDenied();
+      else showGateError();
+    });
   }
-  $('pinBtn').addEventListener('click', () => {
-    const entered = $('pinInput').value.trim();
-    if (data && data.settings && entered === (data.settings.viewPin || '')) {
-      verifiedPin = true;
-      $('pinErr').classList.add('hidden');
-      $('pinGateView').classList.add('hidden');
-      $('mainView').classList.remove('hidden');
-      renderCurrent();
-      const url = new URL(location);
-      url.searchParams.set('pin', entered);
-      history.replaceState(null, '', url);
-    } else {
-      $('pinErr').classList.remove('hidden');
-    }
-  });
-  $('pinInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('pinBtn').click(); });
 
   $('prevBtn').addEventListener('click', () => { currentMonday = shiftDate(currentMonday, -28); renderMonth(); });
   $('nextBtn').addEventListener('click', () => { currentMonday = shiftDate(currentMonday, 28); renderMonth(); });
@@ -534,9 +583,13 @@
   });
   $('gateCodeInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('gateBtn').click(); });
 
-  const codeFromUrl = getCode();
-  if (codeFromUrl) { startViewing(codeFromUrl); }
-  else { $('gateView').classList.remove('hidden'); }
+  (async () => {
+    initFirebase();
+    await initAuth();
+    const codeFromUrl = getCode();
+    if (codeFromUrl) { startViewing(codeFromUrl); }
+    else { $('gateView').classList.remove('hidden'); }
+  })();
 </script>
 
 </body>

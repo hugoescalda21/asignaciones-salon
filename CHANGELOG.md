@@ -6,6 +6,16 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## v5 — 14 de septiembre de 2026 (cambio importante de infraestructura)
+- **Acceso con cuenta real (Firebase Authentication)**, en reemplazo del código PIN de la versión anterior. Cada persona inicia sesión con su email — sin contraseña, le llega un link — y Firestore verifica del lado del servidor que esté autorizada antes de entregar cualquier dato. Esto sí es seguridad real, a diferencia del PIN anterior.
+- Nueva pantalla **Ajustes → Acceso**, con dos listas separadas: quién puede **editar** y quién solo puede **ver**. Sacar a alguien de la lista le corta el acceso al instante.
+- Quien crea una congregación nueva queda agregado solo como su primer editor.
+- **`firestore.rules` nuevo** (hay que pegarlo a mano en la consola de Firebase — Anthropic no tiene acceso a ese proyecto) — exige sesión iniciada y email autorizado tanto para leer como para editar.
+- La app principal y `ver.html` ahora piden iniciar sesión antes de mostrar nada, salvo que Firebase no esté disponible (por ejemplo, sin internet) — ahí siguen funcionando en modo local como siempre, para no perder esa resistencia.
+- Se sacó el sistema de PIN de 4 dígitos de la versión anterior (quedó superado por este).
+
+**Pendiente de tu lado, fuera de la app:** activar "Email link (passwordless)" en Firebase Authentication, agregar tu dominio de GitHub Pages a los dominios autorizados, y publicar `firestore.rules`. Sin esos tres pasos en la consola de Firebase, el login no va a funcionar todavía.
+
 ## v4 — 14 de septiembre de 2026
 - **Acomodadores** como nuevo puesto del equipo técnico (cantidad configurable en Ajustes), integrado en tarjetas, calendario, auto-asignar, PDF, WhatsApp y CSV.
 - **Programa completo de la reunión** (nueva subpestaña "Programa" dentro de cada reunión): Presidente, oraciones, Tesoros de la Biblia, Perlas escondidas, Lectura de la Biblia, partes de estudiante flexibles ("Seamos mejores maestros"), Nuestra Vida Cristiana (también flexible), Estudio bíblico de la congregación, y para Fin de semana: Discurso público con tema, Atalaya y oraciones.
