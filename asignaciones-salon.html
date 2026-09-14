@@ -326,6 +326,7 @@
   .program-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
   .program-row:last-child { border-bottom: none; }
   .program-row label { width: 145px; flex-shrink: 0; font-size: 12.5px; color: var(--ink-soft); }
+  .min-tag { display: block; font-size: 10px; color: var(--accent-gold); font-weight: 600; margin-top: 1px; }
   .program-row select, .program-row input[type="text"] {
     flex: 1; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 7px 9px; font-family: inherit; font-size: 13px; background: var(--bg); color: var(--ink);
   }
@@ -1238,8 +1239,9 @@
     const sorted = data.publishers.slice().sort((a, b) => a.name.localeCompare(b.name, 'es'));
     return '<option value="">— Sin asignar —</option>' + sorted.map(p => `<option value="${p.id}" ${p.id === selectedId ? 'selected' : ''}>${escapeHtml(p.name)}</option>`).join('');
   }
-  function programRowHTML(field, label, selectedId) {
-    return `<div class="program-row"><label>${label}</label><select data-program-field="${field}">${allPubOptionsHTML(selectedId)}</select></div>`;
+  function programRowHTML(field, label, selectedId, minLabel) {
+    const suffix = minLabel ? `<span class="min-tag">${minLabel}</span>` : '';
+    return `<div class="program-row"><label>${label}${suffix}</label><select data-program-field="${field}">${allPubOptionsHTML(selectedId)}</select></div>`;
   }
 
   function renderProgramSection() {
@@ -1249,21 +1251,21 @@
     html += programRowHTML('presidente', 'Presidente', program.presidente);
     html += programRowHTML('oracionInicial', 'Oración inicial', program.oracionInicial);
     if (currentType === 'finde') {
-      html += programRowHTML('oradorPublico', 'Orador — Discurso público', program.oradorPublico);
+      html += programRowHTML('oradorPublico', 'Orador — Discurso público', program.oradorPublico, '30 min');
       html += `<div class="program-row"><label>Tema del discurso</label><input type="text" data-program-field="temaPublico" value="${escapeHtml(program.temaPublico || '')}" placeholder="Tema (opcional)"></div>`;
-      html += programRowHTML('atalayaConductor', 'Atalaya — Conductor', program.atalayaConductor);
+      html += programRowHTML('atalayaConductor', 'Atalaya — Conductor', program.atalayaConductor, '60 min');
       html += programRowHTML('atalayaLector', 'Atalaya — Lector', program.atalayaLector);
       html += programRowHTML('oracionFinal', 'Oración final', program.oracionFinal);
       html += '</div>';
     } else {
       if (aux) html += programRowHTML('consejeroAux', 'Consejero de la sala auxiliar', program.consejeroAux);
-      html += programRowHTML('tesoros', 'Tesoros de la Biblia', program.tesoros);
-      html += programRowHTML('perlas', 'Busquemos perlas escondidas', program.perlas);
+      html += programRowHTML('tesoros', 'Tesoros de la Biblia', program.tesoros, '10 min');
+      html += programRowHTML('perlas', 'Busquemos perlas escondidas', program.perlas, '10 min');
       if (aux) {
-        html += `<div class="split-block"><div class="split-label">Lectura — Auditorio principal</div>${programRowHTML('lectura', 'Estudiante', program.lectura)}</div>`;
-        html += `<div class="split-block aux"><div class="split-label aux">Lectura — Sala auxiliar</div>${programRowHTML('lecturaAux', 'Estudiante', program.lecturaAux)}</div>`;
+        html += `<div class="split-block"><div class="split-label">Lectura — Auditorio principal</div>${programRowHTML('lectura', 'Estudiante', program.lectura, '4 min')}</div>`;
+        html += `<div class="split-block aux"><div class="split-label aux">Lectura — Sala auxiliar</div>${programRowHTML('lecturaAux', 'Estudiante', program.lecturaAux, '4 min')}</div>`;
       } else {
-        html += programRowHTML('lectura', 'Lectura de la Biblia', program.lectura);
+        html += programRowHTML('lectura', 'Lectura de la Biblia', program.lectura, '4 min');
       }
       html += programRowHTML('oracionFinal', 'Oración final', program.oracionFinal);
       html += '</div>';
@@ -1302,7 +1304,7 @@
         </div>`;
       });
       html += '<button type="button" class="add-part-btn" id="addVidaPartBtn">+ Agregar parte</button>';
-      html += `<div class="program-row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);"><label>Estudio bíblico — Conductor</label><select data-program-field="estudioConductor">${allPubOptionsHTML(program.estudioConductor)}</select></div>`;
+      html += `<div class="program-row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);"><label>Estudio bíblico — Conductor<span class="min-tag">30 min</span></label><select data-program-field="estudioConductor">${allPubOptionsHTML(program.estudioConductor)}</select></div>`;
       html += `<div class="program-row"><label>Estudio bíblico — Lector</label><select data-program-field="estudioLector">${allPubOptionsHTML(program.estudioLector)}</select></div>`;
       html += '</div>';
     }
