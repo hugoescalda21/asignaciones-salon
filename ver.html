@@ -101,6 +101,15 @@
   <p class="err hidden" id="gateErr">No se encontró ninguna congregación con ese código.</p>
 </div>
 
+<div id="pinGateView" class="gate hidden">
+  <div style="font-size:26px; margin-bottom:6px;">🔒</div>
+  <h1>Código de acceso</h1>
+  <p>Esta congregación pidió un código para ver las asignaciones. Pedíselo a quien te compartió el link.</p>
+  <input type="text" id="pinInput" placeholder="••••" inputmode="numeric" maxlength="4" autocomplete="off">
+  <button type="button" id="pinBtn">Ver</button>
+  <p class="err hidden" id="pinErr">Ese código no es correcto.</p>
+</div>
+
 <div id="mainView" class="hidden">
   <div class="topbar">
     <div class="topbar-inner">
@@ -287,6 +296,17 @@
     const params = new URLSearchParams(location.search);
     return (params.get('codigo') || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
   }
+  function getPin() {
+    const params = new URLSearchParams(location.search);
+    return (params.get('pin') || '').trim();
+  }
+  let verifiedPin = false;
+  function pinGateOk() {
+    if (!(data && data.settings && data.settings.requireViewPin)) return true;
+    const correct = data.settings.viewPin || '';
+    if (getPin() && getPin() === correct) return true;
+    return verifiedPin;
+  }
 
   function initFirebase() {
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
@@ -472,7 +492,14 @@
     db.collection('congregations').doc(code).onSnapshot((snap) => {
       if (!snap.exists) { showGateError(); return; }
       data = snap.data() || {};
+      if (!pinGateOk()) {
+        $('gateView').classList.add('hidden');
+        $('mainView').classList.add('hidden');
+        $('pinGateView').classList.remove('hidden');
+        return;
+      }
       $('gateView').classList.add('hidden');
+      $('pinGateView').classList.add('hidden');
       $('mainView').classList.remove('hidden');
       renderCurrent();
       const url = new URL(location);
@@ -480,6 +507,22 @@
       history.replaceState(null, '', url);
     }, () => showGateError());
   }
+  $('pinBtn').addEventListener('click', () => {
+    const entered = $('pinInput').value.trim();
+    if (data && data.settings && entered === (data.settings.viewPin || '')) {
+      verifiedPin = true;
+      $('pinErr').classList.add('hidden');
+      $('pinGateView').classList.add('hidden');
+      $('mainView').classList.remove('hidden');
+      renderCurrent();
+      const url = new URL(location);
+      url.searchParams.set('pin', entered);
+      history.replaceState(null, '', url);
+    } else {
+      $('pinErr').classList.remove('hidden');
+    }
+  });
+  $('pinInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('pinBtn').click(); });
 
   $('prevBtn').addEventListener('click', () => { currentMonday = shiftDate(currentMonday, -28); renderMonth(); });
   $('nextBtn').addEventListener('click', () => { currentMonday = shiftDate(currentMonday, 28); renderMonth(); });

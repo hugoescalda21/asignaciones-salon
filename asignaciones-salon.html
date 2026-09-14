@@ -215,6 +215,10 @@
 
   /* Recordatorio */
   .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .pin-row { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .pin-display { font-family: 'Fraunces', serif; font-size: 24px; letter-spacing: 0.15em; font-weight: 600; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 14px; }
+  .pin-actions { display: flex; flex-direction: column; gap: 6px; }
+  .pin-btn { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 6px 11px; font-size: 11px; font-weight: 600; color: var(--ink-soft); text-align: left; }
   .toggle-row p { margin: 0; font-size: 13px; font-weight: 600; }
   .toggle-row .hint { font-size: 11.5px; color: var(--ink-soft); margin-top: 2px; font-weight: 400; }
   .switch { position: relative; width: 42px; height: 24px; background: var(--line); border-radius: 20px; flex-shrink: 0; cursor: pointer; border: none; transition: background 0.15s; }
@@ -639,6 +643,20 @@
       <div class="settings-actions" style="margin-top:12px;">
         <button class="btn" id="changeCodeBtn">Cambiar código</button>
       </div>
+      <div class="toggle-row" style="margin-top:14px; padding-top:14px; border-top:1px solid var(--line);">
+        <div>
+          <p>Pedir código para ver</p>
+          <p class="hint">Sin esto, cualquiera con el link de solo lectura puede ver los nombres y asignaciones.</p>
+        </div>
+        <button type="button" class="switch" id="viewPinSwitch" aria-label="Pedir código para ver"></button>
+      </div>
+      <div id="viewPinRow" class="pin-row hidden">
+        <div class="pin-display" id="viewPinDisplay">••••</div>
+        <div class="pin-actions">
+          <button type="button" class="pin-btn" id="regenPinBtn">🔄 Generar otro</button>
+          <button type="button" class="pin-btn" id="copyPinLinkBtn">📋 Copiar link con el código</button>
+        </div>
+      </div>
     </details>
 
     <details class="settings-card">
@@ -943,7 +961,7 @@
   function monthKey(iso) { const d = new Date(iso + 'T00:00:00'); return d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }); }
 
   /* ---------- Carga / normalización / migración ---------- */
-  function defaultSettings() { return { congregationName: 'Mi Congregación', micCount: 2, usherCount: 2, weekdaySemana: 4, weekdayFinde: 0, timerMuted: false, themeMode: 'auto', remindersEnabled: false, useAuxRoom: false }; }
+  function defaultSettings() { return { congregationName: 'Mi Congregación', micCount: 2, usherCount: 2, weekdaySemana: 4, weekdayFinde: 0, timerMuted: false, themeMode: 'auto', remindersEnabled: false, useAuxRoom: false, requireViewPin: false, viewPin: '' }; }
 
   function migrate(raw) {
     let out;
@@ -1651,6 +1669,7 @@
     if (!accessCode) { showToast('Conectate con un código primero (Ajustes → Sincronización)'); return; }
     const url = new URL('ver.html', location.href);
     url.searchParams.set('codigo', accessCode);
+    if (data.settings.requireViewPin && data.settings.viewPin) url.searchParams.set('pin', data.settings.viewPin);
     const link = url.toString();
     if (navigator.share) {
       try { await navigator.share({ title: 'Programa — Salón del Reino', text: 'Mirá el programa de asignaciones (solo lectura):', url: link }); return; }
@@ -2516,6 +2535,7 @@
     renderYearlyReport();
     updateReminderToggle();
     updateAuxRoomToggle();
+    updateViewPinUI();
   }
 
   /* ---------- Guardado seguro ---------- */
@@ -2710,6 +2730,27 @@
     updateAuxRoomToggle();
     if (currentSubtab === 'programa') renderProgramSection();
   });
+
+  function generatePin() { return String(Math.floor(1000 + Math.random() * 9000)); }
+  function updateViewPinUI() {
+    const on = !!data.settings.requireViewPin;
+    $('viewPinSwitch').classList.toggle('on', on);
+    $('viewPinRow').classList.toggle('hidden', !on);
+    if (on) $('viewPinDisplay').textContent = (data.settings.viewPin || '').split('').join(' ');
+  }
+  $('viewPinSwitch').addEventListener('click', () => {
+    data.settings.requireViewPin = !data.settings.requireViewPin;
+    if (data.settings.requireViewPin && !data.settings.viewPin) data.settings.viewPin = generatePin();
+    saveData();
+    updateViewPinUI();
+  });
+  $('regenPinBtn').addEventListener('click', () => {
+    data.settings.viewPin = generatePin();
+    saveData();
+    updateViewPinUI();
+    showToast('Código nuevo generado');
+  });
+  $('copyPinLinkBtn').addEventListener('click', () => copyViewLink());
   $('reminderSwitch').addEventListener('click', async () => {
     if (!data.settings.remindersEnabled) {
       if (!('Notification' in window)) { showToast('Este navegador no soporta notificaciones'); return; }
