@@ -335,6 +335,10 @@
   .student-block .program-row label { width: 80px; }
   .remove-part-btn { border: none; background: none; color: var(--ink-faint); font-size: 11.5px; font-weight: 600; margin-top: 6px; }
   .add-part-btn { width: 100%; border: 1px dashed var(--accent-gold); background: none; color: var(--accent-gold); padding: 10px; border-radius: var(--radius-s); font-size: 13px; font-weight: 600; }
+  .split-block { border: 1px solid var(--line); border-radius: var(--radius-s); padding: 8px 10px; margin: 8px 0; }
+  .split-block.aux { border-color: var(--role-usher); background: rgba(122,140,99,0.06); }
+  .split-label { font-size: 10.5px; font-weight: 700; color: var(--accent-gold); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 4px; }
+  .split-label.aux { color: var(--role-usher); }
   .theme-opt { flex: 1; border: none; background: none; color: var(--ink-soft); padding: 8px; border-radius: 16px; font-size: 12.5px; font-weight: 600; }
   .theme-opt.active { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-sm); }
   .settings-card h3 { font-size: 14.5px; margin: 0 0 4px; }
@@ -677,6 +681,13 @@
         <div class="field"><label>Día — Entre semana</label><select id="weekdaySemanaSelect"></select></div>
         <div class="field"><label>Día — Fin de semana</label><select id="weekdayFindeSelect"></select></div>
       </div>
+      <div class="toggle-row" style="margin-top:14px; padding-top:14px; border-top:1px solid var(--line);">
+        <div>
+          <p>Usar sala auxiliar</p>
+          <p class="hint">Duplica las partes de estudiantes para las dos salas.</p>
+        </div>
+        <button type="button" class="switch" id="auxRoomSwitch" aria-label="Activar sala auxiliar"></button>
+      </div>
     </details>
 
     <details class="settings-card">
@@ -876,7 +887,7 @@
   const blankRoles = () => ({ sonido: null, video: null, mic1: null, mic2: null, mic3: null, plataforma: null, usher1: null, usher2: null, usher3: null, usher4: null, cronometrista: null });
   const blankProgram = (type) => type === 'finde'
     ? { presidente: null, oracionInicial: null, oradorPublico: null, temaPublico: '', atalayaConductor: null, atalayaLector: null, oracionFinal: null }
-    : { presidente: null, oracionInicial: null, tesoros: null, perlas: null, lectura: null, estudiantes: [], vidaConductor: null, estudioConductor: null, estudioLector: null, oracionFinal: null };
+    : { presidente: null, oracionInicial: null, consejeroAux: null, tesoros: null, perlas: null, lectura: null, lecturaAux: null, estudiantes: [], vidaCristiana: [], estudioConductor: null, estudioLector: null, oracionFinal: null };
   const blankWeek = () => ({
     semana: { roles: blankRoles(), excluded: [], topic: '', program: blankProgram('semana') },
     finde: { roles: blankRoles(), excluded: [], topic: '', program: blankProgram('finde') }
@@ -905,7 +916,7 @@
   function monthKey(iso) { const d = new Date(iso + 'T00:00:00'); return d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }); }
 
   /* ---------- Carga / normalización / migración ---------- */
-  function defaultSettings() { return { congregationName: 'Mi Congregación', micCount: 2, usherCount: 2, weekdaySemana: 4, weekdayFinde: 0, timerMuted: false, themeMode: 'auto', remindersEnabled: false }; }
+  function defaultSettings() { return { congregationName: 'Mi Congregación', micCount: 2, usherCount: 2, weekdaySemana: 4, weekdayFinde: 0, timerMuted: false, themeMode: 'auto', remindersEnabled: false, useAuxRoom: false }; }
 
   function migrate(raw) {
     let out;
@@ -1231,6 +1242,7 @@
 
   function renderProgramSection() {
     const program = weekView(currentMonday)[currentType].program;
+    const aux = !!data.settings.useAuxRoom;
     let html = '<div class="program-card">';
     html += programRowHTML('presidente', 'Presidente', program.presidente);
     html += programRowHTML('oracionInicial', 'Oración inicial', program.oracionInicial);
@@ -1239,31 +1251,55 @@
       html += `<div class="program-row"><label>Tema del discurso</label><input type="text" data-program-field="temaPublico" value="${escapeHtml(program.temaPublico || '')}" placeholder="Tema (opcional)"></div>`;
       html += programRowHTML('atalayaConductor', 'Atalaya — Conductor', program.atalayaConductor);
       html += programRowHTML('atalayaLector', 'Atalaya — Lector', program.atalayaLector);
+      html += programRowHTML('oracionFinal', 'Oración final', program.oracionFinal);
+      html += '</div>';
     } else {
+      if (aux) html += programRowHTML('consejeroAux', 'Consejero de la sala auxiliar', program.consejeroAux);
       html += programRowHTML('tesoros', 'Tesoros de la Biblia', program.tesoros);
       html += programRowHTML('perlas', 'Busquemos perlas escondidas', program.perlas);
-      html += programRowHTML('lectura', 'Lectura de la Biblia', program.lectura);
-    }
-    html += programRowHTML('oracionFinal', 'Oración final', program.oracionFinal);
-    html += '</div>';
+      if (aux) {
+        html += `<div class="split-block"><div class="split-label">Lectura — Auditorio principal</div>${programRowHTML('lectura', 'Estudiante', program.lectura)}</div>`;
+        html += `<div class="split-block aux"><div class="split-label aux">Lectura — Sala auxiliar</div>${programRowHTML('lecturaAux', 'Estudiante', program.lecturaAux)}</div>`;
+      } else {
+        html += programRowHTML('lectura', 'Lectura de la Biblia', program.lectura);
+      }
+      html += programRowHTML('oracionFinal', 'Oración final', program.oracionFinal);
+      html += '</div>';
 
-    if (currentType === 'semana') {
       html += '<div class="program-subhead">Seamos mejores maestros</div>';
       (program.estudiantes || []).forEach((s) => {
         html += `<div class="student-block" data-student-id="${s.id}">
-          <div class="program-row"><label>Estudiante</label><select data-student-field="estudiante">${allPubOptionsHTML(s.estudiante)}</select></div>
-          <div class="program-row"><label>Ayudante</label><select data-student-field="ayudante">${allPubOptionsHTML(s.ayudante)}</select></div>
-          <div class="program-row"><label>Tema</label><input type="text" data-student-field="tema" value="${escapeHtml(s.tema || '')}" placeholder="Tema de la parte"></div>
-          <button type="button" class="remove-part-btn" data-remove-student="${s.id}">✕ Quitar esta parte</button>
+          <div class="program-row"><label>Tema</label><input type="text" data-student-field="tema" value="${escapeHtml(s.tema || '')}" placeholder="Tema de la parte"></div>`;
+        if (aux) {
+          html += `<div class="split-block"><div class="split-label">Auditorio principal</div>
+              <div class="program-row"><label>Estudiante</label><select data-student-field="estudiante">${allPubOptionsHTML(s.estudiante)}</select></div>
+              <div class="program-row"><label>Ayudante</label><select data-student-field="ayudante">${allPubOptionsHTML(s.ayudante)}</select></div>
+            </div>
+            <div class="split-block aux"><div class="split-label aux">Sala auxiliar</div>
+              <div class="program-row"><label>Estudiante</label><select data-student-field="estudianteAux">${allPubOptionsHTML(s.estudianteAux)}</select></div>
+              <div class="program-row"><label>Ayudante</label><select data-student-field="ayudanteAux">${allPubOptionsHTML(s.ayudanteAux)}</select></div>
+            </div>`;
+        } else {
+          html += `<div class="program-row"><label>Estudiante</label><select data-student-field="estudiante">${allPubOptionsHTML(s.estudiante)}</select></div>
+            <div class="program-row"><label>Ayudante</label><select data-student-field="ayudante">${allPubOptionsHTML(s.ayudante)}</select></div>`;
+        }
+        html += `<button type="button" class="remove-part-btn" data-remove-student="${s.id}">✕ Quitar esta parte</button>
         </div>`;
       });
       html += '<button type="button" class="add-part-btn" id="addStudentPartBtn">+ Agregar parte de estudiante</button>';
 
       html += '<div class="program-card" style="margin-top:14px;">';
       html += '<div class="program-subhead" style="margin-top:0;">Nuestra Vida Cristiana</div>';
-      html += programRowHTML('vidaConductor', 'Conductor', program.vidaConductor);
-      html += programRowHTML('estudioConductor', 'Estudio bíblico — Conductor', program.estudioConductor);
-      html += programRowHTML('estudioLector', 'Estudio bíblico — Lector', program.estudioLector);
+      (program.vidaCristiana || []).forEach((v) => {
+        html += `<div class="student-block" data-vida-id="${v.id}">
+          <div class="program-row"><label>Tema</label><input type="text" data-vida-field="tema" value="${escapeHtml(v.tema || '')}" placeholder="Tema de la parte"></div>
+          <div class="program-row"><label>Presentador</label><select data-vida-field="presentador">${allPubOptionsHTML(v.presentador)}</select></div>
+          <button type="button" class="remove-part-btn" data-remove-vida="${v.id}">✕ Quitar esta parte</button>
+        </div>`;
+      });
+      html += '<button type="button" class="add-part-btn" id="addVidaPartBtn">+ Agregar parte</button>';
+      html += `<div class="program-row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);"><label>Estudio bíblico — Conductor</label><select data-program-field="estudioConductor">${allPubOptionsHTML(program.estudioConductor)}</select></div>`;
+      html += `<div class="program-row"><label>Estudio bíblico — Lector</label><select data-program-field="estudioLector">${allPubOptionsHTML(program.estudioLector)}</select></div>`;
       html += '</div>';
     }
     $('programSection').innerHTML = html;
@@ -1284,17 +1320,35 @@
         saveData();
         showToast('Asignación actualizada');
       }
+    } else if (e.target.dataset.vidaField) {
+      const block = e.target.closest('[data-vida-id]');
+      const entry = program.vidaCristiana.find(v => v.id === block.dataset.vidaId);
+      if (entry) {
+        entry[e.target.dataset.vidaField] = e.target.value || (e.target.tagName === 'INPUT' ? '' : null);
+        saveData();
+        showToast('Asignación actualizada');
+      }
     }
   });
   $('programSection').addEventListener('click', (e) => {
     if (e.target.id === 'addStudentPartBtn') {
       const week = ensureWeek(currentMonday);
-      week[currentType].program.estudiantes.push({ id: uid(), estudiante: null, ayudante: null, tema: '' });
+      week[currentType].program.estudiantes.push({ id: uid(), estudiante: null, ayudante: null, estudianteAux: null, ayudanteAux: null, tema: '' });
       saveData();
       renderProgramSection();
     } else if (e.target.dataset.removeStudent) {
       const week = ensureWeek(currentMonday);
       week[currentType].program.estudiantes = week[currentType].program.estudiantes.filter(s => s.id !== e.target.dataset.removeStudent);
+      saveData();
+      renderProgramSection();
+    } else if (e.target.id === 'addVidaPartBtn') {
+      const week = ensureWeek(currentMonday);
+      week[currentType].program.vidaCristiana.push({ id: uid(), tema: '', presentador: null });
+      saveData();
+      renderProgramSection();
+    } else if (e.target.dataset.removeVida) {
+      const week = ensureWeek(currentMonday);
+      week[currentType].program.vidaCristiana = week[currentType].program.vidaCristiana.filter(v => v.id !== e.target.dataset.removeVida);
       saveData();
       renderProgramSection();
     }
@@ -2169,6 +2223,7 @@
     checkStoragePersist();
     renderYearlyReport();
     updateReminderToggle();
+    updateAuxRoomToggle();
   }
 
   /* ---------- Guardado seguro ---------- */
@@ -2356,6 +2411,13 @@
 
   /* ---------- Recordatorio local ---------- */
   function updateReminderToggle() { $('reminderSwitch').classList.toggle('on', !!data.settings.remindersEnabled); }
+  function updateAuxRoomToggle() { $('auxRoomSwitch').classList.toggle('on', !!data.settings.useAuxRoom); }
+  $('auxRoomSwitch').addEventListener('click', () => {
+    data.settings.useAuxRoom = !data.settings.useAuxRoom;
+    saveData();
+    updateAuxRoomToggle();
+    if (currentSubtab === 'programa') renderProgramSection();
+  });
   $('reminderSwitch').addEventListener('click', async () => {
     if (!data.settings.remindersEnabled) {
       if (!('Notification' in window)) { showToast('Este navegador no soporta notificaciones'); return; }
