@@ -172,6 +172,8 @@
   .cal-day.today { outline: 2px solid var(--accent-gold); outline-offset: -1px; }
   .cal-dotrow { display: flex; flex-wrap: wrap; gap: 2px; margin-top: 3px; }
   .cal-role-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+  .cal-prog-ring { position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--role-program, #8C5A6E); }
+  .cal-prog-ring.full { background: var(--role-program, #8C5A6E); }
   .cal-legend { display: flex; flex-wrap: wrap; gap: 10px 14px; font-size: 10.5px; color: var(--ink-soft); margin-top: 4px; }
   .cal-legend span { display: flex; align-items: center; gap: 5px; }
   .cal-legend .dot { width: 7px; height: 7px; border-radius: 50%; }
@@ -1377,6 +1379,7 @@
         showToast('Asignación actualizada');
       }
     }
+    renderMonthCalendar();
   });
   $('programSection').addEventListener('click', (e) => {
     if (e.target.id === 'addStudentPartBtn') {
@@ -1703,6 +1706,16 @@
     showToast('PDF generado');
   }
 
+  function programCompleteness(program, type) {
+    if (!program) return 'none';
+    const core = type === 'finde'
+      ? [program.presidente, program.oracionInicial, program.oradorPublico, program.atalayaConductor, program.atalayaLector, program.oracionFinal]
+      : [program.presidente, program.oracionInicial, program.tesoros, program.perlas, program.lectura, program.oracionFinal];
+    const filledCount = core.filter(Boolean).length;
+    if (filledCount === 0) return 'none';
+    return filledCount === core.length ? 'complete' : 'partial';
+  }
+
   function renderMonthCalendar() {
     const y = parseInt(currentMonday.slice(0, 4)), m = parseInt(currentMonday.slice(5, 7)) - 1;
     const first = new Date(y, m, 1);
@@ -1719,15 +1732,19 @@
       const isToday = dateIso === todayIso;
       let dotsHtml = '';
       let typeClass = '';
+      let ringHtml = '';
       if (isSemana || isFinde) {
         const type = isFinde ? 'finde' : 'semana';
         typeClass = isFinde ? 'finde-day' : 'semana-day';
         const week = weekView(mondayOf(dateIso))[type];
         const filled = getRoles(type).filter(r => week.roles[r.key]);
         if (filled.length) dotsHtml = '<div class="cal-dotrow">' + filled.map(r => `<span class="cal-role-dot" style="background:${r.color}"></span>`).join('') + '</div>';
+        const progState = programCompleteness(week.program, type);
+        if (progState === 'complete') ringHtml = '<span class="cal-prog-ring full" title="Programa completo"></span>';
+        else if (progState === 'partial') ringHtml = '<span class="cal-prog-ring" title="Programa incompleto"></span>';
       }
       cells += `<div class="cal-day ${(isSemana || isFinde) ? 'has-meeting' : ''} ${typeClass} ${isToday ? 'today' : ''}" data-date="${dateIso}">
-        <span class="n">${d}</span>${dotsHtml}
+        ${ringHtml}<span class="n">${d}</span>${dotsHtml}
       </div>`;
     }
     $('calendarWrap').innerHTML = `
@@ -1744,6 +1761,8 @@
         <span><span class="dot" style="background:var(--role-mic)"></span>Micrófonos</span>
         <span><span class="dot" style="background:var(--role-plat)"></span>Plataforma</span>
         <span><span class="dot" style="background:var(--role-crono)"></span>Cronometrista</span>
+        <span><span class="cal-prog-ring" style="position:static; display:inline-block;"></span>Programa incompleto</span>
+        <span><span class="cal-prog-ring full" style="position:static; display:inline-block;"></span>Programa completo</span>
       </div>`;
     $('calendarWrap').querySelectorAll('[data-date]').forEach(el => el.addEventListener('click', () => {
       const date = el.dataset.date;
