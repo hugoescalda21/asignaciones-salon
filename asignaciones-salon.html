@@ -1266,7 +1266,7 @@
       html += programRowHTML('oracionFinal', 'Oración final', program.oracionFinal);
       html += '</div>';
 
-      html += '<div class="program-subhead">Seamos mejores maestros</div>';
+      html += '<div class="program-card"><div class="program-subhead" style="margin-top:0;">Seamos mejores maestros</div>';
       (program.estudiantes || []).forEach((s) => {
         html += `<div class="student-block" data-student-id="${s.id}">
           <div class="program-row"><label>Tema</label><input type="text" data-student-field="tema" value="${escapeHtml(s.tema || '')}" placeholder="Tema de la parte"></div>`;
@@ -1286,7 +1286,7 @@
         html += `<button type="button" class="remove-part-btn" data-remove-student="${s.id}">✕ Quitar esta parte</button>
         </div>`;
       });
-      html += '<button type="button" class="add-part-btn" id="addStudentPartBtn">+ Agregar parte de estudiante</button>';
+      html += '<button type="button" class="add-part-btn" id="addStudentPartBtn">+ Agregar parte de estudiante</button></div>';
 
       html += '<div class="program-card" style="margin-top:14px;">';
       html += '<div class="program-subhead" style="margin-top:0;">Nuestra Vida Cristiana</div>';
