@@ -372,7 +372,16 @@
         try { localStorage.setItem(AUTH_EMAIL_KEY, email); } catch (e) { /* sin acceso */ }
         $('authSentEmail').textContent = email;
         authStep('authStepSent');
-      } catch (e) { $('authEmailErr').textContent = 'No se pudo enviar el link. Revisá el email e intentá de nuevo.'; $('authEmailErr').classList.remove('hidden'); }
+      } catch (e) {
+        const map = {
+          'auth/operation-not-allowed': 'El login por email no está activado todavía en Firebase (Authentication → Sign-in method → Email link).',
+          'auth/unauthorized-continue-uri': 'Este dominio no está autorizado en Firebase (Authentication → Settings → Authorized domains).',
+          'auth/invalid-email': 'Ese email no parece válido.',
+          'auth/network-request-failed': 'No hay conexión a internet en este momento.'
+        };
+        $('authEmailErr').textContent = map[e.code] || `No se pudo enviar el link (${e.code || e.message || 'error desconocido'}).`;
+        $('authEmailErr').classList.remove('hidden');
+      }
     });
     $('authRetryBtn').addEventListener('click', () => {
       try { localStorage.removeItem(AUTH_EMAIL_KEY); } catch (e) { /* sin acceso */ }
