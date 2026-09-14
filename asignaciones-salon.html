@@ -363,7 +363,10 @@
   .settings-card summary + p.hint { margin-top: 0; }
   .theme-switcher { display: flex; gap: 6px; background: var(--bg); border-radius: 20px; padding: 4px; }
   .subtabs { display: flex; gap: 6px; background: var(--bg); border-radius: 20px; padding: 4px; margin-bottom: 14px; }
-  .subtab { flex: 1; text-align: center; border: none; background: none; padding: 8px; border-radius: 16px; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
+  .subtab { flex: 1; text-align: center; border: none; background: none; padding: 8px; border-radius: 16px; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .subtab-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; background: var(--line); }
+  .subtab-dot.ok { background: var(--ok); }
+  .subtab-dot.warn { background: var(--accent-gold); }
   .subtab.active { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-sm); }
 
   .program-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 14px 16px; margin-bottom: 12px; box-shadow: var(--shadow-sm); }
@@ -584,16 +587,16 @@
       <button class="btn" id="todayBtn">Hoy</button>
     </div>
 
+    <div class="subtabs">
+      <button type="button" class="subtab active" data-subtab="tecnico" id="subtabTecnico"><span class="subtab-dot" id="dotTecnico"></span>Equipo técnico</button>
+      <button type="button" class="subtab" data-subtab="programa" id="subtabPrograma"><span class="subtab-dot" id="dotPrograma"></span>Programa</button>
+    </div>
+
     <div class="type-pills">
       <button class="pill active" data-type="semana" id="pillSemana">Entre semana<span class="pill-date" id="pillSemanaDate"></span></button>
       <button class="pill" data-type="finde" id="pillFinde">Fin de semana<span class="pill-date" id="pillFindeDate"></span></button>
     </div>
     <div class="completeness-badge" id="completenessBadge"></div>
-
-    <div class="subtabs">
-      <button type="button" class="subtab active" data-subtab="tecnico">Equipo técnico</button>
-      <button type="button" class="subtab" data-subtab="programa">Programa</button>
-    </div>
 
     <div id="technicalSection">
       <input type="text" id="topicInput" class="topic-input" placeholder="Tema de esta reunión (opcional)…">
@@ -1560,6 +1563,7 @@
     enhanceCombos($('programSection'));
     updateCardCompleteness();
     checkConflicts();
+    updateSubtabDots();
   }
 
   function readProgramValue(el) {
@@ -1592,6 +1596,7 @@
     }
     renderMonthCalendar();
     checkConflicts();
+    updateSubtabDots();
   });
   $('programSection').addEventListener('click', (e) => {
     if (e.target.id === 'addStudentPartBtn') {
@@ -1673,6 +1678,7 @@
       closeList();
       updateCardCompleteness();
       checkConflicts();
+    updateSubtabDots();
     }
 
     input.addEventListener('focus', () => { input.select(); renderList(''); });
@@ -1748,6 +1754,7 @@
     updateCompletenessBadge(roles, typeObj);
     updateCardCompleteness();
     checkConflicts();
+    updateSubtabDots();
   }
 
   function updateCompletenessBadge(roles, typeObj) {
@@ -1763,6 +1770,7 @@
     saveData();
     updateCompletenessBadge(getRoles(currentType), weekView(currentMonday)[currentType]);
     checkConflicts();
+    updateSubtabDots();
     renderMonthTable();
     renderMonthCalendar();
     showToast('Asignación actualizada');
@@ -2020,6 +2028,19 @@
     const filledCount = core.filter(Boolean).length;
     if (filledCount === 0) return 'none';
     return filledCount === core.length ? 'complete' : 'partial';
+  }
+
+  function updateSubtabDots() {
+    const typeObj = weekView(currentMonday)[currentType];
+    const roles = getRoles(currentType);
+    const tecnicoOk = roles.every(r => typeObj.roles[r.key]);
+    const dotT = $('dotTecnico');
+    dotT.classList.toggle('ok', tecnicoOk);
+    dotT.classList.toggle('warn', !tecnicoOk);
+    const progState = programCompleteness(typeObj.program, currentType);
+    const dotP = $('dotPrograma');
+    dotP.classList.toggle('ok', progState === 'complete');
+    dotP.classList.toggle('warn', progState !== 'complete');
   }
 
   function renderMonthCalendar() {
