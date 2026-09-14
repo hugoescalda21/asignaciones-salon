@@ -327,6 +327,7 @@
   .program-row:last-child { border-bottom: none; }
   .program-row label { width: 145px; flex-shrink: 0; font-size: 12.5px; color: var(--ink-soft); }
   .min-tag { display: block; font-size: 10px; color: var(--accent-gold); font-weight: 600; margin-top: 1px; }
+  .part-num { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: var(--ink); color: #fff; font-size: 9.5px; font-weight: 700; margin-right: 5px; flex-shrink: 0; }
   .program-row select, .program-row input[type="text"] {
     flex: 1; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 7px 9px; font-family: inherit; font-size: 13px; background: var(--bg); color: var(--ink);
   }
@@ -1244,6 +1245,8 @@
     return `<div class="program-row"><label>${label}${suffix}</label><select data-program-field="${field}">${allPubOptionsHTML(selectedId)}</select></div>`;
   }
 
+  function numTag(n) { return `<span class="part-num">${n}</span>`; }
+
   function renderProgramSection() {
     const program = weekView(currentMonday)[currentType].program;
     const aux = !!data.settings.useAuxRoom;
@@ -1259,21 +1262,26 @@
       html += '</div>';
     } else {
       if (aux) html += programRowHTML('consejeroAux', 'Consejero de la sala auxiliar', program.consejeroAux);
-      html += programRowHTML('tesoros', 'Tesoros de la Biblia', program.tesoros, '10 min');
-      html += programRowHTML('perlas', 'Busquemos perlas escondidas', program.perlas, '10 min');
+      html += programRowHTML('tesoros', `${numTag(1)} Tesoros de la Biblia`, program.tesoros, '10 min');
+      html += programRowHTML('perlas', `${numTag(2)} Busquemos perlas escondidas`, program.perlas, '10 min');
       if (aux) {
-        html += `<div class="split-block"><div class="split-label">Lectura — Auditorio principal</div>${programRowHTML('lectura', 'Estudiante', program.lectura, '4 min')}</div>`;
-        html += `<div class="split-block aux"><div class="split-label aux">Lectura — Sala auxiliar</div>${programRowHTML('lecturaAux', 'Estudiante', program.lecturaAux, '4 min')}</div>`;
+        html += `<div class="split-block"><div class="split-label">Lectura — Auditorio principal</div>${programRowHTML('lectura', `${numTag(3)} Estudiante`, program.lectura, '4 min')}</div>`;
+        html += `<div class="split-block aux"><div class="split-label aux">Lectura — Sala auxiliar</div>${programRowHTML('lecturaAux', `${numTag(3)} Estudiante`, program.lecturaAux, '4 min')}</div>`;
       } else {
-        html += programRowHTML('lectura', 'Lectura de la Biblia', program.lectura, '4 min');
+        html += programRowHTML('lectura', `${numTag(3)} Lectura de la Biblia`, program.lectura, '4 min');
       }
       html += programRowHTML('oracionFinal', 'Oración final', program.oracionFinal);
       html += '</div>';
 
+      const estudiantes = program.estudiantes || [];
+      const vidaCristiana = program.vidaCristiana || [];
+      let n = 4;
+
       html += '<div class="program-card"><div class="program-subhead" style="margin-top:0;">Seamos mejores maestros</div>';
-      (program.estudiantes || []).forEach((s) => {
+      estudiantes.forEach((s) => {
+        const partN = n++;
         html += `<div class="student-block" data-student-id="${s.id}">
-          <div class="program-row"><label>Tema</label><input type="text" data-student-field="tema" value="${escapeHtml(s.tema || '')}" placeholder="Tema de la parte"></div>
+          <div class="program-row"><label>${numTag(partN)} Tema</label><input type="text" data-student-field="tema" value="${escapeHtml(s.tema || '')}" placeholder="Tema de la parte"></div>
           <div class="program-row"><label>Minutos</label><input type="number" min="1" max="60" data-student-field="minutos" value="${s.minutos || ''}" placeholder="Ej: 5"></div>`;
         if (aux) {
           html += `<div class="split-block"><div class="split-label">Auditorio principal</div>
@@ -1295,16 +1303,17 @@
 
       html += '<div class="program-card" style="margin-top:14px;">';
       html += '<div class="program-subhead" style="margin-top:0;">Nuestra Vida Cristiana</div>';
-      (program.vidaCristiana || []).forEach((v) => {
+      vidaCristiana.forEach((v) => {
+        const partN = n++;
         html += `<div class="student-block" data-vida-id="${v.id}">
-          <div class="program-row"><label>Tema</label><input type="text" data-vida-field="tema" value="${escapeHtml(v.tema || '')}" placeholder="Tema de la parte"></div>
+          <div class="program-row"><label>${numTag(partN)} Tema</label><input type="text" data-vida-field="tema" value="${escapeHtml(v.tema || '')}" placeholder="Tema de la parte"></div>
           <div class="program-row"><label>Minutos</label><input type="number" min="1" max="60" data-vida-field="minutos" value="${v.minutos || ''}" placeholder="Ej: 15"></div>
           <div class="program-row"><label>Presentador</label><select data-vida-field="presentador">${allPubOptionsHTML(v.presentador)}</select></div>
           <button type="button" class="remove-part-btn" data-remove-vida="${v.id}">✕ Quitar esta parte</button>
         </div>`;
       });
       html += '<button type="button" class="add-part-btn" id="addVidaPartBtn">+ Agregar parte</button>';
-      html += `<div class="program-row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);"><label>Estudio bíblico — Conductor<span class="min-tag">30 min</span></label><select data-program-field="estudioConductor">${allPubOptionsHTML(program.estudioConductor)}</select></div>`;
+      html += `<div class="program-row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);"><label>${numTag(n)} Estudio bíblico — Conductor<span class="min-tag">30 min</span></label><select data-program-field="estudioConductor">${allPubOptionsHTML(program.estudioConductor)}</select></div>`;
       html += `<div class="program-row"><label>Estudio bíblico — Lector</label><select data-program-field="estudioLector">${allPubOptionsHTML(program.estudioLector)}</select></div>`;
       html += '</div>';
     }
