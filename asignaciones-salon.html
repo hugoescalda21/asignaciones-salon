@@ -1018,6 +1018,30 @@
   /* ---------- Carga / normalización / migración ---------- */
   function defaultSettings() { return { congregationName: 'Mi Congregación', micCount: 2, usherCount: 2, weekdaySemana: 4, weekdayFinde: 0, timerMuted: false, themeMode: 'auto', remindersEnabled: false, useAuxRoom: false, editorEmails: [], viewerEmails: [] }; }
 
+  function cleanOrphanedIds(dataObj) {
+    const validIds = new Set((dataObj.publishers || []).map(p => p.id));
+    const clean = (id) => (id && !validIds.has(id)) ? null : id;
+    Object.values(dataObj.weeks || {}).forEach(w => {
+      ['semana', 'finde'].forEach(t => {
+        const typeObj = w[t];
+        if (!typeObj) return;
+        if (typeObj.roles) Object.keys(typeObj.roles).forEach(k => { typeObj.roles[k] = clean(typeObj.roles[k]); });
+        const p = typeObj.program;
+        if (!p) return;
+        ['presidente', 'oracionInicial', 'oracionFinal', 'consejeroAux', 'tesoros', 'perlas', 'lectura', 'lecturaAux',
+          'oradorPublico', 'atalayaConductor', 'atalayaLector', 'estudioConductor', 'estudioLector'].forEach(k => {
+          if (k in p) p[k] = clean(p[k]);
+        });
+        (p.estudiantes || []).forEach(s => {
+          s.estudiante = clean(s.estudiante); s.ayudante = clean(s.ayudante);
+          s.estudianteAux = clean(s.estudianteAux); s.ayudanteAux = clean(s.ayudanteAux);
+        });
+        (p.vidaCristiana || []).forEach(v => { v.presentador = clean(v.presentador); });
+      });
+    });
+    return dataObj;
+  }
+
   function migrate(raw) {
     let out;
     if (raw && raw.weeks) {
@@ -1036,6 +1060,7 @@
     }
     // Los fines de semana ya no llevan cronometrista: se limpia cualquier valor viejo.
     Object.values(out.weeks).forEach(w => { if (w.finde && w.finde.roles) w.finde.roles.cronometrista = null; });
+    cleanOrphanedIds(out);
     return out;
   }
 
@@ -2779,6 +2804,7 @@
     if (!confirm(`¿Quitar a ${removed.name} de la lista de hermanos?`)) return;
     hapticTap();
     data.publishers.splice(idx, 1);
+    cleanOrphanedIds(data);
     saveData(); closePubModal(); renderBrothersTable(); renderRoleCards();
     showToast('Hermano eliminado', () => {
       data.publishers.splice(idx, 0, removed);
