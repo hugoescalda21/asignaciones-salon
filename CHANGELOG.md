@@ -6,6 +6,21 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## v4 — 14 de septiembre de 2026
+- **Acomodadores** como nuevo puesto del equipo técnico (cantidad configurable en Ajustes), integrado en tarjetas, calendario, auto-asignar, PDF, WhatsApp y CSV.
+- **Programa completo de la reunión** (nueva subpestaña "Programa" dentro de cada reunión): Presidente, oraciones, Tesoros de la Biblia, Perlas escondidas, Lectura de la Biblia, partes de estudiante flexibles ("Seamos mejores maestros"), Nuestra Vida Cristiana (también flexible), Estudio bíblico de la congregación, y para Fin de semana: Discurso público con tema, Atalaya y oraciones.
+- **Sala auxiliar activable** (Ajustes): duplica Lectura de la Biblia y las partes de estudiante en Auditorio principal / Sala auxiliar, y agrega Consejero de la sala auxiliar. Apagarla no borra lo ya cargado.
+- **Minutos por parte** en Seamos mejores maestros y Nuestra Vida Cristiana, con acceso rápido en el Cronómetro ("Partes de esta semana") para no tipear el tiempo a mano.
+- **Numeración automática** de las partes (1 al 10) igual que la guía oficial, recalculada sola según cuántas partes haya cargadas.
+- **Tres cánticos** (inicial, intermedio, final) con su número, sin nombre de persona asociado.
+- El Programa ahora aparece también en **WhatsApp** y el **PDF semanal**, con títulos de sección (Tesoros de la Biblia / Seamos mejores maestros / Nuestra Vida Cristiana) y cánticos incluidos.
+- **Buscador de hermanos** en todos los campos de asignación (Equipo técnico y Programa), en reemplazo de la lista desplegable larga — escribís y filtra al toque, con navegación por teclado.
+- Los campos ya asignados se marcan en **verde**, y las tarjetas totalmente completas quedan resaltadas.
+- **Vista pública (`ver.html`)**: interruptor para ver "Equipo técnico" o "Programa"; la búsqueda por nombre ahora también encuentra asignaciones del Programa (mostrando estudiante y ayudante juntos cuando corresponde); se sumaron los Acomodadores, que faltaban ahí desde que se agregaron a la app principal.
+- **Calendario mensual**: nuevo anillo violeta por día (hueco = Programa incompleto, relleno = completo), sin tocar los puntos de colores del equipo técnico.
+- Corregido: cambiar algo en el Programa no refrescaba el calendario en vivo.
+- Corregido: el fondo blanco de las tarjetas de "Seamos mejores maestros" y "Nuestra Vida Cristiana" no se veía bien en algunos estados.
+
 ## v3 — 12 de septiembre de 2026
 - Aviso de "hay una versión nueva" cuando se actualiza la app.
 - Recordatorio si pasaron 14 días sin exportar una copia de seguridad.
