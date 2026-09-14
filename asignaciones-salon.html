@@ -654,9 +654,11 @@
         <div class="pin-display" id="viewPinDisplay">••••</div>
         <div class="pin-actions">
           <button type="button" class="pin-btn" id="regenPinBtn">🔄 Generar otro</button>
-          <button type="button" class="pin-btn" id="copyPinLinkBtn">📋 Copiar link con el código</button>
+          <button type="button" class="pin-btn" id="copyLinkOnlyBtn">📋 Copiar solo el link</button>
+          <button type="button" class="pin-btn" id="copyPinOnlyBtn">🔑 Copiar solo el código</button>
         </div>
       </div>
+      <p class="hint" id="pinSplitHint" style="margin-top:8px;">Mandalos por separado (el link en el grupo, el código aparte) — si van juntos en el mismo mensaje, alguien puede reenviarlo completo y el código no sirve de nada.</p>
     </details>
 
     <details class="settings-card">
@@ -2750,7 +2752,20 @@
     updateViewPinUI();
     showToast('Código nuevo generado');
   });
-  $('copyPinLinkBtn').addEventListener('click', () => copyViewLink());
+  async function copyTextGeneric(text, label) {
+    try { await navigator.clipboard.writeText(text); showToast(`${label} copiado`); }
+    catch (e) { prompt(`Copiá esto (${label}):`, text); }
+  }
+  $('copyLinkOnlyBtn').addEventListener('click', () => {
+    if (!accessCode) { showToast('Conectate con un código primero (Ajustes → Sincronización)'); return; }
+    const url = new URL('ver.html', location.href);
+    url.searchParams.set('codigo', accessCode);
+    copyTextGeneric(url.toString(), 'Link');
+  });
+  $('copyPinOnlyBtn').addEventListener('click', () => {
+    if (!data.settings.viewPin) return;
+    copyTextGeneric(data.settings.viewPin, 'Código');
+  });
   $('reminderSwitch').addEventListener('click', async () => {
     if (!data.settings.remindersEnabled) {
       if (!('Notification' in window)) { showToast('Este navegador no soporta notificaciones'); return; }
