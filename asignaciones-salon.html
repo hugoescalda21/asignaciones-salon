@@ -890,7 +890,7 @@
   const blankRoles = () => ({ sonido: null, video: null, mic1: null, mic2: null, mic3: null, plataforma: null, usher1: null, usher2: null, usher3: null, usher4: null, cronometrista: null });
   const blankProgram = (type) => type === 'finde'
     ? { presidente: null, oracionInicial: null, oradorPublico: null, temaPublico: '', atalayaConductor: null, atalayaLector: null, oracionFinal: null }
-    : { presidente: null, oracionInicial: null, consejeroAux: null, tesoros: null, perlas: null, lectura: null, lecturaAux: null, estudiantes: [], vidaCristiana: [], estudioConductor: null, estudioLector: null, oracionFinal: null };
+    : { presidente: null, oracionInicial: null, consejeroAux: null, tesoros: null, temaTesoros: '', perlas: null, lectura: null, lecturaAux: null, estudiantes: [], vidaCristiana: [], estudioConductor: null, estudioLector: null, oracionFinal: null };
   const blankWeek = () => ({
     semana: { roles: blankRoles(), excluded: [], topic: '', program: blankProgram('semana') },
     finde: { roles: blankRoles(), excluded: [], topic: '', program: blankProgram('finde') }
@@ -1263,6 +1263,7 @@
     } else {
       if (aux) html += programRowHTML('consejeroAux', 'Consejero de la sala auxiliar', program.consejeroAux);
       html += programRowHTML('tesoros', `${numTag(1)} Tesoros de la Biblia`, program.tesoros, '10 min');
+      html += `<div class="program-row"><label>Tema</label><input type="text" data-program-field="temaTesoros" value="${escapeHtml(program.temaTesoros || '')}" placeholder="Tema (opcional)"></div>`;
       html += programRowHTML('perlas', `${numTag(2)} Busquemos perlas escondidas`, program.perlas, '10 min');
       if (aux) {
         html += `<div class="split-block"><div class="split-label">Lectura — Auditorio principal</div>${programRowHTML('lectura', `${numTag(3)} Estudiante`, program.lectura, '4 min')}</div>`;
