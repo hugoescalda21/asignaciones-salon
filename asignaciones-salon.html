@@ -36,6 +36,7 @@
     --role-sonido: #3E6B8A;
     --role-video: #3F8A80;
     --role-crono: #7A5C86;
+    --role-usher: #7A8C63;
     --danger: #A8433A;
     --danger-bg: #FBEDEC;
     --warn: #B8860B;
@@ -303,6 +304,7 @@
   .tag-video { background: var(--role-video); }
   .tag-microfono { background: var(--role-mic); }
   .tag-plataforma { background: var(--role-plat); }
+  .tag-acomodador { background: var(--role-usher); }
   .tag-cronometrista { background: var(--role-crono); }
 
   /* ---------- Ajustes ---------- */
@@ -316,6 +318,23 @@
   .settings-card > *:not(summary) { margin-top: 14px; }
   .settings-card summary + p.hint { margin-top: 0; }
   .theme-switcher { display: flex; gap: 6px; background: var(--bg); border-radius: 20px; padding: 4px; }
+  .subtabs { display: flex; gap: 6px; background: var(--bg); border-radius: 20px; padding: 4px; margin-bottom: 14px; }
+  .subtab { flex: 1; text-align: center; border: none; background: none; padding: 8px; border-radius: 16px; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
+  .subtab.active { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-sm); }
+
+  .program-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 14px 16px; margin-bottom: 12px; box-shadow: var(--shadow-sm); }
+  .program-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .program-row:last-child { border-bottom: none; }
+  .program-row label { width: 145px; flex-shrink: 0; font-size: 12.5px; color: var(--ink-soft); }
+  .program-row select, .program-row input[type="text"] {
+    flex: 1; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 7px 9px; font-family: inherit; font-size: 13px; background: var(--bg); color: var(--ink);
+  }
+  .program-subhead { font-size: 12px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.03em; margin: 4px 0 8px; }
+  .student-block { border: 1px dashed var(--line); border-radius: var(--radius-s); padding: 10px 12px; margin-bottom: 10px; }
+  .student-block .program-row { padding: 6px 0; }
+  .student-block .program-row label { width: 80px; }
+  .remove-part-btn { border: none; background: none; color: var(--ink-faint); font-size: 11.5px; font-weight: 600; margin-top: 6px; }
+  .add-part-btn { width: 100%; border: 1px dashed var(--accent-gold); background: none; color: var(--accent-gold); padding: 10px; border-radius: var(--radius-s); font-size: 13px; font-weight: 600; }
   .theme-opt { flex: 1; border: none; background: none; color: var(--ink-soft); padding: 8px; border-radius: 16px; font-size: 12.5px; font-weight: 600; }
   .theme-opt.active { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-sm); }
   .settings-card h3 { font-size: 14.5px; margin: 0 0 4px; }
@@ -485,29 +504,38 @@
     </div>
     <div class="completeness-badge" id="completenessBadge"></div>
 
-    <input type="text" id="topicInput" class="topic-input" placeholder="Tema de esta reunión (opcional)…">
-
-    <div class="action-row">
-      <button class="btn" id="autoAssignBtn">Auto-asignar</button>
-      <button class="btn" id="copyPrevBtn">Copiar semana anterior</button>
-      <button class="btn" id="excludeBtn">No disponibles hoy</button>
-      <div class="share-menu-wrap">
-        <button class="btn btn-primary" id="shareMenuBtn">Compartir ▾</button>
-        <div class="sheet-backdrop hidden" id="shareBackdrop"></div>
-        <div class="share-menu hidden" id="shareMenu">
-          <div class="sheet-handle"></div>
-          <button type="button" data-share="wa">WhatsApp</button>
-          <button type="button" data-share="pdf">Descargar PDF</button>
-          <button type="button" data-share="pdfmes">PDF del mes completo</button>
-          <button type="button" data-share="viewlink">Copiar link para ver (solo lectura)</button>
-          <button type="button" data-share="print">Imprimir</button>
-        </div>
-      </div>
+    <div class="subtabs">
+      <button type="button" class="subtab active" data-subtab="tecnico">Equipo técnico</button>
+      <button type="button" class="subtab" data-subtab="programa">Programa</button>
     </div>
 
-    <div class="conflict-banner hidden" id="conflictBanner"></div>
+    <div id="technicalSection">
+      <input type="text" id="topicInput" class="topic-input" placeholder="Tema de esta reunión (opcional)…">
 
-    <div class="role-cards" id="roleCardsContainer"></div>
+      <div class="action-row">
+        <button class="btn" id="autoAssignBtn">Auto-asignar</button>
+        <button class="btn" id="copyPrevBtn">Copiar semana anterior</button>
+        <button class="btn" id="excludeBtn">No disponibles hoy</button>
+        <div class="share-menu-wrap">
+          <button class="btn btn-primary" id="shareMenuBtn">Compartir ▾</button>
+          <div class="sheet-backdrop hidden" id="shareBackdrop"></div>
+          <div class="share-menu hidden" id="shareMenu">
+            <div class="sheet-handle"></div>
+            <button type="button" data-share="wa">WhatsApp</button>
+            <button type="button" data-share="pdf">Descargar PDF</button>
+            <button type="button" data-share="pdfmes">PDF del mes completo</button>
+            <button type="button" data-share="viewlink">Copiar link para ver (solo lectura)</button>
+            <button type="button" data-share="print">Imprimir</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="conflict-banner hidden" id="conflictBanner"></div>
+
+      <div class="role-cards" id="roleCardsContainer"></div>
+    </div>
+
+    <div id="programSection" class="hidden"></div>
 
     <h3 class="section-title">Resumen del mes</h3>
     <div class="card" id="calendarWrap" style="background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-m); padding:16px 18px; margin-bottom:16px;"></div>
@@ -557,6 +585,7 @@
         <option value="video">Video y Zoom</option>
         <option value="microfono">Micrófonos</option>
         <option value="plataforma">Plataforma</option>
+        <option value="acomodador">Acomodadores</option>
         <option value="cronometrista">Cronometrista</option>
       </select>
       <button class="btn" id="brPdfBtn">Descargar PDF</button>
@@ -640,6 +669,9 @@
         <div class="field"><label>Micrófonos de pasillo</label>
           <select id="micCountSelect"><option value="2">2 micrófonos</option><option value="3">3 micrófonos</option></select>
         </div>
+        <div class="field"><label>Acomodadores</label>
+          <select id="usherCountSelect"><option value="1">1 acomodador</option><option value="2">2 acomodadores</option><option value="3">3 acomodadores</option><option value="4">4 acomodadores</option></select>
+        </div>
       </div>
       <div class="two-col">
         <div class="field"><label>Día — Entre semana</label><select id="weekdaySemanaSelect"></select></div>
@@ -718,6 +750,7 @@
           <label class="cap-item"><input type="checkbox" id="capVideo"> Video y Zoom</label>
           <label class="cap-item"><input type="checkbox" id="capMicrofono"> Micrófonos</label>
           <label class="cap-item"><input type="checkbox" id="capPlataforma"> Plataforma</label>
+          <label class="cap-item"><input type="checkbox" id="capAcomodador"> Acomodadores</label>
           <label class="cap-item"><input type="checkbox" id="capCronometrista"> Cronometrista</label>
         </div>
       </div>
@@ -779,7 +812,7 @@
   const STORAGE_KEY = 'kh-schedule-data-v2';
   const OLD_STORAGE_KEY = 'kh-schedule-data';
   const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-  const CAP_LABEL = { sonido: 'Sonido', video: 'Video', microfono: 'Micrófonos', plataforma: 'Plataforma', cronometrista: 'Cronómetro' };
+  const CAP_LABEL = { sonido: 'Sonido', video: 'Video', microfono: 'Micrófonos', plataforma: 'Plataforma', acomodador: 'Acomodadores', cronometrista: 'Cronómetro' };
   const PRESETS = [
     { label: 'Tesoros de la Biblia', min: 10 },
     { label: 'Busquemos Perlas Espirituales', min: 10 },
@@ -796,6 +829,7 @@
     video: '<rect x="2" y="5" width="14" height="14" rx="2"/><path d="M16 10l6-4v12l-6-4"/>',
     mic: '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/>',
     plataforma: '<circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',
+    usher: '<rect x="5" y="3" width="14" height="18" rx="1.5"/><circle cx="15" cy="12" r="1.2"/>',
     cronometrista: '<circle cx="12" cy="13" r="8"/><line x1="12" y1="13" x2="12" y2="9"/><line x1="12" y1="13" x2="15" y2="14"/><line x1="9" y1="2" x2="15" y2="2"/><line x1="12" y1="2" x2="12" y2="5"/>',
     calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><line x1="16" y1="3" x2="16" y2="7"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="3" y1="10" x2="21" y2="10"/>',
     clock: '<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/>',
@@ -824,6 +858,8 @@
     const n = (window.data && data.settings.micCount) || 2;
     for (let i = 1; i <= n; i++) roles.push({ key: 'mic' + i, label: 'Micrófono de pasillo ' + i, cap: 'microfono', color: 'var(--role-mic)', emoji: '🎤', icon: 'mic' });
     roles.push({ key: 'plataforma', label: 'Acomodador de plataforma', cap: 'plataforma', color: 'var(--role-plat)', emoji: '🧍', icon: 'plataforma' });
+    const u = (window.data && data.settings.usherCount) || 2;
+    for (let i = 1; i <= u; i++) roles.push({ key: 'usher' + i, label: 'Acomodador ' + i, cap: 'acomodador', color: 'var(--role-usher)', emoji: '🚪', icon: 'usher' });
     if (type !== 'finde') roles.push({ key: 'cronometrista', label: 'Cronometrista', cap: 'cronometrista', color: 'var(--role-crono)', emoji: '⏱️', icon: 'cronometrista' });
     return roles;
   }
@@ -836,9 +872,15 @@
   let synth = null, toneReady = false;
 
   const $ = (id) => document.getElementById(id);
-  const emptyCaps = () => ({ sonido: false, video: false, microfono: false, plataforma: false, cronometrista: false });
-  const blankRoles = () => ({ sonido: null, video: null, mic1: null, mic2: null, mic3: null, plataforma: null, cronometrista: null });
-  const blankWeek = () => ({ semana: { roles: blankRoles(), excluded: [], topic: '' }, finde: { roles: blankRoles(), excluded: [], topic: '' } });
+  const emptyCaps = () => ({ sonido: false, video: false, microfono: false, plataforma: false, acomodador: false, cronometrista: false });
+  const blankRoles = () => ({ sonido: null, video: null, mic1: null, mic2: null, mic3: null, plataforma: null, usher1: null, usher2: null, usher3: null, usher4: null, cronometrista: null });
+  const blankProgram = (type) => type === 'finde'
+    ? { presidente: null, oracionInicial: null, oradorPublico: null, temaPublico: '', atalayaConductor: null, atalayaLector: null, oracionFinal: null }
+    : { presidente: null, oracionInicial: null, tesoros: null, perlas: null, lectura: null, estudiantes: [], vidaConductor: null, estudioConductor: null, estudioLector: null, oracionFinal: null };
+  const blankWeek = () => ({
+    semana: { roles: blankRoles(), excluded: [], topic: '', program: blankProgram('semana') },
+    finde: { roles: blankRoles(), excluded: [], topic: '', program: blankProgram('finde') }
+  });
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   const escapeHtml = (str) => { const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML; };
 
@@ -863,7 +905,7 @@
   function monthKey(iso) { const d = new Date(iso + 'T00:00:00'); return d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }); }
 
   /* ---------- Carga / normalización / migración ---------- */
-  function defaultSettings() { return { congregationName: 'Mi Congregación', micCount: 2, weekdaySemana: 4, weekdayFinde: 0, timerMuted: false, themeMode: 'auto', remindersEnabled: false }; }
+  function defaultSettings() { return { congregationName: 'Mi Congregación', micCount: 2, usherCount: 2, weekdaySemana: 4, weekdayFinde: 0, timerMuted: false, themeMode: 'auto', remindersEnabled: false }; }
 
   function migrate(raw) {
     let out;
@@ -1040,16 +1082,21 @@
       data.weeks[monday][t].roles = Object.assign(blankRoles(), data.weeks[monday][t].roles || {});
       data.weeks[monday][t].excluded = data.weeks[monday][t].excluded || [];
       data.weeks[monday][t].topic = data.weeks[monday][t].topic || '';
+      const merged = Object.assign(blankProgram(t), data.weeks[monday][t].program || {});
+      merged.estudiantes = (data.weeks[monday][t].program && data.weeks[monday][t].program.estudiantes) || merged.estudiantes || [];
+      data.weeks[monday][t].program = merged;
     });
     return data.weeks[monday];
   }
   function weekView(monday) {
     const w = data.weeks[monday];
     if (!w) return blankWeek();
-    return {
-      semana: { roles: Object.assign(blankRoles(), w.semana.roles), excluded: w.semana.excluded || [], topic: w.semana.topic || '' },
-      finde: { roles: Object.assign(blankRoles(), w.finde.roles), excluded: w.finde.excluded || [], topic: w.finde.topic || '' }
+    const view = (t) => {
+      const program = Object.assign(blankProgram(t), w[t].program || {});
+      program.estudiantes = (w[t].program && w[t].program.estudiantes) || program.estudiantes || [];
+      return { roles: Object.assign(blankRoles(), w[t].roles), excluded: w[t].excluded || [], topic: w[t].topic || '', program };
     };
+    return { semana: view('semana'), finde: view('finde') };
   }
 
   /* ---------- Toasts ---------- */
@@ -1145,7 +1192,7 @@
     // Estas pestañas muestran datos que pueden haber cambiado en otra pestaña durante la misma sesión
     if (tab === 'ajustes') { renderYearlyReport(); checkStoragePersist(); }
     else if (tab === 'hermanos') { renderBrothersTable(); }
-    else if (tab === 'programa') { renderRoleCards(); renderMonthTable(); renderMonthCalendar(); }
+    else if (tab === 'programa') { renderRoleCards(); renderMonthTable(); renderMonthCalendar(); if (currentSubtab === 'programa') renderProgramSection(); }
   }
   document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
 
@@ -1163,6 +1210,95 @@
     $('pillSemanaDate').textContent = `${sd.dayName} ${sd.day}`;
     $('pillFindeDate').textContent = `${fd.dayName} ${fd.day}`;
   }
+
+  let currentSubtab = 'tecnico';
+  function switchSubtab(tab) {
+    currentSubtab = tab;
+    $('technicalSection').classList.toggle('hidden', tab !== 'tecnico');
+    $('programSection').classList.toggle('hidden', tab !== 'programa');
+    document.querySelectorAll('.subtab').forEach(b => b.classList.toggle('active', b.dataset.subtab === tab));
+    if (tab === 'programa') renderProgramSection();
+  }
+  document.querySelectorAll('.subtab').forEach(b => b.addEventListener('click', () => switchSubtab(b.dataset.subtab)));
+
+  function allPubOptionsHTML(selectedId) {
+    const sorted = data.publishers.slice().sort((a, b) => a.name.localeCompare(b.name, 'es'));
+    return '<option value="">— Sin asignar —</option>' + sorted.map(p => `<option value="${p.id}" ${p.id === selectedId ? 'selected' : ''}>${escapeHtml(p.name)}</option>`).join('');
+  }
+  function programRowHTML(field, label, selectedId) {
+    return `<div class="program-row"><label>${label}</label><select data-program-field="${field}">${allPubOptionsHTML(selectedId)}</select></div>`;
+  }
+
+  function renderProgramSection() {
+    const program = weekView(currentMonday)[currentType].program;
+    let html = '<div class="program-card">';
+    html += programRowHTML('presidente', 'Presidente', program.presidente);
+    html += programRowHTML('oracionInicial', 'Oración inicial', program.oracionInicial);
+    if (currentType === 'finde') {
+      html += programRowHTML('oradorPublico', 'Orador — Discurso público', program.oradorPublico);
+      html += `<div class="program-row"><label>Tema del discurso</label><input type="text" data-program-field="temaPublico" value="${escapeHtml(program.temaPublico || '')}" placeholder="Tema (opcional)"></div>`;
+      html += programRowHTML('atalayaConductor', 'Atalaya — Conductor', program.atalayaConductor);
+      html += programRowHTML('atalayaLector', 'Atalaya — Lector', program.atalayaLector);
+    } else {
+      html += programRowHTML('tesoros', 'Tesoros de la Biblia', program.tesoros);
+      html += programRowHTML('perlas', 'Busquemos perlas escondidas', program.perlas);
+      html += programRowHTML('lectura', 'Lectura de la Biblia', program.lectura);
+    }
+    html += programRowHTML('oracionFinal', 'Oración final', program.oracionFinal);
+    html += '</div>';
+
+    if (currentType === 'semana') {
+      html += '<div class="program-subhead">Seamos mejores maestros</div>';
+      (program.estudiantes || []).forEach((s) => {
+        html += `<div class="student-block" data-student-id="${s.id}">
+          <div class="program-row"><label>Estudiante</label><select data-student-field="estudiante">${allPubOptionsHTML(s.estudiante)}</select></div>
+          <div class="program-row"><label>Ayudante</label><select data-student-field="ayudante">${allPubOptionsHTML(s.ayudante)}</select></div>
+          <div class="program-row"><label>Tema</label><input type="text" data-student-field="tema" value="${escapeHtml(s.tema || '')}" placeholder="Tema de la parte"></div>
+          <button type="button" class="remove-part-btn" data-remove-student="${s.id}">✕ Quitar esta parte</button>
+        </div>`;
+      });
+      html += '<button type="button" class="add-part-btn" id="addStudentPartBtn">+ Agregar parte de estudiante</button>';
+
+      html += '<div class="program-card" style="margin-top:14px;">';
+      html += '<div class="program-subhead" style="margin-top:0;">Nuestra Vida Cristiana</div>';
+      html += programRowHTML('vidaConductor', 'Conductor', program.vidaConductor);
+      html += programRowHTML('estudioConductor', 'Estudio bíblico — Conductor', program.estudioConductor);
+      html += programRowHTML('estudioLector', 'Estudio bíblico — Lector', program.estudioLector);
+      html += '</div>';
+    }
+    $('programSection').innerHTML = html;
+  }
+
+  $('programSection').addEventListener('change', (e) => {
+    const week = ensureWeek(currentMonday);
+    const program = week[currentType].program;
+    if (e.target.dataset.programField) {
+      program[e.target.dataset.programField] = e.target.value || (e.target.tagName === 'INPUT' ? '' : null);
+      saveData();
+      showToast('Asignación actualizada');
+    } else if (e.target.dataset.studentField) {
+      const block = e.target.closest('[data-student-id]');
+      const entry = program.estudiantes.find(s => s.id === block.dataset.studentId);
+      if (entry) {
+        entry[e.target.dataset.studentField] = e.target.value || (e.target.tagName === 'INPUT' ? '' : null);
+        saveData();
+        showToast('Asignación actualizada');
+      }
+    }
+  });
+  $('programSection').addEventListener('click', (e) => {
+    if (e.target.id === 'addStudentPartBtn') {
+      const week = ensureWeek(currentMonday);
+      week[currentType].program.estudiantes.push({ id: uid(), estudiante: null, ayudante: null, tema: '' });
+      saveData();
+      renderProgramSection();
+    } else if (e.target.dataset.removeStudent) {
+      const week = ensureWeek(currentMonday);
+      week[currentType].program.estudiantes = week[currentType].program.estudiantes.filter(s => s.id !== e.target.dataset.removeStudent);
+      saveData();
+      renderProgramSection();
+    }
+  });
 
   function renderRoleCards() {
     const roles = getRoles(currentType);
@@ -1416,7 +1552,7 @@
     updateTimerTopicLabel();
   });
 
-  function setWeek(monday) { currentMonday = monday; updateWeekLabel(); renderRoleCards(); renderMonthTable(); renderMonthCalendar(); updateTimerTopicLabel(); }
+  function setWeek(monday) { currentMonday = monday; updateWeekLabel(); renderRoleCards(); renderMonthTable(); renderMonthCalendar(); updateTimerTopicLabel(); if (currentSubtab === 'programa') renderProgramSection(); }
 
   /* ---------- Deslizar para cambiar de semana ---------- */
   (function setupWeekSwipe() {
@@ -1462,8 +1598,8 @@
   }
   $('copyPrevBtn').addEventListener('click', copyPreviousWeek);
   $('weekDateInput').addEventListener('change', (e) => setWeek(mondayOf(e.target.value)));
-  $('pillSemana').addEventListener('click', () => { currentType = 'semana'; $('pillSemana').classList.add('active'); $('pillFinde').classList.remove('active'); renderRoleCards(); updateTimerTopicLabel(); });
-  $('pillFinde').addEventListener('click', () => { currentType = 'finde'; $('pillFinde').classList.add('active'); $('pillSemana').classList.remove('active'); renderRoleCards(); updateTimerTopicLabel(); });
+  $('pillSemana').addEventListener('click', () => { currentType = 'semana'; $('pillSemana').classList.add('active'); $('pillFinde').classList.remove('active'); renderRoleCards(); updateTimerTopicLabel(); if (currentSubtab === 'programa') renderProgramSection(); });
+  $('pillFinde').addEventListener('click', () => { currentType = 'finde'; $('pillFinde').classList.add('active'); $('pillSemana').classList.remove('active'); renderRoleCards(); updateTimerTopicLabel(); if (currentSubtab === 'programa') renderProgramSection(); });
   $('autoAssignBtn').addEventListener('click', autoAssign);
 
   /* ---------- No disponibles solo esta reunión ---------- */
@@ -1958,6 +2094,7 @@
       $('capVideo').checked = !!p.roles.video;
       $('capMicrofono').checked = !!p.roles.microfono;
       $('capPlataforma').checked = !!p.roles.plataforma;
+      $('capAcomodador').checked = !!p.roles.acomodador;
       $('capCronometrista').checked = !!p.roles.cronometrista;
       $('pubDeleteBtn').classList.remove('hidden');
       renderLastServed(p);
@@ -1975,7 +2112,7 @@
     e.preventDefault();
     const name = $('pubEditName').value.trim();
     if (!name) return;
-    const roles = { sonido: $('capSonido').checked, video: $('capVideo').checked, microfono: $('capMicrofono').checked, plataforma: $('capPlataforma').checked, cronometrista: $('capCronometrista').checked };
+    const roles = { sonido: $('capSonido').checked, video: $('capVideo').checked, microfono: $('capMicrofono').checked, plataforma: $('capPlataforma').checked, acomodador: $('capAcomodador').checked, cronometrista: $('capCronometrista').checked };
     const notes = $('pubEditNotes').value.trim(), status = $('pubEditStatus').value;
     if (pubEditingId) {
       const p = data.publishers.find(x => x.id === pubEditingId);
@@ -2017,6 +2154,7 @@
     fillWeekdaySelects();
     $('congNameInput').value = data.settings.congregationName;
     $('micCountSelect').value = data.settings.micCount;
+    $('usherCountSelect').value = data.settings.usherCount || 2;
     $('weekdaySemanaSelect').value = data.settings.weekdaySemana;
     $('weekdayFindeSelect').value = data.settings.weekdayFinde;
     $('congBadge').textContent = data.settings.congregationName;
@@ -2063,6 +2201,7 @@
   });
   $('congNameInput').addEventListener('change', (e) => { data.settings.congregationName = e.target.value.trim() || 'Mi Congregación'; $('congBadge').textContent = data.settings.congregationName; saveData(); });
   $('micCountSelect').addEventListener('change', (e) => { data.settings.micCount = parseInt(e.target.value); saveData(); renderRoleCards(); renderMonthTable(); renderMonthCalendar(); });
+  $('usherCountSelect').addEventListener('change', (e) => { data.settings.usherCount = parseInt(e.target.value); saveData(); renderRoleCards(); renderMonthTable(); renderMonthCalendar(); });
   $('weekdaySemanaSelect').addEventListener('change', (e) => { data.settings.weekdaySemana = parseInt(e.target.value); saveData(); renderMonthTable(); renderMonthCalendar(); updatePillDates(); });
   $('weekdayFindeSelect').addEventListener('change', (e) => { data.settings.weekdayFinde = parseInt(e.target.value); saveData(); renderMonthTable(); renderMonthCalendar(); updatePillDates(); });
 
