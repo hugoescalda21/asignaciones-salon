@@ -74,6 +74,10 @@
     text-transform: uppercase; letter-spacing: 0.03em; margin: 8px 0 4px;
   }
   .prog-section-label:first-child { margin-top: 0; }
+  .week-block { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
+  .week-summary { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border: none; background: none; font-size: 12px; font-weight: 600; color: var(--ink-soft); text-align: left; }
+  .week-body { border-top: 1px solid var(--line); padding: 0 2px; }
+  .week-body.hidden { display: none; }
 
   .view-toggle { display: flex; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 4px; margin-bottom: 14px; }
   .view-toggle-btn { flex: 1; text-align: center; border: none; background: none; padding: 8px; border-radius: 16px; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
@@ -449,7 +453,7 @@
 
     if (!rows.length) { $('agendaCard').innerHTML = '<p class="empty-note">Sin asignaciones cargadas este mes.</p>'; return; }
 
-    $('agendaCard').innerHTML = rows.map(row => {
+    function rowHTML(row) {
       let chips;
       if (agendaView === 'programa') {
         const entries = programEntries(row.program, row.type);
@@ -471,7 +475,34 @@
           ${chips}
         </div>
       </div>`;
-    }).join('');
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+    const isCurrentMonth = prefix === today.slice(0, 7);
+    const pastRows = isCurrentMonth ? rows.filter(r => r.date < today) : [];
+    const currentRows = isCurrentMonth ? rows.filter(r => r.date >= today) : rows;
+
+    let html = '';
+    if (pastRows.length) {
+      html += `<div class="week-block">
+        <button type="button" class="week-summary" id="pastWeekToggle">
+          <span>${pastRows.length} reunión${pastRows.length > 1 ? 'es' : ''} ya pasada${pastRows.length > 1 ? 's' : ''} este mes</span>
+          <span class="wtoggle" id="pastWeekToggleLabel">Ver ›</span>
+        </button>
+        <div class="week-body hidden" id="pastWeekBody">${pastRows.map(rowHTML).join('')}</div>
+      </div>`;
+    }
+    html += currentRows.map(rowHTML).join('');
+    $('agendaCard').innerHTML = html;
+
+    const pastToggle = $('pastWeekToggle');
+    if (pastToggle) {
+      pastToggle.addEventListener('click', () => {
+        const body = $('pastWeekBody');
+        const nowHidden = body.classList.toggle('hidden');
+        $('pastWeekToggleLabel').textContent = nowHidden ? 'Ver ›' : '▾ Ocultar';
+      });
+    }
   }
 
   function programMatches(program, type, matchedIds) {
