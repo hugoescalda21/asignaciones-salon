@@ -1797,7 +1797,28 @@
         styles: { fontSize: 11, cellPadding: 7 },
         columnStyles: { 0: { fontStyle: 'bold', cellWidth: 200 } }
       });
-      y = doc.lastAutoTable.finalY + 30;
+      y = doc.lastAutoTable.finalY + 20;
+
+      const pEntries = programEntries(week.program, t);
+      if (pEntries.length) {
+        const progBody = pEntries.map(e => {
+          let label = e.label;
+          if (e.tema) label += ` — ${e.tema}`;
+          if (e.min) label += ` (${e.min} min)`;
+          return [label, e.name];
+        });
+        doc.autoTable({
+          startY: y, margin: { left: 40, right: 40 }, theme: 'grid',
+          head: [['Programa', 'Hermano asignado']],
+          body: progBody,
+          headStyles: { fillColor: [140, 90, 110], textColor: 255, fontStyle: 'bold' },
+          styles: { fontSize: 10, cellPadding: 6 },
+          columnStyles: { 0: { cellWidth: 260 } }
+        });
+        y = doc.lastAutoTable.finalY + 30;
+      } else {
+        y += 10;
+      }
     });
 
     if (!any) { showToast('No hay asignaciones cargadas esta semana'); return; }
@@ -1885,6 +1906,46 @@
   }));
 
   /* ---------- WhatsApp ---------- */
+  function numEmoji(n) {
+    const map = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
+    return map[n] || `${n}.`;
+  }
+  function programEntries(program, type) {
+    const nameOf = id => { const p = data.publishers.find(pp => pp.id === id); return p ? p.name : null; };
+    const pairName = (a, b) => { const n1 = nameOf(a), n2 = nameOf(b); if (!n1 && !n2) return null; return n2 ? `${n1 || '—'} / ${n2}` : n1; };
+    const entries = [];
+    entries.push({ label: 'Presidente', name: nameOf(program.presidente) });
+    entries.push({ label: 'Oración inicial', name: nameOf(program.oracionInicial) });
+    if (type === 'finde') {
+      entries.push({ label: 'Discurso público', name: nameOf(program.oradorPublico), tema: program.temaPublico, min: 30 });
+      entries.push({ label: 'Atalaya — Conductor', name: nameOf(program.atalayaConductor), min: 60 });
+      entries.push({ label: 'Atalaya — Lector', name: nameOf(program.atalayaLector) });
+    } else {
+      if (program.consejeroAux) entries.push({ label: 'Consejero sala aux.', name: nameOf(program.consejeroAux) });
+      entries.push({ num: 1, label: 'Tesoros de la Biblia', name: nameOf(program.tesoros), tema: program.temaTesoros, min: 10 });
+      entries.push({ num: 2, label: 'Perlas escondidas', name: nameOf(program.perlas), min: 10 });
+      entries.push({ num: 3, label: 'Lectura de la Biblia', name: nameOf(program.lectura), min: 4 });
+      if (program.lecturaAux) entries.push({ label: '   (Sala auxiliar)', name: nameOf(program.lecturaAux) });
+      let n = 4;
+      (program.estudiantes || []).forEach(s => {
+        const nm = pairName(s.estudiante, s.ayudante);
+        if (s.tema || nm) entries.push({ num: n, label: s.tema || 'Seamos mejores maestros', name: nm, min: s.minutos });
+        const nmAux = pairName(s.estudianteAux, s.ayudanteAux);
+        if (nmAux) entries.push({ label: '   (Sala auxiliar)', name: nmAux });
+        n++;
+      });
+      (program.vidaCristiana || []).forEach(v => {
+        const nm = nameOf(v.presentador);
+        if (v.tema || nm) entries.push({ num: n, label: v.tema || 'Nuestra Vida Cristiana', name: nm, min: v.minutos });
+        n++;
+      });
+      const estudioNm = pairName(program.estudioConductor, program.estudioLector);
+      if (estudioNm) entries.push({ num: n, label: 'Estudio bíblico', name: estudioNm, min: 30 });
+    }
+    entries.push({ label: 'Oración final', name: nameOf(program.oracionFinal) });
+    return entries.filter(e => e.name);
+  }
+
   function openWaModal() {
     const date = dateForType(currentMonday, currentType);
     const { dayName, day } = formatDate(date);
@@ -1895,6 +1956,18 @@
     if (typeObj.topic) lines.push(`_Tema: ${typeObj.topic}_`);
     lines.push('');
     getRoles(currentType).forEach(r => { const p = data.publishers.find(pp => pp.id === week[r.key]); lines.push(`${r.emoji} *${r.label}:* ${p ? p.name : '—'}`); });
+    const pEntries = programEntries(typeObj.program, currentType);
+    if (pEntries.length) {
+      lines.push('', '📖 *Programa*', '');
+      pEntries.forEach(e => {
+        const icon = e.num ? numEmoji(e.num) : (/oración/i.test(e.label) ? '🙏' : '👤');
+        let line = `${icon} *${e.label}*`;
+        if (e.min) line += ` (${e.min} min)`;
+        line += `: ${e.name}`;
+        lines.push(line);
+        if (e.tema) lines.push(`   _${e.tema}_`);
+      });
+    }
     lines.push('', 'Si no podés cubrir tu asignación, por favor avisá con anticipación para buscar un reemplazo.');
     $('waModalSub').textContent = `${currentType === 'finde' ? 'Fin de semana' : 'Entre semana'} — ${dayName} ${day}`;
     $('waPreview').value = lines.join('\n');
