@@ -1550,6 +1550,7 @@
       }
     }
     renderMonthCalendar();
+    checkConflicts();
   });
   $('programSection').addEventListener('click', (e) => {
     if (e.target.id === 'addStudentPartBtn') {
@@ -1731,15 +1732,23 @@
     const counts = {};
     getRoles(currentType).forEach(r => { const id = rolesObj[r.key]; if (id) counts[id] = (counts[id] || 0) + 1; });
     const dupIds = Object.keys(counts).filter(id => counts[id] > 1);
+    const progIds = programAssignedIds(week[currentType].program, currentType);
+    const overlapIds = Object.keys(counts).filter(id => progIds.has(id) && !dupIds.includes(id));
     const banner = $('conflictBanner');
+    const msgs = [];
     if (dupIds.length) {
       const names = dupIds.map(id => (data.publishers.find(p => p.id === id) || {}).name || 'Alguien');
-      banner.textContent = `⚠ Doble asignación: ${names.join(', ')} tiene dos asignaciones esta reunión.`;
-      banner.classList.remove('hidden');
-    } else banner.classList.add('hidden');
+      msgs.push(`Doble asignación: ${names.join(', ')} tiene dos asignaciones esta reunión.`);
+    }
+    if (overlapIds.length) {
+      const names = overlapIds.map(id => (data.publishers.find(p => p.id === id) || {}).name || 'Alguien');
+      msgs.push(`${names.join(', ')} ya tiene una parte del Programa esta reunión.`);
+    }
+    if (msgs.length) { banner.textContent = '⚠ ' + msgs.join(' '); banner.classList.remove('hidden'); }
+    else banner.classList.add('hidden');
     document.querySelectorAll('.role-card').forEach(card => {
       const val = card.querySelector('select').value;
-      card.classList.toggle('conflict-card', !!val && dupIds.includes(val));
+      card.classList.toggle('conflict-card', !!val && (dupIds.includes(val) || overlapIds.includes(val)));
     });
   }
 
@@ -1760,6 +1769,7 @@
     const activePubs = data.publishers.filter(p => p.status !== 'no_disponible' && !excludedToday.has(p.id));
     const anyCaps = activePubs.some(p => Object.values(p.roles).some(Boolean));
     const used = new Set(Object.values(typeObj.roles).filter(Boolean));
+    programAssignedIds(typeObj.program, currentType).forEach(id => used.add(id));
     roles.forEach(r => {
       if (typeObj.roles[r.key]) return;
       let cands = activePubs.filter(p => !used.has(p.id));
@@ -2238,6 +2248,22 @@
     const map = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
     return map[n] || `${n}.`;
   }
+  function programAssignedIds(program, type) {
+    const ids = new Set();
+    const add = (id) => { if (id) ids.add(id); };
+    if (!program) return ids;
+    add(program.presidente); add(program.oracionInicial); add(program.oracionFinal);
+    if (type === 'finde') {
+      add(program.oradorPublico); add(program.atalayaConductor); add(program.atalayaLector);
+      return ids;
+    }
+    add(program.consejeroAux); add(program.tesoros); add(program.perlas); add(program.lectura); add(program.lecturaAux);
+    (program.estudiantes || []).forEach(s => { add(s.estudiante); add(s.ayudante); add(s.estudianteAux); add(s.ayudanteAux); });
+    (program.vidaCristiana || []).forEach(v => add(v.presentador));
+    add(program.estudioConductor); add(program.estudioLector);
+    return ids;
+  }
+
   function programEntries(program, type) {
     const nameOf = id => { const p = data.publishers.find(pp => pp.id === id); return p ? p.name : null; };
     const pairName = (a, b) => { const n1 = nameOf(a), n2 = nameOf(b); if (!n1 && !n2) return null; return n2 ? `${n1 || '—'} / ${n2}` : n1; };
