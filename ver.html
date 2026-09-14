@@ -375,9 +375,19 @@
     authStep('authStepDenied');
   }
   document.addEventListener('DOMContentLoaded', () => {
-    $('authGoogleBtn').addEventListener('click', () => {
+    $('authGoogleBtn').addEventListener('click', async () => {
       const provider = new firebase.auth.GoogleAuthProvider();
-      fbAuth.signInWithRedirect(provider);
+      try {
+        await fbAuth.signInWithPopup(provider);
+      } catch (e) {
+        if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') return;
+        if (e.code === 'auth/popup-blocked') {
+          $('authEmailErr').textContent = 'El navegador bloqueó la ventana emergente. Permitila para este sitio (ícono en la barra de direcciones) y tocá el botón de nuevo.';
+        } else {
+          $('authEmailErr').textContent = `No se pudo entrar con Google (${e.code || 'error desconocido'}).`;
+        }
+        $('authEmailErr').classList.remove('hidden');
+      }
     });
     $('authSendLinkBtn').addEventListener('click', async () => {
       const email = $('authEmailInput').value.trim();
