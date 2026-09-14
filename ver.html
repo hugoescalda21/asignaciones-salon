@@ -63,6 +63,11 @@
   .chip .ic { width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #fff; }
   .chip.empty { color: var(--ink-faint); font-weight: 400; font-style: italic; background: none; border: 1px dashed var(--line); }
   .chip.prog { background: rgba(140,90,110,0.08); border: 1px solid rgba(140,90,110,0.2); }
+  .prog-section-label {
+    font-family: 'Fraunces', serif; font-size: 10.5px; font-weight: 600; color: var(--role-program);
+    text-transform: uppercase; letter-spacing: 0.03em; margin: 8px 0 4px;
+  }
+  .prog-section-label:first-child { margin-top: 0; }
 
   .view-toggle { display: flex; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 4px; margin-bottom: 14px; }
   .view-toggle-btn { flex: 1; text-align: center; border: none; background: none; padding: 8px; border-radius: 16px; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
@@ -212,29 +217,44 @@
     }
     if (program.consejeroAux) entries.push({ label: 'Consejero sala aux.', name: nameOf(program.consejeroAux) });
     if (program.cancionInicial) entries.push({ song: true, label: 'Canción inicial', value: program.cancionInicial });
-    entries.push({ num: 1, label: 'Tesoros de la Biblia', name: nameOf(program.tesoros), tema: program.temaTesoros });
-    entries.push({ num: 2, label: 'Perlas escondidas', name: nameOf(program.perlas) });
-    entries.push({ num: 3, label: 'Lectura de la Biblia', name: nameOf(program.lectura) });
-    if (program.lecturaAux) entries.push({ label: '(Sala auxiliar) Lectura', name: nameOf(program.lecturaAux) });
+
+    const tesorosGroup = [
+      { num: 1, label: 'Tesoros de la Biblia', name: nameOf(program.tesoros), tema: program.temaTesoros },
+      { num: 2, label: 'Perlas escondidas', name: nameOf(program.perlas) },
+      { num: 3, label: 'Lectura de la Biblia', name: nameOf(program.lectura) }
+    ];
+    if (program.lecturaAux) tesorosGroup.push({ label: '(Sala auxiliar) Lectura', name: nameOf(program.lecturaAux) });
+    const tesorosFilled = tesorosGroup.filter(e => e.name);
+    if (tesorosFilled.length) { entries.push({ section: 'TESOROS DE LA BIBLIA' }); entries.push(...tesorosFilled); }
+
     let n = 4;
+    const maestrosGroup = [];
     (program.estudiantes || []).forEach(s => {
       const nm = pairName(s.estudiante, s.ayudante);
-      if (s.tema || nm) entries.push({ num: n, label: s.tema || 'Seamos mejores maestros', name: nm });
+      if (s.tema || nm) maestrosGroup.push({ num: n, label: s.tema || 'Seamos mejores maestros', name: nm });
       const nmAux = pairName(s.estudianteAux, s.ayudanteAux);
-      if (nmAux) entries.push({ label: '(Sala auxiliar)', name: nmAux });
+      if (nmAux) maestrosGroup.push({ label: '(Sala auxiliar)', name: nmAux });
       n++;
     });
+    const maestrosFilled = maestrosGroup.filter(e => e.name);
+    if (maestrosFilled.length) { entries.push({ section: 'SEAMOS MEJORES MAESTROS' }); entries.push(...maestrosFilled); }
+
     if (program.cancionIntermedia) entries.push({ song: true, label: 'Canción intermedia', value: program.cancionIntermedia });
+
+    const vidaGroup = [];
     (program.vidaCristiana || []).forEach(v => {
       const nm = nameOf(v.presentador);
-      if (v.tema || nm) entries.push({ num: n, label: v.tema || 'Nuestra Vida Cristiana', name: nm });
+      if (v.tema || nm) vidaGroup.push({ num: n, label: v.tema || 'Nuestra Vida Cristiana', name: nm });
       n++;
     });
     const estudioNm = pairName(program.estudioConductor, program.estudioLector);
-    if (estudioNm) entries.push({ num: n, label: 'Estudio bíblico', name: estudioNm });
+    if (estudioNm) vidaGroup.push({ num: n, label: 'Estudio bíblico', name: estudioNm });
+    const vidaFilled = vidaGroup.filter(e => e.name);
+    if (vidaFilled.length) { entries.push({ section: 'NUESTRA VIDA CRISTIANA' }); entries.push(...vidaFilled); }
+
     if (program.cancionFinal) entries.push({ song: true, label: 'Canción final', value: program.cancionFinal });
     entries.push({ label: 'Oración final', name: nameOf(program.oracionFinal) });
-    return entries.filter(e => e.song || e.name);
+    return entries.filter(e => e.section || e.song || e.name);
   }
   function programChipHTML(e) {
     if (e.song) return `<div class="chip prog"><span class="ic" style="background:var(--role-program)">🎵</span>${escapeHtml(e.label)}: ${escapeHtml(e.value)}</div>`;
@@ -242,8 +262,23 @@
     let text = e.label + (e.tema ? ` — ${e.tema}` : '') + `: ${e.name}`;
     return `<div class="chip prog"><span class="ic" style="background:var(--role-program)">${icon}</span>${escapeHtml(text)}</div>`;
   }
+  function programEntriesToHTML(entries) {
+    let html = '<div class="chip-row">';
+    let openRow = true;
+    entries.forEach(e => {
+      if (e.section) {
+        if (openRow) html += '</div>';
+        html += `<div class="prog-section-label">${escapeHtml(e.section)}</div><div class="chip-row">`;
+        openRow = true;
+        return;
+      }
+      html += programChipHTML(e);
+    });
+    if (openRow) html += '</div>';
+    return html;
+  }
   function isProgramFilled(program, type) {
-    return programEntries(program, type).length > 0;
+    return programEntries(program, type).some(e => e.song || e.name);
   }
 
   let agendaView = 'tecnico';
@@ -285,22 +320,22 @@
       let chips;
       if (agendaView === 'programa') {
         const entries = programEntries(row.program, row.type);
-        chips = entries.length ? entries.map(programChipHTML).join('') : '<div class="chip empty">Programa no cargado</div>';
+        chips = entries.length ? programEntriesToHTML(entries) : '<div class="chip-row"><div class="chip empty">Programa no cargado</div></div>';
       } else {
         const roles = getRoles(row.type, settings.micCount, settings.usherCount);
-        chips = roles.map(r => {
+        chips = '<div class="chip-row">' + roles.map(r => {
           const pid = row.roles[r.key];
           const p = pid && (data.publishers || []).find(pp => pp.id === pid);
           if (p) return `<div class="chip"><span class="ic" style="background:${r.color}">${svgIcon(r.icon, 10)}</span>${escapeHtml(p.name)}</div>`;
           return `<div class="chip empty">${r.label} vacío</div>`;
-        }).join('');
+        }).join('') + '</div>';
       }
       return `<div class="agenda-item ${row.type === 'finde' ? 'finde' : ''}">
         <div class="agenda-date"><div class="dow">${row.dayName.slice(0, 3)}</div><div class="num">${row.day}</div></div>
         <div class="agenda-body">
           <div class="agenda-type">${row.type === 'finde' ? 'Fin de semana' : 'Entre semana'}</div>
           ${row.topic ? `<div class="agenda-topic">${escapeHtml(row.topic)}</div>` : ''}
-          <div class="chip-row">${chips}</div>
+          ${chips}
         </div>
       </div>`;
     }).join('');
