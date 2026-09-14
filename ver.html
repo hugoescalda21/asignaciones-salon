@@ -39,12 +39,12 @@
   .month-nav button { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius-s); width: 34px; height: 34px; font-size: 15px; }
   .month-nav h2 { font-size: 17px; margin: 0; text-transform: capitalize; }
 
-  .search-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .search-row {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+    position: sticky; top: 0; z-index: 20; background: var(--bg); padding: 6px 0;
+  }
+  .search-row.stuck { background: var(--surface); box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-bottom: 1px solid var(--line); margin: 0 -18px 10px; padding: 10px 18px; }
   .search-toggle { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius-s); width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; color: var(--ink-soft); flex-shrink: 0; }
-  .sticky-bar { position: sticky; top: 0; z-index: 20; background: var(--surface); border-bottom: 1px solid var(--line); padding: 9px 16px; display: flex; align-items: center; gap: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
-  .sticky-bar.hidden { display: none; }
-  .sticky-cname { font-size: 12.5px; font-weight: 700; flex: 1; color: var(--ink); }
-  .search-icon-btn { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); display: flex; align-items: center; justify-content: center; color: var(--ink-soft); flex-shrink: 0; }
   .search-input { flex: 1; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 8px 11px; font-family: inherit; font-size: 13.5px; }
   .search-clear { border: none; background: none; color: var(--ink-faint); font-size: 15px; padding: 6px; flex-shrink: 0; }
   .search-heading { font-size: 12.5px; color: var(--ink-soft); margin: 0 0 12px; }
@@ -153,12 +153,6 @@
     </div>
   </div>
   <div class="gold-bar"></div>
-  <div class="sticky-bar hidden" id="stickyBar">
-    <span class="sticky-cname" id="stickyCongName">Congregación</span>
-    <button type="button" class="search-icon-btn" id="stickySearchBtn" aria-label="Buscar">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.2" y2="16.2"/></svg>
-    </button>
-  </div>
   <div class="content">
     <div class="search-row" id="searchRow">
       <button type="button" class="search-toggle" id="searchToggleBtn" aria-label="Buscar">
@@ -446,7 +440,6 @@
   function renderMonth() {
     $('monthLabel').textContent = monthKey(currentMonday);
     $('congTitle').textContent = (data.settings && data.settings.congregationName) || 'Congregación';
-    $('stickyCongName').textContent = $('congTitle').textContent;
     const prefix = currentMonday.slice(0, 7);
     const settings = data.settings || { weekdaySemana: 4, weekdayFinde: 0, micCount: 2 };
     const rows = [];
@@ -627,10 +620,9 @@
     else { $('searchInput').value = ''; $('monthNav').classList.remove('hidden'); $('viewToggle').classList.remove('hidden'); renderMonth(); }
   }
   $('searchToggleBtn').addEventListener('click', openSearchToggle);
-  $('stickySearchBtn').addEventListener('click', openSearchToggle);
   window.addEventListener('scroll', () => {
     const threshold = $('mainView').querySelector('.topbar').offsetHeight;
-    $('stickyBar').classList.toggle('hidden', window.scrollY < threshold);
+    $('searchRow').classList.toggle('stuck', window.scrollY >= threshold);
   });
   $('searchClearBtn').addEventListener('click', () => {
     $('searchInput').value = ''; $('searchInput').classList.add('hidden'); $('searchClearBtn').classList.add('hidden');
