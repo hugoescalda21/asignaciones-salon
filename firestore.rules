@@ -1,0 +1,57 @@
+rules_version = '2';
+
+// Reglas de seguridad — Asignaciones del Salón del Reino
+// -----------------------------------------------------------------
+// Cómo instalarlas:
+//   1. Andá a la consola de Firebase (console.firebase.google.com).
+//   2. Abrí tu proyecto → Firestore Database → pestaña "Reglas".
+//   3. Reemplazá todo el contenido por este archivo.
+//   4. Botón "Publicar".
+//
+// Qué cambia respecto a las reglas actuales (que dejaban leer y
+// escribir a cualquiera): ahora hace falta haber iniciado sesión
+// (con el link por correo) Y que tu email esté en la lista de
+// "editores" o "espectadores" de esa congregación en particular.
+//
+// "editorEmails" = pueden ver Y editar (la app principal).
+// "viewerEmails" = solo pueden ver (ver.html).
+//
+// El primer email que crea una congregación nueva se agrega solo
+// a "editorEmails" — así el que arma la congregación no queda
+// afuera de su propia base.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /congregations/{code} {
+
+      // Crear una congregación nueva: solo hace falta estar logueado.
+      // La propia app agrega automáticamente el email de quien la
+      // crea a editorEmails en el mismo momento de guardarla.
+      allow create: if request.auth != null
+                    && request.auth.token.email in request.resource.data.settings.editorEmails;
+
+      // Leer: logueado, y el email tiene que estar en editores O
+      // en espectadores de ESA congregación puntual — o la congregación
+      // todavía no tiene ningún editor cargado (caso de una congregación
+      // que ya existía antes de este sistema de login, donde el campo
+      // puede ni siquiera existir todavía — por eso .get(..., []) en vez
+      // de leerlo directo, que se rompe si el campo no está).
+      allow read: if request.auth != null && (
+                    request.auth.token.email in resource.data.settings.get('editorEmails', []) ||
+                    request.auth.token.email in resource.data.settings.get('viewerEmails', []) ||
+                    resource.data.settings.get('editorEmails', []).size() == 0
+                  );
+
+      // Editar: logueado, y el email tiene que estar en editores — o
+      // la congregación no tiene editores todavía, en cuyo caso quien
+      // se conecta con el código correcto queda como el primero.
+      allow update: if request.auth != null && (
+                    request.auth.token.email in resource.data.settings.get('editorEmails', []) ||
+                    resource.data.settings.get('editorEmails', []).size() == 0
+                  );
+
+      // Nunca se borra una congregación completa desde la app.
+      allow delete: if false;
+    }
+  }
+}

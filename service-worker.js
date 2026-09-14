@@ -1,4 +1,4 @@
-const CACHE_NAME = 'asignaciones-salon-v5';
+const CACHE_NAME = 'asignaciones-salon-v6';
 const ASSETS = [
   './asignaciones-salon.html',
   './manifest.json',

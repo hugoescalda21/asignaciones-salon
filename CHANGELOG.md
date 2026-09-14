@@ -6,6 +6,15 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## v6 — 14 de septiembre de 2026
+- **Login con Google** ("Continuar con Google"), junto al link por email — un toque, sin esperar el correo. Usa ventana emergente para evitar un problema conocido de Chrome con la redirección.
+- **Reparación automática de asignaciones fantasma**: si borrabas a un hermano que ya tenía algo asignado, esa asignación quedaba "viva" pero invisible, y Auto-asignar la saltaba sin avisar. Ahora se limpia sola al cargar, y borrar a alguien de ahí en más limpia sus asignaciones viejas en el momento.
+- **Auto-asignar ahora respeta el Programa**: evita poner en el equipo técnico a quien ya tiene una parte del Programa esa reunión.
+- El aviso de doble asignación ahora **sugiere un reemplazo concreto** por cada puesto en conflicto (con botón "Usar"), y si no hay nadie libre, te dice en qué está ocupado cada capacitado.
+- Las tarjetas en conflicto se ven **en rojo de verdad** (antes se confundían con el verde de "completo" por un problema de orden en el CSS).
+- **"Equipo técnico" y "Programa" pasan a ser pestañas arriba de todo**, con un puntito de color que indica si esa sección está completa — separado de las pastillas de día, para que no se confundan.
+- **Vista pública, rediseño completo**: los tres colores reales de sección (Tesoros de la Biblia, Seamos mejores maestros, Nuestra Vida Cristiana, sacados de la plantilla real de la congregación), íconos SVG en vez de emoji, el día queda fijo al costado mientras scrolleás esa reunión, la reunión ya pasada del mes arranca colapsada, y la barra de búsqueda queda flotando arriba sin duplicarse.
+
 ## v5 — 14 de septiembre de 2026 (cambio importante de infraestructura)
 - **Acceso con cuenta real (Firebase Authentication)**, en reemplazo del código PIN de la versión anterior. Cada persona inicia sesión con su email — sin contraseña, le llega un link — y Firestore verifica del lado del servidor que esté autorizada antes de entregar cualquier dato. Esto sí es seguridad real, a diferencia del PIN anterior.
 - Nueva pantalla **Ajustes → Acceso**, con dos listas separadas: quién puede **editar** y quién solo puede **ver**. Sacar a alguien de la lista le corta el acceso al instante.
