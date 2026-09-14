@@ -38,6 +38,8 @@
     --role-crono: #7A5C86;
     --role-usher: #7A8C63;
     --danger: #A8433A;
+    --ok: #3F7D4F;
+    --ok-bg: #EAF4EC;
     --danger-bg: #FBEDEC;
     --warn: #B8860B;
     --warn-bg: #FBF3E3;
@@ -239,10 +241,30 @@
   .role-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
   .role-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 12px 14px; border-top: 3px solid var(--rc); }
   .role-card.conflict-card { border-color: var(--danger); box-shadow: 0 0 0 1px var(--danger); }
+  .role-card.rc-complete { box-shadow: 0 0 0 1px var(--ok); }
   .role-card-head { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); margin-bottom: 8px; }
+  .role-card-head .rc-check { color: var(--ok); font-size: 12px; margin-left: auto; }
   .role-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
   .role-card select { width: 100%; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 8px; font-size: 13.5px; font-family: inherit; background: var(--bg); color: var(--ink); }
   .role-count { font-size: 11px; color: var(--ink-faint); margin-top: 6px; }
+
+  /* Buscador de hermanos (se engancha sobre los <select> existentes) */
+  .pub-combo { position: relative; }
+  .pub-combo-input { width: 100%; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 8px 28px 8px 9px; font-family: inherit; font-size: 13px; background: var(--bg); color: var(--ink); }
+  .pub-combo-input::placeholder { color: var(--ink-faint); }
+  .pub-combo.filled .pub-combo-input { border-color: var(--ok); background: var(--ok-bg); color: var(--ink); font-weight: 600; }
+  .pub-combo-clear { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); border: none; background: none; color: var(--ink-faint); font-size: 13px; padding: 3px; cursor: pointer; line-height: 1; }
+  .pub-combo-list { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 22px rgba(0,0,0,0.16); max-height: 220px; overflow-y: auto; z-index: 40; }
+  .pub-combo-item { padding: 9px 11px; font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--line); }
+  .pub-combo-item:last-child { border-bottom: none; }
+  .pub-combo-item.hi { background: var(--bg); }
+  .pub-combo-item mark { background: rgba(169,130,47,0.25); color: inherit; border-radius: 2px; }
+  .pub-combo-empty-opt { color: var(--ink-faint); }
+  .pub-combo-none { padding: 12px; font-size: 12px; color: var(--ink-soft); text-align: center; }
+
+  .program-card.pc-complete { border-color: var(--ok); background: var(--ok-bg); }
+  .program-card .pc-badge { display: inline-flex; align-items: center; gap: 4px; background: var(--ok); color: #fff; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 10px; float: right; }
+  .student-block.pc-complete { border-style: solid; border-color: var(--ok); background: var(--ok-bg); }
 
   .month-table-wrap { overflow-x: auto; }
   .month-table { font-size: 12.5px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m); overflow: hidden; }
@@ -1323,6 +1345,8 @@
       html += '</div>';
     }
     $('programSection').innerHTML = html;
+    enhanceCombos($('programSection'));
+    updateCardCompleteness();
   }
 
   function readProgramValue(el) {
@@ -1378,6 +1402,113 @@
     }
   });
 
+  /* ---------- Buscador de hermanos (se engancha sobre los <select> existentes) ---------- */
+  function wrapComboSelect(sel) {
+    const wrap = document.createElement('div');
+    wrap.className = 'pub-combo';
+    sel.parentNode.insertBefore(wrap, sel);
+    wrap.appendChild(sel);
+    sel.style.display = 'none';
+
+    const options = Array.from(sel.options).filter(o => o.value);
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'pub-combo-input';
+    input.placeholder = '— Sin asignar —';
+    input.autocomplete = 'off';
+    input.value = sel.value ? sel.options[sel.selectedIndex].textContent : '';
+    wrap.appendChild(input);
+
+    const clearBtn = document.createElement('button');
+    clearBtn.type = 'button';
+    clearBtn.className = 'pub-combo-clear';
+    clearBtn.textContent = '✕';
+    clearBtn.style.display = sel.value ? '' : 'none';
+    wrap.appendChild(clearBtn);
+
+    const list = document.createElement('div');
+    list.className = 'pub-combo-list hidden';
+    wrap.appendChild(list);
+
+    if (sel.value) wrap.classList.add('filled');
+
+    function renderList(query) {
+      const q = (query || '').trim().toLowerCase();
+      const filtered = q ? options.filter(o => o.textContent.toLowerCase().includes(q)) : options;
+      list.innerHTML = filtered.length
+        ? filtered.map((o, i) => {
+            const label = o.textContent;
+            let html = label;
+            const idx = q ? label.toLowerCase().indexOf(q) : -1;
+            if (idx >= 0) html = escapeHtml(label.slice(0, idx)) + '<mark>' + escapeHtml(label.slice(idx, idx + q.length)) + '</mark>' + escapeHtml(label.slice(idx + q.length));
+            else html = escapeHtml(label);
+            return `<div class="pub-combo-item${i === 0 ? ' hi' : ''}" data-val="${o.value}">${html}</div>`;
+          }).join('')
+        : '<div class="pub-combo-none">Sin resultados</div>';
+      list.classList.remove('hidden');
+    }
+    function closeList() { list.classList.add('hidden'); }
+    function pick(val) {
+      sel.value = val;
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
+      const opt = sel.options[sel.selectedIndex];
+      input.value = sel.value ? opt.textContent : '';
+      wrap.classList.toggle('filled', !!sel.value);
+      clearBtn.style.display = sel.value ? '' : 'none';
+      closeList();
+      updateCardCompleteness();
+    }
+
+    input.addEventListener('focus', () => { input.select(); renderList(''); });
+    input.addEventListener('input', () => renderList(input.value));
+    input.addEventListener('blur', () => {
+      setTimeout(() => { closeList(); const opt = sel.options[sel.selectedIndex]; input.value = sel.value ? opt.textContent : ''; }, 150);
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { closeList(); input.blur(); return; }
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Enter') return;
+      e.preventDefault();
+      const items = Array.from(list.querySelectorAll('.pub-combo-item[data-val]'));
+      if (!items.length) return;
+      let idx = items.findIndex(it => it.classList.contains('hi'));
+      if (e.key === 'ArrowDown') idx = Math.min(idx + 1, items.length - 1);
+      else if (e.key === 'ArrowUp') idx = Math.max(idx - 1, 0);
+      else if (e.key === 'Enter') { if (idx >= 0) pick(items[idx].dataset.val); return; }
+      items.forEach(it => it.classList.remove('hi'));
+      items[idx].classList.add('hi');
+      items[idx].scrollIntoView({ block: 'nearest' });
+    });
+    list.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      const item = e.target.closest('.pub-combo-item[data-val]');
+      if (item) pick(item.dataset.val);
+    });
+    clearBtn.addEventListener('mousedown', (e) => { e.preventDefault(); pick(''); });
+  }
+  function enhanceCombos(root) {
+    if (!root) return;
+    root.querySelectorAll('select[data-role], select[data-program-field], select[data-student-field], select[data-vida-field]').forEach(wrapComboSelect);
+  }
+  function updateCardCompleteness() {
+    document.querySelectorAll('.role-card').forEach(card => {
+      const sel = card.querySelector('select[data-role]');
+      const head = card.querySelector('.role-card-head');
+      const existing = head ? head.querySelector('.rc-check') : null;
+      const filled = sel && sel.value;
+      card.classList.toggle('rc-complete', !!filled);
+      if (filled && !existing && head) { const c = document.createElement('span'); c.className = 'rc-check'; c.textContent = '✓'; head.appendChild(c); }
+      else if (!filled && existing) existing.remove();
+    });
+    document.querySelectorAll('#programSection .program-card').forEach(card => {
+      const sels = card.querySelectorAll('select');
+      card.classList.toggle('pc-complete', sels.length > 0 && Array.from(sels).every(s => s.value));
+    });
+    document.querySelectorAll('#programSection .student-block').forEach(block => {
+      const sels = block.querySelectorAll('select');
+      block.classList.toggle('pc-complete', sels.length > 0 && Array.from(sels).every(s => s.value));
+    });
+  }
+
   function renderRoleCards() {
     const roles = getRoles(currentType);
     const week = weekView(currentMonday);
@@ -1396,8 +1527,10 @@
       </div>`;
     }).join('');
     $('roleCardsContainer').querySelectorAll('select[data-role]').forEach(sel => sel.addEventListener('change', onRoleChange));
+    enhanceCombos($('roleCardsContainer'));
     $('roleCardsContainer').classList.remove('fade-in'); void $('roleCardsContainer').offsetWidth; $('roleCardsContainer').classList.add('fade-in');
     updateCompletenessBadge(roles, typeObj);
+    updateCardCompleteness();
     checkConflicts();
   }
 
