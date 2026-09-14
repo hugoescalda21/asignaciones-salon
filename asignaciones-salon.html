@@ -118,7 +118,7 @@
   .guide-item:last-child { border-bottom: none; }
   .guide-item summary { padding: 11px 8px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 9px; cursor: pointer; list-style: none; }
   .guide-item summary::-webkit-details-marker { display: none; }
-  .guide-item summary .gicon { width: 20px; text-align: center; flex-shrink: 0; }
+  .guide-item summary .gicon { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; color: var(--ink-soft); flex-shrink: 0; }
   .guide-item summary .chev { margin-left: auto; color: var(--ink-faint); font-size: 11px; transition: transform 0.15s; }
   .guide-item[open] summary .chev { transform: rotate(90deg); }
   .guide-item p { font-size: 12px; color: var(--ink-soft); margin: 0 8px 13px 37px; line-height: 1.55; }
@@ -856,35 +856,35 @@
     </div>
     <div class="guide-body">
       <details class="guide-item" open>
-        <summary><span class="gicon">👥</span>Cargar hermanos<span class="chev">›</span></summary>
+        <summary><span class="gicon" data-icon="users"></span>Cargar hermanos<span class="chev">›</span></summary>
         <p>Pestaña Hermanos → "+ Agregar". Tildá qué puede cubrir cada uno (Sonido, Video, Micrófonos, Plataforma, Acomodadores, Cronometrista) — eso decide quién aparece como opción en cada puesto. Sin capacitación marcada, no va a salir en la lista.</p>
       </details>
       <details class="guide-item">
-        <summary><span class="gicon">🎧</span>Equipo técnico<span class="chev">›</span></summary>
+        <summary><span class="gicon" data-icon="sonido"></span>Equipo técnico<span class="chev">›</span></summary>
         <p>Pestaña Programa → subpestaña "Equipo técnico". Elegís cada puesto con el buscador (escribís el nombre y filtra), o tocás "Auto-asignar" para que lo reparta solo, por equidad. El campo se pone verde apenas queda cubierto.</p>
       </details>
       <details class="guide-item">
-        <summary><span class="gicon">📖</span>Programa de la reunión<span class="chev">›</span></summary>
+        <summary><span class="gicon" data-icon="book"></span>Programa de la reunión<span class="chev">›</span></summary>
         <p>Subpestaña "Programa": Presidente, oraciones, cánticos, Tesoros de la Biblia, Seamos mejores maestros y Nuestra Vida Cristiana. Los números de cada parte (1, 2, 3...) se acomodan solos según cuántas partes cargues. "Auto-asignar" del equipo técnico evita poner ahí a alguien que ya tiene una parte acá.</p>
       </details>
       <details class="guide-item">
-        <summary><span class="gicon">🏫</span>Sala auxiliar<span class="chev">›</span></summary>
+        <summary><span class="gicon" data-icon="usher"></span>Sala auxiliar<span class="chev">›</span></summary>
         <p>Ajustes → Congregación → interruptor "Usar sala auxiliar". Al activarla, la Lectura de la Biblia y cada parte de "Seamos mejores maestros" se dividen en Auditorio principal / Sala auxiliar, con su propio estudiante. Apagarla no borra lo ya cargado.</p>
       </details>
       <details class="guide-item">
-        <summary><span class="gicon">📤</span>Compartir<span class="chev">›</span></summary>
+        <summary><span class="gicon" data-icon="share"></span>Compartir<span class="chev">›</span></summary>
         <p>Botón "Compartir" en la pestaña Programa: WhatsApp (con Equipo técnico y Programa juntos), PDF de la semana o del mes, y el link de solo lectura para quien no necesita editar.</p>
       </details>
       <details class="guide-item">
-        <summary><span class="gicon">🔐</span>Quién puede entrar<span class="chev">›</span></summary>
+        <summary><span class="gicon" data-icon="lock"></span>Quién puede entrar<span class="chev">›</span></summary>
         <p>Ajustes → Acceso. Cada persona inicia sesión con su email (link o Google, sin contraseña) — solo entran los que agregues ahí. "Pueden editar" ve y modifica todo; "Solo pueden ver" únicamente accede al link de lectura. Sacar a alguien de la lista le corta el acceso al instante.</p>
       </details>
       <details class="guide-item">
-        <summary><span class="gicon">⏱️</span>Cronómetro<span class="chev">›</span></summary>
+        <summary><span class="gicon" data-icon="cronometrista"></span>Cronómetro<span class="chev">›</span></summary>
         <p>Presets fijos para las partes estándar (Tesoros, Perlas, Estudio bíblico, etc.), y una sección "Partes de esta semana" que trae automáticamente el tiempo de las partes de estudiante que cargaste con minutos en el Programa.</p>
       </details>
       <details class="guide-item">
-        <summary><span class="gicon">📊</span>Reportes y copia de seguridad<span class="chev">›</span></summary>
+        <summary><span class="gicon" data-icon="chart"></span>Reportes y copia de seguridad<span class="chev">›</span></summary>
         <p>Ajustes → Reporte anual de equidad (quién cubrió qué a lo largo del año) y Copia de seguridad (exportar/importar todo en un archivo, por si necesitás restaurar algo).</p>
       </details>
     </div>
@@ -1010,7 +1010,11 @@
     bell: '<path d="M6 10a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/>',
     bellOff: '<path d="M6 10a6 6 0 0 1 10.4-4.1"/><path d="M18 10c0 5 2 6 2 6H8"/><path d="M4 4l16 16"/><path d="M10 20a2 2 0 0 0 4 0"/>',
     sun: '<circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4.5"/><line x1="12" y1="19.5" x2="12" y2="22"/><line x1="2" y1="12" x2="4.5" y2="12"/><line x1="19.5" y1="12" x2="22" y2="12"/><line x1="4.9" y1="4.9" x2="6.6" y2="6.6"/><line x1="17.4" y1="17.4" x2="19.1" y2="19.1"/><line x1="4.9" y1="19.1" x2="6.6" y2="17.4"/><line x1="17.4" y1="6.6" x2="19.1" y2="4.9"/>',
-    spinner: '<circle cx="12" cy="12" r="9" stroke-opacity="0.25"/><path d="M21 12a9 9 0 0 0-9-9"/>'
+    spinner: '<circle cx="12" cy="12" r="9" stroke-opacity="0.25"/><path d="M21 12a9 9 0 0 0-9-9"/>',
+    book: '<path d="M4 5c3-1.3 6-1.3 8 0v14c-2-1.3-5-1.3-8 0V5z"/><path d="M20 5c-3-1.3-6-1.3-8 0v14c2-1.3 5-1.3 8 0V5z"/>',
+    share: '<circle cx="6" cy="12" r="2.4"/><circle cx="18" cy="6" r="2.4"/><circle cx="18" cy="18" r="2.4"/><line x1="8.2" y1="10.8" x2="15.8" y2="7.2"/><line x1="8.2" y1="13.2" x2="15.8" y2="16.8"/>',
+    lock: '<rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+    chart: '<line x1="4" y1="20" x2="20" y2="20"/><rect x="6" y="12" width="3" height="8"/><rect x="11" y="7" width="3" height="13"/><rect x="16" y="15" width="3" height="5"/>'
   };
   const ICON_FILL = new Set(['moon']);
   function svgIcon(name, size) {
@@ -1487,7 +1491,12 @@
     if (hasData) { try { localStorage.setItem(ONBOARDING_KEY, '1'); } catch (e) { /* no se pudo guardar */ } return; }
     $('onboardingOverlay').classList.remove('hidden');
   }
-  function openGuide() { $('guideOverlay').classList.remove('hidden'); }
+  function openGuide() {
+    $('guideOverlay').classList.remove('hidden');
+    document.querySelectorAll('#guideOverlay .gicon[data-icon]').forEach(el => {
+      el.innerHTML = svgIcon(el.dataset.icon, 15);
+    });
+  }
   function closeGuide() { $('guideOverlay').classList.add('hidden'); }
   $('helpBtn').addEventListener('click', openGuide);
   $('guideOpenBtn').addEventListener('click', openGuide);
