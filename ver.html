@@ -310,7 +310,9 @@
     if (!program) return [];
     const out = [];
     const nameOf = id => { const p = (data.publishers || []).find(pp => pp.id === id); return p ? p.name : ''; };
+    const pairName = (a, b) => { const n1 = nameOf(a), n2 = nameOf(b); return b ? `${n1 || '—'} / ${n2}` : n1; };
     const chk = (id, label) => { if (id && matchedIds.has(id)) out.push({ label, name: nameOf(id) }); };
+    const chkPair = (idA, idB, label) => { if ((idA && matchedIds.has(idA)) || (idB && matchedIds.has(idB))) out.push({ label, name: pairName(idA, idB) }); };
     chk(program.presidente, 'Presidente');
     chk(program.oracionInicial, 'Oración inicial');
     if (type === 'finde') {
@@ -327,14 +329,11 @@
     chk(program.lecturaAux, 'Lectura (sala auxiliar)');
     (program.estudiantes || []).forEach(s => {
       const base = s.tema || 'Seamos mejores maestros';
-      chk(s.estudiante, base);
-      chk(s.ayudante, `${base} (ayudante)`);
-      chk(s.estudianteAux, `${base} (sala aux.)`);
-      chk(s.ayudanteAux, `${base} (ayudante, sala aux.)`);
+      chkPair(s.estudiante, s.ayudante, base);
+      chkPair(s.estudianteAux, s.ayudanteAux, `${base} (sala aux.)`);
     });
     (program.vidaCristiana || []).forEach(v => chk(v.presentador, v.tema || 'Nuestra Vida Cristiana'));
-    chk(program.estudioConductor, 'Estudio bíblico — Conductor');
-    chk(program.estudioLector, 'Estudio bíblico — Lector');
+    chkPair(program.estudioConductor, program.estudioLector, 'Estudio bíblico');
     chk(program.oracionFinal, 'Oración final');
     return out;
   }
