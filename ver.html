@@ -16,6 +16,7 @@
     --bg: #EDEFEF; --surface: #FFFFFF; --ink: #212C34; --ink-soft: #5C6B74; --ink-faint: #93A0A7;
     --line: #DDE1E2; --accent-gold: #A9822F; --accent-blue: #3E6B8A;
     --role-mic: #B4633F; --role-plat: #4C7A5E; --role-sonido: #3E6B8A; --role-video: #3F8A80; --role-crono: #7A5C86; --role-usher: #7A8C63; --role-program: #8C5A6E;
+    --sec-tesoros: #3F8A80; --sec-maestros: #B8862F; --sec-vida: #B85C3E;
     --radius-s: 4px; --radius-m: 8px;
     --shadow-sm: 0 1px 2px rgba(33,44,52,0.05), 0 2px 6px rgba(33,44,52,0.05);
   }
@@ -52,7 +53,11 @@
 
   .agenda-item { display: flex; gap: 12px; padding: 13px 2px; border-bottom: 1px solid var(--line); }
   .agenda-item:last-child { border-bottom: none; }
-  .agenda-date { width: 52px; flex-shrink: 0; text-align: center; }
+  .agenda-date {
+    width: 52px; flex-shrink: 0; text-align: center; align-self: flex-start;
+    position: sticky; top: 8px; z-index: 2; background: var(--surface); border-radius: 8px;
+    padding: 5px 2px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
   .agenda-date .dow { font-size: 9.5px; color: var(--ink-faint); font-weight: 700; text-transform: uppercase; }
   .agenda-date .num { font-family: 'Fraunces', serif; font-size: 21px; line-height: 1.1; }
   .agenda-body { flex: 1; min-width: 0; border-left: 3px solid var(--accent-blue); padding-left: 12px; }
@@ -65,7 +70,7 @@
   .chip.empty { color: var(--ink-faint); font-weight: 400; font-style: italic; background: none; border: 1px dashed var(--line); }
   .chip.prog { background: rgba(140,90,110,0.08); border: 1px solid rgba(140,90,110,0.2); }
   .prog-section-label {
-    font-family: 'Fraunces', serif; font-size: 10.5px; font-weight: 600; color: var(--role-program);
+    font-family: 'Fraunces', serif; font-size: 10.5px; font-weight: 600;
     text-transform: uppercase; letter-spacing: 0.03em; margin: 8px 0 4px;
   }
   .prog-section-label:first-child { margin-top: 0; }
@@ -286,23 +291,27 @@
     entries.push({ label: 'Oración final', name: nameOf(program.oracionFinal) });
     return entries.filter(e => e.section || e.song || e.name);
   }
-  function programChipHTML(e) {
-    if (e.song) return `<div class="chip prog"><span class="ic" style="background:var(--role-program)">🎵</span>${escapeHtml(e.label)}: ${escapeHtml(e.value)}</div>`;
+  const SECTION_COLOR = { 'TESOROS DE LA BIBLIA': '--sec-tesoros', 'SEAMOS MEJORES MAESTROS': '--sec-maestros', 'NUESTRA VIDA CRISTIANA': '--sec-vida' };
+  function programChipHTML(e, colorVar) {
+    const color = `var(${colorVar || '--ink-soft'})`;
+    if (e.song) return `<div class="chip prog"><span class="ic" style="background:${color}">🎵</span>${escapeHtml(e.label)}: ${escapeHtml(e.value)}</div>`;
     const icon = e.num || (/oración/i.test(e.label) ? '🙏' : '👤');
     let text = e.label + (e.tema ? ` — ${e.tema}` : '') + `: ${e.name}`;
-    return `<div class="chip prog"><span class="ic" style="background:var(--role-program)">${icon}</span>${escapeHtml(text)}</div>`;
+    return `<div class="chip prog"><span class="ic" style="background:${color}">${icon}</span>${escapeHtml(text)}</div>`;
   }
   function programEntriesToHTML(entries) {
     let html = '<div class="chip-row">';
     let openRow = true;
+    let colorVar = null;
     entries.forEach(e => {
       if (e.section) {
         if (openRow) html += '</div>';
-        html += `<div class="prog-section-label">${escapeHtml(e.section)}</div><div class="chip-row">`;
+        colorVar = SECTION_COLOR[e.section] || null;
+        html += `<div class="prog-section-label" style="color:var(${colorVar || '--ink-soft'})">${escapeHtml(e.section)}</div><div class="chip-row">`;
         openRow = true;
         return;
       }
-      html += programChipHTML(e);
+      html += programChipHTML(e, colorVar);
     });
     if (openRow) html += '</div>';
     return html;
