@@ -309,7 +309,8 @@
   function programMatches(program, type, matchedIds) {
     if (!program) return [];
     const out = [];
-    const chk = (id, label) => { if (id && matchedIds.has(id)) out.push(label); };
+    const nameOf = id => { const p = (data.publishers || []).find(pp => pp.id === id); return p ? p.name : ''; };
+    const chk = (id, label) => { if (id && matchedIds.has(id)) out.push({ label, name: nameOf(id) }); };
     chk(program.presidente, 'Presidente');
     chk(program.oracionInicial, 'Oración inicial');
     if (type === 'finde') {
@@ -382,7 +383,7 @@
       const mk = monthKey(row.date);
       if (mk !== lastMonth) { html += `<div class="search-month-heading">${mk}</div>`; lastMonth = mk; }
       const chips = row.names.map(n => `<div class="chip"><span class="ic" style="background:${n.role.color}">${svgIcon(n.role.icon, 10)}</span>${n.role.label}: ${escapeHtml(n.name)}</div>`).join('')
-        + row.progLabels.map(label => `<div class="chip prog"><span class="ic" style="background:var(--role-program)">👤</span>${escapeHtml(label)} — Programa</div>`).join('');
+        + row.progLabels.map(pm => `<div class="chip prog"><span class="ic" style="background:var(--role-program)">👤</span>${escapeHtml(pm.label)}: ${escapeHtml(pm.name)}</div>`).join('');
       html += `<div class="agenda-item ${row.type === 'finde' ? 'finde' : ''}">
         <div class="agenda-date"><div class="dow">${row.dayName.slice(0, 3)}</div><div class="num">${row.day}</div></div>
         <div class="agenda-body">
