@@ -40,8 +40,12 @@
   .month-nav h2 { font-size: 17px; margin: 0; text-transform: capitalize; }
 
   .personal-summary { background: var(--surface); border: 2px solid var(--accent-gold); border-radius: 12px; padding: 14px; margin-bottom: 14px; }
-  .personal-summary h3 { font-family: 'Fraunces', serif; font-size: 15px; margin: 0 0 2px; }
-  .personal-summary .psub { font-size: 11px; color: var(--ink-soft); margin: 0 0 10px; }
+  .personal-summary h3 { font-family: 'Fraunces', serif; font-size: 15px; margin: 0; }
+  .personal-summary .psub { font-size: 11px; color: var(--ink-soft); margin: 2px 0 0; }
+  .personal-summary .phead { display: flex; align-items: center; }
+  .personal-summary .chev-btn { margin-left: auto; border: none; background: none; color: var(--accent-gold); font-size: 13px; padding: 4px; flex-shrink: 0; }
+  .personal-summary #personalSummaryBody { margin-top: 8px; }
+  .personal-summary #personalSummaryBody.hidden { display: none; }
   .personal-summary .prow { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 12.5px; }
   .personal-summary .prow:last-child { border-bottom: none; }
   .personal-summary .pdate { font-size: 10.5px; font-weight: 700; color: var(--accent-gold); width: 56px; flex-shrink: 0; }
@@ -771,10 +775,20 @@
     if (!rows.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
     box.classList.remove('hidden');
     box.innerHTML = `<div class="personal-summary">
-      <h3>Hola, ${escapeHtml(pub.name.split(' ')[0])}</h3>
-      <p class="psub">Tus próximas asignaciones</p>
-      ${rows.map(r => `<div class="prow"><div class="pdate">${r.dayLabel}</div><div>${escapeHtml(r.label)}</div></div>`).join('')}
+      <div class="phead">
+        <div><h3>Hola, ${escapeHtml(pub.name.split(' ')[0])}</h3><p class="psub" id="personalSummarySub">Tus próximas asignaciones</p></div>
+        <button type="button" class="chev-btn" id="personalSummaryToggle" aria-label="Colapsar">▾</button>
+      </div>
+      <div id="personalSummaryBody"></div>
     </div>`;
+    const bodyEl = $('personalSummaryBody');
+    bodyEl.innerHTML = rows.map(r => `<div class="prow"><div class="pdate">${r.dayLabel}</div><div>${escapeHtml(r.label)}</div></div>`).join('');
+    $('personalSummaryToggle').addEventListener('click', () => {
+      const collapsed = bodyEl.classList.toggle('hidden');
+      $('personalSummaryToggle').textContent = collapsed ? '▸' : '▾';
+      $('personalSummaryToggle').setAttribute('aria-label', collapsed ? 'Expandir' : 'Colapsar');
+      $('personalSummarySub').textContent = collapsed ? `Tus próximas asignaciones (${rows.length})` : 'Tus próximas asignaciones';
+    });
   }
   function startViewing(code) {
     const db = initFirebase();
