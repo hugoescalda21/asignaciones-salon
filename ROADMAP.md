@@ -109,6 +109,57 @@ cualquier cosa hecha hasta ahora — el login con Google, en
 comparación, fue chico al lado de esto.
 *Esfuerzo: alto.*
 
+### 6. Consentimiento de uso de datos, para el resumen personal
+Pendiente de una decisión de fondo primero: si el consentimiento de
+uso de datos que los publicadores ya firmaron en papel (el de la
+organización) alcanza para esta app externa, o si hace falta pedir
+uno propio — eso hay que charlarlo con quien maneja los temas de
+cumplimiento en la congregación, no es algo que se resuelva acá.
+
+Si deciden que sí hace falta, el diseño ya quedó pensado y con
+mockups armados (14 de septiembre de 2026):
+
+- **No es obligatorio para usar la app en general** — el calendario
+  compartido y el buscador siguen funcionando igual para todos, hayan
+  aceptado o no. Es obligatorio únicamente para ver el **resumen
+  personal** (la tarjeta "Hola, X — tus asignaciones" en `ver.html`),
+  porque es la única función que depende del dato nuevo (el email
+  vinculado).
+- **Cuándo se pide**: en el mismo lugar donde iría la tarjeta
+  personal, la primera vez que alguien entra con un email vinculado —
+  antes aparece un cartelito chico ("Podemos mostrarte tu resumen
+  personal...") con un botón para abrir el consentimiento completo.
+  No bloquea nada del resto de la pantalla.
+- **El texto del consentimiento** tiene que aclarar explícitamente
+  que el nombre y las asignaciones son visibles para cualquier otra
+  persona de la congregación con acceso a la app — no es información
+  privada solo de esa persona, es el mismo calendario que ya se
+  comparte hoy en el salón.
+- **Link a una política completa**, en lenguaje simple: qué es la
+  app (aclarando que no es un sistema oficial de la organización,
+  sino una herramienta armada por la congregación), qué datos guarda,
+  quién los puede ver, y cómo pedir que se borren.
+- **Registro del consentimiento**: hay que guardar, por cada persona
+  que acepta, su email, la fecha y hora exacta, y qué versión del
+  texto aceptó — el equivalente digital de la firma, aclaración y
+  fecha del papel. Sin esto no hay forma de demostrar que alguien
+  realmente aceptó si hace falta más adelante. Falta diseñar dónde
+  se consulta ese registro (probablemente una tarjeta nueva en
+  Ajustes, visible solo para Super Admin).
+- Mockups guardados: `mockup-consentimiento-datos.html`,
+  `mockup-consentimiento-y-politica.html`,
+- **Link a la política completa, siempre accesible**: al pie de
+  `ver.html` (junto al texto "Se actualiza solo — generado con..."),
+  no en el encabezado — accesible en cualquier momento, no solo
+  cuando aparece el cartelito de consentimiento.
+- Mockups guardados: `mockup-consentimiento-datos.html`,
+  `mockup-consentimiento-y-politica.html`,
+  `mockup-cartelito-inicial-consentimiento.html`,
+  `mockup-link-privacidad-encabezado.html` (con las dos opciones de
+  ubicación — quedó elegida la del pie).
+
+*Esfuerzo: medio.*
+
 ---
 
 ## Recomendación
