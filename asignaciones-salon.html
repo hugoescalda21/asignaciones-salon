@@ -2104,7 +2104,10 @@
         if (dupIds.includes(heldBy)) {
           if (!firstRoleOf[heldBy]) { firstRoleOf[heldBy] = r.label; return; }
           why0 = `Ya está en ${firstRoleOf[heldBy]} esta reunión — `;
-        } else if (!overlapIds.includes(heldBy)) return;
+        } else if (overlapIds.includes(heldBy)) {
+          const progLabel = programOccupationLabel(week[currentType].program, currentType, heldBy);
+          why0 = `Ya es ${progLabel || 'parte del Programa'} esta reunión — `;
+        } else return;
         const name = (data.publishers.find(p => p.id === heldBy) || {}).name || 'Alguien';
         const { pick, occupied } = suggestReplacementFor(r.key, usedIds, heldBy);
         rows.push(`<div class="cb-suggest-row">
@@ -2136,7 +2139,8 @@
       if (check) check.textContent = inConflict ? '⚠' : '✓';
       if (inConflict && head) {
         if (!tag) { tag = document.createElement('span'); tag.className = 'reason-tag'; head.insertBefore(tag, check || null); }
-        tag.textContent = inDup ? 'Duplicado' : 'Ya en Programa';
+        if (inDup) tag.textContent = 'Duplicado';
+        else tag.textContent = 'Ya es ' + (programOccupationLabel(week[currentType].program, currentType, val) || 'parte del Programa');
       } else if (tag) {
         tag.remove();
       }
