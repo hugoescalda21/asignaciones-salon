@@ -83,11 +83,31 @@ tengas que configurarles todo a mano como hiciste con San Agustín.
 Solo tiene sentido si de verdad hay otra congregación interesada.
 *Esfuerzo: medio-alto.*
 
-### 4. Accesibilidad y monitoreo de errores
-Revisión más profunda para lectores de pantalla y navegación por
-teclado completa; y alguna forma simple de enterarte si algo se
-rompe en producción sin depender de que alguien te escriba.
+### 4. Monitoreo de errores
+*(Accesibilidad ya está hecha — Escape, foco atrapado, aria-labels,
+contraste de color corregido en los dos archivos, el 14 de
+septiembre.)* Queda pendiente una forma simple de enterarte si algo
+se rompe en producción sin depender de que alguien te escriba.
 *Esfuerzo: variable, sin apuro.*
+
+### 5. Roles por área, con restricción real del lado del servidor
+Ya armamos la versión de interfaz (cada rol ve solo lo suyo, pero
+técnicamente los datos completos igual llegan al dispositivo). Para
+que sea una restricción de verdad — que el servidor directamente no
+le entregue a un Admin de Acomodadores nada que no sea Acomodadores —
+hay que **separar los datos en varios documentos** en Firestore (uno
+por Equipo técnico, uno por Acomodadores, uno por Programa, uno por
+Hermanos/Ajustes) en vez del documento único de hoy. Firestore no
+puede aplicar reglas más finas que "tocaste algo dentro de weeks" si
+todo vive junto — es una limitación real del motor de reglas, no algo
+que se arregle agregando código.
+
+Implica: reescribir `saveData()`, `loadData()` y la sincronización en
+tiempo real en los dos archivos, más migrar los datos actuales de
+San Agustín a la estructura nueva sin perder nada. Es más grande que
+cualquier cosa hecha hasta ahora — el login con Google, en
+comparación, fue chico al lado de esto.
+*Esfuerzo: alto.*
 
 ---
 

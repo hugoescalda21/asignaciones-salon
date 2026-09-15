@@ -10,11 +10,21 @@ rules_version = '2';
 //
 // Qué cambia respecto a las reglas actuales (que dejaban leer y
 // escribir a cualquiera): ahora hace falta haber iniciado sesión
-// (con el link por correo) Y que tu email esté en la lista de
-// "editores" o "espectadores" de esa congregación en particular.
+// (con el link por correo) Y que tu email esté en alguna de las
+// listas de acceso de esa congregación en particular.
 //
-// "editorEmails" = pueden ver Y editar (la app principal).
-// "viewerEmails" = solo pueden ver (ver.html).
+// "editorEmails"              = Super Admin (ven y editan todo).
+// "tecnicoAdminEmails"        = Admin de Equipo técnico.
+// "acomodadoresAdminEmails"   = Admin de Acomodadores.
+// "asignacionesAdminEmails"   = Admin de Asignaciones (Programa).
+// "viewerEmails"               = solo pueden ver (ver.html).
+//
+// Importante: por ahora, quien esté en cualquiera de las tres listas
+// de "Admin" (técnico / acomodadores / asignaciones) puede escribir
+// en el documento entero, igual que un Super Admin — es la propia
+// interfaz la que le oculta lo que no le corresponde ver o tocar,
+// no todavía una restricción del servidor campo por campo. Eso es
+// una limitación conocida y documentada en el roadmap del proyecto.
 //
 // El primer email que crea una congregación nueva se agrega solo
 // a "editorEmails" — así el que arma la congregación no queda
@@ -30,23 +40,31 @@ service cloud.firestore {
       allow create: if request.auth != null
                     && request.auth.token.email in request.resource.data.settings.editorEmails;
 
-      // Leer: logueado, y el email tiene que estar en editores O
-      // en espectadores de ESA congregación puntual — o la congregación
-      // todavía no tiene ningún editor cargado (caso de una congregación
-      // que ya existía antes de este sistema de login, donde el campo
-      // puede ni siquiera existir todavía — por eso .get(..., []) en vez
-      // de leerlo directo, que se rompe si el campo no está).
+      // Leer: logueado, y el email tiene que estar en alguna de las
+      // listas de acceso de ESA congregación puntual — o la
+      // congregación todavía no tiene ningún editor cargado (caso de
+      // una congregación que ya existía antes de este sistema de
+      // login, donde el campo puede ni siquiera existir todavía —
+      // por eso .get(..., []) en vez de leerlo directo, que se rompe
+      // si el campo no está).
       allow read: if request.auth != null && (
                     request.auth.token.email in resource.data.settings.get('editorEmails', []) ||
+                    request.auth.token.email in resource.data.settings.get('tecnicoAdminEmails', []) ||
+                    request.auth.token.email in resource.data.settings.get('acomodadoresAdminEmails', []) ||
+                    request.auth.token.email in resource.data.settings.get('asignacionesAdminEmails', []) ||
                     request.auth.token.email in resource.data.settings.get('viewerEmails', []) ||
                     resource.data.settings.get('editorEmails', []).size() == 0
                   );
 
-      // Editar: logueado, y el email tiene que estar en editores — o
-      // la congregación no tiene editores todavía, en cuyo caso quien
-      // se conecta con el código correcto queda como el primero.
+      // Editar: logueado, y el email tiene que estar en editores o en
+      // cualquiera de los tres roles de Admin — o la congregación no
+      // tiene editores todavía, en cuyo caso quien se conecta con el
+      // código correcto queda como el primero (Super Admin).
       allow update: if request.auth != null && (
                     request.auth.token.email in resource.data.settings.get('editorEmails', []) ||
+                    request.auth.token.email in resource.data.settings.get('tecnicoAdminEmails', []) ||
+                    request.auth.token.email in resource.data.settings.get('acomodadoresAdminEmails', []) ||
+                    request.auth.token.email in resource.data.settings.get('asignacionesAdminEmails', []) ||
                     resource.data.settings.get('editorEmails', []).size() == 0
                   );
 
