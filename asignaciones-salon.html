@@ -611,6 +611,9 @@
           <button type="button" class="account-signout" id="accountSignOutBtn">Cerrar sesión</button>
         </div>
       </div>
+      <button type="button" class="help-btn hidden" id="narrowThemeBtn" aria-label="Cambiar tema" title="Cambiar tema">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
       <button type="button" class="help-btn" id="helpBtn" aria-label="Guía de uso" title="Guía de uso">?</button>
     </div>
     <nav class="tabs">
@@ -636,7 +639,7 @@
       <button class="btn" id="todayBtn">Hoy</button>
     </div>
 
-    <div class="subtabs">
+    <div class="subtabs" id="subtabsBar">
       <button type="button" class="subtab active" data-subtab="tecnico" id="subtabTecnico"><span class="subtab-dot" id="dotTecnico"></span>Equipo técnico</button>
       <button type="button" class="subtab" data-subtab="programa" id="subtabPrograma"><span class="subtab-dot" id="dotPrograma"></span>Programa</button>
     </div>
@@ -675,9 +678,11 @@
 
     <div id="programSection" class="hidden"></div>
 
-    <h3 class="section-title">Resumen del mes</h3>
-    <div class="card" id="calendarWrap" style="background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-m); padding:16px 18px; margin-bottom:16px;"></div>
-    <div class="month-table-wrap" id="monthTableWrap"></div>
+    <div id="monthSummaryBlock">
+      <h3 class="section-title">Resumen del mes</h3>
+      <div class="card" id="calendarWrap" style="background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-m); padding:16px 18px; margin-bottom:16px;"></div>
+      <div class="month-table-wrap" id="monthTableWrap"></div>
+    </div>
   </section>
 
   <!-- ---------------- Cronómetro ---------------- -->
@@ -1078,6 +1083,15 @@
     if (type !== 'finde') roles.push({ key: 'cronometrista', label: 'Cronometrista', cap: 'cronometrista', color: 'var(--role-crono)', emoji: '⏱️', icon: 'cronometrista' });
     return roles;
   }
+  // Roles que puede VER/EDITAR quien inició sesión, según su rol de acceso.
+  // 'super' y 'asignaciones' ven todo (asignaciones no entra nunca a esta
+  // pantalla porque no tiene la subpestaña Equipo técnico visible).
+  function rolesForCurrentUser(type) {
+    const all = getRoles(type);
+    if (currentUserRole === 'tecnico') return all.filter(r => !r.key.startsWith('usher'));
+    if (currentUserRole === 'acomodadores') return all.filter(r => r.key.startsWith('usher'));
+    return all;
+  }
 
   let data = { settings: {}, publishers: [], weeks: {} };
   let currentMonday = mondayOf(new Date().toISOString().slice(0, 10));
@@ -1231,6 +1245,39 @@
     if ((s.asignacionesAdminEmails || []).includes(email)) return 'asignaciones';
     if ((s.viewerEmails || []).includes(email)) return 'viewer';
     return 'super'; // fallback defensivo: no debería llegar acá si el login ya validó acceso
+  }
+  function applyRoleUI() {
+    const role = currentUserRole;
+    const narrow = role === 'tecnico' || role === 'acomodadores' || role === 'asignaciones';
+    // Pestañas principales: Cronómetro, Hermanos y Ajustes quedan solo para Super Admin.
+    document.querySelectorAll('.tab-btn[data-tab="timer"], .tab-btn[data-tab="hermanos"], .tab-btn[data-tab="ajustes"]')
+      .forEach(b => b.classList.toggle('hidden', narrow));
+    if (narrow) {
+      const activeBtn = document.querySelector('.tab-btn.active');
+      const activeTab = activeBtn ? activeBtn.dataset.tab : 'programa';
+      if (['timer', 'hermanos', 'ajustes'].includes(activeTab)) switchTab('programa');
+    }
+    // Dentro de Programa: para roles acotados, sin subpestañas ni calendario —
+    // van directo a lo que les corresponde.
+    $('subtabsBar') && $('subtabsBar').classList.toggle('hidden', narrow);
+    $('monthSummaryBlock').classList.toggle('hidden', narrow);
+    if (role === 'asignaciones') {
+      $('technicalSection').classList.add('hidden');
+      $('programSection').classList.remove('hidden');
+      currentSubtab = 'programa';
+      renderProgramSection();
+    } else if (role === 'tecnico' || role === 'acomodadores') {
+      $('technicalSection').classList.remove('hidden');
+      $('programSection').classList.add('hidden');
+      currentSubtab = 'tecnico';
+      renderRoleCards();
+    }
+    // Ícono de tema chico, para quien no tiene la pestaña Ajustes a mano.
+    $('narrowThemeBtn').classList.toggle('hidden', !narrow);
+    // El PDF del mes completo y el link de solo lectura abarcan todo el
+    // equipo — no tienen sentido para un rol acotado a su propia parte.
+    document.querySelectorAll('[data-share="pdfmes"], [data-share="viewlink"]')
+      .forEach(b => b.classList.toggle('hidden', narrow));
   }
   let applyingRemoteUpdate = false; // evita que un cambio recibido de la nube dispare otro guardado
 
@@ -1397,6 +1444,7 @@
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) { /* sin acceso */ }
       initUiFromData();
       renderAll();
+      applyRoleUI();
       applyingRemoteUpdate = false;
       setSyncStatus('ok');
     }, (err) => {
@@ -1930,7 +1978,7 @@
   }
 
   function renderRoleCards() {
-    const roles = getRoles(currentType);
+    const roles = rolesForCurrentUser(currentType);
     const week = weekView(currentMonday);
     const typeObj = week[currentType];
     $('topicInput').value = typeObj.topic || '';
@@ -1966,7 +2014,7 @@
     const week = ensureWeek(currentMonday);
     week[currentType].roles[e.target.dataset.role] = e.target.value || null;
     saveData();
-    updateCompletenessBadge(getRoles(currentType), weekView(currentMonday)[currentType]);
+    updateCompletenessBadge(rolesForCurrentUser(currentType), weekView(currentMonday)[currentType]);
     checkConflicts();
     updateSubtabDots();
     renderMonthTable();
@@ -2025,8 +2073,9 @@
   function checkConflicts() {
     const week = weekView(currentMonday);
     const rolesObj = week[currentType].roles;
+    const myRoles = rolesForCurrentUser(currentType);
     const counts = {};
-    getRoles(currentType).forEach(r => { const id = rolesObj[r.key]; if (id) counts[id] = (counts[id] || 0) + 1; });
+    myRoles.forEach(r => { const id = rolesObj[r.key]; if (id) counts[id] = (counts[id] || 0) + 1; });
     const dupIds = Object.keys(counts).filter(id => counts[id] > 1);
     const progIds = programAssignedIds(week[currentType].program, currentType);
     const overlapIds = Object.keys(counts).filter(id => progIds.has(id) && !dupIds.includes(id));
@@ -2039,7 +2088,7 @@
     if (overlapIds.length) {
       const usedIds = new Set(Object.values(rolesObj).filter(Boolean));
       progIds.forEach(id => usedIds.add(id));
-      const roles = getRoles(currentType);
+      const roles = myRoles;
       const rows = [];
       roles.forEach(r => {
         const heldBy = rolesObj[r.key];
@@ -2086,7 +2135,7 @@
 
   function autoAssign() {
     hapticTap();
-    const roles = getRoles(currentType);
+    const roles = rolesForCurrentUser(currentType);
     const week = ensureWeek(currentMonday);
     const typeObj = week[currentType];
     const counts = {};
@@ -2424,7 +2473,7 @@
       ? `${start.getDate()}-${end.getDate()} ${MESES_ABBR[start.getMonth()]}`
       : `${start.getDate()} ${MESES_ABBR[start.getMonth()]}-${end.getDate()} ${MESES_ABBR[end.getMonth()]}`;
 
-    const roles = getRoles();
+    const roles = rolesForCurrentUser();
     const shortLabel = { sonido: 'Audio', video: 'Video', mic1: 'Micrófono 1', mic2: 'Micrófono 2', mic3: 'Micrófono 3', plataforma: 'Plataforma', cronometrista: 'Cronometrista' };
     const contentsText = 'Incluye: ' + roles.map(r => shortLabel[r.key] || r.label).join('   •   ');
     doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5);
@@ -2453,7 +2502,8 @@
     let any = false;
     ['semana', 'finde'].forEach(t => {
       const week = weekView(currentMonday)[t];
-      if (!Object.values(week.roles).some(Boolean)) return;
+      const pEntriesCheck = programEntries(week.program, t);
+      if (!Object.values(week.roles).some(Boolean) && !pEntriesCheck.length) return;
       any = true;
       const date = dateForType(currentMonday, t);
       const { dayName, day } = formatDate(date);
@@ -2466,21 +2516,25 @@
         doc.text(week.topic, 40, y + 16);
         tableStartY = y + 26;
       }
-      const body = roles.filter(r => t !== 'finde' || r.key !== 'cronometrista').map(r => {
-        const p = data.publishers.find(pp => pp.id === week.roles[r.key]);
-        return [r.label, p ? p.name : '—'];
-      });
-      doc.autoTable({
-        startY: tableStartY, margin: { left: 40, right: 40 }, theme: 'grid',
-        head: [['Asignación', 'Hermano asignado']],
-        body,
-        headStyles: { fillColor: [33, 44, 52], textColor: 255, fontStyle: 'bold' },
-        styles: { fontSize: 11, cellPadding: 7 },
-        columnStyles: { 0: { fontStyle: 'bold', cellWidth: 200 } }
-      });
-      y = doc.lastAutoTable.finalY + 20;
+      if (currentUserRole !== 'asignaciones') {
+        const body = roles.filter(r => t !== 'finde' || r.key !== 'cronometrista').map(r => {
+          const p = data.publishers.find(pp => pp.id === week.roles[r.key]);
+          return [r.label, p ? p.name : '—'];
+        });
+        doc.autoTable({
+          startY: tableStartY, margin: { left: 40, right: 40 }, theme: 'grid',
+          head: [['Asignación', 'Hermano asignado']],
+          body,
+          headStyles: { fillColor: [33, 44, 52], textColor: 255, fontStyle: 'bold' },
+          styles: { fontSize: 11, cellPadding: 7 },
+          columnStyles: { 0: { fontStyle: 'bold', cellWidth: 200 } }
+        });
+        y = doc.lastAutoTable.finalY + 20;
+      } else {
+        y = tableStartY;
+      }
 
-      const pEntries = programEntries(week.program, t);
+      const pEntries = (currentUserRole === 'tecnico' || currentUserRole === 'acomodadores') ? [] : pEntriesCheck;
       if (pEntries.length) {
         const progBody = pEntries.map(e => {
           if (e.section) return [{ content: e.section, colSpan: 2, styles: { fillColor: [237, 239, 239], textColor: [92, 107, 116], fontStyle: 'bold', fontSize: 8.5 } }];
@@ -2672,8 +2726,10 @@
     const lines = [`🏛️ *${congName}*`, `*Asignaciones — ${dayName} ${day} de ${monthKey(date)}*`];
     if (typeObj.topic) lines.push(`_Tema: ${typeObj.topic}_`);
     lines.push('');
-    getRoles(currentType).forEach(r => { const p = data.publishers.find(pp => pp.id === week[r.key]); lines.push(`${r.emoji} *${r.label}:* ${p ? p.name : '—'}`); });
-    const pEntries = programEntries(typeObj.program, currentType);
+    if (currentUserRole !== 'asignaciones') {
+      rolesForCurrentUser(currentType).forEach(r => { const p = data.publishers.find(pp => pp.id === week[r.key]); lines.push(`${r.emoji} *${r.label}:* ${p ? p.name : '—'}`); });
+    }
+    const pEntries = (currentUserRole === 'tecnico' || currentUserRole === 'acomodadores') ? [] : programEntries(typeObj.program, currentType);
     if (pEntries.length) {
       lines.push('', '📖 *Programa*', '');
       pEntries.forEach(e => {
@@ -2807,6 +2863,14 @@
     saveData();
     applyTheme();
   }));
+  $('narrowThemeBtn').addEventListener('click', () => {
+    const order = ['auto', 'light', 'dark'];
+    const cur = (data.settings && data.settings.themeMode) || 'auto';
+    data.settings.themeMode = order[(order.indexOf(cur) + 1) % order.length];
+    saveData();
+    applyTheme();
+    showToast('Tema: ' + ({ auto: 'Automático', light: 'Claro', dark: 'Oscuro' }[data.settings.themeMode]));
+  });
   if (darkMediaQuery) {
     darkMediaQuery.addEventListener ? darkMediaQuery.addEventListener('change', applyTheme) : darkMediaQuery.addListener(applyTheme);
   }
