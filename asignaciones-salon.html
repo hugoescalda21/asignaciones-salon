@@ -888,7 +888,7 @@
   <div class="modal" style="max-width:480px; max-height:82vh; overflow-y:auto;">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
       <h3 style="margin:0;">Guía de uso</h3>
-      <button type="button" id="guideCloseBtn" style="border:none; background:none; color:var(--ink-faint); font-size:18px;">✕</button>
+      <button type="button" id="guideCloseBtn" aria-label="Cerrar" style="border:none; background:none; color:var(--ink-faint); font-size:18px;">✕</button>
     </div>
     <div class="guide-body">
       <details class="guide-item" open>
@@ -1548,6 +1548,53 @@
     if (fbAuth) fbAuth.signOut();
   });
 
+  /* ---------- Accesibilidad: Escape para cerrar y foco atrapado en modales ---------- */
+  const DISMISSIBLE_MODALS = {
+    guideOverlay: 'guideCloseBtn',
+    onboardingOverlay: 'onboardingCloseBtn',
+    pubModalOverlay: 'pubCancelBtn',
+    excludeModalOverlay: 'excludeCloseBtn',
+    waModalOverlay: 'waCloseBtn'
+  };
+  function getFocusable(container) {
+    return Array.from(container.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
+      .filter(el => !el.disabled && el.offsetParent !== null);
+  }
+  function visibleDismissibleModalId() {
+    return Object.keys(DISMISSIBLE_MODALS).find(id => $(id) && !$(id).classList.contains('hidden'));
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const id = visibleDismissibleModalId();
+      if (id) { e.preventDefault(); $(DISMISSIBLE_MODALS[id]).click(); return; }
+    }
+    if (e.key === 'Tab') {
+      const id = visibleDismissibleModalId() ||
+        (($('authGateOverlay') && !$('authGateOverlay').classList.contains('hidden')) ? 'authGateOverlay' : null) ||
+        (($('codeModalOverlay') && !$('codeModalOverlay').classList.contains('hidden')) ? 'codeModalOverlay' : null);
+      if (!id) return;
+      const modalBox = $(id).querySelector('.modal') || $(id);
+      const focusables = getFocusable(modalBox);
+      if (!focusables.length) return;
+      const first = focusables[0], last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
+  function focusFirstIn(id) {
+    const modalBox = $(id).querySelector('.modal') || $(id);
+    const focusables = getFocusable(modalBox);
+    if (focusables.length) focusables[0].focus();
+  }
+  new MutationObserver((mutations) => {
+    mutations.forEach(m => {
+      const el = m.target;
+      if (el.classList.contains('modal-overlay') && !el.classList.contains('hidden')) {
+        setTimeout(() => focusFirstIn(el.id), 30);
+      }
+    });
+  }).observe(document.body, { attributes: true, attributeFilter: ['class'], subtree: true });
+
   function openGuide() {
     $('guideOverlay').classList.remove('hidden');
     document.querySelectorAll('#guideOverlay .gicon[data-icon]').forEach(el => {
@@ -1774,6 +1821,7 @@
     clearBtn.type = 'button';
     clearBtn.className = 'pub-combo-clear';
     clearBtn.textContent = '✕';
+    clearBtn.setAttribute('aria-label', 'Quitar asignación');
     clearBtn.style.display = sel.value ? '' : 'none';
     wrap.appendChild(clearBtn);
 
@@ -3190,7 +3238,7 @@
   function renderEmailList(field, containerId) {
     const list = data.settings[field] || [];
     $(containerId).innerHTML = list.length
-      ? list.map(email => `<div class="role-mini" style="display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--line); font-size:12.5px;"><span style="flex:1;">${escapeHtml(email)}</span><button type="button" class="rm-btn" data-remove-email="${escapeHtml(email)}" data-field="${field}" style="border:none; background:none; color:var(--ink-faint); font-size:13px;">✕</button></div>`).join('')
+      ? list.map(email => `<div class="role-mini" style="display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--line); font-size:12.5px;"><span style="flex:1;">${escapeHtml(email)}</span><button type="button" class="rm-btn" data-remove-email="${escapeHtml(email)}" data-field="${field}" aria-label="Quitar a ${escapeHtml(email)}" style="border:none; background:none; color:var(--ink-faint); font-size:13px;">✕</button></div>`).join('')
       : '<p class="hint" style="margin:0;">Todavía no agregaste a nadie.</p>';
   }
   function renderAccessLists() {
