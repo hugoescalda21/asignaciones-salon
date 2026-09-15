@@ -1196,11 +1196,11 @@
     let out;
     if (raw && raw.weeks) {
       raw.settings = Object.assign(defaultSettings(), raw.settings || {});
-      raw.publishers = (raw.publishers || []).map(p => ({ id: p.id, name: p.name, notes: p.notes || '', status: p.status || 'activo', roles: Object.assign(emptyCaps(), p.roles || {}) }));
+      raw.publishers = (raw.publishers || []).map(p => ({ id: p.id, name: p.name, notes: p.notes || '', status: p.status || 'activo', roles: Object.assign(emptyCaps(), p.roles || {}), email: p.email || null }));
       out = raw;
     } else {
       // formato viejo (reuniones sueltas) -> semanas
-      out = { settings: defaultSettings(), publishers: (raw && raw.publishers || []).map(p => ({ id: p.id, name: p.name, notes: '', status: 'activo', roles: Object.assign(emptyCaps(), p.roles || {}) })), weeks: {} };
+      out = { settings: defaultSettings(), publishers: (raw && raw.publishers || []).map(p => ({ id: p.id, name: p.name, notes: '', status: 'activo', roles: Object.assign(emptyCaps(), p.roles || {}), email: p.email || null })), weeks: {} };
       (raw && raw.meetings || []).forEach(m => {
         const monday = mondayOf(m.date);
         if (!out.weeks[monday]) out.weeks[monday] = blankWeek();
