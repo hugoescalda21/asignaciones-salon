@@ -767,16 +767,18 @@
       <p class="hint">Cada persona inicia sesión con su email (le llega un link, sin contraseña). Solo entran los que agregues acá — sacar a alguien le corta el acceso al instante.</p>
       <p class="hint" style="margin-top:4px;">⚠ Esto todavía es una restricción de la interfaz, no del servidor — cualquiera de estos roles técnicamente puede leer/escribir el documento completo. Los detalles están en el roadmap.</p>
       <div id="accessRolesList" style="margin-top:10px;"></div>
-      <div class="add-row" style="display:flex; gap:8px; margin-top:10px;">
-        <input type="email" id="newRoleEmail" placeholder="email@ejemplo.com" style="flex:1; border:1px solid var(--line); border-radius:var(--radius-s); padding:8px 10px; font-family:inherit; font-size:13px;">
-        <select id="newRoleSelect" style="border:1px solid var(--line); border-radius:var(--radius-s); padding:8px; font-family:inherit; font-size:12.5px; background:var(--bg);">
-          <option value="editorEmails">Super Admin</option>
-          <option value="tecnicoAdminEmails">Admin — Equipo técnico</option>
-          <option value="acomodadoresAdminEmails">Admin — Acomodadores</option>
-          <option value="asignacionesAdminEmails">Admin — Asignaciones</option>
-          <option value="viewerEmails">Solo ver</option>
-        </select>
-        <button class="btn" id="addRoleBtn">+ Agregar</button>
+      <div class="add-block" style="margin-top:10px; padding-top:12px; border-top:1px solid var(--line);">
+        <input type="email" id="newRoleEmail" placeholder="email@ejemplo.com" style="width:100%; border:1px solid var(--line); border-radius:var(--radius-s); padding:9px 10px; font-family:inherit; font-size:13px; margin-bottom:8px;">
+        <div style="display:flex; gap:8px;">
+          <select id="newRoleSelect" style="flex:1; border:1px solid var(--line); border-radius:var(--radius-s); padding:9px; font-family:inherit; font-size:12.5px; background:var(--bg);">
+            <option value="editorEmails">Super Admin</option>
+            <option value="tecnicoAdminEmails">Admin — Equipo técnico</option>
+            <option value="acomodadoresAdminEmails">Admin — Acomodadores</option>
+            <option value="asignacionesAdminEmails">Admin — Asignaciones</option>
+            <option value="viewerEmails">Solo ver</option>
+          </select>
+          <button class="btn" id="addRoleBtn" style="flex-shrink:0;">+ Agregar</button>
+        </div>
       </div>
     </details>
 
@@ -3362,12 +3364,14 @@
     ROLE_FIELDS.forEach(field => { (data.settings[field] || []).forEach(email => rows.push({ email, field })); });
     rows.sort((a, b) => a.email.localeCompare(b.email));
     $('accessRolesList').innerHTML = rows.length
-      ? rows.map(r => `<div class="role-mini" style="display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--line); font-size:12.5px;">
-          <span style="flex:1;">${escapeHtml(r.email)}${currentUser && r.email === currentUser.email ? ' (vos)' : ''}</span>
-          <select class="role-change-select" data-email="${escapeHtml(r.email)}" data-current-field="${r.field}" style="border:1px solid var(--line); border-radius:6px; padding:5px 6px; font-family:inherit; font-size:11.5px; background:var(--bg);">
-            ${ROLE_FIELDS.map(f => `<option value="${f}" ${f === r.field ? 'selected' : ''}>${ROLE_LABELS[f]}</option>`).join('')}
-          </select>
-          <button type="button" class="rm-btn" data-remove-email="${escapeHtml(r.email)}" data-field="${r.field}" aria-label="Quitar a ${escapeHtml(r.email)}" style="border:none; background:none; color:var(--ink-faint); font-size:13px;">✕</button>
+      ? rows.map(r => `<div class="role-mini" style="padding:9px 0; border-bottom:1px solid var(--line); font-size:12.5px;">
+          <div style="font-weight:600; margin-bottom:6px; word-break:break-all;">${escapeHtml(r.email)}${currentUser && r.email === currentUser.email ? ' <span style="font-weight:400; color:var(--ink-faint);">(vos)</span>' : ''}</div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <select class="role-change-select" data-email="${escapeHtml(r.email)}" data-current-field="${r.field}" style="flex:1; border:1px solid var(--line); border-radius:6px; padding:7px; font-family:inherit; font-size:12px; background:var(--bg);">
+              ${ROLE_FIELDS.map(f => `<option value="${f}" ${f === r.field ? 'selected' : ''}>${ROLE_LABELS[f]}</option>`).join('')}
+            </select>
+            <button type="button" class="rm-btn" data-remove-email="${escapeHtml(r.email)}" data-field="${r.field}" aria-label="Quitar a ${escapeHtml(r.email)}" style="border:none; background:none; color:var(--ink-faint); font-size:15px; flex-shrink:0; padding:4px 6px;">✕</button>
+          </div>
         </div>`).join('')
       : '<p class="hint" style="margin:0;">Todavía no agregaste a nadie.</p>';
   }
