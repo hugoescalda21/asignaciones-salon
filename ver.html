@@ -39,6 +39,12 @@
   .month-nav button { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius-s); width: 34px; height: 34px; font-size: 15px; }
   .month-nav h2 { font-size: 17px; margin: 0; text-transform: capitalize; }
 
+  .personal-summary { background: var(--surface); border: 2px solid var(--accent-gold); border-radius: 12px; padding: 14px; margin-bottom: 14px; }
+  .personal-summary h3 { font-family: 'Fraunces', serif; font-size: 15px; margin: 0 0 2px; }
+  .personal-summary .psub { font-size: 11px; color: var(--ink-soft); margin: 0 0 10px; }
+  .personal-summary .prow { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 12.5px; }
+  .personal-summary .prow:last-child { border-bottom: none; }
+  .personal-summary .pdate { font-size: 10.5px; font-weight: 700; color: var(--accent-gold); width: 56px; flex-shrink: 0; }
   .search-row {
     display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
     position: sticky; top: 0; z-index: 20; background: var(--bg); padding: 6px 0;
@@ -154,6 +160,7 @@
   </div>
   <div class="gold-bar"></div>
   <div class="content">
+    <div id="personalSummary" class="hidden"></div>
     <div class="search-row" id="searchRow">
       <span class="search-icon-static" aria-hidden="true">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.2" y2="16.2"/></svg>
@@ -739,6 +746,36 @@
     $('mainView').classList.add('hidden');
   }
 
+  function renderPersonalSummary() {
+    const box = $('personalSummary');
+    if (!currentUser || !currentUser.email) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+    const pub = (data.publishers || []).find(p => p.email === currentUser.email);
+    if (!pub) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+    const settings = data.settings || { weekdaySemana: 4, weekdayFinde: 0, micCount: 2, usherCount: 2 };
+    const today = new Date().toISOString().slice(0, 10);
+    const rows = [];
+    Object.keys(data.weeks || {}).sort().forEach(monday => {
+      ['semana', 'finde'].forEach(t => {
+        const w = data.weeks[monday][t];
+        if (!w) return;
+        const date = dateForType(monday, t, settings);
+        if (date < today) return;
+        const { dayName, day } = formatDate(date);
+        const dayLabel = `${dayName.slice(0, 3).toUpperCase()} ${day}`;
+        getRoles(t, settings.micCount, settings.usherCount).forEach(r => {
+          if (w.roles && w.roles[r.key] === pub.id) rows.push({ dayLabel, label: r.label });
+        });
+        programMatches(w.program, t, new Set([pub.id])).forEach(pm => rows.push({ dayLabel, label: pm.label }));
+      });
+    });
+    if (!rows.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+    box.classList.remove('hidden');
+    box.innerHTML = `<div class="personal-summary">
+      <h3>Hola, ${escapeHtml(pub.name.split(' ')[0])}</h3>
+      <p class="psub">Tus próximas asignaciones</p>
+      ${rows.map(r => `<div class="prow"><div class="pdate">${r.dayLabel}</div><div>${escapeHtml(r.label)}</div></div>`).join('')}
+    </div>`;
+  }
   function startViewing(code) {
     const db = initFirebase();
     currentMonday = mondayOf(new Date().toISOString().slice(0, 10));
@@ -749,6 +786,7 @@
       $('authGateView').classList.add('hidden');
       $('mainView').classList.remove('hidden');
       renderCurrent();
+      renderPersonalSummary();
       const url = new URL(location);
       url.searchParams.set('codigo', code);
       history.replaceState(null, '', url);

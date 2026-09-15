@@ -977,6 +977,10 @@
         <select id="pubEditStatus"><option value="activo">Activo</option><option value="no_disponible">No disponible</option></select>
       </div>
       <div class="field">
+        <label>Email vinculado</label>
+        <div id="pubLinkedEmailBox"></div>
+      </div>
+      <div class="field">
         <label>Puede cubrir</label>
         <div class="cap-grid">
           <label class="cap-item"><input type="checkbox" id="capSonido"> Consola de audio</label>
@@ -3221,6 +3225,36 @@
     switchSubtab('programa');
   });
 
+  function renderPubLinkedEmail(p) {
+    const box = $('pubLinkedEmailBox');
+    if (!p) { box.innerHTML = '<p class="hint" style="margin:0;">Guardá primero para poder vincular un email.</p>'; return; }
+    if (p.email) {
+      box.innerHTML = `<div style="display:flex; align-items:center; justify-content:space-between; background:var(--ok-bg); border:1px solid var(--ok); border-radius:8px; padding:8px 10px; font-size:12px; color:var(--ok); font-weight:600;">
+        <span style="word-break:break-all;">${escapeHtml(p.email)}</span>
+        <button type="button" id="unlinkEmailBtn" style="border:none; background:none; color:var(--ok); font-size:10.5px; font-weight:700; text-decoration:underline; flex-shrink:0;">Desvincular</button>
+      </div>`;
+      $('unlinkEmailBtn').addEventListener('click', () => { p.email = null; saveData(); renderPubLinkedEmail(p); });
+    } else {
+      const available = (data.settings.viewerEmails || []).filter(e => !data.publishers.some(pp => pp.email === e));
+      box.innerHTML = `<div style="display:flex; align-items:center; justify-content:space-between; border:1px dashed var(--line); border-radius:8px; padding:8px 10px; font-size:12px; color:var(--ink-faint);">
+        Sin vincular
+        <button type="button" id="openLinkPickerBtn" style="border:1px solid var(--accent-gold); background:none; color:var(--accent-gold); font-size:11px; font-weight:700; padding:5px 11px; border-radius:14px; flex-shrink:0;">Vincular</button>
+      </div>
+      <div id="linkPickerList" class="hidden" style="margin-top:8px; border:1px solid var(--line); border-radius:8px; padding:2px 10px;"></div>`;
+      $('openLinkPickerBtn').addEventListener('click', () => {
+        const list = $('linkPickerList');
+        if (!available.length) { list.innerHTML = '<p class="hint" style="margin:8px 0;">No hay emails de "Solo ver" sin vincular todavía. Agregá uno en Ajustes → Acceso primero.</p>'; list.classList.remove('hidden'); return; }
+        list.innerHTML = available.map(e => `<div style="display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--line); font-size:12px;"><span style="flex:1; word-break:break-all;">${escapeHtml(e)}</span><button type="button" class="btn" data-pick-email="${escapeHtml(e)}" style="flex-shrink:0; padding:4px 10px; font-size:10.5px;">Elegir</button></div>`).join('');
+        list.classList.remove('hidden');
+        list.querySelectorAll('[data-pick-email]').forEach(btn => btn.addEventListener('click', () => {
+          p.email = btn.dataset.pickEmail;
+          saveData();
+          renderPubLinkedEmail(p);
+        }));
+      });
+    }
+  }
+
   function openPubModal(id) {
     pubEditingId = id;
     if (id) {
@@ -3238,12 +3272,14 @@
       $('pubDeleteBtn').classList.remove('hidden');
       renderLastServed(p);
       renderPubAssignments(id);
+      renderPubLinkedEmail(p);
     } else {
       $('pubModalTitle').textContent = 'Agregar hermano';
       $('pubEditForm').reset();
       $('pubDeleteBtn').classList.add('hidden');
       $('pubLastServed').classList.add('hidden');
       $('pubAssignmentsSection').classList.add('hidden');
+      renderPubLinkedEmail(null);
     }
     $('pubModalOverlay').classList.remove('hidden');
   }
