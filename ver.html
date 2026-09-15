@@ -44,7 +44,7 @@
     position: sticky; top: 0; z-index: 20; background: var(--bg); padding: 6px 0;
   }
   .search-row.stuck { background: var(--surface); box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-bottom: 1px solid var(--line); margin: 0 -18px 10px; padding: 10px 18px; }
-  .search-toggle { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius-s); width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; color: var(--ink-soft); flex-shrink: 0; }
+  .search-icon-static { display: flex; align-items: center; justify-content: center; width: 20px; color: var(--ink-faint); flex-shrink: 0; }
   .search-input { flex: 1; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 8px 11px; font-family: inherit; font-size: 13.5px; }
   .search-clear { border: none; background: none; color: var(--ink-faint); font-size: 15px; padding: 6px; flex-shrink: 0; }
   .search-heading { font-size: 12.5px; color: var(--ink-soft); margin: 0 0 12px; }
@@ -155,11 +155,11 @@
   <div class="gold-bar"></div>
   <div class="content">
     <div class="search-row" id="searchRow">
-      <button type="button" class="search-toggle" id="searchToggleBtn" aria-label="Buscar">
+      <span class="search-icon-static" aria-hidden="true">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.2" y2="16.2"/></svg>
-      </button>
-      <input type="text" id="searchInput" class="search-input hidden" placeholder="Buscar por nombre… (próximas asignaciones)">
-      <button type="button" class="search-clear hidden" id="searchClearBtn" aria-label="Cerrar búsqueda">✕</button>
+      </span>
+      <input type="text" id="searchInput" class="search-input" placeholder="Buscar por nombre, puesto o fecha…">
+      <button type="button" class="search-clear hidden" id="searchClearBtn" aria-label="Limpiar búsqueda">✕</button>
     </div>
     <div class="view-toggle" id="viewToggle">
       <button type="button" class="view-toggle-btn active" data-view="tecnico">Equipo técnico</button>
@@ -563,12 +563,23 @@
     return out;
   }
 
+  const MESES_BUSQUEDA = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  const DIAS_BUSQUEDA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+  function dateMatchesQuery(date, q) {
+    const d = new Date(date + 'T00:00:00');
+    const dateStr = `${DIAS_BUSQUEDA[d.getDay()]} ${d.getDate()} de ${MESES_BUSQUEDA[d.getMonth()]}`;
+    return dateStr.includes(q);
+  }
+  function programLabelMatches(program, type, q) {
+    return programEntries(program, type)
+      .filter(e => !e.section && !e.song && e.name && ((e.label && e.label.toLowerCase().includes(q)) || (e.tema && e.tema.toLowerCase().includes(q))))
+      .map(e => ({ label: e.tema ? `${e.label} — ${e.tema}` : e.label, name: e.name }));
+  }
   function computeSearchResults(query) {
     const q = query.trim().toLowerCase();
     if (!q) return null;
     const settings = data.settings || { weekdaySemana: 4, weekdayFinde: 0, micCount: 2 };
     const matchedIds = new Set((data.publishers || []).filter(p => p.name.toLowerCase().includes(q)).map(p => p.id));
-    if (!matchedIds.size) return [];
     const today = new Date().toISOString().slice(0, 10);
     const rows = [];
     Object.keys(data.weeks || {}).sort().forEach(monday => {
@@ -578,8 +589,18 @@
         const date = dateForType(monday, t, settings);
         if (date < today) return;
         const roles = getRoles(t, settings.micCount, settings.usherCount);
-        const matches = roles.filter(r => w.roles && matchedIds.has(w.roles[r.key]));
-        const progLabels = programMatches(w.program, t, matchedIds);
+        let matches = roles.filter(r => w.roles && matchedIds.has(w.roles[r.key]));
+        let progLabels = programMatches(w.program, t, matchedIds);
+        // Coincidencia por nombre del puesto/sección (aunque no coincida ningún hermano)
+        roles.filter(r => r.label.toLowerCase().includes(q) && w.roles && w.roles[r.key] && !matches.includes(r)).forEach(r => matches.push(r));
+        programLabelMatches(w.program, t, q).forEach(pl => { if (!progLabels.some(x => x.label === pl.label && x.name === pl.name)) progLabels.push(pl); });
+        // Coincidencia por fecha: mostrar todo lo cargado ese día
+        if (dateMatchesQuery(date, q)) {
+          matches = roles.filter(r => w.roles && w.roles[r.key]);
+          progLabels = programEntries(w.program, t)
+            .filter(e => !e.section && !e.song && e.name)
+            .map(e => ({ label: e.tema ? `${e.label} — ${e.tema}` : e.label, name: e.name }));
+        }
         if (!matches.length && !progLabels.length) return;
         const { dayName, day } = formatDate(date);
         const names = matches.map(r => {
@@ -632,23 +653,17 @@
     renderMonth();
   });
 
-  function openSearchToggle() {
-    const showing = $('searchInput').classList.toggle('hidden') === false;
-    $('searchClearBtn').classList.toggle('hidden', !showing);
-    if (showing) { $('searchInput').focus(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-    else { $('searchInput').value = ''; $('monthNav').classList.remove('hidden'); $('viewToggle').classList.remove('hidden'); renderMonth(); }
-  }
-  $('searchToggleBtn').addEventListener('click', openSearchToggle);
   window.addEventListener('scroll', () => {
     const threshold = $('mainView').querySelector('.topbar').offsetHeight;
     $('searchRow').classList.toggle('stuck', window.scrollY >= threshold);
   });
   $('searchClearBtn').addEventListener('click', () => {
-    $('searchInput').value = ''; $('searchInput').classList.add('hidden'); $('searchClearBtn').classList.add('hidden');
+    $('searchInput').value = ''; $('searchClearBtn').classList.add('hidden');
     $('monthNav').classList.remove('hidden'); $('viewToggle').classList.remove('hidden'); renderMonth();
   });
   $('searchInput').addEventListener('input', (e) => {
     const q = e.target.value;
+    $('searchClearBtn').classList.toggle('hidden', !q.trim());
     if (!q.trim()) { $('monthNav').classList.remove('hidden'); $('viewToggle').classList.remove('hidden'); renderMonth(); return; }
     $('monthNav').classList.add('hidden');
     $('viewToggle').classList.add('hidden');
