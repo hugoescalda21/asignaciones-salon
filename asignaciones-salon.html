@@ -294,9 +294,11 @@
   .role-card.conflict-card .role-card-head { color: var(--danger); }
   .role-card-head { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); margin-bottom: 8px; }
   .role-card-head .rc-check { color: var(--ok); font-size: 12px; margin-left: auto; }
+  .role-tag-row { margin: -4px 0 8px; }
+  .role-tag-row.hidden { display: none; }
   .role-card.conflict-card .rc-check { color: var(--danger); margin-left: 6px; }
   .role-card.conflict-card .pub-combo.filled .pub-combo-input { border-color: var(--danger); background: #fff; color: var(--danger); }
-  .reason-tag { font-size: 9.5px; font-weight: 700; padding: 2px 7px; border-radius: 8px; margin-left: auto; background: #F3D9D5; color: var(--danger); }
+  .reason-tag { display: inline-block; font-size: 9.5px; font-weight: 700; padding: 3px 9px; border-radius: 8px; background: #F3D9D5; color: var(--danger); }
   .role-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
   .role-card select { width: 100%; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 8px; font-size: 13.5px; font-family: inherit; background: var(--bg); color: var(--ink); }
   .role-count { font-size: 11px; color: var(--ink-faint); margin-top: 6px; }
@@ -1992,6 +1994,7 @@
       }).join('');
       return `<div class="role-card" style="--rc:${r.color}">
         <div class="role-card-head"><span class="role-icon" style="color:${r.color}">${svgIcon(r.icon, 15)}</span>${r.label}</div>
+        <div class="role-tag-row hidden"></div>
         <select data-role="${r.key}" aria-label="${r.label}"><option value="">— Sin asignar —</option>${opts}</select>
         <div class="role-count">${capable.length} hermano${capable.length === 1 ? '' : 's'} habilitado${capable.length === 1 ? '' : 's'}</div>
       </div>`;
@@ -2131,18 +2134,19 @@
       const val = sel ? sel.value : '';
       const head = card.querySelector('.role-card-head');
       const check = head ? head.querySelector('.rc-check') : null;
-      let tag = head ? head.querySelector('.reason-tag') : null;
+      const tagRow = card.querySelector('.role-tag-row');
       const inDup = !!val && dupIds.includes(val);
       const inOverlap = !!val && overlapIds.includes(val);
       const inConflict = inDup || inOverlap;
       card.classList.toggle('conflict-card', inConflict);
       if (check) check.textContent = inConflict ? '⚠' : '✓';
-      if (inConflict && head) {
-        if (!tag) { tag = document.createElement('span'); tag.className = 'reason-tag'; head.insertBefore(tag, check || null); }
-        if (inDup) tag.textContent = 'Duplicado';
-        else tag.textContent = 'Ya es ' + (programOccupationLabel(week[currentType].program, currentType, val) || 'parte del Programa');
-      } else if (tag) {
-        tag.remove();
+      if (inConflict && tagRow) {
+        const label = inDup ? 'Duplicado' : 'Ya es ' + (programOccupationLabel(week[currentType].program, currentType, val) || 'parte del Programa');
+        tagRow.innerHTML = `<span class="reason-tag">${escapeHtml(label)}</span>`;
+        tagRow.classList.remove('hidden');
+      } else if (tagRow) {
+        tagRow.classList.add('hidden');
+        tagRow.innerHTML = '';
       }
     });
   }
