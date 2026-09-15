@@ -302,6 +302,17 @@
   .role-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
   .role-card select { width: 100%; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 8px; font-size: 13.5px; font-family: inherit; background: var(--bg); color: var(--ink); }
   .role-count { font-size: 11px; color: var(--ink-faint); margin-top: 6px; }
+  .assign-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 12.5px; }
+  .assign-row:last-child { border-bottom: none; }
+  .assign-date { font-size: 10.5px; font-weight: 700; color: var(--ink-soft); width: 54px; flex-shrink: 0; }
+  .assign-label { flex: 1; }
+  .assign-label .arole { font-weight: 600; }
+  .assign-label .avia { font-size: 9.5px; color: var(--ink-faint); display: block; }
+  .assign-remove-btn { border: 1px solid var(--danger); background: var(--danger-bg); color: var(--danger); font-size: 10.5px; font-weight: 700; padding: 4px 9px; border-radius: 12px; flex-shrink: 0; }
+  .vac-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px dashed var(--line); font-size: 12px; }
+  .vac-row:last-child { border-bottom: none; }
+  .vac-goto-btn { border: 1px solid var(--accent-gold); background: none; color: var(--accent-gold); font-size: 10px; font-weight: 700; padding: 4px 9px; border-radius: 12px; flex-shrink: 0; }
+  .exclude-view-link { border: none; background: none; color: var(--accent-gold); font-size: 10px; font-weight: 700; flex-shrink: 0; }
 
   /* Buscador de hermanos (se engancha sobre los <select> existentes) */
   .pub-combo { position: relative; }
@@ -977,6 +988,17 @@
         </div>
       </div>
       <div class="last-served hidden" id="pubLastServed"></div>
+      <div id="pubAssignmentsSection" class="hidden" style="border-top:1px solid var(--line); margin-top:14px; padding-top:14px;">
+        <h4 style="font-size:12px; margin:0 0 2px;">Sus próximas asignaciones</h4>
+        <p class="hint" style="margin:0 0 10px;">Encontradas en Equipo técnico y Programa — "Quitar" libera el puesto al toque.</p>
+        <div id="pubAssignmentsList" style="max-height:180px; overflow-y:auto;"></div>
+        <div id="pubVacantSection" class="hidden" style="margin-top:12px;">
+          <h4 style="font-size:12px; margin:0 0 2px;">Puestos que quedaron libres</h4>
+          <div id="pubVacantTecnico"></div>
+          <button type="button" class="btn" id="pubAutoAssignVacantBtn" style="width:100%; margin-top:6px; display:none;">Auto-asignar estos puestos</button>
+          <div id="pubVacantPrograma" style="margin-top:6px;"></div>
+        </div>
+      </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-danger hidden" id="pubDeleteBtn">Quitar</button>
         <button type="button" class="btn" id="pubCancelBtn">Cancelar</button>
@@ -2446,9 +2468,18 @@
     const { dayName, day } = formatDate(dateForType(currentMonday, currentType));
     $('excludeModalSub').textContent = `${dayName} ${day} de ${monthKey(currentMonday)} — ${currentType === 'finde' ? 'Fin de semana' : 'Entre semana'}. No cambia el estado general del hermano, y si ya estaba asignado se le libera la asignación.`;
     const sorted = data.publishers.slice().sort((a, b) => a.name.localeCompare(b.name, 'es'));
-    $('excludeList').innerHTML = sorted.length ? sorted.map(p => `
-      <label class="cap-item" data-name="${escapeHtml(p.name.toLowerCase())}"><input type="checkbox" data-exclude-id="${p.id}" ${typeObj.excluded.includes(p.id) ? 'checked' : ''}> ${escapeHtml(p.name)}</label>
-    `).join('') : '<p class="empty-note">Todavía no hay hermanos cargados.</p>';
+    $('excludeList').innerHTML = sorted.length ? sorted.map(p => {
+      const hasFuture = findAssignmentsFor(p.id).length > 0;
+      return `<label class="cap-item" data-name="${escapeHtml(p.name.toLowerCase())}" style="display:flex; align-items:center; gap:8px;">
+        <input type="checkbox" data-exclude-id="${p.id}" ${typeObj.excluded.includes(p.id) ? 'checked' : ''}> <span style="flex:1;">${escapeHtml(p.name)}</span>
+        ${hasFuture ? `<button type="button" class="exclude-view-link" data-view-assign="${p.id}">Ver asignaciones →</button>` : ''}
+      </label>`;
+    }).join('') : '<p class="empty-note">Todavía no hay hermanos cargados.</p>';
+    $('excludeList').querySelectorAll('[data-view-assign]').forEach(btn => btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      $('excludeModalOverlay').classList.add('hidden');
+      openPubModal(btn.dataset.viewAssign);
+    }));
     $('excludeList').querySelectorAll('[data-exclude-id]').forEach(chk => chk.addEventListener('change', (e) => {
       const id = e.target.dataset.excludeId;
       const w = ensureWeek(currentMonday);
@@ -3065,6 +3096,131 @@
     box.classList.remove('hidden');
   }
 
+  const PROGRAM_SIMPLE_FIELDS_SEMANA = [
+    ['presidente', 'Presidente'], ['oracionInicial', 'Oración inicial'], ['oracionFinal', 'Oración final'],
+    ['consejeroAux', 'Consejero sala aux.'], ['tesoros', 'Tesoros de la Biblia'], ['perlas', 'Perlas escondidas'],
+    ['lectura', 'Lectura de la Biblia'], ['lecturaAux', 'Lectura (sala aux.)'],
+    ['estudioConductor', 'Estudio bíblico — Conductor'], ['estudioLector', 'Estudio bíblico — Lector']
+  ];
+  const PROGRAM_SIMPLE_FIELDS_FINDE = [
+    ['presidente', 'Presidente'], ['oracionInicial', 'Oración inicial'], ['oradorPublico', 'Discurso público'],
+    ['atalayaConductor', 'Atalaya — Conductor'], ['atalayaLector', 'Atalaya — Lector'], ['oracionFinal', 'Oración final']
+  ];
+  function findAssignmentsFor(pubId) {
+    const today = new Date().toISOString().slice(0, 10);
+    const results = [];
+    Object.keys(data.weeks).sort().forEach(monday => {
+      const w = data.weeks[monday];
+      ['semana', 'finde'].forEach(t => {
+        const typeObj = w[t];
+        if (!typeObj) return;
+        const date = dateForType(monday, t);
+        if (date < today) return;
+        const { dayName, day } = formatDate(date);
+        const dayLabel = `${dayName.slice(0, 3).toUpperCase()} ${day}`;
+        getRoles(t).forEach(r => {
+          if (typeObj.roles && typeObj.roles[r.key] === pubId) {
+            results.push({ monday, type: t, dayLabel, date, kind: 'tecnico', label: r.label, roleKey: r.key });
+          }
+        });
+        const p = typeObj.program;
+        if (p) {
+          (t === 'finde' ? PROGRAM_SIMPLE_FIELDS_FINDE : PROGRAM_SIMPLE_FIELDS_SEMANA).forEach(([field, label]) => {
+            if (p[field] === pubId) results.push({ monday, type: t, dayLabel, date, kind: 'programa', label, field });
+          });
+          (p.estudiantes || []).forEach((s, i) => {
+            ['estudiante', 'ayudante', 'estudianteAux', 'ayudanteAux'].forEach(sub => {
+              if (s[sub] === pubId) results.push({ monday, type: t, dayLabel, date, kind: 'programa', label: (s.tema || 'Seamos mejores maestros') + (sub.includes('Aux') ? ' (sala aux.)' : ''), field: 'estudiantes', idx: i, sub });
+            });
+          });
+          (p.vidaCristiana || []).forEach((v, i) => {
+            if (v.presentador === pubId) results.push({ monday, type: t, dayLabel, date, kind: 'programa', label: v.tema || 'Nuestra Vida Cristiana', field: 'vidaCristiana', idx: i, sub: 'presentador' });
+          });
+        }
+      });
+    });
+    return results;
+  }
+  function clearAssignmentRecord(a) {
+    const typeObj = data.weeks[a.monday][a.type];
+    if (a.kind === 'tecnico') { typeObj.roles[a.roleKey] = null; return; }
+    if (a.field === 'estudiantes' || a.field === 'vidaCristiana') typeObj.program[a.field][a.idx][a.sub] = null;
+    else typeObj.program[a.field] = null;
+  }
+  function autoAssignVacantTecnico(a) {
+    const typeObj = data.weeks[a.monday][a.type];
+    const r = getRoles(a.type).find(x => x.key === a.roleKey);
+    if (!r) return null;
+    const excludedToday = new Set(typeObj.excluded || []);
+    const used = new Set(Object.values(typeObj.roles).filter(Boolean));
+    programAssignedIds(typeObj.program, a.type).forEach(id => used.add(id));
+    const counts = computeRoleCounts();
+    let cands = data.publishers.filter(p => p.status !== 'no_disponible' && !excludedToday.has(p.id) && !used.has(p.id) && p.roles[r.cap]);
+    if (!cands.length) return null;
+    cands.sort((x, y) => (counts[x.id][r.cap] - counts[y.id][r.cap]) || (counts[x.id].total - counts[y.id].total));
+    typeObj.roles[a.roleKey] = cands[0].id;
+    return cands[0];
+  }
+  function renderPubAssignments(pubId) {
+    const section = $('pubAssignmentsSection');
+    const list = findAssignmentsFor(pubId);
+    if (!list.length) { section.classList.add('hidden'); return; }
+    section.classList.remove('hidden');
+    $('pubVacantSection').classList.add('hidden');
+    $('pubAssignmentsList').innerHTML = list.map((a, i) => `<div class="assign-row" data-idx="${i}">
+      <div class="assign-date">${a.dayLabel}</div>
+      <div class="assign-label"><span class="arole">${escapeHtml(a.label)}</span><span class="avia">${a.kind === 'tecnico' ? 'Equipo técnico' : 'Programa'}</span></div>
+      <button type="button" class="assign-remove-btn" data-remove-assign="${i}">Quitar</button>
+    </div>`).join('');
+    window.__pubAssignList = list;
+    window.__pubVacant = [];
+  }
+  function renderPubVacant() {
+    const vac = window.__pubVacant || [];
+    const box = $('pubVacantSection');
+    if (!vac.length) { box.classList.add('hidden'); return; }
+    box.classList.remove('hidden');
+    const tecnico = vac.filter(v => v.kind === 'tecnico' && !v.done);
+    const programa = vac.filter(v => v.kind === 'programa' && !v.done);
+    const doneRows = vac.filter(v => v.done);
+    $('pubVacantTecnico').innerHTML = tecnico.map((a, i) => `<div class="vac-row"><div class="assign-date">${a.dayLabel}</div><div class="assign-label"><span class="arole">${escapeHtml(a.label)}</span></div></div>`).join('')
+      + doneRows.filter(v => v.kind === 'tecnico').map(a => `<div class="vac-row"><div class="assign-date">${a.dayLabel}</div><div class="assign-label"><span class="arole">${escapeHtml(a.label)}</span> — <span style="color:var(--ok); font-weight:700;">${escapeHtml(a.filledName)}</span></div></div>`).join('');
+    $('pubAutoAssignVacantBtn').style.display = tecnico.length ? 'block' : 'none';
+    $('pubVacantPrograma').innerHTML = programa.map((a, i) => `<div class="vac-row"><div class="assign-date">${a.dayLabel}</div><div class="assign-label"><span class="arole">${escapeHtml(a.label)}</span></div><button type="button" class="vac-goto-btn" data-goto-vacant="${vac.indexOf(a)}">Ir a esa reunión</button></div>`).join('');
+  }
+  $('pubAssignmentsList').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-remove-assign]');
+    if (!btn) return;
+    const i = Number(btn.dataset.removeAssign);
+    const a = window.__pubAssignList[i];
+    clearAssignmentRecord(a);
+    saveData();
+    btn.closest('.assign-row').remove();
+    window.__pubVacant.push(a);
+    renderPubVacant();
+  });
+  $('pubAutoAssignVacantBtn').addEventListener('click', () => {
+    (window.__pubVacant || []).filter(v => v.kind === 'tecnico' && !v.done).forEach(a => {
+      const picked = autoAssignVacantTecnico(a);
+      a.done = true;
+      a.filledName = picked ? picked.name : 'sin candidatos libres';
+    });
+    saveData();
+    renderRoleCards(); renderMonthTable(); renderMonthCalendar();
+    renderPubVacant();
+    showToast('Auto-asignación completada');
+  });
+  $('pubVacantPrograma').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-goto-vacant]');
+    if (!btn) return;
+    const a = window.__pubVacant[Number(btn.dataset.gotoVacant)];
+    closePubModal();
+    setWeek(a.monday);
+    $(a.type === 'finde' ? 'pillFinde' : 'pillSemana').click();
+    switchTab('programa');
+    switchSubtab('programa');
+  });
+
   function openPubModal(id) {
     pubEditingId = id;
     if (id) {
@@ -3081,11 +3237,13 @@
       $('capCronometrista').checked = !!p.roles.cronometrista;
       $('pubDeleteBtn').classList.remove('hidden');
       renderLastServed(p);
+      renderPubAssignments(id);
     } else {
       $('pubModalTitle').textContent = 'Agregar hermano';
       $('pubEditForm').reset();
       $('pubDeleteBtn').classList.add('hidden');
       $('pubLastServed').classList.add('hidden');
+      $('pubAssignmentsSection').classList.add('hidden');
     }
     $('pubModalOverlay').classList.remove('hidden');
   }
