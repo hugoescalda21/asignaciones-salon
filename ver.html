@@ -43,12 +43,20 @@
   .personal-summary h3 { font-family: 'Fraunces', serif; font-size: 15px; margin: 0; }
   .personal-summary .psub { font-size: 11px; color: var(--ink-soft); margin: 2px 0 0; }
   .personal-summary .phead { display: flex; align-items: center; }
-  .personal-summary .chev-btn { margin-left: auto; border: none; background: none; color: var(--accent-gold); font-size: 13px; padding: 4px; flex-shrink: 0; }
+  .personal-summary .chev-btn { margin-left: auto; border: 1px solid var(--line); background: var(--bg); color: var(--accent-gold); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .personal-summary .chev-btn svg { transition: transform 0.15s; }
+  .personal-summary .chev-btn.collapsed svg { transform: rotate(-90deg); }
   .personal-summary #personalSummaryBody { margin-top: 8px; }
   .personal-summary #personalSummaryBody.hidden { display: none; }
-  .personal-summary .prow { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 12.5px; }
-  .personal-summary .prow:last-child { border-bottom: none; }
-  .personal-summary .pdate { font-size: 10.5px; font-weight: 700; color: var(--accent-gold); width: 56px; flex-shrink: 0; }
+  .personal-summary .date-row { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .personal-summary .date-row:last-child { border-bottom: none; }
+  .personal-summary .date-badge { width: 38px; flex-shrink: 0; text-align: center; padding-top: 1px; }
+  .personal-summary .date-badge .dow { font-size: 9px; font-weight: 700; color: var(--accent-gold); text-transform: uppercase; }
+  .personal-summary .date-badge .num { font-family: 'Fraunces', serif; font-size: 15px; line-height: 1.1; }
+  .personal-summary .date-items { flex: 1; }
+  .personal-summary .prow { display: flex; align-items: center; gap: 7px; padding: 3px 0; font-size: 12.5px; }
+  .personal-summary .pnum { width: 18px; height: 18px; border-radius: 50%; background: var(--accent-gold); color: #fff; font-size: 9.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .personal-summary .pnum.blank { background: var(--ink-faint); }
   .search-row {
     display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
     position: sticky; top: 0; z-index: 20; background: var(--bg); padding: 6px 0;
@@ -782,6 +790,40 @@
   $('privacyCloseBtn').addEventListener('click', () => $('privacyOverlay').classList.add('hidden'));
   $('privacyOverlay').addEventListener('click', (e) => { if (e.target.id === 'privacyOverlay') $('privacyOverlay').classList.add('hidden'); });
 
+  function personalProgramMatches(program, type, pubId) {
+    if (!program) return [];
+    const out = [];
+    const chk = (id, label, num) => { if (id === pubId) out.push({ label, num }); };
+    const chkPair = (idA, idB, label, num) => { if (idA === pubId || idB === pubId) out.push({ label, num }); };
+    chk(program.presidente, 'Presidente');
+    chk(program.oracionInicial, 'Oración inicial');
+    if (type === 'finde') {
+      chk(program.oradorPublico, 'Discurso público');
+      chk(program.atalayaConductor, 'Atalaya — Conductor');
+      chk(program.atalayaLector, 'Atalaya — Lector');
+      chk(program.oracionFinal, 'Oración final');
+      return out;
+    }
+    chk(program.consejeroAux, 'Consejero sala aux.');
+    chk(program.tesoros, 'Tesoros de la Biblia', 1);
+    chk(program.perlas, 'Perlas escondidas', 2);
+    chk(program.lectura, 'Lectura de la Biblia', 3);
+    chk(program.lecturaAux, 'Lectura (sala auxiliar)');
+    let n = 4;
+    (program.estudiantes || []).forEach(s => {
+      const base = s.tema || 'Seamos mejores maestros';
+      chkPair(s.estudiante, s.ayudante, base, n);
+      chkPair(s.estudianteAux, s.ayudanteAux, `${base} (sala aux.)`);
+      n++;
+    });
+    (program.vidaCristiana || []).forEach(v => {
+      chk(v.presentador, v.tema || 'Nuestra Vida Cristiana', n);
+      n++;
+    });
+    chkPair(program.estudioConductor, program.estudioLector, 'Estudio bíblico', n);
+    chk(program.oracionFinal, 'Oración final');
+    return out;
+  }
   function renderPersonalSummary() {
     const box = $('personalSummary');
     if (!currentUser || !currentUser.email) { box.classList.add('hidden'); box.innerHTML = ''; return; }
@@ -789,37 +831,43 @@
     if (!pub) { box.classList.add('hidden'); box.innerHTML = ''; return; }
     const settings = data.settings || { weekdaySemana: 4, weekdayFinde: 0, micCount: 2, usherCount: 2 };
     const today = new Date().toISOString().slice(0, 10);
-    const rows = [];
+    const groups = [];
     Object.keys(data.weeks || {}).sort().forEach(monday => {
       ['semana', 'finde'].forEach(t => {
         const w = data.weeks[monday][t];
         if (!w) return;
         const date = dateForType(monday, t, settings);
         if (date < today) return;
-        const { dayName, day } = formatDate(date);
-        const dayLabel = `${dayName.slice(0, 3).toUpperCase()} ${day}`;
+        const items = [];
         getRoles(t, settings.micCount, settings.usherCount).forEach(r => {
-          if (w.roles && w.roles[r.key] === pub.id) rows.push({ dayLabel, label: r.label });
+          if (w.roles && w.roles[r.key] === pub.id) items.push({ label: r.label });
         });
-        programMatches(w.program, t, new Set([pub.id])).forEach(pm => rows.push({ dayLabel, label: pm.label }));
+        personalProgramMatches(w.program, t, pub.id).forEach(pm => items.push(pm));
+        if (!items.length) return;
+        const { dayName, day } = formatDate(date);
+        groups.push({ dow: dayName.slice(0, 3), day, items });
       });
     });
-    if (!rows.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+    if (!groups.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
     box.classList.remove('hidden');
+    const totalItems = groups.reduce((sum, g) => sum + g.items.length, 0);
     box.innerHTML = `<div class="personal-summary">
       <div class="phead">
         <div><h3>Hola, ${escapeHtml(pub.name.split(' ')[0])}</h3><p class="psub" id="personalSummarySub">Tus próximas asignaciones</p></div>
-        <button type="button" class="chev-btn" id="personalSummaryToggle" aria-label="Colapsar">▾</button>
+        <button type="button" class="chev-btn" id="personalSummaryToggle" aria-label="Colapsar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
       </div>
       <div id="personalSummaryBody"></div>
     </div>`;
     const bodyEl = $('personalSummaryBody');
-    bodyEl.innerHTML = rows.map(r => `<div class="prow"><div class="pdate">${r.dayLabel}</div><div>${escapeHtml(r.label)}</div></div>`).join('');
+    bodyEl.innerHTML = groups.map(g => `<div class="date-row">
+      <div class="date-badge"><div class="dow">${escapeHtml(g.dow)}</div><div class="num">${g.day}</div></div>
+      <div class="date-items">${g.items.map(it => `<div class="prow"><span class="pnum${it.num ? '' : ' blank'}">${it.num || '•'}</span>${escapeHtml(it.label)}</div>`).join('')}</div>
+    </div>`).join('');
     $('personalSummaryToggle').addEventListener('click', () => {
       const collapsed = bodyEl.classList.toggle('hidden');
-      $('personalSummaryToggle').textContent = collapsed ? '▸' : '▾';
+      $('personalSummaryToggle').classList.toggle('collapsed', collapsed);
       $('personalSummaryToggle').setAttribute('aria-label', collapsed ? 'Expandir' : 'Colapsar');
-      $('personalSummarySub').textContent = collapsed ? `Tus próximas asignaciones (${rows.length})` : 'Tus próximas asignaciones';
+      $('personalSummarySub').textContent = collapsed ? `Tus próximas asignaciones (${totalItems})` : 'Tus próximas asignaciones';
     });
   }
   function startViewing(code) {
