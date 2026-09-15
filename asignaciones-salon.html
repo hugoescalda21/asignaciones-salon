@@ -2385,14 +2385,16 @@
     hapticTap();
     const prevMonday = shiftDate(currentMonday, -7);
     const prevWeek = data.weeks[prevMonday];
-    if (!prevWeek || !Object.values(prevWeek[currentType].roles).some(Boolean)) {
+    const myKeys = rolesForCurrentUser(currentType).map(r => r.key);
+    const prevHasMine = prevWeek && myKeys.some(k => prevWeek[currentType].roles[k]);
+    if (!prevHasMine) {
       showToast('La semana anterior no tiene asignaciones para copiar');
       return;
     }
     const week = ensureWeek(currentMonday);
-    const hasCurrent = Object.values(week[currentType].roles).some(Boolean);
+    const hasCurrent = myKeys.some(k => week[currentType].roles[k]);
     if (hasCurrent && !confirm('Esto reemplaza las asignaciones actuales de esta reunión por las de la semana pasada. ¿Continuar?')) return;
-    week[currentType].roles = Object.assign(blankRoles(), prevWeek[currentType].roles);
+    myKeys.forEach(k => { week[currentType].roles[k] = prevWeek[currentType].roles[k] || null; });
     if (currentType === 'finde') week[currentType].roles.cronometrista = null;
     saveData();
     renderRoleCards();
