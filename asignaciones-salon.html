@@ -274,6 +274,10 @@
     background: var(--danger-bg); color: var(--danger); border: 1px solid rgba(168,67,58,0.35); border-radius: var(--radius-s);
     padding: 10px 14px; font-size: 13px; font-weight: 600; margin-bottom: 16px;
   }
+  #programConflictBanner { background: var(--danger-bg); color: var(--danger); border: 1px solid rgba(168,67,58,0.35); border-radius: var(--radius-s); padding: 10px 14px; margin-bottom: 16px; font-size: 13px; font-weight: 600; }
+  #programConflictBanner .pcb-detail { font-size: 12px; font-weight: 500; color: var(--danger); margin: 2px 0 8px; }
+  .adj-note { display: flex; align-items: flex-start; gap: 7px; background: var(--info-bg, #E7EEF2); border: 1px solid rgba(62,107,138,0.3); border-radius: 8px; padding: 8px 10px; margin: -6px 0 10px; font-size: 11px; color: var(--info, #3E6B8A); line-height: 1.4; }
+  .adj-note svg { flex-shrink: 0; margin-top: 1px; }
   .cb-summary { margin-bottom: 4px; }
   .cb-suggest-row { padding: 8px 0; border-top: 1px solid rgba(168,67,58,0.18); font-size: 12.5px; font-weight: 500; }
   .cb-suggest-row:first-of-type { border-top: none; margin-top: 4px; }
@@ -1764,7 +1768,7 @@
   function renderProgramSection() {
     const program = weekView(currentMonday)[currentType].program;
     const aux = !!data.settings.useAuxRoom;
-    let html = '<div class="program-card">';
+    let html = '<div id="programConflictBanner" class="hidden"></div><div class="program-card">';
     html += programRowHTML('presidente', 'Presidente', program.presidente);
     html += programRowHTML('oracionInicial', 'Oración inicial', program.oracionInicial);
     if (currentType === 'finde') {
@@ -1841,6 +1845,8 @@
     updateCardCompleteness();
     checkConflicts();
     updateSubtabDots();
+    checkProgramConflicts();
+    applyAdjacentWeekNotes();
   }
 
   function readProgramValue(el) {
@@ -1874,6 +1880,8 @@
     renderMonthCalendar();
     checkConflicts();
     updateSubtabDots();
+    checkProgramConflicts();
+    applyAdjacentWeekNotes();
   });
   $('programSection').addEventListener('click', (e) => {
     if (e.target.id === 'addStudentPartBtn') {
@@ -3254,6 +3262,66 @@
         }));
       });
     }
+  }
+
+  function programPersonLabels(program, type) {
+    const map = {};
+    if (!program) return map;
+    const add = (id, label) => { if (!id) return; (map[id] = map[id] || []).push(label); };
+    (type === 'finde' ? PROGRAM_SIMPLE_FIELDS_FINDE : PROGRAM_SIMPLE_FIELDS_SEMANA).forEach(([field, label]) => add(program[field], label));
+    if (type !== 'finde') {
+      (program.estudiantes || []).forEach(s => {
+        const base = s.tema || 'Seamos mejores maestros';
+        add(s.estudiante, base); add(s.ayudante, base);
+        add(s.estudianteAux, `${base} (sala aux.)`); add(s.ayudanteAux, `${base} (sala aux.)`);
+      });
+      (program.vidaCristiana || []).forEach(v => add(v.presentador, v.tema || 'Nuestra Vida Cristiana'));
+    }
+    return map;
+  }
+  function checkProgramConflicts() {
+    const banner = $('programConflictBanner');
+    if (!banner) return;
+    const week = weekView(currentMonday)[currentType];
+    const map = programPersonLabels(week.program, currentType);
+    const dupEntries = Object.entries(map).filter(([id, labels]) => labels.length > 1);
+    if (!dupEntries.length) { banner.classList.add('hidden'); banner.innerHTML = ''; return; }
+    banner.classList.remove('hidden');
+    banner.innerHTML = dupEntries.map(([id, labels]) => {
+      const name = (data.publishers.find(p => p.id === id) || {}).name || 'Alguien';
+      return `<div>⚠ ${escapeHtml(name)} tiene ${labels.length} partes del Programa esta reunión</div><div class="pcb-detail">${labels.map(escapeHtml).join(' y ')}</div>`;
+    }).join('');
+  }
+  function applyAdjacentWeekNotes() {
+    const container = $('programSection');
+    if (!container) return;
+    container.querySelectorAll('.adj-note').forEach(n => n.remove());
+    const buildMap = (w) => {
+      const merged = {};
+      if (!w) return merged;
+      ['semana', 'finde'].forEach(t => {
+        const m = programPersonLabels(w[t] && w[t].program, t);
+        Object.entries(m).forEach(([id, labels]) => { merged[id] = (merged[id] || []).concat(labels); });
+      });
+      return merged;
+    };
+    const prevMap = buildMap(data.weeks[shiftDate(currentMonday, -7)]);
+    const nextMap = buildMap(data.weeks[shiftDate(currentMonday, 7)]);
+    container.querySelectorAll('select[data-program-field], select[data-student-field], select[data-vida-field]').forEach(sel => {
+      const id = sel.value;
+      if (!id) return;
+      const parts = [];
+      if (prevMap[id]) parts.push(`también tiene una parte del Programa la semana anterior (${prevMap[id].join(', ')})`);
+      if (nextMap[id]) parts.push(`también tiene una parte del Programa la semana siguiente (${nextMap[id].join(', ')})`);
+      if (!parts.length) return;
+      const name = (data.publishers.find(p => p.id === id) || {}).name || 'Esta persona';
+      const row = sel.closest('.program-row') || sel.parentElement;
+      if (!row) return;
+      const note = document.createElement('div');
+      note.className = 'adj-note';
+      note.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>${escapeHtml(name)} ${parts.join('; ')}</span>`;
+      row.insertAdjacentElement('afterend', note);
+    });
   }
 
   function openPubModal(id) {
