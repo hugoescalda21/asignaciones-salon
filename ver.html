@@ -531,6 +531,19 @@
     }
   }
 
+  function norm(str) { return (str || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+  const LABEL_SEARCH_ALIASES = {
+    'Lectura de la Biblia': ['lectura biblica'],
+    '(Sala auxiliar) Lectura': ['lectura biblica', 'sala auxiliar'],
+    'Consejero sala aux.': ['sala auxiliar'],
+    '(Sala auxiliar)': ['sala auxiliar'],
+    'Discurso público': ['conferencia publica', 'discurso publico'],
+    'Estudio bíblico': ['estudio de la congregacion', 'estudio biblico de la congregacion']
+  };
+  function searchableLabel(label) {
+    const extra = LABEL_SEARCH_ALIASES[label] || [];
+    return norm(label + ' ' + extra.join(' '));
+  }
   function programMatches(program, type, matchedIds) {
     if (!program) return [];
     const out = [];
@@ -565,21 +578,53 @@
 
   const MESES_BUSQUEDA = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
   const DIAS_BUSQUEDA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
-  function dateMatchesQuery(date, q) {
+  function dateMatchesQuery(date, qWords) {
     const d = new Date(date + 'T00:00:00');
-    const dateStr = `${DIAS_BUSQUEDA[d.getDay()]} ${d.getDate()} de ${MESES_BUSQUEDA[d.getMonth()]}`;
-    return dateStr.includes(q);
+    const dateStr = norm(`${DIAS_BUSQUEDA[d.getDay()]} ${d.getDate()} de ${MESES_BUSQUEDA[d.getMonth()]}`);
+    return qWords.every(w => dateStr.includes(w));
   }
-  function programLabelMatches(program, type, q) {
+  function programLabelMatches(program, type, qWords) {
     return programEntries(program, type)
-      .filter(e => !e.section && !e.song && e.name && ((e.label && e.label.toLowerCase().includes(q)) || (e.tema && e.tema.toLowerCase().includes(q))))
+      .filter(e => !e.section && !e.song && e.name && (
+        (e.label && qWords.every(w => searchableLabel(e.label).includes(w))) ||
+        (e.tema && qWords.every(w => norm(e.tema).includes(w)))
+      ))
       .map(e => ({ label: e.tema ? `${e.label} — ${e.tema}` : e.label, name: e.name }));
   }
-  function computeSearchResults(query) {
-    const q = query.trim().toLowerCase();
+  function levenshtein(a, b) {
+    const m = a.length, n = b.length;
+    const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] : 1 + Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+    return dp[m][n];
+  }
+  const KNOWN_SEARCH_LABELS = [
+    'Presidente', 'Oración inicial', 'Oración final', 'Discurso público', 'Atalaya — Conductor', 'Atalaya — Lector',
+    'Consejero sala aux.', 'Tesoros de la Biblia', 'Perlas escondidas', 'Lectura de la Biblia', 'Estudio bíblico'
+  ];
+  function findFuzzyCorrection(rawQuery) {
+    const q = norm(rawQuery.trim());
     if (!q) return null;
+    const candidates = new Set(KNOWN_SEARCH_LABELS);
+    (data.publishers || []).forEach(p => candidates.add(p.name));
+    Object.values(ROLE_META).forEach(r => candidates.add(r.label));
+    let best = null, bestDist = Infinity;
+    candidates.forEach(c => {
+      const cn = norm(c);
+      const dist = levenshtein(q, cn);
+      const threshold = Math.max(2, Math.floor(cn.length * 0.34));
+      if (dist <= threshold && dist < bestDist) { bestDist = dist; best = c; }
+    });
+    return best;
+  }
+  function computeSearchResultsRaw(qWords) {
     const settings = data.settings || { weekdaySemana: 4, weekdayFinde: 0, micCount: 2 };
-    const matchedIds = new Set((data.publishers || []).filter(p => p.name.toLowerCase().includes(q)).map(p => p.id));
+    const matchedIds = new Set((data.publishers || []).filter(p => { const n = norm(p.name); return qWords.every(w => n.includes(w)); }).map(p => p.id));
     const today = new Date().toISOString().slice(0, 10);
     const rows = [];
     Object.keys(data.weeks || {}).sort().forEach(monday => {
@@ -592,10 +637,10 @@
         let matches = roles.filter(r => w.roles && matchedIds.has(w.roles[r.key]));
         let progLabels = programMatches(w.program, t, matchedIds);
         // Coincidencia por nombre del puesto/sección (aunque no coincida ningún hermano)
-        roles.filter(r => r.label.toLowerCase().includes(q) && w.roles && w.roles[r.key] && !matches.includes(r)).forEach(r => matches.push(r));
-        programLabelMatches(w.program, t, q).forEach(pl => { if (!progLabels.some(x => x.label === pl.label && x.name === pl.name)) progLabels.push(pl); });
+        roles.filter(r => qWords.every(word => norm(r.label).includes(word)) && w.roles && w.roles[r.key] && !matches.includes(r)).forEach(r => matches.push(r));
+        programLabelMatches(w.program, t, qWords).forEach(pl => { if (!progLabels.some(x => x.label === pl.label && x.name === pl.name)) progLabels.push(pl); });
         // Coincidencia por fecha: mostrar todo lo cargado ese día
-        if (dateMatchesQuery(date, q)) {
+        if (dateMatchesQuery(date, qWords)) {
           matches = roles.filter(r => w.roles && w.roles[r.key]);
           progLabels = programEntries(w.program, t)
             .filter(e => !e.section && !e.song && e.name)
@@ -613,17 +658,35 @@
     rows.sort((a, b) => a.date.localeCompare(b.date));
     return rows;
   }
+  function computeSearchResults(query) {
+    const qWords = norm(query.trim()).split(/\s+/).filter(Boolean);
+    if (!qWords.length) return null;
+    let rows = computeSearchResultsRaw(qWords);
+    let correctedTo = null;
+    if (!rows.length) {
+      const corrected = findFuzzyCorrection(query);
+      if (corrected) {
+        const correctedWords = norm(corrected).split(/\s+/).filter(Boolean);
+        const rows2 = computeSearchResultsRaw(correctedWords);
+        if (rows2.length) { rows = rows2; correctedTo = corrected; }
+      }
+    }
+    return { rows, correctedTo };
+  }
 
   function renderSearchResults(query) {
-    const rows = computeSearchResults(query);
-    if (rows === null) return;
+    const result = computeSearchResults(query);
+    if (result === null) return;
+    const { rows, correctedTo } = result;
     $('monthLabel').textContent = 'Búsqueda';
     if (!rows.length) {
       $('agendaCard').innerHTML = `<p class="search-heading">Próximas asignaciones para <strong>"${escapeHtml(query)}"</strong></p><p class="empty-note">No se encontraron próximas asignaciones.</p>`;
       return;
     }
     let lastMonth = '';
-    let html = `<p class="search-heading">Próximas asignaciones para <strong>"${escapeHtml(query)}"</strong></p>`;
+    let html = correctedTo
+      ? `<p class="search-heading">Mostrando resultados para <strong>${escapeHtml(correctedTo)}</strong></p>`
+      : `<p class="search-heading">Próximas asignaciones para <strong>"${escapeHtml(query)}"</strong></p>`;
     rows.forEach(row => {
       const mk = monthKey(row.date);
       if (mk !== lastMonth) { html += `<div class="search-month-heading">${mk}</div>`; lastMonth = mk; }
