@@ -883,7 +883,12 @@
     if (!currentUser || !currentUser.email) { box.classList.add('hidden'); box.innerHTML = ''; $('pushPrompt').classList.add('hidden'); $('pushPrompt').innerHTML = ''; return; }
     const pub = (data.publishers || []).find(p => p.email === currentUser.email);
     if (!pub) { box.classList.add('hidden'); box.innerHTML = ''; $('pushPrompt').classList.add('hidden'); $('pushPrompt').innerHTML = ''; return; }
-    renderPushPrompt(pub, code);
+    // Cartel de suscripción desactivado por ahora (falla de forma inconsistente
+    // en Android sin causa identificada) — se retoma más adelante. Esto no
+    // afecta a quien ya esté suscripto (ej. Windows), solo deja de ofrecer
+    // suscribirse a gente nueva mientras tanto.
+    // renderPushPrompt(pub, code);
+    $('pushPrompt').classList.add('hidden'); $('pushPrompt').innerHTML = '';
     const settings = data.settings || { weekdaySemana: 4, weekdayFinde: 0, micCount: 2, usherCount: 2 };
     const today = new Date().toISOString().slice(0, 10);
     const rows = [];
