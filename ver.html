@@ -789,7 +789,7 @@
   $('privacyCloseBtn').addEventListener('click', () => $('privacyOverlay').classList.add('hidden'));
   $('privacyOverlay').addEventListener('click', (e) => { if (e.target.id === 'privacyOverlay') $('privacyOverlay').classList.add('hidden'); });
 
-  const VAPID_KEY = 'PEGA_AQUI_TU_VAPID_KEY'; // Ajustes del proyecto → Cloud Messaging → Certificados push web
+  const VAPID_KEY = 'BJvWkjT5GqydLl7oSKd-_yalNdWXoiC3XYK2a-W8_FCeatyDHv-dhwieo9DAEWO3Ndjl2jSNYkxu3qqKA1uOMLg';
   function renderPushPrompt(pub, code) {
     const box = $('pushPrompt');
     if (!('Notification' in window) || !('serviceWorker' in navigator) || !pub) { box.classList.add('hidden'); box.innerHTML = ''; return; }
