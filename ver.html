@@ -830,7 +830,10 @@
     $('pushYesBtn').addEventListener('click', async () => {
       try {
         const permission = await Notification.requestPermission();
-        if (permission !== 'granted') { localStorage.setItem(storageKey, 'declined'); box.classList.add('hidden'); box.innerHTML = ''; return; }
+        if (permission !== 'granted') {
+          alert('DEBUG — permiso de notificaciones: ' + permission);
+          localStorage.setItem(storageKey, 'declined'); box.classList.add('hidden'); box.innerHTML = ''; return;
+        }
         const registration = await navigator.serviceWorker.register('service-worker.js');
         const messaging = firebase.messaging();
         const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: registration });
@@ -838,9 +841,13 @@
           await firebase.firestore().collection('pushSubscriptions').doc(token).set({ code, pubId: pub.id, createdAt: new Date().toISOString() });
           localStorage.setItem(storageKey, 'accepted');
           setupForegroundMessaging();
+          alert('DEBUG — token registrado OK:\n' + token.slice(0, 20) + '...');
+        } else {
+          alert('DEBUG — getToken() no tiró error pero devolvió vacío.');
         }
       } catch (e) {
         console.error('No se pudo activar las notificaciones', e);
+        alert('DEBUG — error al activar notificaciones:\n' + (e && e.code ? e.code + '\n' : '') + (e && e.message ? e.message : e));
       }
       box.classList.add('hidden'); box.innerHTML = '';
     });
