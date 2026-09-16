@@ -1035,6 +1035,23 @@
 </div>
 
 <!-- Modal: no disponibles solo esta reunión -->
+<div class="modal-overlay hidden" id="assignOnlyModalOverlay">
+  <div class="modal">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:2px;">
+      <h3 id="assignOnlyName" style="margin:0;">Hermano</h3>
+      <button type="button" id="assignOnlyCloseBtn" aria-label="Cerrar" style="border:none; background:none; color:var(--ink-faint); font-size:18px;">✕</button>
+    </div>
+    <p class="hint" style="margin:0 0 12px;">Sus próximas asignaciones</p>
+    <div id="assignOnlyList" style="max-height:220px; overflow-y:auto;"></div>
+    <div id="assignOnlyVacantSection" class="hidden" style="margin-top:12px;">
+      <h4 style="font-size:12px; margin:0 0 2px;">Puestos que quedaron libres</h4>
+      <div id="assignOnlyVacantTecnico"></div>
+      <button type="button" class="btn" id="assignOnlyAutoAssignBtn" style="width:100%; margin-top:6px; display:none;">Auto-asignar estos puestos</button>
+      <div id="assignOnlyVacantPrograma" style="margin-top:6px;"></div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="excludeModalOverlay">
   <div class="modal">
     <h3>No disponibles hoy</h3>
@@ -1675,7 +1692,8 @@
     onboardingOverlay: 'onboardingCloseBtn',
     pubModalOverlay: 'pubCancelBtn',
     excludeModalOverlay: 'excludeCloseBtn',
-    waModalOverlay: 'waCloseBtn'
+    waModalOverlay: 'waCloseBtn',
+    assignOnlyModalOverlay: 'assignOnlyCloseBtn'
   };
   function getFocusable(container) {
     return Array.from(container.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
@@ -2512,7 +2530,7 @@
     $('excludeList').querySelectorAll('[data-view-assign]').forEach(btn => btn.addEventListener('click', (e) => {
       e.preventDefault();
       $('excludeModalOverlay').classList.add('hidden');
-      openPubModal(btn.dataset.viewAssign);
+      openAssignOnlyModal(btn.dataset.viewAssign);
     }));
     $('excludeList').querySelectorAll('[data-exclude-id]').forEach(chk => chk.addEventListener('change', (e) => {
       const id = e.target.dataset.excludeId;
@@ -3445,6 +3463,68 @@
       }
     });
   }
+
+  function renderAssignOnlyVacant() {
+    const vac = window.__assignOnlyVacant || [];
+    const box = $('assignOnlyVacantSection');
+    if (!vac.length) { box.classList.add('hidden'); return; }
+    box.classList.remove('hidden');
+    const tecnico = vac.filter(v => v.kind === 'tecnico' && !v.done);
+    const programa = vac.filter(v => v.kind === 'programa' && !v.done);
+    const doneRows = vac.filter(v => v.done);
+    $('assignOnlyVacantTecnico').innerHTML = tecnico.map(a => `<div class="vac-row"><div class="assign-date">${a.dayLabel}</div><div class="assign-label"><span class="arole">${escapeHtml(a.label)}</span></div></div>`).join('')
+      + doneRows.filter(v => v.kind === 'tecnico').map(a => `<div class="vac-row"><div class="assign-date">${a.dayLabel}</div><div class="assign-label"><span class="arole">${escapeHtml(a.label)}</span> — <span style="color:var(--ok); font-weight:700;">${escapeHtml(a.filledName)}</span></div></div>`).join('');
+    $('assignOnlyAutoAssignBtn').style.display = tecnico.length ? 'block' : 'none';
+    $('assignOnlyVacantPrograma').innerHTML = programa.map(a => `<div class="vac-row"><div class="assign-date">${a.dayLabel}</div><div class="assign-label"><span class="arole">${escapeHtml(a.label)}</span></div><button type="button" class="vac-goto-btn" data-goto-assignonly="${vac.indexOf(a)}">Ir a esa reunión</button></div>`).join('');
+  }
+  function openAssignOnlyModal(id) {
+    const p = data.publishers.find(x => x.id === id);
+    if (!p) return;
+    $('assignOnlyName').textContent = p.name;
+    const list = findAssignmentsFor(id);
+    window.__assignOnlyList = list;
+    window.__assignOnlyVacant = [];
+    $('assignOnlyList').innerHTML = list.length ? list.map((a, i) => `<div class="assign-row" data-idx="${i}">
+      <div class="assign-date">${a.dayLabel}</div>
+      <div class="assign-label"><span class="arole">${escapeHtml(a.label)}</span><span class="avia">${a.kind === 'tecnico' ? 'Equipo técnico' : 'Programa'}</span></div>
+      <button type="button" class="assign-remove-btn" data-remove-assignonly="${i}">Quitar</button>
+    </div>`).join('') : '<p class="hint" style="margin:0;">No tiene próximas asignaciones cargadas.</p>';
+    $('assignOnlyVacantSection').classList.add('hidden');
+    $('assignOnlyModalOverlay').classList.remove('hidden');
+  }
+  $('assignOnlyCloseBtn').addEventListener('click', () => $('assignOnlyModalOverlay').classList.add('hidden'));
+  $('assignOnlyList').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-remove-assignonly]');
+    if (!btn) return;
+    const i = Number(btn.dataset.removeAssignonly);
+    const a = window.__assignOnlyList[i];
+    clearAssignmentRecord(a);
+    saveData();
+    btn.closest('.assign-row').remove();
+    window.__assignOnlyVacant.push(a);
+    renderAssignOnlyVacant();
+  });
+  $('assignOnlyAutoAssignBtn').addEventListener('click', () => {
+    (window.__assignOnlyVacant || []).filter(v => v.kind === 'tecnico' && !v.done).forEach(a => {
+      const picked = autoAssignVacantTecnico(a);
+      a.done = true;
+      a.filledName = picked ? picked.name : 'sin candidatos libres';
+    });
+    saveData();
+    renderRoleCards(); renderMonthTable(); renderMonthCalendar();
+    renderAssignOnlyVacant();
+    showToast('Auto-asignación completada');
+  });
+  $('assignOnlyVacantPrograma').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-goto-assignonly]');
+    if (!btn) return;
+    const a = window.__assignOnlyVacant[Number(btn.dataset.gotoAssignonly)];
+    $('assignOnlyModalOverlay').classList.add('hidden');
+    setWeek(a.monday);
+    $(a.type === 'finde' ? 'pillFinde' : 'pillSemana').click();
+    switchTab('programa');
+    switchSubtab('programa');
+  });
 
   function openPubModal(id) {
     pubEditingId = id;
