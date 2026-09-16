@@ -795,9 +795,24 @@
   $('privacyOverlay').addEventListener('click', (e) => { if (e.target.id === 'privacyOverlay') $('privacyOverlay').classList.add('hidden'); });
 
   const VAPID_KEY = 'BJvWkjT5GqydLl7oSKd-_yalNdWXoiC3XYK2a-W8_FCeatyDHv-dhwieo9DAEWO3Ndjl2jSNYkxu3qqKA1uOMLg';
+  function setupForegroundMessaging() {
+    if (window.__fgMessagingSetup) return;
+    try {
+      const messaging = firebase.messaging();
+      messaging.onMessage((payload) => {
+        const title = (payload.notification && payload.notification.title) || 'Asignaciones — Salón del Reino';
+        const body = (payload.notification && payload.notification.body) || '';
+        if (Notification.permission === 'granted') {
+          new Notification(title, { body, icon: 'icon-192.png' });
+        }
+      });
+      window.__fgMessagingSetup = true;
+    } catch (e) { /* Messaging no disponible en este navegador */ }
+  }
   function renderPushPrompt(pub, code) {
     const box = $('pushPrompt');
     if (!('Notification' in window) || !('serviceWorker' in navigator) || !pub) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+    if (Notification.permission === 'granted') setupForegroundMessaging();
     const storageKey = `push-decided-${code}-${pub.id}`;
     if (localStorage.getItem(storageKey) || Notification.permission === 'denied') { box.classList.add('hidden'); box.innerHTML = ''; return; }
     box.classList.remove('hidden');
@@ -822,6 +837,7 @@
         if (token) {
           await firebase.firestore().collection('pushSubscriptions').doc(token).set({ code, pubId: pub.id, createdAt: new Date().toISOString() });
           localStorage.setItem(storageKey, 'accepted');
+          setupForegroundMessaging();
         }
       } catch (e) {
         console.error('No se pudo activar las notificaciones', e);
