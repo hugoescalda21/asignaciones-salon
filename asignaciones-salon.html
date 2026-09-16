@@ -3428,11 +3428,11 @@
     banner.classList.remove('hidden');
     let html = '';
     if (overloaded.length) {
-      html += `<button type="button" class="overload-summary-btn" id="overloadSummaryToggle">
+      html += `<button type="button" class="overload-summary-btn collapsed" id="overloadSummaryToggle">
         <span class="overload-title">⚠ ${overloaded.length} persona${overloaded.length > 1 ? 's' : ''} con carga alta este mes</span>
         <span class="overload-chev">▾</span>
       </button>
-      <div id="overloadDetails">`;
+      <div id="overloadDetails" class="hidden">`;
       html += overloaded.map(([id, list]) => {
         const name = (data.publishers.find(p => p.id === id) || {}).name || 'Alguien';
         const detail = list.map(x => `${x.label} (${x.dayLabel})`).join(', ');
