@@ -285,6 +285,13 @@
   #programOverloadBanner .overload-title { font-size: 12.5px; font-weight: 700; color: var(--accent-gold); margin-bottom: 3px; }
   #programOverloadBanner .overload-detail { font-size: 11.5px; color: var(--accent-gold); margin-bottom: 6px; }
   #programOverloadBanner .overload-detail:last-child { margin-bottom: 0; }
+  .toggle-link { border: none; background: none; color: var(--accent-gold); font-size: 11px; font-weight: 700; text-decoration: underline; padding: 0; margin-top: 4px; }
+  .full-list { margin-top: 10px; border-top: 1px solid rgba(169,130,47,0.3); padding-top: 10px; }
+  .full-list.hidden { display: none; }
+  .full-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 12px; }
+  .full-row .fname { flex: 1; color: var(--ink); }
+  .full-row .fcount { font-weight: 700; color: var(--accent-gold); background: var(--surface); border-radius: 10px; padding: 2px 9px; font-size: 11px; }
+  .full-row.high .fcount { background: var(--accent-gold); color: #fff; }
   .cb-summary { margin-bottom: 4px; }
   .cb-suggest-row { padding: 8px 0; border-top: 1px solid rgba(168,67,58,0.18); font-size: 12.5px; font-weight: 500; }
   .cb-suggest-row:first-of-type { border-top: none; margin-top: 4px; }
@@ -3393,14 +3400,30 @@
         });
       });
     });
-    const overloaded = Object.entries(counts).filter(([id, list]) => list.length >= 3);
-    if (!overloaded.length) { banner.classList.add('hidden'); banner.innerHTML = ''; return; }
+    const allEntries = Object.entries(counts);
+    if (!allEntries.length) { banner.classList.add('hidden'); banner.innerHTML = ''; return; }
+    const overloaded = allEntries.filter(([id, list]) => list.length >= 3);
     banner.classList.remove('hidden');
-    banner.innerHTML = overloaded.map(([id, list]) => {
+    let html = overloaded.map(([id, list]) => {
       const name = (data.publishers.find(p => p.id === id) || {}).name || 'Alguien';
       const detail = list.map(x => `${x.label} (${x.dayLabel})`).join(', ');
       return `<div class="overload-title">⚠ Carga alta este mes</div><div class="overload-detail">${escapeHtml(name)} tiene ${list.length} partes del Programa este mes — ${escapeHtml(detail)}</div>`;
     }).join('');
+    html += `<button type="button" class="toggle-link" id="monthlyFullListToggle">Ver a todos los asignados este mes ▾</button>
+      <div id="monthlyFullList" class="full-list hidden"></div>`;
+    banner.innerHTML = html;
+    const sortedAll = allEntries.map(([id, list]) => ({
+      name: (data.publishers.find(p => p.id === id) || {}).name || 'Alguien', count: list.length
+    })).sort((a, b) => b.count - a.count);
+    $('monthlyFullListToggle').addEventListener('click', () => {
+      const list = $('monthlyFullList');
+      const collapsed = list.classList.toggle('hidden');
+      $('monthlyFullListToggle').textContent = collapsed ? 'Ver a todos los asignados este mes ▾' : 'Ocultar ▴';
+      if (!collapsed && !list.dataset.rendered) {
+        list.innerHTML = sortedAll.map(r => `<div class="full-row${r.count >= 3 ? ' high' : ''}"><span class="fname">${escapeHtml(r.name)}</span><span class="fcount">${r.count}</span></div>`).join('');
+        list.dataset.rendered = '1';
+      }
+    });
   }
 
   function openPubModal(id) {
