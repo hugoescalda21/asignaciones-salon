@@ -278,6 +278,13 @@
   #programConflictBanner .pcb-detail { font-size: 12px; font-weight: 500; color: var(--danger); margin: 2px 0 8px; }
   .adj-note { display: flex; align-items: flex-start; gap: 7px; background: var(--info-bg, #E7EEF2); border: 1px solid rgba(62,107,138,0.3); border-radius: 8px; padding: 8px 10px; margin: -6px 0 10px; font-size: 11px; color: var(--info, #3E6B8A); line-height: 1.4; }
   .adj-note svg { flex-shrink: 0; margin-top: 1px; }
+  .adj-note.strong { background: var(--warn-bg); border-color: rgba(138,106,31,0.35); color: var(--accent-gold); font-weight: 600; }
+  .pair-dup-warn { display: flex; align-items: flex-start; gap: 6px; font-size: 11px; color: var(--danger); margin: -4px 0 10px; }
+  .pair-dup-warn svg { flex-shrink: 0; margin-top: 1px; }
+  #programOverloadBanner { background: var(--warn-bg); border: 1px solid rgba(138,106,31,0.35); border-radius: var(--radius-s); padding: 10px 14px; margin-bottom: 16px; }
+  #programOverloadBanner .overload-title { font-size: 12.5px; font-weight: 700; color: var(--accent-gold); margin-bottom: 3px; }
+  #programOverloadBanner .overload-detail { font-size: 11.5px; color: var(--accent-gold); margin-bottom: 6px; }
+  #programOverloadBanner .overload-detail:last-child { margin-bottom: 0; }
   .cb-summary { margin-bottom: 4px; }
   .cb-suggest-row { padding: 8px 0; border-top: 1px solid rgba(168,67,58,0.18); font-size: 12.5px; font-weight: 500; }
   .cb-suggest-row:first-of-type { border-top: none; margin-top: 4px; }
@@ -1768,7 +1775,7 @@
   function renderProgramSection() {
     const program = weekView(currentMonday)[currentType].program;
     const aux = !!data.settings.useAuxRoom;
-    let html = '<div id="programConflictBanner" class="hidden"></div><div class="program-card">';
+    let html = '<div id="programConflictBanner" class="hidden"></div><div id="programOverloadBanner" class="hidden"></div><div class="program-card">';
     html += programRowHTML('presidente', 'Presidente', program.presidente);
     html += programRowHTML('oracionInicial', 'Oración inicial', program.oracionInicial);
     if (currentType === 'finde') {
@@ -1847,6 +1854,8 @@
     updateSubtabDots();
     checkProgramConflicts();
     applyAdjacentWeekNotes();
+    applyPairDuplicateWarnings();
+    checkMonthlyOverload();
   }
 
   function readProgramValue(el) {
@@ -1882,6 +1891,8 @@
     updateSubtabDots();
     checkProgramConflicts();
     applyAdjacentWeekNotes();
+    applyPairDuplicateWarnings();
+    checkMonthlyOverload();
   });
   $('programSection').addEventListener('click', (e) => {
     if (e.target.id === 'addStudentPartBtn') {
@@ -3292,6 +3303,7 @@
       return `<div>⚠ ${escapeHtml(name)} tiene ${labels.length} partes del Programa esta reunión</div><div class="pcb-detail">${labels.map(escapeHtml).join(' y ')}</div>`;
     }).join('');
   }
+  const ALL_SIMPLE_FIELD_LABELS = Object.fromEntries([...PROGRAM_SIMPLE_FIELDS_SEMANA, ...PROGRAM_SIMPLE_FIELDS_FINDE]);
   function applyAdjacentWeekNotes() {
     const container = $('programSection');
     if (!container) return;
@@ -3310,18 +3322,85 @@
     container.querySelectorAll('select[data-program-field], select[data-student-field], select[data-vida-field]').forEach(sel => {
       const id = sel.value;
       if (!id) return;
+      const ownLabel = sel.dataset.programField ? ALL_SIMPLE_FIELD_LABELS[sel.dataset.programField] : null;
       const parts = [];
-      if (prevMap[id]) parts.push(`también tiene una parte del Programa la semana anterior (${prevMap[id].join(', ')})`);
-      if (nextMap[id]) parts.push(`también tiene una parte del Programa la semana siguiente (${nextMap[id].join(', ')})`);
+      let isSameRole = false;
+      [['anterior', prevMap], ['siguiente', nextMap]].forEach(([when, map]) => {
+        if (!map[id]) return;
+        if (ownLabel && map[id].includes(ownLabel)) {
+          isSameRole = true;
+          parts.push(`también tuvo/tiene ${ownLabel} la semana ${when} — se repite el mismo puesto`);
+        } else {
+          parts.push(`también tiene una parte del Programa la semana ${when} (${map[id].join(', ')})`);
+        }
+      });
       if (!parts.length) return;
       const name = (data.publishers.find(p => p.id === id) || {}).name || 'Esta persona';
       const row = sel.closest('.program-row') || sel.parentElement;
       if (!row) return;
       const note = document.createElement('div');
-      note.className = 'adj-note';
-      note.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>${escapeHtml(name)} ${parts.join('; ')}</span>`;
+      note.className = 'adj-note' + (isSameRole ? ' strong' : '');
+      note.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">${isSameRole ? '<path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>' : '<circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'}</svg><span>${escapeHtml(name)} ${parts.join('; ')}</span>`;
       row.insertAdjacentElement('afterend', note);
     });
+  }
+  function applyPairDuplicateWarnings() {
+    const container = $('programSection');
+    if (!container) return;
+    container.querySelectorAll('.pair-dup-warn').forEach(n => n.remove());
+    function warnIfSame(selA, selB, labelA, labelB) {
+      if (!selA || !selB || !selA.value || selA.value !== selB.value) return;
+      const warn = document.createElement('div');
+      warn.className = 'pair-dup-warn';
+      warn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>Elegiste a la misma persona como ${labelA} y ${labelB}</span>`;
+      const afterEl = (selB.closest('.program-row')) || selB.parentElement;
+      afterEl.insertAdjacentElement('afterend', warn);
+    }
+    container.querySelectorAll('.student-block').forEach(block => {
+      const splits = block.querySelectorAll('.split-block');
+      if (splits.length) {
+        splits.forEach(sp => {
+          const est = sp.querySelector('select[data-student-field="estudiante"], select[data-student-field="estudianteAux"]');
+          const ayu = sp.querySelector('select[data-student-field="ayudante"], select[data-student-field="ayudanteAux"]');
+          warnIfSame(est, ayu, 'Estudiante', 'Ayudante');
+        });
+      } else {
+        const est = block.querySelector('select[data-student-field="estudiante"]');
+        const ayu = block.querySelector('select[data-student-field="ayudante"]');
+        warnIfSame(est, ayu, 'Estudiante', 'Ayudante');
+      }
+    });
+    const cond = container.querySelector('select[data-program-field="estudioConductor"]');
+    const lect = container.querySelector('select[data-program-field="estudioLector"]');
+    warnIfSame(cond, lect, 'Conductor', 'Lector');
+  }
+  function checkMonthlyOverload() {
+    const banner = $('programOverloadBanner');
+    if (!banner) return;
+    const monthPrefix = currentMonday.slice(0, 7);
+    const counts = {};
+    Object.keys(data.weeks).forEach(monday => {
+      if (!monday.startsWith(monthPrefix)) return;
+      ['semana', 'finde'].forEach(t => {
+        const w = data.weeks[monday][t];
+        if (!w) return;
+        const date = dateForType(monday, t);
+        const { dayName, day } = formatDate(date);
+        const dayLabel = `${dayName.slice(0, 3)} ${day}`;
+        const map = programPersonLabels(w.program, t);
+        Object.entries(map).forEach(([id, labels]) => {
+          labels.forEach(label => { (counts[id] = counts[id] || []).push({ label, dayLabel }); });
+        });
+      });
+    });
+    const overloaded = Object.entries(counts).filter(([id, list]) => list.length >= 3);
+    if (!overloaded.length) { banner.classList.add('hidden'); banner.innerHTML = ''; return; }
+    banner.classList.remove('hidden');
+    banner.innerHTML = overloaded.map(([id, list]) => {
+      const name = (data.publishers.find(p => p.id === id) || {}).name || 'Alguien';
+      const detail = list.map(x => `${x.label} (${x.dayLabel})`).join(', ');
+      return `<div class="overload-title">⚠ Carga alta este mes</div><div class="overload-detail">${escapeHtml(name)} tiene ${list.length} partes del Programa este mes — ${escapeHtml(detail)}</div>`;
+    }).join('');
   }
 
   function openPubModal(id) {
