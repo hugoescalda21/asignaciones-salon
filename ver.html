@@ -151,6 +151,7 @@
     <div style="font-size:26px; margin-bottom:6px;">✉️</div>
     <h1>Revisá tu correo</h1>
     <p>Te mandamos un link a <strong id="authSentEmail"></strong>. Tocalo desde este mismo celular o computadora.</p>
+    <button type="button" id="authSentBackBtn" style="border:none; background:none; color:var(--ink-faint); font-size:12px; text-decoration:underline; margin-top:8px;">Volver / probar de otra forma</button>
   </div>
   <div id="authStepDenied" class="hidden">
     <div style="font-size:26px; margin-bottom:6px;">🚫</div>
@@ -479,6 +480,10 @@
     $('authRetryBtn').addEventListener('click', () => {
       try { localStorage.removeItem(AUTH_EMAIL_KEY); } catch (e) { /* sin acceso */ }
       if (fbAuth) fbAuth.signOut();
+      authStep('authStepEmail');
+    });
+    $('authSentBackBtn').addEventListener('click', () => {
+      try { localStorage.removeItem(AUTH_EMAIL_KEY); } catch (e) { /* sin acceso */ }
       authStep('authStepEmail');
     });
   });
