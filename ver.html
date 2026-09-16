@@ -50,6 +50,7 @@
   .personal-summary .prow { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 12.5px; }
   .personal-summary .prow:last-child { border-bottom: none; }
   .personal-summary .pdate { font-size: 10.5px; font-weight: 700; color: var(--accent-gold); width: 56px; flex-shrink: 0; }
+  .personal-summary .pmonth-divider { font-family: 'Fraunces', serif; font-size: 11px; font-weight: 600; color: var(--accent-gold-text); text-transform: uppercase; letter-spacing: 0.04em; margin: 12px 0 4px; padding-top: 6px; border-top: 1px solid var(--line); }
   .push-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 14px; }
   .push-card p { font-size: 12px; color: var(--ink-soft); margin: 0 0 12px; line-height: 1.5; }
   .push-btns { display: flex; gap: 8px; }
@@ -900,10 +901,11 @@
         if (date < today) return;
         const { dayName, day } = formatDate(date);
         const dayLabel = `${dayName.slice(0, 3).toUpperCase()} ${day}`;
+        const month = monthKey(date);
         getRoles(t, settings.micCount, settings.usherCount).forEach(r => {
-          if (w.roles && w.roles[r.key] === pub.id) rows.push({ dayLabel, label: r.label });
+          if (w.roles && w.roles[r.key] === pub.id) rows.push({ dayLabel, month, label: r.label });
         });
-        programMatches(w.program, t, new Set([pub.id])).forEach(pm => rows.push({ dayLabel, label: pm.label }));
+        programMatches(w.program, t, new Set([pub.id])).forEach(pm => rows.push({ dayLabel, month, label: pm.label }));
       });
     });
     if (!rows.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
@@ -916,7 +918,14 @@
       <div id="personalSummaryBody"></div>
     </div>`;
     const bodyEl = $('personalSummaryBody');
-    bodyEl.innerHTML = rows.map(r => `<div class="prow"><div class="pdate">${r.dayLabel}</div><div>${escapeHtml(r.label)}</div></div>`).join('');
+    let lastMonth = null;
+    bodyEl.innerHTML = rows.map(r => {
+      const divider = r.month !== lastMonth
+        ? `<div class="pmonth-divider"${lastMonth === null ? ' style="margin-top:0; padding-top:0; border-top:none;"' : ''}>${escapeHtml(r.month.split(' de ')[0])}</div>`
+        : '';
+      lastMonth = r.month;
+      return `${divider}<div class="prow"><div class="pdate">${r.dayLabel}</div><div>${escapeHtml(r.label)}</div></div>`;
+    }).join('');
     $('personalSummaryToggle').addEventListener('click', () => {
       const collapsed = bodyEl.classList.toggle('hidden');
       $('personalSummaryToggle').textContent = collapsed ? '▸' : '▾';
