@@ -1,4 +1,33 @@
-const CACHE_NAME = 'asignaciones-salon-v6';
+// --- Notificaciones push (Firebase Cloud Messaging) ---
+// Unificado en este mismo service worker (en vez de uno aparte) para que
+// no compitan dos "trabajadores" por el mismo sitio — eso hacía que las
+// notificaciones nunca llegaran, porque este archivo (el de siempre, para
+// que la app funcione offline) le ganaba el lugar al de mensajería.
+importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js');
+
+firebase.initializeApp({
+  apiKey: "AIzaSyCw014ucHQKqwsVTq1lEKAnZBl_9gAR01I",
+  authDomain: "asignaciones-salon.firebaseapp.com",
+  projectId: "asignaciones-salon",
+  storageBucket: "asignaciones-salon.firebasestorage.app",
+  messagingSenderId: "167010071335",
+  appId: "1:167010071335:web:0aca9b8cac2bbf5fd2ef02"
+});
+
+const messaging = firebase.messaging();
+
+messaging.onBackgroundMessage((payload) => {
+  const title = (payload.notification && payload.notification.title) || 'Asignaciones — Salón del Reino';
+  const body = (payload.notification && payload.notification.body) || 'Tenés una novedad en tus asignaciones.';
+  self.registration.showNotification(title, {
+    body,
+    icon: './icon-192.png',
+    badge: './icon-192.png'
+  });
+});
+
+const CACHE_NAME = 'asignaciones-salon-v7';
 const ASSETS = [
   './asignaciones-salon.html',
   './manifest.json',

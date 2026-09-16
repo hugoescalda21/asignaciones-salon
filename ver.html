@@ -831,7 +831,7 @@
       try {
         const permission = await Notification.requestPermission();
         if (permission !== 'granted') { localStorage.setItem(storageKey, 'declined'); box.classList.add('hidden'); box.innerHTML = ''; return; }
-        const registration = await navigator.serviceWorker.register('firebase-messaging-sw.js');
+        const registration = await navigator.serviceWorker.register('service-worker.js');
         const messaging = firebase.messaging();
         const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: registration });
         if (token) {
