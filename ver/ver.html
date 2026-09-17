@@ -162,7 +162,10 @@
 <body>
 
 <div id="initialLoading" class="initial-loading">
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" class="spin-icon"><circle cx="12" cy="12" r="9" stroke-opacity="0.25"/><path d="M21 12a9 9 0 0 0-9-9"/></svg>
+  <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" class="spin-icon"><circle cx="12" cy="12" r="9" stroke-opacity="0.25"/><path d="M21 12a9 9 0 0 0-9-9"/></svg>
+    <span style="font-size:12.5px; color:var(--ink-faint);">Cargando…</span>
+  </div>
 </div>
 
 <div id="gateView" class="gate hidden">
