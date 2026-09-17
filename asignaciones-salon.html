@@ -1975,9 +1975,19 @@
       renderProgramSection();
     } else if (e.target.dataset.removeStudent) {
       const week = ensureWeek(currentMonday);
-      week[currentType].program.estudiantes = week[currentType].program.estudiantes.filter(s => s.id !== e.target.dataset.removeStudent);
+      const list = week[currentType].program.estudiantes;
+      const idx = list.findIndex(s => s.id === e.target.dataset.removeStudent);
+      if (idx === -1) return;
+      const removed = list[idx];
+      list.splice(idx, 1);
       saveData();
       renderProgramSection();
+      showToast('Parte quitada', () => {
+        const w2 = ensureWeek(currentMonday);
+        w2[currentType].program.estudiantes.splice(idx, 0, removed);
+        saveData();
+        renderProgramSection();
+      });
     } else if (e.target.id === 'addVidaPartBtn') {
       const week = ensureWeek(currentMonday);
       week[currentType].program.vidaCristiana.push({ id: uid(), tema: '', presentador: null, minutos: null });
@@ -1985,9 +1995,19 @@
       renderProgramSection();
     } else if (e.target.dataset.removeVida) {
       const week = ensureWeek(currentMonday);
-      week[currentType].program.vidaCristiana = week[currentType].program.vidaCristiana.filter(v => v.id !== e.target.dataset.removeVida);
+      const list = week[currentType].program.vidaCristiana;
+      const idx = list.findIndex(v => v.id === e.target.dataset.removeVida);
+      if (idx === -1) return;
+      const removed = list[idx];
+      list.splice(idx, 1);
       saveData();
       renderProgramSection();
+      showToast('Parte quitada', () => {
+        const w2 = ensureWeek(currentMonday);
+        w2[currentType].program.vidaCristiana.splice(idx, 0, removed);
+        saveData();
+        renderProgramSection();
+      });
     }
   });
 
