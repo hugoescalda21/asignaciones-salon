@@ -430,9 +430,12 @@
 
   let agendaView = 'tecnico';
 
+  const LAST_CODE_KEY = 'ver-last-code';
   function getCode() {
     const params = new URLSearchParams(location.search);
-    return (params.get('codigo') || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const fromUrl = (params.get('codigo') || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (fromUrl) return fromUrl;
+    try { return localStorage.getItem(LAST_CODE_KEY) || ''; } catch (e) { return ''; }
   }
 
   const AUTH_EMAIL_KEY = 'kh-auth-email';
@@ -987,6 +990,7 @@
     currentMonday = mondayOf(new Date().toISOString().slice(0, 10));
     db.collection('congregations').doc(code).onSnapshot((snap) => {
       if (!snap.exists) { showGateError(); return; }
+      try { localStorage.setItem(LAST_CODE_KEY, code); } catch (e) { /* sin acceso */ }
       data = snap.data() || {};
       $('gateView').classList.add('hidden');
       $('authGateView').classList.add('hidden');

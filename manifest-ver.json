@@ -2,7 +2,7 @@
   "name": "Ver Asignaciones — Salón del Reino",
   "short_name": "Ver Asignaciones",
   "description": "Vista de solo lectura del equipo técnico y el Programa de las reuniones.",
-  "start_url": "./ver.html",
+  "start_url": "./ver.html?codigo=SALON2026",
   "scope": "./",
   "display": "standalone",
   "background_color": "#EDEFEF",
