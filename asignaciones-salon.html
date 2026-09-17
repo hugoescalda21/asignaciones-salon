@@ -280,24 +280,24 @@
   #programConflictBanner .pcb-detail { font-size: 12px; font-weight: 500; color: var(--danger); margin: 2px 0 8px; }
   .adj-note { display: flex; align-items: flex-start; gap: 7px; background: var(--info-bg, #E7EEF2); border: 1px solid rgba(62,107,138,0.3); border-radius: 8px; padding: 8px 10px; margin: -6px 0 10px; font-size: 11px; color: var(--info, #3E6B8A); line-height: 1.4; }
   .adj-note svg { flex-shrink: 0; margin-top: 1px; }
-  .adj-note.strong { background: var(--warn-bg); border-color: rgba(138,106,31,0.35); color: var(--accent-gold); font-weight: 600; }
+  .adj-note.strong { background: var(--warn-bg); border-color: rgba(138,106,31,0.35); color: var(--accent-gold-text); font-weight: 600; }
   .pair-dup-warn { display: flex; align-items: flex-start; gap: 6px; font-size: 11px; color: var(--danger); margin: -4px 0 10px; }
   .pair-dup-warn svg { flex-shrink: 0; margin-top: 1px; }
   #programOverloadBanner { background: var(--warn-bg); border: 1px solid rgba(138,106,31,0.35); border-radius: var(--radius-s); padding: 10px 14px; margin-bottom: 16px; }
-  #programOverloadBanner .overload-title { font-size: 12.5px; font-weight: 700; color: var(--accent-gold); margin-bottom: 3px; }
-  #programOverloadBanner .overload-detail { font-size: 11.5px; color: var(--accent-gold); margin-bottom: 6px; }
+  #programOverloadBanner .overload-title { font-size: 12.5px; font-weight: 700; color: var(--accent-gold-text); margin-bottom: 3px; }
+  #programOverloadBanner .overload-detail { font-size: 11.5px; color: var(--accent-gold-text); margin-bottom: 6px; }
   #programOverloadBanner .overload-detail:last-child { margin-bottom: 0; }
   .overload-summary-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; border: none; background: none; padding: 0; margin-bottom: 6px; text-align: left; }
-  .overload-chev { color: var(--accent-gold); font-size: 12px; transition: transform 0.15s; flex-shrink: 0; }
+  .overload-chev { color: var(--accent-gold-text); font-size: 12px; transition: transform 0.15s; flex-shrink: 0; }
   .overload-summary-btn.collapsed .overload-chev { transform: rotate(-90deg); }
   #overloadDetails.hidden { display: none; }
-  .toggle-link { border: none; background: none; color: var(--accent-gold); font-size: 11px; font-weight: 700; text-decoration: underline; padding: 0; margin-top: 4px; }
+  .toggle-link { border: none; background: none; color: var(--accent-gold-text); font-size: 11px; font-weight: 700; text-decoration: underline; padding: 0; margin-top: 4px; }
   .full-list { margin-top: 10px; border-top: 1px solid rgba(169,130,47,0.3); padding-top: 10px; }
   .full-list.hidden { display: none; }
   .full-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 12px; }
   .full-row .fname { flex: 1; color: var(--ink); }
-  .full-row .fcount { font-weight: 700; color: var(--accent-gold); background: var(--surface); border-radius: 10px; padding: 2px 9px; font-size: 11px; }
-  .full-row.high .fcount { background: var(--accent-gold); color: #fff; }
+  .full-row .fcount { font-weight: 700; color: var(--accent-gold-text); background: var(--surface); border-radius: 10px; padding: 2px 9px; font-size: 11px; }
+  .full-row.high .fcount { background: var(--accent-gold-text); color: #fff; }
   .cb-summary { margin-bottom: 4px; }
   .cb-suggest-row { padding: 8px 0; border-top: 1px solid rgba(168,67,58,0.18); font-size: 12.5px; font-weight: 500; }
   .cb-suggest-row:first-of-type { border-top: none; margin-top: 4px; }
@@ -337,8 +337,8 @@
   .assign-remove-btn { border: 1px solid var(--danger); background: var(--danger-bg); color: var(--danger); font-size: 10.5px; font-weight: 700; padding: 4px 9px; border-radius: 12px; flex-shrink: 0; }
   .vac-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px dashed var(--line); font-size: 12px; }
   .vac-row:last-child { border-bottom: none; }
-  .vac-goto-btn { border: 1px solid var(--accent-gold); background: none; color: var(--accent-gold); font-size: 10px; font-weight: 700; padding: 4px 9px; border-radius: 12px; flex-shrink: 0; }
-  .exclude-view-link { border: none; background: none; color: var(--accent-gold); font-size: 10px; font-weight: 700; flex-shrink: 0; }
+  .vac-goto-btn { border: 1px solid var(--accent-gold); background: none; color: var(--accent-gold-text); font-size: 10px; font-weight: 700; padding: 4px 9px; border-radius: 12px; flex-shrink: 0; }
+  .exclude-view-link { border: none; background: none; color: var(--accent-gold-text); font-size: 10px; font-weight: 700; flex-shrink: 0; }
 
   /* Buscador de hermanos (se engancha sobre los <select> existentes) */
   .pub-combo { position: relative; }
@@ -3160,7 +3160,7 @@
         <td><span class="status-badge ${p.status === 'no_disponible' ? 'inactive' : 'active'}" data-toggle-status="${p.id}">${p.status === 'no_disponible' ? 'No disponible' : 'Activo'}</span></td>
         <td>${tags || '<span class="empty-note">—</span>'}</td>
         <td>${monthCounts[p.id] || 0}</td>
-        <td><button class="btn icon-only" data-edit-pub="${p.id}" title="Editar">✎</button></td>
+        <td><button class="btn icon-only" data-edit-pub="${p.id}" aria-label="Editar ${escapeHtml(p.name)}" title="Editar">✎</button></td>
       </tr>`;
     }).join('') : `<tr><td colspan="5" class="empty-note">Sin resultados</td></tr>`;
 
@@ -3343,7 +3343,7 @@
       const available = [...new Set(allAccessEmails)].filter(e => !data.publishers.some(pp => pp.email === e));
       box.innerHTML = `<div style="display:flex; align-items:center; justify-content:space-between; border:1px dashed var(--line); border-radius:8px; padding:8px 10px; font-size:12px; color:var(--ink-faint);">
         Sin vincular
-        <button type="button" id="openLinkPickerBtn" style="border:1px solid var(--accent-gold); background:none; color:var(--accent-gold); font-size:11px; font-weight:700; padding:5px 11px; border-radius:14px; flex-shrink:0;">Vincular</button>
+        <button type="button" id="openLinkPickerBtn" style="border:1px solid var(--accent-gold); background:none; color:var(--accent-gold-text); font-size:11px; font-weight:700; padding:5px 11px; border-radius:14px; flex-shrink:0;">Vincular</button>
       </div>
       <div id="linkPickerList" class="hidden" style="margin-top:8px; border:1px solid var(--line); border-radius:8px; padding:2px 10px;"></div>`;
       $('openLinkPickerBtn').addEventListener('click', () => {
@@ -3640,12 +3640,18 @@
     const removed = data.publishers[idx];
     if (!confirm(`¿Quitar a ${removed.name} de la lista de hermanos?`)) return;
     hapticTap();
+    // Antes de limpiar sus asignaciones huérfanas, guardamos una foto
+    // completa de las semanas — así "Deshacer" puede restaurar todo tal
+    // cual estaba, no solo devolver a la persona a la lista sin sus
+    // asignaciones (que si no, se pierden para siempre).
+    const weeksSnapshot = JSON.parse(JSON.stringify(data.weeks || {}));
     data.publishers.splice(idx, 1);
     cleanOrphanedIds(data);
     saveData(); closePubModal(); renderBrothersTable(); renderRoleCards();
     showToast('Hermano eliminado', () => {
       data.publishers.splice(idx, 0, removed);
-      saveData(); renderBrothersTable(); renderRoleCards();
+      data.weeks = weeksSnapshot;
+      saveData(); renderAll(); renderProgramSection();
     });
   });
 
@@ -3708,8 +3714,18 @@
     } catch (e) { showToast('No se pudo completar el pedido'); }
   });
   $('congNameInput').addEventListener('change', (e) => { data.settings.congregationName = e.target.value.trim() || 'Mi Congregación'; $('congBadge').textContent = data.settings.congregationName; saveData(); });
-  $('micCountSelect').addEventListener('change', (e) => { data.settings.micCount = parseInt(e.target.value); saveData(); renderRoleCards(); renderMonthTable(); renderMonthCalendar(); });
-  $('usherCountSelect').addEventListener('change', (e) => { data.settings.usherCount = parseInt(e.target.value); saveData(); renderRoleCards(); renderMonthTable(); renderMonthCalendar(); });
+  $('micCountSelect').addEventListener('change', (e) => {
+    const nuevo = parseInt(e.target.value);
+    const bajo = nuevo < data.settings.micCount;
+    data.settings.micCount = nuevo; saveData(); renderRoleCards(); renderMonthTable(); renderMonthCalendar();
+    if (bajo) showToast('No se borró nada — si ya había alguien asignado a un micrófono que ya no se muestra, vuelve a aparecer si subís el número de nuevo.');
+  });
+  $('usherCountSelect').addEventListener('change', (e) => {
+    const nuevo = parseInt(e.target.value);
+    const bajo = nuevo < (data.settings.usherCount || 2);
+    data.settings.usherCount = nuevo; saveData(); renderRoleCards(); renderMonthTable(); renderMonthCalendar();
+    if (bajo) showToast('No se borró nada — si ya había alguien asignado a un acomodador que ya no se muestra, vuelve a aparecer si subís el número de nuevo.');
+  });
   $('weekdaySemanaSelect').addEventListener('change', (e) => { data.settings.weekdaySemana = parseInt(e.target.value); saveData(); renderMonthTable(); renderMonthCalendar(); updatePillDates(); });
   $('weekdayFindeSelect').addEventListener('change', (e) => { data.settings.weekdayFinde = parseInt(e.target.value); saveData(); renderMonthTable(); renderMonthCalendar(); updatePillDates(); });
 
