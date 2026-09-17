@@ -55,6 +55,7 @@
   .personal-summary .prow:last-child { border-bottom: none; }
   .personal-summary .pdate { font-size: 10.5px; font-weight: 700; color: var(--accent-gold); width: 56px; flex-shrink: 0; }
   .personal-summary .pmonth-divider { font-family: 'Fraunces', serif; font-size: 11px; font-weight: 600; color: var(--accent-gold-text); text-transform: uppercase; letter-spacing: 0.04em; margin: 12px 0 4px; padding-top: 6px; border-top: 1px solid var(--line); }
+  .personal-summary .ptype-label { font-size: 10px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.03em; margin: 6px 0 2px; }
   .install-card { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--accent-gold); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
   .install-card .install-icon { width: 34px; height: 34px; border-radius: 8px; background: var(--ink); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
   .install-card .install-text { flex: 1; }
@@ -81,6 +82,7 @@
     text-transform: uppercase; letter-spacing: 0.04em; margin: 16px 0 6px; padding-bottom: 6px; border-bottom: 1px solid var(--line);
   }
   .search-month-heading:first-of-type { margin-top: 0; }
+  .search-type-label { font-size: 10px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.03em; margin: 10px 2px 2px; }
 
   .agenda-item { display: flex; gap: 12px; padding: 13px 2px; border-bottom: 1px solid var(--line); }
   .agenda-item:last-child { border-bottom: none; }
@@ -787,16 +789,18 @@
       $('agendaCard').innerHTML = `<p class="search-heading">Próximas asignaciones para <strong>"${escapeHtml(query)}"</strong></p><p class="empty-note">No se encontraron próximas asignaciones.</p>`;
       return;
     }
-    let lastMonth = '';
+    const monthOrder = [];
+    const byMonth = {};
+    rows.forEach(row => {
+      const mk = monthKey(row.date);
+      if (!byMonth[mk]) { byMonth[mk] = { tecnico: [], programa: [] }; monthOrder.push(mk); }
+      if (row.names.length) byMonth[mk].tecnico.push({ row, chips: row.names.map(n => `<div class="chip"><span class="ic" style="background:${n.role.color}">${svgIcon(n.role.icon, 10)}</span>${n.role.label}: ${escapeHtml(n.name)}</div>`).join('') });
+      if (row.progLabels.length) byMonth[mk].programa.push({ row, chips: row.progLabels.map(pm => `<div class="chip prog"><span class="ic" style="background:var(--role-program)">${svgIcon('persona', 9)}</span>${escapeHtml(pm.label)}: ${escapeHtml(pm.name)}</div>`).join('') });
+    });
     let html = correctedTo
       ? `<p class="search-heading">Mostrando resultados para <strong>${escapeHtml(correctedTo)}</strong></p>`
       : `<p class="search-heading">Próximas asignaciones para <strong>"${escapeHtml(query)}"</strong></p>`;
-    rows.forEach(row => {
-      const mk = monthKey(row.date);
-      if (mk !== lastMonth) { html += `<div class="search-month-heading">${mk}</div>`; lastMonth = mk; }
-      const chips = row.names.map(n => `<div class="chip"><span class="ic" style="background:${n.role.color}">${svgIcon(n.role.icon, 10)}</span>${n.role.label}: ${escapeHtml(n.name)}</div>`).join('')
-        + row.progLabels.map(pm => `<div class="chip prog"><span class="ic" style="background:var(--role-program)">${svgIcon('persona', 9)}</span>${escapeHtml(pm.label)}: ${escapeHtml(pm.name)}</div>`).join('');
-      html += `<div class="agenda-item ${row.type === 'finde' ? 'finde' : ''}">
+    const itemHtml = ({ row, chips }) => `<div class="agenda-item ${row.type === 'finde' ? 'finde' : ''}">
         <div class="agenda-date"><div class="dow">${row.dayName.slice(0, 3)}</div><div class="num">${row.day}</div></div>
         <div class="agenda-body">
           <div class="agenda-type">${row.type === 'finde' ? 'Fin de semana' : 'Entre semana'}</div>
@@ -804,6 +808,13 @@
           <div class="chip-row">${chips}</div>
         </div>
       </div>`;
+    monthOrder.forEach(mk => {
+      html += `<div class="search-month-heading">${mk}</div>`;
+      [['tecnico', 'Equipo técnico'], ['programa', 'Programa']].forEach(([key, label]) => {
+        const items = byMonth[mk][key];
+        if (!items.length) return;
+        html += `<div class="search-type-label">${label}</div>` + items.map(itemHtml).join('');
+      });
     });
     $('agendaCard').innerHTML = html;
   }
@@ -955,9 +966,9 @@
         const dayLabel = `${dayName.slice(0, 3).toUpperCase()} ${day}`;
         const month = monthKey(date);
         getRoles(t, settings.micCount, settings.usherCount).forEach(r => {
-          if (w.roles && w.roles[r.key] === pub.id) rows.push({ dayLabel, month, label: r.label });
+          if (w.roles && w.roles[r.key] === pub.id) rows.push({ dayLabel, month, type: 'tecnico', label: r.label });
         });
-        programMatches(w.program, t, new Set([pub.id])).forEach(pm => rows.push({ dayLabel, month, label: pm.label }));
+        programMatches(w.program, t, new Set([pub.id])).forEach(pm => rows.push({ dayLabel, month, type: 'programa', label: pm.label }));
       });
     });
     if (!rows.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
@@ -970,14 +981,25 @@
       <div id="personalSummaryBody"></div>
     </div>`;
     const bodyEl = $('personalSummaryBody');
-    let lastMonth = null;
-    bodyEl.innerHTML = rows.map(r => {
-      const divider = r.month !== lastMonth
-        ? `<div class="pmonth-divider"${lastMonth === null ? ' style="margin-top:0; padding-top:0; border-top:none;"' : ''}>${escapeHtml(r.month.split(' de ')[0])}</div>`
-        : '';
-      lastMonth = r.month;
-      return `${divider}<div class="prow"><div class="pdate">${r.dayLabel}</div><div>${escapeHtml(r.label)}</div></div>`;
-    }).join('');
+    const monthOrder = [];
+    const byMonth = {};
+    rows.forEach(r => {
+      if (!byMonth[r.month]) { byMonth[r.month] = { tecnico: [], programa: [] }; monthOrder.push(r.month); }
+      byMonth[r.month][r.type].push(r);
+    });
+    let html = '';
+    monthOrder.forEach((month, mi) => {
+      html += `<div class="pmonth-divider"${mi === 0 ? ' style="margin-top:0; padding-top:0; border-top:none;"' : ''}>${escapeHtml(month.split(' de ')[0])}</div>`;
+      [['tecnico', 'Equipo técnico'], ['programa', 'Programa']].forEach(([key, label]) => {
+        const items = byMonth[month][key];
+        if (!items.length) return;
+        html += `<div class="ptype-label">${label}</div>`;
+        items.forEach(r => {
+          html += `<div class="prow"><div class="pdate">${r.dayLabel}</div><div>${escapeHtml(r.label)}</div></div>`;
+        });
+      });
+    });
+    bodyEl.innerHTML = html;
     $('personalSummaryToggle').addEventListener('click', () => {
       const collapsed = bodyEl.classList.toggle('hidden');
       $('personalSummaryToggle').textContent = collapsed ? '▸' : '▾';
