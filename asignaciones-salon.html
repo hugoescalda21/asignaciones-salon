@@ -513,6 +513,8 @@
     padding: 10px 20px; font-size: 12.5px; font-weight: 600;
   }
   .top-banner.update { background: #2E3D48; color: #fff; }
+  .top-banner.install { background: #2E3D48; color: #fff; }
+  .top-banner.install button { background: var(--accent-gold); color: #1D2329; }
   .top-banner.backup { background: var(--warn-bg); color: #7A5A0E; }
   .top-banner.error { background: var(--danger-bg); color: var(--danger); }
   .top-banner.error button { background: rgba(0,0,0,0.08); color: var(--danger); }
@@ -1098,6 +1100,42 @@
 
   const STORAGE_KEY = 'kh-schedule-data-v2';
   const OLD_STORAGE_KEY = 'kh-schedule-data';
+
+  /* ---------- Instalar como app ---------- */
+  let deferredInstallPrompt = null;
+  function isStandalone() {
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  }
+  function renderInstallBanner() {
+    const existing = document.getElementById('installBanner');
+    if (!deferredInstallPrompt || isStandalone()) { if (existing) existing.remove(); return; }
+    if (existing) return;
+    const bar = document.createElement('div');
+    bar.id = 'installBanner';
+    bar.className = 'top-banner install';
+    bar.innerHTML = `<span>Instalá esta app para acceder más rápido desde tu pantalla de inicio.</span>
+      <div class="tb-actions"><button type="button" id="installBannerBtn">Instalar</button><button type="button" id="installBannerDismiss">Ahora no</button></div>`;
+    document.body.insertBefore(bar, document.body.firstChild);
+    $('installBannerBtn').addEventListener('click', async () => {
+      if (!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      try { await deferredInstallPrompt.userChoice; } catch (e) { /* sin acceso al resultado */ }
+      deferredInstallPrompt = null;
+      bar.remove();
+    });
+    $('installBannerDismiss').addEventListener('click', () => bar.remove());
+  }
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    renderInstallBanner();
+  });
+  window.addEventListener('appinstalled', () => {
+    deferredInstallPrompt = null;
+    const existing = document.getElementById('installBanner');
+    if (existing) existing.remove();
+  });
+
   const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
   const CAP_LABEL = { sonido: 'Sonido', video: 'Video', microfono: 'Micrófonos', plataforma: 'Plataforma', acomodador: 'Acomodadores', cronometrista: 'Cronómetro' };
   const PRESETS = [
