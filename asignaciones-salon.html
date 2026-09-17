@@ -364,6 +364,9 @@
   .month-table th { background: var(--bg); color: var(--ink-soft); font-weight: 600; font-size: 11.5px; }
   .month-table tr:last-child td { border-bottom: none; }
   .empty-note { font-size: 13px; color: var(--ink-faint); font-style: italic; }
+  .email-linked { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-soft); }
+  .email-linked svg { color: var(--ok); flex-shrink: 0; }
+  .email-missing { font-size: 12px; color: var(--ink-faint); }
 
   /* ---------- Cronómetro ---------- */
   .preset-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-bottom: 22px; }
@@ -776,13 +779,14 @@
         <option value="plataforma">Plataforma</option>
         <option value="acomodador">Acomodadores</option>
         <option value="cronometrista">Cronometrista</option>
+        <option value="sin-email">Sin email vinculado</option>
       </select>
       <button class="btn" id="brPdfBtn">Descargar PDF</button>
       <button class="btn btn-primary br-add" id="addBrotherBtn">+ Agregar hermano</button>
     </div>
     <div class="br-table-wrap">
       <table class="br-table">
-        <thead><tr><th>Nombre</th><th>Estado</th><th>Privilegios</th><th>Este mes</th><th></th></tr></thead>
+        <thead><tr><th>Nombre</th><th>Estado</th><th>Privilegios</th><th>Email</th><th>Este mes</th><th></th></tr></thead>
         <tbody id="brothersTableBody"></tbody>
       </table>
     </div>
@@ -3169,7 +3173,7 @@
     const monthCounts = computeMonthlyCounts();
     const rows = data.publishers.filter(p => {
       const matchesQ = !q || p.name.toLowerCase().includes(q) || (p.notes || '').toLowerCase().includes(q);
-      const matchesRole = !filterRole || p.roles[filterRole];
+      const matchesRole = !filterRole || (filterRole === 'sin-email' ? !p.email : p.roles[filterRole]);
       return matchesQ && matchesRole;
     }).sort((a, b) => a.name.localeCompare(b.name, 'es'));
 
@@ -3179,10 +3183,11 @@
         <td><strong>${escapeHtml(p.name)}</strong>${p.notes ? `<div class="row-note">${escapeHtml(p.notes)}</div>` : ''}</td>
         <td><span class="status-badge ${p.status === 'no_disponible' ? 'inactive' : 'active'}" data-toggle-status="${p.id}">${p.status === 'no_disponible' ? 'No disponible' : 'Activo'}</span></td>
         <td>${tags || '<span class="empty-note">—</span>'}</td>
+        <td>${p.email ? `<span class="email-linked"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>${escapeHtml(p.email)}</span>` : '<span class="email-missing">— Sin vincular</span>'}</td>
         <td>${monthCounts[p.id] || 0}</td>
         <td><button class="btn icon-only" data-edit-pub="${p.id}" aria-label="Editar ${escapeHtml(p.name)}" title="Editar">✎</button></td>
       </tr>`;
-    }).join('') : `<tr><td colspan="5" class="empty-note">Sin resultados</td></tr>`;
+    }).join('') : `<tr><td colspan="6" class="empty-note">Sin resultados</td></tr>`;
 
     $('brothersTableBody').querySelectorAll('[data-toggle-status]').forEach(el => el.addEventListener('click', () => {
       const p = data.publishers.find(x => x.id === el.dataset.toggleStatus);
