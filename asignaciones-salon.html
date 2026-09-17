@@ -4116,7 +4116,31 @@
       <div class="tb-actions"><button type="button" id="updateReloadBtn">Actualizar ahora</button></div>`;
     document.body.insertBefore(bar, document.body.firstChild);
     $('updateReloadBtn').addEventListener('click', () => {
-      if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+      const btn = $('updateReloadBtn');
+      btn.disabled = true;
+      btn.textContent = 'Actualizando…';
+      // Respaldo: si por lo que sea la señal normal (SKIP_WAITING) no
+      // termina de recargar la página sola en unos segundos, forzamos
+      // una recarga de todas formas — así el botón nunca se queda sin
+      // hacer nada visible.
+      const fallback = setTimeout(() => { window.location.reload(); }, 2500);
+      if (reg.waiting) {
+        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+      } else if (reg.installing) {
+        // Rara vez, el mensaje llega antes de que termine de instalar:
+        // esperamos a que pase a "installed" y recién ahí mandamos la señal.
+        reg.installing.addEventListener('statechange', function onChange(e) {
+          if (e.target.state === 'installed' && reg.waiting) {
+            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+            e.target.removeEventListener('statechange', onChange);
+          }
+        });
+      } else {
+        // No hay nada en espera ni instalando: probablemente ya se activó
+        // sola o el navegador perdió el registro — recargamos directo.
+        clearTimeout(fallback);
+        window.location.reload();
+      }
     });
   }
 </script>
