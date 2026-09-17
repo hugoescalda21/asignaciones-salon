@@ -52,7 +52,7 @@
   .personal-summary .chev-btn:active { background: rgba(169, 130, 47, 0.12); }
   .personal-summary #personalSummaryBody { margin-top: 8px; }
   .personal-summary #personalSummaryBody.hidden { display: none; }
-  .personal-summary .prow { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 12.5px; }
+  .personal-summary .prow { display: flex; align-items: center; gap: 8px; padding: 7px 6px; margin: 0 -6px; border-radius: 8px; border-bottom: 1px solid var(--line); font-size: 12.5px; }
   .personal-summary .prow:last-child { border-bottom: none; }
   .personal-summary .pdate { font-size: 10.5px; font-weight: 700; color: var(--accent-gold); width: 56px; flex-shrink: 0; }
   .personal-summary .pmonth-divider { font-family: 'Fraunces', serif; font-size: 11px; font-weight: 600; color: var(--accent-gold-text); text-transform: uppercase; letter-spacing: 0.04em; margin: 12px 0 4px; padding-top: 6px; border-top: 1px solid var(--line); }
@@ -84,6 +84,20 @@
   }
   .search-month-heading:first-of-type { margin-top: 0; }
   .search-type-label { font-size: 10px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.03em; margin: 10px 2px 2px; }
+
+  .day-modal-overlay { position: fixed; inset: 0; background: rgba(33, 44, 52, 0.45); z-index: 30; display: flex; align-items: flex-end; justify-content: center; }
+  .day-modal-overlay.hidden { display: none; }
+  .day-modal { background: var(--surface); border-radius: 16px 16px 0 0; padding: 20px 18px calc(18px + env(safe-area-inset-bottom)); width: 100%; max-width: 480px; max-height: 85vh; overflow-y: auto; box-shadow: 0 -6px 24px rgba(0,0,0,0.12); }
+  .day-modal-handle { width: 36px; height: 4px; background: var(--line); border-radius: 2px; margin: 0 auto 16px; }
+  .day-modal-header { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .day-modal-title { font-family: 'Fraunces', serif; font-size: 20px; }
+  .day-modal-type { font-size: 11px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; background: var(--bg); padding: 3px 9px; border-radius: 20px; }
+  .day-modal-sub { font-size: 11.5px; color: var(--ink-soft); margin: 0 0 14px; }
+  .day-modal-close { width: 100%; border: 1px solid var(--line); background: none; border-radius: 8px; padding: 11px; font-size: 13px; font-weight: 600; color: var(--ink-soft); margin-top: 14px; }
+
+  .prow, .agenda-item[data-date] { cursor: pointer; }
+  .prow:active, .agenda-item[data-date]:active { background: var(--bg); }
+  .agenda-item[data-date] { padding: 13px 6px; margin: 0 -6px; border-radius: 8px; }
 
   .agenda-item { display: flex; gap: 12px; padding: 13px 2px; border-bottom: 1px solid var(--line); }
   .agenda-item:last-child { border-bottom: none; }
@@ -235,6 +249,10 @@
     <h4 style="font-size:11.5px; margin:14px 0 4px;">¿Cómo pido que se borren mis datos?</h4>
     <p style="font-size:11.5px; color:var(--ink-soft); line-height:1.6; margin:0;">Pedíselo directamente a quien administra la app en tu congregación — puede sacar tu nombre o desvincular tu email cuando quieras.</p>
   </div>
+</div>
+
+<div id="dayModalOverlay" class="day-modal-overlay hidden">
+  <div class="day-modal" id="dayModalContent"></div>
 </div>
 
 <script>
@@ -544,29 +562,6 @@
     });
   });
 
-  function renderMonth() {
-    $('monthLabel').textContent = monthKey(currentMonday);
-    $('congTitle').textContent = (data.settings && data.settings.congregationName) || 'Congregación';
-    const prefix = currentMonday.slice(0, 7);
-    const settings = data.settings || { weekdaySemana: 4, weekdayFinde: 0, micCount: 2 };
-    const rows = [];
-    Object.keys(data.weeks || {}).sort().forEach(monday => {
-      ['semana', 'finde'].forEach(t => {
-        const w = data.weeks[monday][t];
-        if (!w) return;
-        const hasRoles = w.roles && Object.values(w.roles).some(Boolean);
-        const hasProgram = isProgramFilled(w.program, t);
-        if (!hasRoles && !hasProgram) return;
-        const date = dateForType(monday, t, settings);
-        if (date.slice(0, 7) !== prefix) return;
-        const { dayName, day } = formatDate(date);
-        rows.push({ date, dayName, day, type: t, roles: w.roles || {}, program: w.program, topic: w.topic || '' });
-      });
-    });
-    rows.sort((a, b) => a.date.localeCompare(b.date));
-
-    if (!rows.length) { $('agendaCard').innerHTML = '<p class="empty-note">Sin asignaciones cargadas este mes.</p>'; return; }
-
   const TEC_SECTIONS = [
     { match: k => k === 'sonido' || k === 'video', label: 'Audio y Video', color: 'var(--role-sonido)' },
     { match: k => k.startsWith('mic'), label: 'Micrófonos', color: 'var(--role-mic)' },
@@ -590,6 +585,29 @@
     });
     return html;
   }
+
+  function renderMonth() {
+    $('monthLabel').textContent = monthKey(currentMonday);
+    $('congTitle').textContent = (data.settings && data.settings.congregationName) || 'Congregación';
+    const prefix = currentMonday.slice(0, 7);
+    const settings = data.settings || { weekdaySemana: 4, weekdayFinde: 0, micCount: 2 };
+    const rows = [];
+    Object.keys(data.weeks || {}).sort().forEach(monday => {
+      ['semana', 'finde'].forEach(t => {
+        const w = data.weeks[monday][t];
+        if (!w) return;
+        const hasRoles = w.roles && Object.values(w.roles).some(Boolean);
+        const hasProgram = isProgramFilled(w.program, t);
+        if (!hasRoles && !hasProgram) return;
+        const date = dateForType(monday, t, settings);
+        if (date.slice(0, 7) !== prefix) return;
+        const { dayName, day } = formatDate(date);
+        rows.push({ date, dayName, day, type: t, roles: w.roles || {}, program: w.program, topic: w.topic || '' });
+      });
+    });
+    rows.sort((a, b) => a.date.localeCompare(b.date));
+
+    if (!rows.length) { $('agendaCard').innerHTML = '<p class="empty-note">Sin asignaciones cargadas este mes.</p>'; return; }
 
   function rowHTML(row) {
       let chips;
@@ -801,7 +819,7 @@
     let html = correctedTo
       ? `<p class="search-heading">Mostrando resultados para <strong>${escapeHtml(correctedTo)}</strong></p>`
       : `<p class="search-heading">Próximas asignaciones para <strong>"${escapeHtml(query)}"</strong></p>`;
-    const itemHtml = ({ row, chips }) => `<div class="agenda-item ${row.type === 'finde' ? 'finde' : ''}">
+    const itemHtml = ({ row, chips }) => `<div class="agenda-item ${row.type === 'finde' ? 'finde' : ''}" data-date="${row.date}" data-meeting="${row.type}">
         <div class="agenda-date"><div class="dow">${row.dayName.slice(0, 3)}</div><div class="num">${row.day}</div></div>
         <div class="agenda-body">
           <div class="agenda-type">${row.type === 'finde' ? 'Fin de semana' : 'Entre semana'}</div>
@@ -818,6 +836,45 @@
       });
     });
     $('agendaCard').innerHTML = html;
+    bindAssignmentTaps($('agendaCard'));
+  }
+
+  function openDayModal(dateStr, meetingType) {
+    const settings = data.settings || { weekdaySemana: 4, weekdayFinde: 0, micCount: 2, usherCount: 2 };
+    const monday = mondayOf(dateStr);
+    const week = data.weeks && data.weeks[monday];
+    const w = week && week[meetingType];
+    if (!w) return;
+    const { dayName, day } = formatDate(dateStr);
+    const roles = getRoles(meetingType, settings.micCount, settings.usherCount);
+    const techHtml = technicalRowsToHTML(roles, w.roles || {});
+    const entries = programEntries(w.program, meetingType);
+    const progHtml = entries.length ? programEntriesToHTML(entries) : '';
+    $('dayModalContent').innerHTML = `
+      <div class="day-modal-handle"></div>
+      <div class="day-modal-header">
+        <div class="day-modal-title">${escapeHtml(dayName)} ${day}</div>
+        <div class="day-modal-type">${meetingType === 'finde' ? 'Fin de semana' : 'Entre semana'}</div>
+      </div>
+      <p class="day-modal-sub">${escapeHtml(monthKey(dateStr))}</p>
+      ${w.topic ? `<div class="agenda-topic">${escapeHtml(w.topic)}</div>` : ''}
+      ${techHtml || '<div class="chip-row"><div class="chip empty">Equipo técnico no cargado</div></div>'}
+      ${progHtml ? `<div class="tec-section-label" style="margin-top:14px; color:var(--role-program)">Programa</div>${progHtml}` : ''}
+      <button type="button" class="day-modal-close" id="dayModalCloseBtn">Cerrar</button>
+    `;
+    $('dayModalOverlay').classList.remove('hidden');
+    $('dayModalCloseBtn').addEventListener('click', closeDayModal);
+  }
+  function closeDayModal() { $('dayModalOverlay').classList.add('hidden'); }
+  $('dayModalOverlay').addEventListener('click', (e) => { if (e.target.id === 'dayModalOverlay') closeDayModal(); });
+  function bindAssignmentTaps(container) {
+    if (container.dataset.tapsBound) return;
+    container.dataset.tapsBound = '1';
+    container.addEventListener('click', (e) => {
+      const el = e.target.closest('[data-date]');
+      if (!el) return;
+      openDayModal(el.dataset.date, el.dataset.meeting);
+    });
   }
 
   function renderCurrent() {
@@ -967,9 +1024,9 @@
         const dayLabel = `${dayName.slice(0, 3).toUpperCase()} ${day}`;
         const month = monthKey(date);
         getRoles(t, settings.micCount, settings.usherCount).forEach(r => {
-          if (w.roles && w.roles[r.key] === pub.id) rows.push({ dayLabel, month, type: 'tecnico', label: r.label });
+          if (w.roles && w.roles[r.key] === pub.id) rows.push({ dayLabel, month, type: 'tecnico', label: r.label, date, meetingType: t });
         });
-        programMatches(w.program, t, new Set([pub.id])).forEach(pm => rows.push({ dayLabel, month, type: 'programa', label: pm.label }));
+        programMatches(w.program, t, new Set([pub.id])).forEach(pm => rows.push({ dayLabel, month, type: 'programa', label: pm.label, date, meetingType: t }));
       });
     });
     if (!rows.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
@@ -996,11 +1053,12 @@
         if (!items.length) return;
         html += `<div class="ptype-label">${label}</div>`;
         items.forEach(r => {
-          html += `<div class="prow"><div class="pdate">${r.dayLabel}</div><div>${escapeHtml(r.label)}</div></div>`;
+          html += `<div class="prow" data-date="${r.date}" data-meeting="${r.meetingType}"><div class="pdate">${r.dayLabel}</div><div>${escapeHtml(r.label)}</div></div>`;
         });
       });
     });
     bodyEl.innerHTML = html;
+    bindAssignmentTaps(box);
     $('personalSummaryToggle').addEventListener('click', () => {
       const collapsed = bodyEl.classList.toggle('hidden');
       const btn = $('personalSummaryToggle');
