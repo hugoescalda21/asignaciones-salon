@@ -161,9 +161,11 @@
   .icon-only { padding: 9px 13px; font-size: 16px; }
 
   /* ---------- Programa: navegador de semana ---------- */
-  .week-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
-  .week-label-wrap { flex: 1; text-align: center; }
-  .week-label { font-family: 'Fraunces', serif; font-size: 17px; margin-top: 2px; }
+  .week-bar { margin-bottom: 14px; }
+  .week-label-row { text-align: center; margin-bottom: 8px; }
+  .week-nav-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .week-date-wrap { flex: 1; text-align: center; }
+  .week-label { font-family: 'Fraunces', serif; font-size: 17px; }
   .week-bar input[type="date"] {
     border: 1px solid var(--line); border-radius: var(--radius-s); padding: 7px 9px; font-family: inherit;
     font-size: 13px; color: var(--ink-soft); background: var(--surface);
@@ -669,13 +671,15 @@
   <!-- ---------------- Programa ---------------- -->
   <section class="tab-panel" id="panel-programa">
     <div class="week-bar">
-      <button class="btn icon-only" id="prevWeekBtn" aria-label="Semana anterior" title="Semana anterior">‹</button>
-      <div class="week-label-wrap">
-        <input type="date" id="weekDateInput">
+      <div class="week-label-row">
         <div class="week-label" id="weekLabel"></div>
       </div>
-      <button class="btn icon-only" id="nextWeekBtn" aria-label="Semana siguiente" title="Semana siguiente">›</button>
-      <button class="btn" id="todayBtn">Hoy</button>
+      <div class="week-nav-row">
+        <button class="btn icon-only" id="prevWeekBtn" aria-label="Semana anterior" title="Semana anterior">‹</button>
+        <div class="week-date-wrap"><input type="date" id="weekDateInput"></div>
+        <button class="btn icon-only" id="nextWeekBtn" aria-label="Semana siguiente" title="Semana siguiente">›</button>
+        <button class="btn" id="todayBtn">Hoy</button>
+      </div>
     </div>
 
     <div class="subtabs" id="subtabsBar">
@@ -2353,7 +2357,7 @@
 
   async function copyViewLink() {
     if (!accessCode) { showToast('Conectate con un código primero (Ajustes → Sincronización)'); return; }
-    const url = new URL('ver.html', location.href);
+    const url = new URL('ver/ver.html', location.href);
     url.searchParams.set('codigo', accessCode);
     const link = url.toString();
     if (navigator.share) {
