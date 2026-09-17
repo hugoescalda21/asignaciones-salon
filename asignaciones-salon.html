@@ -381,6 +381,8 @@
   .preset-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-bottom: 22px; }
   .preset-btn { text-align: left; font-size: 12.5px; }
   .preset-btn .pmin { display: block; font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+  .preset-btn .pwho { display: block; font-size: 11px; color: var(--ink-soft); margin-top: 1px; font-style: italic; }
+  .preset-btn.selected { border-color: var(--accent-gold); background: rgba(169,130,47,0.1); box-shadow: 0 0 0 1px var(--accent-gold); }
 
   .timer-panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 24px; text-align: center; }
   .timer-display { font-family: 'Fraunces', serif; font-variant-numeric: tabular-nums; font-size: 58px; color: var(--ok); line-height: 1; margin-bottom: 12px; }
@@ -400,6 +402,8 @@
   .timer-extra { display: flex; gap: 8px; justify-content: center; margin-top: 12px; }
   /* El modo oscuro global (html[data-theme=dark]) ya cubre todo esto vía variables */
   .log-row { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-s); padding: 10px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+  .log-del-btn { border: none; background: none; color: var(--ink-faint); font-size: 13px; padding: 8px; flex-shrink: 0; }
+  .log-del-btn:active { color: var(--danger); }
   .log-times { font-size: 12.5px; color: var(--ink-soft); white-space: nowrap; }
   .log-diff { font-weight: 700; margin-left: 6px; }
   .log-diff.over { color: var(--danger); }
@@ -3003,6 +3007,17 @@
   /* ---------- Cronómetro ---------- */
   let currentPresetLabel = 'Personalizado';
   let overtimeBellPlayed = false;
+  let wakeLock = null;
+  async function acquireWakeLock() {
+    if (!('wakeLock' in navigator)) return;
+    try { wakeLock = await navigator.wakeLock.request('screen'); } catch (e) { /* sin permiso, o el navegador no lo soporta */ }
+  }
+  function releaseWakeLock() {
+    if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && timerInterval) acquireWakeLock();
+  });
 
   function updateTimerTopicLabel() {
     const topic = weekView(currentMonday)[currentType].topic;
@@ -3017,19 +3032,32 @@
     if (!wrap) return;
     if (currentType !== 'semana') { wrap.innerHTML = ''; return; }
     const program = weekView(currentMonday).semana.program;
+    const pubName = (id) => { const p = data.publishers.find(pp => pp.id === id); return p ? p.name : ''; };
     const parts = [];
-    (program.estudiantes || []).forEach(s => { if (s.tema && s.minutos) parts.push({ label: s.tema, min: s.minutos }); });
-    (program.vidaCristiana || []).forEach(v => { if (v.tema && v.minutos) parts.push({ label: v.tema, min: v.minutos }); });
+    (program.estudiantes || []).forEach(s => {
+      if (s.tema && s.minutos) {
+        const names = [pubName(s.estudiante), pubName(s.ayudante)].filter(Boolean).join(' / ');
+        parts.push({ label: s.tema, min: s.minutos, who: names });
+      }
+    });
+    (program.vidaCristiana || []).forEach(v => {
+      if (v.tema && v.minutos) parts.push({ label: v.tema, min: v.minutos, who: pubName(v.presentador) });
+    });
     if (!parts.length) { wrap.innerHTML = ''; return; }
     wrap.innerHTML = '<div class="program-subhead" style="margin:0 0 8px;">Partes de esta semana</div><div class="preset-grid" id="weeklyPartsGrid" style="margin-bottom:18px;">' +
-      parts.map((p, i) => `<button type="button" class="btn preset-btn" data-weekly-part="${i}">${escapeHtml(p.label)}<span class="pmin">${p.min} min</span></button>`).join('') +
+      parts.map((p, i) => `<button type="button" class="btn preset-btn" data-weekly-part="${i}">${escapeHtml(p.label)}${p.who ? `<span class="pwho">${escapeHtml(p.who)}</span>` : ''}<span class="pmin">${p.min} min</span></button>`).join('') +
       '</div>';
     wrap.querySelectorAll('[data-weekly-part]').forEach(btn => btn.addEventListener('click', () => {
       const p = parts[btn.dataset.weeklyPart];
       $('minutesInput').value = p.min; $('secondsInput').value = 0;
       currentPresetLabel = p.label;
       resetTimer();
+      markSelectedPresetBtn(btn);
     }));
+  }
+  function markSelectedPresetBtn(btn) {
+    document.querySelectorAll('#weeklyPartsGrid .preset-btn, #presetGrid .preset-btn').forEach(b => b.classList.remove('selected'));
+    if (btn) btn.classList.add('selected');
   }
 
   function fillPresetGrid() {
@@ -3039,6 +3067,7 @@
       $('minutesInput').value = p.min; $('secondsInput').value = 0;
       currentPresetLabel = p.label;
       resetTimer();
+      markSelectedPresetBtn(btn);
     }));
   }
   function fmtMinSec(totalSeconds) {
@@ -3069,6 +3098,7 @@
   async function startTimer() {
     await ensureTone();
     if (timerInterval) return;
+    acquireWakeLock();
     if (timerTotal <= 0) {
       const mins = parseInt($('minutesInput').value) || 0, secs = parseInt($('secondsInput').value) || 0;
       timerRemaining = mins * 60 + secs; timerTotal = timerRemaining; overtimeBellPlayed = false;
@@ -3078,10 +3108,11 @@
       if (timerRemaining === 0 && !overtimeBellPlayed) {
         overtimeBellPlayed = true;
         if (!data.settings.timerMuted) playBell();
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
       }
     }, 1000);
   }
-  function pauseTimer() { if (timerInterval) { clearInterval(timerInterval); timerInterval = null; } }
+  function pauseTimer() { if (timerInterval) { clearInterval(timerInterval); timerInterval = null; releaseWakeLock(); } }
   function resetTimer() {
     pauseTimer();
     const mins = parseInt($('minutesInput').value) || 0, secs = parseInt($('secondsInput').value) || 0;
@@ -3132,6 +3163,7 @@
     renderTimerLog();
     showToast('Tiempo registrado');
     timerRemaining = 0; timerTotal = 0; overtimeBellPlayed = false;
+    markSelectedPresetBtn(null);
     $('timerDisplay').textContent = '00:00';
     $('timerDisplay').classList.remove('warning', 'danger');
     $('timerProgressBar').style.width = '0%';
@@ -3151,8 +3183,31 @@
       return `<div class="log-row">
         <div><strong>${escapeHtml(e.label)}</strong><div class="row-note">${dayName} ${day} de ${monthKey(e.date)} — ${e.type === 'finde' ? 'Fin de semana' : 'Entre semana'}</div></div>
         <div class="log-times">${fmtMinSec(e.plannedSeconds)} plan. → ${fmtMinSec(e.actualSeconds)} real <span class="log-diff ${diffClass}">${diffLabel}</span></div>
+        <button type="button" class="log-del-btn" data-log-del="${e.id}" aria-label="Borrar este registro" title="Borrar este registro">✕</button>
       </div>`;
     }).join('');
+    bindTimerLogTaps(wrap);
+  }
+  function bindTimerLogTaps(wrap) {
+    if (wrap.dataset.tapsBound) return;
+    wrap.dataset.tapsBound = '1';
+    wrap.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-log-del]');
+      if (!btn) return;
+      const id = btn.dataset.logDel;
+      const log = data.timerLog || [];
+      const idx = log.findIndex(x => x.id === id);
+      if (idx === -1) return;
+      const removed = log[idx];
+      log.splice(idx, 1);
+      saveData();
+      renderTimerLog();
+      showToast('Registro borrado', () => {
+        (data.timerLog || (data.timerLog = [])).splice(idx, 0, removed);
+        saveData();
+        renderTimerLog();
+      });
+    });
   }
 
   async function shareTimerHistory() {
@@ -3194,8 +3249,8 @@
     data.timerLog = []; saveData(); renderTimerLog();
     showToast('Historial borrado', () => { data.timerLog = backupLog; saveData(); renderTimerLog(); });
   });
-  $('minutesInput').addEventListener('change', () => { currentPresetLabel = 'Personalizado'; resetTimer(); });
-  $('secondsInput').addEventListener('change', () => { currentPresetLabel = 'Personalizado'; resetTimer(); });
+  $('minutesInput').addEventListener('change', () => { currentPresetLabel = 'Personalizado'; markSelectedPresetBtn(null); resetTimer(); });
+  $('secondsInput').addEventListener('change', () => { currentPresetLabel = 'Personalizado'; markSelectedPresetBtn(null); resetTimer(); });
   $('muteBtn').addEventListener('click', () => { data.settings.timerMuted = !data.settings.timerMuted; saveData(); updateMuteBtn(); });
   $('testBellBtn').addEventListener('click', async () => { await ensureTone(); playBell(); });
 
