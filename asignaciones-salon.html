@@ -311,7 +311,9 @@
   .cb-why { font-size: 10.5px; color: var(--ink-soft); margin-top: 4px; }
   .cb-why em { font-style: normal; font-weight: 600; }
 
-  .role-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+  .role-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .tec-section-label { font-family: 'Fraunces', serif; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 8px; }
+  .tec-section-label:first-child { margin-top: 0; }
   .role-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 12px 14px; border-top: 3px solid var(--rc); }
   .role-card.rc-complete { box-shadow: 0 0 0 1px var(--ok); }
   .role-card.conflict-card { box-shadow: 0 0 0 1.5px var(--danger); background: var(--danger-bg, #FBECEA); }
@@ -716,7 +718,7 @@
 
       <div class="conflict-banner hidden" id="conflictBanner"></div>
 
-      <div class="role-cards" id="roleCardsContainer"></div>
+      <div id="roleCardsContainer"></div>
     </div>
 
     <div id="programSection" class="hidden"></div>
@@ -2099,23 +2101,35 @@
     });
   }
 
+  const TEC_SECTIONS = [
+    { match: k => k === 'sonido' || k === 'video', label: 'Audio y Video', color: 'var(--role-sonido)' },
+    { match: k => k.startsWith('mic'), label: 'Micrófonos', color: 'var(--role-mic)' },
+    { match: k => k === 'plataforma', label: 'Plataforma', color: 'var(--role-plat)' },
+    { match: k => k.startsWith('usher'), label: 'Acomodadores', color: 'var(--role-usher)' },
+    { match: k => k === 'cronometrista', label: 'Cronometrista', color: 'var(--role-crono)' }
+  ];
   function renderRoleCards() {
     const roles = rolesForCurrentUser(currentType);
     const week = weekView(currentMonday);
     const typeObj = week[currentType];
     $('topicInput').value = typeObj.topic || '';
-    $('roleCardsContainer').innerHTML = roles.map(r => {
-      const capable = data.publishers.filter(p => p.roles[r.cap]).sort((a, b) => a.name.localeCompare(b.name, 'es'));
-      const opts = capable.map(p => {
-        const tag = typeObj.excluded.includes(p.id) ? ' (no disponible hoy)' : (p.status === 'no_disponible' ? ' (no disponible)' : '');
-        return `<option value="${p.id}" ${typeObj.roles[r.key] === p.id ? 'selected' : ''}>${escapeHtml(p.name)}${tag}</option>`;
+    $('roleCardsContainer').innerHTML = TEC_SECTIONS.map(sec => {
+      const secRoles = roles.filter(r => sec.match(r.key));
+      if (!secRoles.length) return '';
+      const cards = secRoles.map(r => {
+        const capable = data.publishers.filter(p => p.roles[r.cap]).sort((a, b) => a.name.localeCompare(b.name, 'es'));
+        const opts = capable.map(p => {
+          const tag = typeObj.excluded.includes(p.id) ? ' (no disponible hoy)' : (p.status === 'no_disponible' ? ' (no disponible)' : '');
+          return `<option value="${p.id}" ${typeObj.roles[r.key] === p.id ? 'selected' : ''}>${escapeHtml(p.name)}${tag}</option>`;
+        }).join('');
+        return `<div class="role-card" style="--rc:${r.color}">
+          <div class="role-card-head"><span class="role-icon" style="color:${r.color}">${svgIcon(r.icon, 15)}</span>${r.label}</div>
+          <div class="role-tag-row hidden"></div>
+          <select data-role="${r.key}" aria-label="${r.label}"><option value="">— Sin asignar —</option>${opts}</select>
+          <div class="role-count">${capable.length} hermano${capable.length === 1 ? '' : 's'} habilitado${capable.length === 1 ? '' : 's'}</div>
+        </div>`;
       }).join('');
-      return `<div class="role-card" style="--rc:${r.color}">
-        <div class="role-card-head"><span class="role-icon" style="color:${r.color}">${svgIcon(r.icon, 15)}</span>${r.label}</div>
-        <div class="role-tag-row hidden"></div>
-        <select data-role="${r.key}" aria-label="${r.label}"><option value="">— Sin asignar —</option>${opts}</select>
-        <div class="role-count">${capable.length} hermano${capable.length === 1 ? '' : 's'} habilitado${capable.length === 1 ? '' : 's'}</div>
-      </div>`;
+      return `<div class="tec-section-label" style="color:${sec.color}">${sec.label}</div><div class="role-cards">${cards}</div>`;
     }).join('');
     $('roleCardsContainer').querySelectorAll('select[data-role]').forEach(sel => sel.addEventListener('change', onRoleChange));
     enhanceCombos($('roleCardsContainer'));
