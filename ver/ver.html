@@ -48,8 +48,9 @@
   .personal-summary h3 { font-family: 'Fraunces', serif; font-size: 15px; margin: 0; }
   .personal-summary .psub { font-size: 11px; color: var(--ink-soft); margin: 2px 0 0; }
   .personal-summary .phead { display: flex; align-items: center; }
-  .personal-summary .chev-btn { margin-left: auto; border: none; background: none; color: var(--accent-gold); font-size: 11.5px; font-weight: 700; padding: 10px 6px; flex-shrink: 0; display: flex; align-items: center; gap: 4px; border-radius: 8px; }
-  .personal-summary .chev-btn:active { background: rgba(169, 130, 47, 0.12); }
+  .psum-more-btn { width: 100%; border: none; background: none; border-radius: 8px; padding: 10px; margin-top: 4px; font-size: 12.5px; font-weight: 700; color: var(--accent-gold); display: flex; align-items: center; justify-content: center; gap: 5px; }
+  .psum-more-btn:active { background: rgba(169, 130, 47, 0.1); }
+  .psum-more-btn.hidden { display: none; }
   .personal-summary #personalSummaryBody { margin-top: 8px; }
   .personal-summary #personalSummaryBody.hidden { display: none; }
   .personal-summary .prow { display: flex; align-items: center; gap: 8px; padding: 7px 6px; margin: 0 -6px; border-radius: 8px; border-bottom: 1px solid var(--line); font-size: 12.5px; }
@@ -1059,45 +1060,56 @@
       });
     });
     if (!rows.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+    rows.sort((a, b) => a.date.localeCompare(b.date));
     box.classList.remove('hidden');
     box.innerHTML = `<div class="personal-summary">
       <div class="phead">
         <div><h3>Hola, ${escapeHtml(pub.name.split(' ')[0])}</h3><p class="psub" id="personalSummarySub">Tus próximas asignaciones</p></div>
-        <button type="button" class="chev-btn" id="personalSummaryToggle" aria-label="Colapsar">Ver menos<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><path d="m6 9 6 6 6-6"/></svg></button>
       </div>
       <div id="personalSummaryBody"></div>
+      <button type="button" class="psum-more-btn hidden" id="personalSummaryMoreBtn"></button>
     </div>`;
     const bodyEl = $('personalSummaryBody');
-    const monthOrder = [];
-    const byMonth = {};
-    rows.forEach(r => {
-      if (!byMonth[r.month]) { byMonth[r.month] = { tecnico: [], programa: [] }; monthOrder.push(r.month); }
-      byMonth[r.month][r.type].push(r);
-    });
-    let html = '';
-    monthOrder.forEach((month, mi) => {
-      html += `<div class="pmonth-divider"${mi === 0 ? ' style="margin-top:0; padding-top:0; border-top:none;"' : ''}>${escapeHtml(month.split(' de ')[0])}</div>`;
-      [['tecnico', 'Equipo técnico'], ['programa', 'Programa']].forEach(([key, label]) => {
-        const items = byMonth[month][key];
-        if (!items.length) return;
-        html += `<div class="ptype-label">${label}</div>`;
-        items.forEach(r => {
-          const meetingLabel = r.meetingType === 'finde' ? 'Fin de semana' : 'Entre semana';
-          const congName = (data.settings && data.settings.congregationName) || 'Salón del Reino';
-          const gcalHref = gcalUrl(r.label, r.date, `${meetingLabel} — ${congName}`);
-          html += `<div class="prow" data-date="${r.date}" data-meeting="${r.meetingType}"><div class="pdate">${r.dayLabel}</div><div class="prow-label">${escapeHtml(r.label)}</div><a class="gcal-btn" href="${gcalHref}" target="_blank" rel="noopener" aria-label="Agregar a Google Calendar" title="Agregar a Google Calendar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M12 14v4M10 16h4"/></svg></a></div>`;
+    const congName = (data.settings && data.settings.congregationName) || 'Salón del Reino';
+    const flatRowHTML = (r) => {
+      const meetingLabel = r.meetingType === 'finde' ? 'Fin de semana' : 'Entre semana';
+      const gcalHref = gcalUrl(r.label, r.date, `${meetingLabel} — ${congName}`);
+      return `<div class="prow" data-date="${r.date}" data-meeting="${r.meetingType}"><div class="pdate">${r.dayLabel}</div><div class="prow-label">${escapeHtml(r.label)}</div><a class="gcal-btn" href="${gcalHref}" target="_blank" rel="noopener" aria-label="Agregar a Google Calendar" title="Agregar a Google Calendar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M12 14v4M10 16h4"/></svg></a></div>`;
+    };
+    function groupedHTML() {
+      const monthOrder = []; const byMonth = {};
+      rows.forEach(r => {
+        if (!byMonth[r.month]) { byMonth[r.month] = { tecnico: [], programa: [] }; monthOrder.push(r.month); }
+        byMonth[r.month][r.type].push(r);
+      });
+      let html = '';
+      monthOrder.forEach((month, mi) => {
+        html += `<div class="pmonth-divider"${mi === 0 ? ' style="margin-top:0; padding-top:0; border-top:none;"' : ''}>${escapeHtml(month.split(' de ')[0])}</div>`;
+        [['tecnico', 'Equipo técnico'], ['programa', 'Programa']].forEach(([key, label]) => {
+          const items = byMonth[month][key];
+          if (!items.length) return;
+          html += `<div class="ptype-label">${label}</div>` + items.map(flatRowHTML).join('');
         });
       });
-    });
-    bodyEl.innerHTML = html;
-    bindAssignmentTaps(box);
-    $('personalSummaryToggle').addEventListener('click', () => {
-      const collapsed = bodyEl.classList.toggle('hidden');
-      const btn = $('personalSummaryToggle');
-      btn.innerHTML = (collapsed ? 'Ver más' : 'Ver menos') + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" style="' + (collapsed ? 'transform:rotate(-90deg)' : '') + '"><path d="m6 9 6 6 6-6"/></svg>';
-      btn.setAttribute('aria-label', collapsed ? 'Expandir' : 'Colapsar');
-      $('personalSummarySub').textContent = collapsed ? `Tus próximas asignaciones (${rows.length})` : 'Tus próximas asignaciones';
-    });
+      return html;
+    }
+    const PREVIEW_COUNT = 3;
+    let expanded = false;
+    function renderBody() {
+      if (!expanded) { bodyEl.innerHTML = rows.slice(0, PREVIEW_COUNT).map(flatRowHTML).join(''); }
+      else { bodyEl.innerHTML = groupedHTML(); }
+      bindAssignmentTaps(box);
+    }
+    const moreBtn = $('personalSummaryMoreBtn');
+    if (rows.length > PREVIEW_COUNT) {
+      moreBtn.classList.remove('hidden');
+      const updateMoreBtn = () => {
+        moreBtn.innerHTML = (expanded ? 'Ver menos' : `Ver las ${rows.length} asignaciones`) + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" style="' + (expanded ? 'transform:rotate(180deg)' : '') + '"><path d="m6 9 6 6 6-6"/></svg>';
+      };
+      updateMoreBtn();
+      moreBtn.addEventListener('click', () => { expanded = !expanded; renderBody(); updateMoreBtn(); });
+    }
+    renderBody();
   }
   function startViewing(code) {
     const db = initFirebase();
