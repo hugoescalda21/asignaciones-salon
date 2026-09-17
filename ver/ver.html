@@ -48,7 +48,7 @@
   .personal-summary h3 { font-family: 'Fraunces', serif; font-size: 15px; margin: 0; }
   .personal-summary .psub { font-size: 11px; color: var(--ink-soft); margin: 2px 0 0; }
   .personal-summary .phead { display: flex; align-items: center; }
-  .personal-summary .chev-btn { margin-left: auto; border: none; background: none; color: var(--accent-gold); font-size: 20px; padding: 10px; flex-shrink: 0; border-radius: 50%; line-height: 1; }
+  .personal-summary .chev-btn { margin-left: auto; border: none; background: none; color: var(--accent-gold); font-size: 11.5px; font-weight: 700; padding: 10px 6px; flex-shrink: 0; display: flex; align-items: center; gap: 4px; border-radius: 8px; }
   .personal-summary .chev-btn:active { background: rgba(169, 130, 47, 0.12); }
   .personal-summary #personalSummaryBody { margin-top: 8px; }
   .personal-summary #personalSummaryBody.hidden { display: none; }
@@ -977,7 +977,7 @@
     box.innerHTML = `<div class="personal-summary">
       <div class="phead">
         <div><h3>Hola, ${escapeHtml(pub.name.split(' ')[0])}</h3><p class="psub" id="personalSummarySub">Tus próximas asignaciones</p></div>
-        <button type="button" class="chev-btn" id="personalSummaryToggle" aria-label="Colapsar">▾</button>
+        <button type="button" class="chev-btn" id="personalSummaryToggle" aria-label="Colapsar">Ver menos<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><path d="m6 9 6 6 6-6"/></svg></button>
       </div>
       <div id="personalSummaryBody"></div>
     </div>`;
@@ -1003,8 +1003,9 @@
     bodyEl.innerHTML = html;
     $('personalSummaryToggle').addEventListener('click', () => {
       const collapsed = bodyEl.classList.toggle('hidden');
-      $('personalSummaryToggle').textContent = collapsed ? '▸' : '▾';
-      $('personalSummaryToggle').setAttribute('aria-label', collapsed ? 'Expandir' : 'Colapsar');
+      const btn = $('personalSummaryToggle');
+      btn.innerHTML = (collapsed ? 'Ver más' : 'Ver menos') + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" style="' + (collapsed ? 'transform:rotate(-90deg)' : '') + '"><path d="m6 9 6 6 6-6"/></svg>';
+      btn.setAttribute('aria-label', collapsed ? 'Expandir' : 'Colapsar');
       $('personalSummarySub').textContent = collapsed ? `Tus próximas asignaciones (${rows.length})` : 'Tus próximas asignaciones';
     });
   }
