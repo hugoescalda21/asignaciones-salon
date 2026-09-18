@@ -1,6 +1,4 @@
-﻿// Service worker de ver/ â€” separado del de la app principal a propÃ³sito,
-// para que cada una tenga su propio scope y se puedan instalar como dos
-// apps distintas en el mismo celular.
+// Service worker de ver/
 importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js');
 
@@ -14,8 +12,6 @@ firebase.initializeApp({
 });
 
 const messaging = firebase.messaging();
-
-});
 
 const CACHE_NAME = 'ver-salon-v1';
 const ASSETS = [
@@ -100,4 +96,3 @@ self.addEventListener('notificationclick', function(event) {
     );
   }
 });
-
