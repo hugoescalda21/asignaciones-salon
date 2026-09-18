@@ -1,4 +1,4 @@
-// Service worker de ver/ — separado del de la app principal a propósito,
+﻿// Service worker de ver/ â€” separado del de la app principal a propÃ³sito,
 // para que cada una tenga su propio scope y se puedan instalar como dos
 // apps distintas en el mismo celular.
 importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js');
@@ -15,16 +15,6 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-messaging.onBackgroundMessage((payload) => {
-  const title = (payload.notification && payload.notification.title) || 'Asignaciones — Salón del Reino';
-  const body = (payload.notification && payload.notification.body) || 'Tenés una novedad en tus asignaciones.';
-  self.registration.showNotification(title, {
-    body,
-    icon: './icon-192-ver.png',
-    badge: '../badge-icon.png',
-    vibrate: [200, 100, 200, 100, 200, 100, 200],
-    requireInteraction: true
-  });
 });
 
 const CACHE_NAME = 'ver-salon-v1';
@@ -110,3 +100,4 @@ self.addEventListener('notificationclick', function(event) {
     );
   }
 });
+
