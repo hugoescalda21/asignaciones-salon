@@ -780,6 +780,11 @@
         <button class="btn" id="muteBtn">🔔 Sonido activado</button>
         <button class="btn" id="testBellBtn">Probar campanilla</button>
       </div>
+      <div class="timer-extra">
+        <button class="btn hidden" id="pipBtn">📌 Modo flotante</button>
+      </div>
+      <canvas id="pipCanvas" width="360" height="220" class="hidden"></canvas>
+      <video id="pipVideo" muted playsinline class="hidden"></video>
     </div>
 
     <h3 class="section-title">Historial de tiempos</h3>
@@ -1259,7 +1264,7 @@
   let currentMonday = mondayOf(new Date().toISOString().slice(0, 10));
   let currentType = 'semana';
   let pubEditingId = null;
-  let timerInterval = null, timerRemaining = 0, timerTotal = 0;
+  let timerInterval = null, timerRemaining = 0, timerTotal = 0, timerEndAt = 0;
   let synth = null, toneReady = false;
 
   const $ = (id) => document.getElementById(id);
@@ -3016,7 +3021,59 @@
     if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
   }
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && timerInterval) acquireWakeLock();
+    if (document.visibilityState === 'visible' && timerInterval) { acquireWakeLock(); tickTimer(); }
+  });
+
+  // ---------- Modo flotante (Picture-in-Picture) ----------
+  // La API moderna de ventana flotante (Document PiP) no anda en Android,
+  // así que usamos el truco que sí funciona ahí: dibujar el cronómetro en
+  // un canvas invisible, "transmitirlo" a un video invisible, y pedirle
+  // al navegador que ponga ESE video en modo flotante de verdad — queda
+  // arriba de cualquier otra app, no solo dentro de esta.
+  let pipCanvas = null, pipCtx = null, pipVideo = null, pipStream = null;
+  function initPipElements() {
+    if (pipCanvas) return;
+    pipCanvas = $('pipCanvas'); pipCtx = pipCanvas.getContext('2d');
+    pipVideo = $('pipVideo');
+  }
+  function drawPipFrame() {
+    if (!pipCtx) return;
+    const w = pipCanvas.width, h = pipCanvas.height;
+    const over = timerRemaining < 0;
+    const abs = Math.abs(timerRemaining);
+    const m = Math.floor(abs / 60), s = abs % 60;
+    const text = (over ? '+' : '') + `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    let bg = '#212C34';
+    if (over) bg = '#7A2E2E';
+    else if (timerRemaining <= 60 && timerTotal > 0) bg = '#8A6A1F';
+    pipCtx.fillStyle = bg; pipCtx.fillRect(0, 0, w, h);
+    pipCtx.fillStyle = '#fff';
+    pipCtx.textAlign = 'center'; pipCtx.textBaseline = 'middle';
+    pipCtx.font = '700 64px sans-serif';
+    pipCtx.fillText(text, w / 2, h / 2 - 14);
+    if (currentPresetLabel) {
+      pipCtx.font = '400 18px sans-serif';
+      const label = currentPresetLabel.length > 30 ? currentPresetLabel.slice(0, 30) + '…' : currentPresetLabel;
+      pipCtx.fillText(label, w / 2, h / 2 + 48);
+    }
+  }
+  function pipSupported() {
+    return 'pictureInPictureEnabled' in document && document.pictureInPictureEnabled && $('pipVideo') && 'requestPictureInPicture' in $('pipVideo');
+  }
+  if (pipSupported()) $('pipBtn').classList.remove('hidden');
+  $('pipBtn').addEventListener('click', async () => {
+    initPipElements();
+    try {
+      if (!pipStream) {
+        pipStream = pipCanvas.captureStream(2);
+        pipVideo.srcObject = pipStream;
+        await pipVideo.play();
+      }
+      drawPipFrame();
+      await pipVideo.requestPictureInPicture();
+    } catch (e) {
+      showToast('No se pudo activar el modo flotante en este navegador');
+    }
   });
 
   function updateTimerTopicLabel() {
@@ -3085,6 +3142,7 @@
     else if (timerRemaining <= 60 && timerTotal > 0) { disp.classList.add('warning'); bar.classList.add('warning'); }
     const pct = timerTotal > 0 ? Math.min(100, Math.max(0, (timerTotal - Math.max(timerRemaining, 0)) / timerTotal * 100)) : 0;
     bar.style.width = pct + '%';
+    drawPipFrame();
   }
   let toneFailNotified = false;
   async function ensureTone() {
@@ -3103,20 +3161,33 @@
       const mins = parseInt($('minutesInput').value) || 0, secs = parseInt($('secondsInput').value) || 0;
       timerRemaining = mins * 60 + secs; timerTotal = timerRemaining; overtimeBellPlayed = false;
     }
-    timerInterval = setInterval(() => {
-      timerRemaining--; updateTimerDisplay();
-      if (timerRemaining === 0 && !overtimeBellPlayed) {
-        overtimeBellPlayed = true;
-        if (!data.settings.timerMuted) playBell();
-        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-      }
-    }, 1000);
+    timerEndAt = Date.now() + timerRemaining * 1000;
+    timerInterval = setInterval(tickTimer, 1000);
+    tickTimer();
   }
-  function pauseTimer() { if (timerInterval) { clearInterval(timerInterval); timerInterval = null; releaseWakeLock(); } }
+  function tickTimer() {
+    // Recalcula siempre contra la hora de finalización, no restando de a
+    // uno — así, si el navegador frena los "tics" con la app minimizada,
+    // al volver salta directo al valor correcto en vez de quedar atrasado.
+    timerRemaining = Math.round((timerEndAt - Date.now()) / 1000);
+    updateTimerDisplay();
+    if (timerRemaining <= 0 && !overtimeBellPlayed) {
+      overtimeBellPlayed = true;
+      if (!data.settings.timerMuted) playBell();
+      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+    }
+  }
+  function pauseTimer() {
+    if (timerInterval) {
+      timerRemaining = Math.round((timerEndAt - Date.now()) / 1000);
+      clearInterval(timerInterval); timerInterval = null; releaseWakeLock();
+      updateTimerDisplay();
+    }
+  }
   function resetTimer() {
     pauseTimer();
     const mins = parseInt($('minutesInput').value) || 0, secs = parseInt($('secondsInput').value) || 0;
-    timerRemaining = mins * 60 + secs; timerTotal = timerRemaining; overtimeBellPlayed = false;
+    timerRemaining = mins * 60 + secs; timerTotal = timerRemaining; overtimeBellPlayed = false; timerEndAt = 0;
     updateTimerDisplay();
   }
   function updateMuteBtn() {
