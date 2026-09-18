@@ -13,5 +13,5 @@
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
-  "gcm_sender_id": "103953800507"
+  "gcm_sender_id": "167010071335"
 }
