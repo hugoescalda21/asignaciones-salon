@@ -1,9 +1,4 @@
-﻿// Service worker de notificaciones â€” Asignaciones del SalÃ³n del Reino
-// ---------------------------------------------------------------------
-// Necesario para que las notificaciones lleguen aunque la app estÃ©
-// cerrada o en segundo plano. Debe vivir en la raÃ­z del sitio (junto
-// a ver.html), con exactamente este nombre.
-
+// Service worker de notificaciones — Asignaciones del Salón del Reino
 importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js');
 
@@ -17,8 +12,6 @@ firebase.initializeApp({
 });
 
 const messaging = firebase.messaging();
-
-});
 
 self.addEventListener('notificationclick', function(event) {
   const action = event.action;
@@ -63,4 +56,3 @@ self.addEventListener('notificationclick', function(event) {
     );
   }
 });
-
