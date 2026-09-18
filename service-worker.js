@@ -1,8 +1,8 @@
-// --- Notificaciones push (Firebase Cloud Messaging) ---
+﻿// --- Notificaciones push (Firebase Cloud Messaging) ---
 // Unificado en este mismo service worker (en vez de uno aparte) para que
-// no compitan dos "trabajadores" por el mismo sitio — eso hacía que las
+// no compitan dos "trabajadores" por el mismo sitio â€” eso hacÃ­a que las
 // notificaciones nunca llegaran, porque este archivo (el de siempre, para
-// que la app funcione offline) le ganaba el lugar al de mensajería.
+// que la app funcione offline) le ganaba el lugar al de mensajerÃ­a.
 importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js');
 
@@ -17,16 +17,6 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-messaging.onBackgroundMessage((payload) => {
-  const title = (payload.notification && payload.notification.title) || 'Asignaciones — Salón del Reino';
-  const body = (payload.notification && payload.notification.body) || 'Tenés una novedad en tus asignaciones.';
-  self.registration.showNotification(title, {
-    body,
-    icon: './icon-192.png',
-    badge: './badge-icon.png',
-    vibrate: [200, 100, 200, 100, 200, 100, 200],
-    requireInteraction: true
-  });
 });
 
 const CACHE_NAME = 'asignaciones-salon-v7';
@@ -42,8 +32,8 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (event) => {
-  // No skipWaiting acá: se queda "esperando" hasta que la página lo confirme,
-  // así podemos avisarle al usuario antes de activar la versión nueva.
+  // No skipWaiting acÃ¡: se queda "esperando" hasta que la pÃ¡gina lo confirme,
+  // asÃ­ podemos avisarle al usuario antes de activar la versiÃ³n nueva.
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
   );
@@ -61,8 +51,8 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Cache-first para que la app abra igual sin conexión; intenta la red primero
-// solo para asegurarse de traer una versión más nueva cuando hay señal.
+// Cache-first para que la app abra igual sin conexiÃ³n; intenta la red primero
+// solo para asegurarse de traer una versiÃ³n mÃ¡s nueva cuando hay seÃ±al.
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   event.respondWith(
@@ -119,3 +109,4 @@ self.addEventListener('notificationclick', function(event) {
     );
   }
 });
+

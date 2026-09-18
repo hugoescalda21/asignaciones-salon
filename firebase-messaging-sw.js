@@ -1,7 +1,7 @@
-// Service worker de notificaciones — Asignaciones del Salón del Reino
+﻿// Service worker de notificaciones â€” Asignaciones del SalÃ³n del Reino
 // ---------------------------------------------------------------------
-// Necesario para que las notificaciones lleguen aunque la app esté
-// cerrada o en segundo plano. Debe vivir en la raíz del sitio (junto
+// Necesario para que las notificaciones lleguen aunque la app estÃ©
+// cerrada o en segundo plano. Debe vivir en la raÃ­z del sitio (junto
 // a ver.html), con exactamente este nombre.
 
 importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js');
@@ -18,16 +18,6 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-messaging.onBackgroundMessage((payload) => {
-  const title = (payload.notification && payload.notification.title) || 'Asignaciones — Salón del Reino';
-  const body = (payload.notification && payload.notification.body) || 'Tenés una novedad en tus asignaciones.';
-  self.registration.showNotification(title, {
-    body,
-    icon: '/icon-192.png',
-    badge: '/badge-icon.png',
-    vibrate: [200, 100, 200, 100, 200, 100, 200],
-    requireInteraction: true
-  });
 });
 
 self.addEventListener('notificationclick', function(event) {
@@ -73,3 +63,4 @@ self.addEventListener('notificationclick', function(event) {
     );
   }
 });
+
