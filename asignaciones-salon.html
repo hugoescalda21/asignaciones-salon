@@ -337,6 +337,10 @@
   .role-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
   .role-card select { width: 100%; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 8px; font-size: 13.5px; font-family: inherit; background: var(--bg); color: var(--ink); }
   .role-count { font-size: 11px; color: var(--ink-faint); margin-top: 6px; }
+  .rc-backup { display: flex; align-items: center; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); font-size: 11.5px; color: var(--ink-soft); }
+  .rc-backup svg { color: var(--ink-faint); flex-shrink: 0; }
+  .rc-backup strong { color: var(--ink); }
+  .rc-backup-btn { margin-left: auto; border: 1px solid var(--line); background: var(--bg); border-radius: 12px; padding: 4px 10px; font-size: 10.5px; font-weight: 600; color: var(--ink); flex-shrink: 0; }
   .assign-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 12.5px; }
   .assign-row:last-child { border-bottom: none; }
   .assign-date { font-size: 10.5px; font-weight: 700; color: var(--ink-soft); width: 54px; flex-shrink: 0; }
@@ -2192,6 +2196,8 @@
     const week = weekView(currentMonday);
     const typeObj = week[currentType];
     $('topicInput').value = typeObj.topic || '';
+    const usedIds = new Set(Object.values(typeObj.roles).filter(Boolean));
+    programAssignedIds(typeObj.program, currentType).forEach(id => usedIds.add(id));
     $('roleCardsContainer').innerHTML = TEC_SECTIONS.map(sec => {
       const secRoles = roles.filter(r => sec.match(r.key));
       if (!secRoles.length) return '';
@@ -2201,11 +2207,24 @@
           const tag = typeObj.excluded.includes(p.id) ? ' (no disponible hoy)' : (p.status === 'no_disponible' ? ' (no disponible)' : '');
           return `<option value="${p.id}" ${typeObj.roles[r.key] === p.id ? 'selected' : ''}>${escapeHtml(p.name)}${tag}</option>`;
         }).join('');
+        const heldBy = typeObj.roles[r.key];
+        let backupHtml = '';
+        if (heldBy) {
+          const { pick } = suggestReplacementFor(r.key, usedIds, heldBy);
+          if (pick) {
+            backupHtml = `<div class="rc-backup">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              <span>Si no llega: <strong>${escapeHtml(pick.name)}</strong></span>
+              <button type="button" class="rc-backup-btn" data-use-role="${r.key}" data-use-pub="${pick.id}">Usar</button>
+            </div>`;
+          }
+        }
         return `<div class="role-card" style="--rc:${r.color}">
           <div class="role-card-head"><span class="role-icon" style="color:${r.color}">${svgIcon(r.icon, 15)}</span>${r.label}</div>
           <div class="role-tag-row hidden"></div>
           <select data-role="${r.key}" aria-label="${r.label}"><option value="">— Sin asignar —</option>${opts}</select>
           <div class="role-count">${capable.length} hermano${capable.length === 1 ? '' : 's'} habilitado${capable.length === 1 ? '' : 's'}</div>
+          ${backupHtml}
         </div>`;
       }).join('');
       return `<div class="tec-section-label" style="color:${sec.color}">${sec.label}</div><div class="role-cards">${cards}</div>`;
@@ -2364,6 +2383,17 @@
   $('conflictBanner').addEventListener('click', (e) => {
     const btn = e.target.closest('[data-use-role]');
     if (!btn || !btn.dataset.usePub) return;
+    const week = ensureWeek(currentMonday);
+    week[currentType].roles[btn.dataset.useRole] = btn.dataset.usePub;
+    saveData();
+    renderRoleCards();
+    renderMonthTable();
+    renderMonthCalendar();
+    showToast('Reemplazo aplicado');
+  });
+  $('roleCardsContainer').addEventListener('click', (e) => {
+    const btn = e.target.closest('.rc-backup-btn');
+    if (!btn) return;
     const week = ensureWeek(currentMonday);
     week[currentType].roles[btn.dataset.useRole] = btn.dataset.usePub;
     saveData();
