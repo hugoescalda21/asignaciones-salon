@@ -21,7 +21,9 @@ messaging.onBackgroundMessage((payload) => {
   self.registration.showNotification(title, {
     body,
     icon: './icon-192-ver.png',
-    badge: './icon-192-ver.png'
+    badge: '../badge-icon.png',
+    vibrate: [200, 100, 200, 100, 200, 100, 200],
+    requireInteraction: true
   });
 });
 
