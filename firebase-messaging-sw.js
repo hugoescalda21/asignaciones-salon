@@ -29,3 +29,47 @@ messaging.onBackgroundMessage((payload) => {
     requireInteraction: true
   });
 });
+
+self.addEventListener('notificationclick', function(event) {
+  const action = event.action;
+  if (action && action.startsWith('remind-')) {
+    event.stopImmediatePropagation();
+    event.notification.close();
+    
+    let rawData = event.notification.data;
+    if (rawData && rawData.FCM_MSG && rawData.FCM_MSG.data) {
+      rawData = rawData.FCM_MSG.data;
+    }
+    
+    let payloadStr = rawData;
+    if (typeof rawData !== 'string') {
+      payloadStr = JSON.stringify(rawData);
+    }
+    
+    event.waitUntil(
+      fetch('https://southamerica-east1-asignaciones-salon.cloudfunctions.net/saveReminder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: action,
+          payloadStr: payloadStr
+        })
+      })
+    );
+  } else {
+    event.notification.close();
+    event.waitUntil(
+      clients.matchAll({ type: 'window' }).then(windowClients => {
+        for (var i = 0; i < windowClients.length; i++) {
+          var client = windowClients[i];
+          if (client.url.includes('asignaciones-salon') && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        if (clients.openWindow) {
+          return clients.openWindow('/');
+        }
+      })
+    );
+  }
+});
