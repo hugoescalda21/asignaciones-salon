@@ -4431,10 +4431,10 @@
   let currentAnuncioFile = null;
 
   $('navAnunciosBtn') && $('navAnunciosBtn').addEventListener('click', () => {
-    if (!currentCong) return;
+    if (!accessCode) return;
     $('anunciosModalOverlay').classList.remove('hidden');
     if (!anuncioUnsub) {
-      anuncioUnsub = fbDb.collection('congregations').doc(currentCong).collection('anuncios')
+      anuncioUnsub = fbDb.collection('congregations').doc(accessCode).collection('anuncios')
         .orderBy('date', 'desc')
         .onSnapshot(snap => {
           activeAnuncios = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -4478,7 +4478,7 @@
 
       if (currentAnuncioFile) {
         $('anuncioUploadProgress').classList.remove('hidden');
-        const stRef = firebase.storage().ref(`congregations/${currentCong}/anuncios/${Date.now()}_${currentAnuncioFile.name}`);
+        const stRef = firebase.storage().ref(`congregations/${accessCode}/anuncios/${Date.now()}_${currentAnuncioFile.name}`);
         const uploadTask = stRef.put(currentAnuncioFile);
         
         await new Promise((resolve, reject) => {
@@ -4499,7 +4499,7 @@
         attachmentSize = currentAnuncioFile.size;
       }
 
-      await fbDb.collection('congregations').doc(currentCong).collection('anuncios').add({
+      await fbDb.collection('congregations').doc(accessCode).collection('anuncios').add({
         text: text,
         date: firebase.firestore.FieldValue.serverTimestamp(),
         author: currentUser ? currentUser.email : 'Admin',
@@ -4560,7 +4560,7 @@
           if (an && an.attachmentUrl) {
             await firebase.storage().refFromURL(an.attachmentUrl).delete().catch(err => console.log("Error borrando archivo:", err));
           }
-          await fbDb.collection('congregations').doc(currentCong).collection('anuncios').doc(id).delete();
+          await fbDb.collection('congregations').doc(accessCode).collection('anuncios').doc(id).delete();
         } catch(err) {
           console.error(err);
         }
