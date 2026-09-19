@@ -4426,21 +4426,12 @@
     });
   }
   /* ---------- Gestión de Avisos ---------- */
-  let activeAnuncios = [];
-  let anuncioUnsub = null;
   let currentAnuncioFile = null;
 
   $('navAnunciosBtn') && $('navAnunciosBtn').addEventListener('click', () => {
     if (!accessCode) return;
     $('anunciosModalOverlay').classList.remove('hidden');
-    if (!anuncioUnsub) {
-      anuncioUnsub = fbDb.collection('congregations').doc(accessCode).collection('anuncios')
-        .orderBy('date', 'desc')
-        .onSnapshot(snap => {
-          activeAnuncios = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-          renderAnunciosList();
-        });
-    }
+    renderAnunciosList();
   });
 
   $('closeAnunciosBtn') && $('closeAnunciosBtn').addEventListener('click', () => {
@@ -4499,19 +4490,23 @@
         attachmentSize = currentAnuncioFile.size;
       }
 
-      await fbDb.collection('congregations').doc(accessCode).collection('anuncios').add({
+      data.anuncios = data.anuncios || [];
+      data.anuncios.push({
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
         text: text,
-        date: firebase.firestore.FieldValue.serverTimestamp(),
+        dateIso: new Date().toISOString(),
         author: currentUser ? currentUser.email : 'Admin',
         attachmentUrl,
         attachmentName,
         attachmentType,
         attachmentSize
       });
+      await saveData();
 
       $('anuncioTextInput').value = '';
       $('anuncioFileRemoveBtn').click();
       $('anuncioUploadProgress').classList.add('hidden');
+      renderAnunciosList();
     } catch (e) {
       console.error("Error publicando anuncio:", e);
       alert("Error al publicar el aviso.");
@@ -4524,13 +4519,16 @@
 
   function renderAnunciosList() {
     const container = $('anunciosListContainer');
-    if (activeAnuncios.length === 0) {
+    const list = data.anuncios || [];
+    const sorted = [...list].sort((a, b) => new Date(b.dateIso) - new Date(a.dateIso));
+
+    if (sorted.length === 0) {
       container.innerHTML = '<p style="font-size:13px; color:var(--ink-soft);">No hay avisos activos.</p>';
       return;
     }
     
-    container.innerHTML = activeAnuncios.map(a => {
-      const d = a.date ? new Date(a.date.toDate()).toLocaleString() : 'Recién publicado';
+    container.innerHTML = sorted.map(a => {
+      const d = a.dateIso ? new Date(a.dateIso).toLocaleString() : 'Recién publicado';
       let attHtml = '';
       if (a.attachmentUrl) {
         if (a.attachmentType === 'image') {
@@ -4555,14 +4553,19 @@
       btn.addEventListener('click', async (e) => {
         if (!confirm('¿Seguro que quieres borrar este aviso?')) return;
         const id = e.target.dataset.id;
-        const an = activeAnuncios.find(x => x.id === id);
+        const idx = data.anuncios.findIndex(x => x.id === id);
+        if (idx === -1) return;
+        const an = data.anuncios[idx];
         try {
           if (an && an.attachmentUrl) {
             await firebase.storage().refFromURL(an.attachmentUrl).delete().catch(err => console.log("Error borrando archivo:", err));
           }
-          await fbDb.collection('congregations').doc(accessCode).collection('anuncios').doc(id).delete();
+          data.anuncios.splice(idx, 1);
+          await saveData();
+          renderAnunciosList();
         } catch(err) {
           console.error(err);
+          alert('Error al borrar el aviso.');
         }
       });
     });
