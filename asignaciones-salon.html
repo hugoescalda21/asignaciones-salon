@@ -1276,7 +1276,7 @@
   const emptyCaps = () => ({ sonido: false, video: false, microfono: false, plataforma: false, acomodador: false, cronometrista: false });
   const blankRoles = () => ({ sonido: null, video: null, mic1: null, mic2: null, mic3: null, plataforma: null, usher1: null, usher2: null, usher3: null, usher4: null, cronometrista: null });
   const blankProgram = (type) => type === 'finde'
-    ? { presidente: null, oracionInicial: null, oradorPublico: null, temaPublico: '', atalayaConductor: null, atalayaLector: null, oracionFinal: null }
+    ? { presidente: null, oracionInicial: null, cancionInicial: '', oradorPublico: null, temaPublico: '', cancionIntermedia: '', atalayaConductor: null, atalayaLector: null, cancionFinal: '', oracionFinal: null }
     : { presidente: null, oracionInicial: null, consejeroAux: null, cancionInicial: '', tesoros: null, temaTesoros: '', perlas: null, lectura: null, lecturaAux: null, estudiantes: [], cancionIntermedia: '', vidaCristiana: [], estudioConductor: null, estudioLector: null, cancionFinal: '', oracionFinal: null };
   const blankWeek = () => ({
     semana: { roles: blankRoles(), excluded: [], topic: '', program: blankProgram('semana') },
@@ -1915,10 +1915,13 @@
     html += programRowHTML('presidente', 'Presidente', program.presidente);
     html += programRowHTML('oracionInicial', 'Oración inicial', program.oracionInicial);
     if (currentType === 'finde') {
+      html += `<div class="program-row"><label>🎵 Canción inicial</label><input type="text" data-program-field="cancionInicial" value="${escapeHtml(program.cancionInicial || '')}" placeholder="N.° de cántico"></div>`;
       html += programRowHTML('oradorPublico', 'Orador — Discurso público', program.oradorPublico, '30 min');
       html += `<div class="program-row"><label>Tema del discurso</label><input type="text" data-program-field="temaPublico" value="${escapeHtml(program.temaPublico || '')}" placeholder="Tema (opcional)"></div>`;
+      html += `<div class="program-row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);"><label>🎵 Canción intermedia</label><input type="text" data-program-field="cancionIntermedia" value="${escapeHtml(program.cancionIntermedia || '')}" placeholder="N.° de cántico"></div>`;
       html += programRowHTML('atalayaConductor', 'Atalaya — Conductor', program.atalayaConductor, '60 min');
       html += programRowHTML('atalayaLector', 'Atalaya — Lector', program.atalayaLector);
+      html += `<div class="program-row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);"><label>🎵 Canción final</label><input type="text" data-program-field="cancionFinal" value="${escapeHtml(program.cancionFinal || '')}" placeholder="N.° de cántico"></div>`;
       html += programRowHTML('oracionFinal', 'Oración final', program.oracionFinal);
       html += '</div>';
     } else {
