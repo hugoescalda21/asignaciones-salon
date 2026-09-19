@@ -419,11 +419,14 @@
     entries.push({ label: 'Presidente', name: nameOf(program.presidente) });
     entries.push({ label: 'Oración inicial', name: nameOf(program.oracionInicial) });
     if (type === 'finde') {
+      if (program.cancionInicial) entries.push({ song: true, label: 'Canción inicial', value: program.cancionInicial });
       entries.push({ label: 'Discurso público', name: nameOf(program.oradorPublico), tema: program.temaPublico });
+      if (program.cancionIntermedia) entries.push({ song: true, label: 'Canción intermedia', value: program.cancionIntermedia });
       entries.push({ label: 'Atalaya — Conductor', name: nameOf(program.atalayaConductor) });
       entries.push({ label: 'Atalaya — Lector', name: nameOf(program.atalayaLector) });
+      if (program.cancionFinal) entries.push({ song: true, label: 'Canción final', value: program.cancionFinal });
       entries.push({ label: 'Oración final', name: nameOf(program.oracionFinal) });
-      return entries.filter(e => e.name);
+      return entries.filter(e => e.song || e.name);
     }
     if (program.consejeroAux) entries.push({ label: 'Consejero sala aux.', name: nameOf(program.consejeroAux) });
     if (program.cancionInicial) entries.push({ song: true, label: 'Canción inicial', value: program.cancionInicial });
