@@ -20,6 +20,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-storage-compat.js"></script>
 <style>
   :root{
     --shadow-sm: 0 1px 2px rgba(33,44,52,0.05), 0 2px 6px rgba(33,44,52,0.05);
@@ -659,6 +660,37 @@
   </div>
 </div>
 
+<!-- Anuncios Modal -->
+<div id="anunciosModalOverlay" class="modal-overlay hidden" style="z-index: 100;">
+  <div class="modal" style="max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
+      <h3 style="margin:0;">📢 Gestión de Avisos</h3>
+      <button type="button" id="closeAnunciosBtn" style="background:none; border:none; font-size:20px; cursor:pointer;">✕</button>
+    </div>
+    
+    <div style="background: var(--bg); padding: 12px; border-radius: var(--radius-m); margin-bottom: 20px;">
+      <label style="font-weight: 600; font-size: 13px; display:block; margin-bottom: 6px;">Nuevo Aviso</label>
+      <textarea id="anuncioTextInput" rows="3" placeholder="Escribe el aviso para la congregación..." style="width: 100%; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 8px; font-family: inherit; resize: vertical; margin-bottom: 10px;"></textarea>
+      
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <input type="file" id="anuncioFileInput" style="display:none;" accept="image/*,.pdf">
+        <button type="button" class="btn" id="anuncioAttachBtn" style="background: var(--surface); color: var(--ink); border: 1px solid var(--line); font-size: 12px; flex:1;">📎 Adjuntar foto o PDF</button>
+        <button type="button" class="btn btn-primary" id="anuncioSubmitBtn" style="flex:1;">Publicar Aviso</button>
+      </div>
+      <div id="anuncioFilePreview" class="hidden" style="margin-top: 10px; font-size: 12px; color: var(--ok); display:flex; align-items:center; justify-content: space-between;">
+        <span id="anuncioFileName"></span>
+        <button type="button" id="anuncioFileRemoveBtn" style="background:none; border:none; color:var(--danger); cursor:pointer;">✕ Quitar</button>
+      </div>
+      <div id="anuncioUploadProgress" class="hidden" style="margin-top: 5px; font-size: 11px; color: var(--ink-soft);">Subiendo... <span id="anuncioUploadPercent">0</span>%</div>
+    </div>
+
+    <h4 style="margin: 0 0 10px 0; font-size: 14px;">Avisos Activos</h4>
+    <div id="anunciosListContainer">
+      <p style="font-size: 13px; color: var(--ink-soft);">Cargando avisos...</p>
+    </div>
+  </div>
+</div>
+
 <div class="topbar">
   <div class="topbar-inner">
     <div class="brand-row">
@@ -694,6 +726,7 @@
       <button class="tab-btn" data-tab="timer">Cronómetro</button>
       <button class="tab-btn" data-tab="hermanos">Hermanos</button>
       <button class="tab-btn" data-tab="ajustes">Ajustes</button>
+      <button class="tab-btn" id="navAnunciosBtn" type="button">📢 Avisos</button>
     </nav>
   </div>
 </div>
@@ -4387,6 +4420,148 @@
         clearTimeout(fallback);
         window.location.reload();
       }
+    });
+  }
+  /* ---------- Gestión de Avisos ---------- */
+  let activeAnuncios = [];
+  let anuncioUnsub = null;
+  let currentAnuncioFile = null;
+
+  $('navAnunciosBtn') && $('navAnunciosBtn').addEventListener('click', () => {
+    if (!currentCong) return;
+    $('anunciosModalOverlay').classList.remove('hidden');
+    if (!anuncioUnsub) {
+      anuncioUnsub = fbDb.collection('congregations').doc(currentCong).collection('anuncios')
+        .orderBy('date', 'desc')
+        .onSnapshot(snap => {
+          activeAnuncios = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          renderAnunciosList();
+        });
+    }
+  });
+
+  $('closeAnunciosBtn') && $('closeAnunciosBtn').addEventListener('click', () => {
+    $('anunciosModalOverlay').classList.add('hidden');
+  });
+
+  $('anuncioAttachBtn') && $('anuncioAttachBtn').addEventListener('click', () => $('anuncioFileInput').click());
+
+  $('anuncioFileInput') && $('anuncioFileInput').addEventListener('change', (e) => {
+    if (e.target.files.length > 0) {
+      currentAnuncioFile = e.target.files[0];
+      $('anuncioFileName').textContent = currentAnuncioFile.name;
+      $('anuncioFilePreview').classList.remove('hidden');
+    }
+  });
+
+  $('anuncioFileRemoveBtn') && $('anuncioFileRemoveBtn').addEventListener('click', () => {
+    currentAnuncioFile = null;
+    $('anuncioFileInput').value = '';
+    $('anuncioFilePreview').classList.add('hidden');
+  });
+
+  $('anuncioSubmitBtn') && $('anuncioSubmitBtn').addEventListener('click', async () => {
+    const text = $('anuncioTextInput').value.trim();
+    if (!text && !currentAnuncioFile) return;
+
+    $('anuncioSubmitBtn').disabled = true;
+    $('anuncioSubmitBtn').textContent = 'Publicando...';
+
+    try {
+      let attachmentUrl = null;
+      let attachmentName = null;
+      let attachmentType = null;
+      let attachmentSize = null;
+
+      if (currentAnuncioFile) {
+        $('anuncioUploadProgress').classList.remove('hidden');
+        const stRef = firebase.storage().ref(`congregations/${currentCong}/anuncios/${Date.now()}_${currentAnuncioFile.name}`);
+        const uploadTask = stRef.put(currentAnuncioFile);
+        
+        await new Promise((resolve, reject) => {
+          uploadTask.on('state_changed', 
+            (snap) => {
+              const progress = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
+              $('anuncioUploadPercent').textContent = progress;
+            },
+            (err) => reject(err),
+            async () => {
+              attachmentUrl = await uploadTask.snapshot.ref.getDownloadURL();
+              resolve();
+            }
+          );
+        });
+        attachmentName = currentAnuncioFile.name;
+        attachmentType = currentAnuncioFile.type.startsWith('image/') ? 'image' : 'pdf';
+        attachmentSize = currentAnuncioFile.size;
+      }
+
+      await fbDb.collection('congregations').doc(currentCong).collection('anuncios').add({
+        text: text,
+        date: firebase.firestore.FieldValue.serverTimestamp(),
+        author: currentUser ? currentUser.email : 'Admin',
+        attachmentUrl,
+        attachmentName,
+        attachmentType,
+        attachmentSize
+      });
+
+      $('anuncioTextInput').value = '';
+      $('anuncioFileRemoveBtn').click();
+      $('anuncioUploadProgress').classList.add('hidden');
+    } catch (e) {
+      console.error("Error publicando anuncio:", e);
+      alert("Error al publicar el aviso.");
+    } finally {
+      $('anuncioSubmitBtn').disabled = false;
+      $('anuncioSubmitBtn').textContent = 'Publicar Aviso';
+      $('anuncioUploadProgress').classList.add('hidden');
+    }
+  });
+
+  function renderAnunciosList() {
+    const container = $('anunciosListContainer');
+    if (activeAnuncios.length === 0) {
+      container.innerHTML = '<p style="font-size:13px; color:var(--ink-soft);">No hay avisos activos.</p>';
+      return;
+    }
+    
+    container.innerHTML = activeAnuncios.map(a => {
+      const d = a.date ? new Date(a.date.toDate()).toLocaleString() : 'Recién publicado';
+      let attHtml = '';
+      if (a.attachmentUrl) {
+        if (a.attachmentType === 'image') {
+          attHtml = `<a href="${a.attachmentUrl}" target="_blank"><img src="${a.attachmentUrl}" style="max-width:100%; max-height:100px; object-fit:cover; border-radius:4px; margin-top:8px; border:1px solid var(--line);"></a>`;
+        } else {
+          attHtml = `<a href="${a.attachmentUrl}" target="_blank" style="display:flex; align-items:center; gap:8px; margin-top:8px; font-size:12px; color:var(--ink); text-decoration:none; padding:8px; border:1px solid var(--line); border-radius:4px;">📎 ${escapeHtml(a.attachmentName || 'Documento')}</a>`;
+        }
+      }
+      return `
+        <div style="border-bottom: 1px solid var(--line); padding: 10px 0; display:flex; justify-content:space-between; align-items:flex-start;">
+          <div style="flex:1; padding-right:10px;">
+            <div style="font-size:11px; color:var(--ink-soft); margin-bottom:4px;">${d}</div>
+            <div style="font-size:13px; line-height:1.4;">${escapeHtml(a.text).replace(/\n/g, '<br>')}</div>
+            ${attHtml}
+          </div>
+          <button type="button" class="btn delete-anuncio-btn" data-id="${a.id}" style="color:var(--danger); background:none; border:1px solid var(--danger); padding:4px 8px; font-size:11px;">✕ Borrar</button>
+        </div>
+      `;
+    }).join('');
+
+    container.querySelectorAll('.delete-anuncio-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        if (!confirm('¿Seguro que quieres borrar este aviso?')) return;
+        const id = e.target.dataset.id;
+        const an = activeAnuncios.find(x => x.id === id);
+        try {
+          if (an && an.attachmentUrl) {
+            await firebase.storage().refFromURL(an.attachmentUrl).delete().catch(err => console.log("Error borrando archivo:", err));
+          }
+          await fbDb.collection('congregations').doc(currentCong).collection('anuncios').doc(id).delete();
+        } catch(err) {
+          console.error(err);
+        }
+      });
     });
   }
 </script>
