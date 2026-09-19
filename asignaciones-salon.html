@@ -1903,7 +1903,10 @@
     else if (tab === 'programa') { renderRoleCards(); renderMonthTable(); renderMonthCalendar(); if (currentSubtab === 'programa') renderProgramSection(); }
     else if (tab === 'timer') { renderWeeklyPartsGrid(); }
   }
-  document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+  document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => {
+    if (b.id === 'navAnunciosBtn') return;
+    switchTab(b.dataset.tab);
+  }));
 
   /* ---------- Programa ---------- */
   function updateWeekLabel() {
