@@ -4649,7 +4649,7 @@
           </div>
           <div style="display:flex; flex-direction:column; gap:6px;">
             <button type="button" class="btn pin-anuncio-btn" data-id="${a.id}" style="color:var(--ink); background:none; border:1px solid var(--line); padding:4px 8px; font-size:11px;">${a.pinned ? 'Quitar 📌' : '📌 Fijar'}</button>
-            ${old}
+            <button type="button" class="btn delete-anuncio-btn" data-id="${a.id}" style="color:var(--danger); background:none; border:1px solid var(--danger); padding:4px 8px; font-size:11px;">✕ Borrar</button>
           </div>
         </div>
       `;
