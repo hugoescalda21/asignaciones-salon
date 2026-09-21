@@ -671,7 +671,26 @@
     <div style="background: var(--bg); padding: 12px; border-radius: var(--radius-m); margin-bottom: 20px;">
       <label style="font-weight: 600; font-size: 13px; display:block; margin-bottom: 6px;">Nuevo Aviso</label>
       <textarea id="anuncioTextInput" rows="3" placeholder="Escribe el aviso para la congregación..." style="width: 100%; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 8px; font-family: inherit; resize: vertical; margin-bottom: 10px;"></textarea>
-      
+
+      <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;">
+        <label style="font-size:12px; color:var(--ink-soft); display:flex; align-items:center; justify-content:space-between; gap:8px;">Mostrar hasta
+          <select id="anuncioVenceSel" style="border:1px solid var(--line); border-radius:var(--radius-s); padding:6px 8px; font-family:inherit; font-size:13px; background:var(--surface);">
+            <option value="7">7 días</option>
+            <option value="30" selected>30 días</option>
+            <option value="90">90 días</option>
+            <option value="0">Sin vencimiento</option>
+          </select>
+        </label>
+        <label style="display:flex; gap:8px; align-items:flex-start; font-size:13px;">
+          <input type="checkbox" id="anuncioPinChk" style="margin-top:3px;">
+          <span>📌 Fijar arriba<br><small style="color:var(--ink-soft); font-size:11.5px;">Queda primero aunque haya avisos más nuevos.</small></span>
+        </label>
+        <label style="display:flex; gap:8px; align-items:flex-start; font-size:13px;">
+          <input type="checkbox" id="anuncioNotifyChk" checked style="margin-top:3px;">
+          <span>Avisar por notificación<br><small style="color:var(--ink-soft); font-size:11.5px;">Le llega a los dispositivos que tengan las notificaciones activadas.</small></span>
+        </label>
+      </div>
+
       <div style="display: flex; gap: 10px; align-items: center;">
         <input type="file" id="anuncioFileInput" style="display:none;" accept="image/*,.pdf">
         <button type="button" class="btn" id="anuncioAttachBtn" style="background: var(--surface); color: var(--ink); border: 1px solid var(--line); font-size: 12px; flex:1;">📎 Adjuntar foto o PDF</button>
@@ -4516,6 +4535,7 @@
         attachmentSize = currentAnuncioFile.size;
       }
 
+      const diasVence = parseInt($('anuncioVenceSel').value, 10) || 0;
       data.anuncios = data.anuncios || [];
       data.anuncios.push({
         id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
@@ -4525,10 +4545,16 @@
         attachmentUrl,
         attachmentName,
         attachmentType,
-        attachmentSize
+        attachmentSize,
+        expiresIso: diasVence > 0 ? new Date(Date.now() + diasVence * 86400000).toISOString() : null,
+        pinned: $('anuncioPinChk').checked,
+        notify: $('anuncioNotifyChk').checked
       });
       await saveData();
 
+      $('anuncioVenceSel').value = '30';
+      $('anuncioPinChk').checked = false;
+      $('anuncioNotifyChk').checked = true;
       $('anuncioTextInput').value = '';
       $('anuncioFileRemoveBtn').click();
       $('anuncioUploadProgress').classList.add('hidden');
@@ -4564,6 +4590,10 @@
     
     container.innerHTML = sorted.map(a => {
       const d = a.dateIso ? new Date(a.dateIso).toLocaleString() : 'Recién publicado';
+      const venc = a.expiresIso ? new Date(a.expiresIso) : null;
+      const vencido = !!(venc && venc.getTime() < Date.now());
+      const vencTxt = !venc ? 'Sin vencimiento'
+        : (vencido ? 'Vencido el ' : 'Visible hasta el ') + venc.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) + (vencido ? ' · oculto al público' : '');
       let attHtml = '';
       if (a.attachmentUrl) {
         if (a.attachmentType === 'image') {
@@ -4573,16 +4603,29 @@
         }
       }
       return `
-        <div style="border-bottom: 1px solid var(--line); padding: 10px 0; display:flex; justify-content:space-between; align-items:flex-start;">
+        <div style="border-bottom: 1px solid var(--line); padding: 10px 0; display:flex; justify-content:space-between; align-items:flex-start;${vencido ? ' opacity:.65;' : ''}">
           <div style="flex:1; padding-right:10px;">
-            <div style="font-size:11px; color:var(--ink-soft); margin-bottom:4px;">${d}</div>
+            <div style="font-size:11px; color:${vencido ? 'var(--danger)' : 'var(--ink-soft)'}; margin-bottom:4px;">${a.pinned ? '📌 Fijado · ' : ''}${d} · ${vencTxt}</div>
             <div style="font-size:13px; line-height:1.4;">${escapeHtml(a.text).replace(/\n/g, '<br>')}</div>
             ${attHtml}
           </div>
-          <button type="button" class="btn delete-anuncio-btn" data-id="${a.id}" style="color:var(--danger); background:none; border:1px solid var(--danger); padding:4px 8px; font-size:11px;">✕ Borrar</button>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <button type="button" class="btn pin-anuncio-btn" data-id="${a.id}" style="color:var(--ink); background:none; border:1px solid var(--line); padding:4px 8px; font-size:11px;">${a.pinned ? 'Quitar 📌' : '📌 Fijar'}</button>
+            ${old}
+          </div>
         </div>
       `;
     }).join('');
+
+    container.querySelectorAll('.pin-anuncio-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const an = (data.anuncios || []).find(x => x.id === e.currentTarget.dataset.id);
+        if (!an) return;
+        an.pinned = !an.pinned;
+        try { await saveData(); } catch (err) { console.error(err); alert('No se pudo guardar el cambio.'); }
+        renderAnunciosList();
+      });
+    });
 
     container.querySelectorAll('.delete-anuncio-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {

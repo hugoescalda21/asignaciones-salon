@@ -6,6 +6,13 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## v9 — 21 de septiembre de 2026
+- **Avisos con notificación**: al publicar un aviso hay un casillero "Avisar por notificación" (marcado por defecto). Si está marcado, les llega un push a todos los dispositivos suscriptos de la congregación ("📢 Nuevo aviso" + las primeras palabras; "📎 con archivo adjunto" si lo tiene). Borrar o fijar un aviso no notifica.
+- **Vencimiento automático**: cada aviso tiene "Mostrar hasta" (7, 30 o 90 días, o sin vencimiento). Al vencer sale del tablero público; el editor lo sigue viendo en Gestión de Avisos, marcado, y puede borrarlo.
+- **Fijar arriba** (📌): un aviso fijado queda primero aunque haya otros más nuevos; se puede fijar/quitar desde Gestión de Avisos.
+- **Tablero público más compacto**: 3 avisos a la vista y el resto plegado en "Ver anteriores (N)"; imágenes en miniatura (160 px); PDF con el nombre cortado en una línea; texto largo recortado a 3 líneas con "Ver más"; etiqueta "nuevo" durante 48 horas.
+- Requiere `firebase deploy --only functions` (push de avisos).
+
 ## v8 — 21 de septiembre de 2026
 - **Avisos con archivo adjunto, arreglado**: la subida de fotos y PDF se quedaba en 0% porque Firebase Storage nunca se había iniciado en el proyecto. Ya está activo y funciona.
 - La subida ya no se corta a los 15 segundos fijos: solo se cancela si pasa 45 segundos sin avanzar, así un PDF grande con datos móviles puede terminar.
