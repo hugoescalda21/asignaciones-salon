@@ -381,9 +381,9 @@
       <div class="card" id="agendaCard"></div>
     </section>
 
-    <section id="panel-avisos" class="tab-panel hidden" aria-label="Avisos">
+    <section id="panel-avisos" class="tab-panel hidden" aria-label="Anuncios">
       <div id="anunciosBoard" class="hidden" style="margin-bottom: 24px;"></div>
-      <p class="empty-note" id="noAvisosNote">No hay avisos por ahora.</p>
+      <p class="empty-note" id="noAvisosNote">No hay anuncios por ahora.</p>
     </section>
 
     <p class="footer-note"><span class="live-dot"></span>Se actualiza solo — generado con Asignaciones · Salón del Reino</p>
@@ -393,7 +393,7 @@
     <div class="bottom-tabs-inner">
       <button type="button" class="bt-btn active" data-tab="inicio" aria-current="page"><span class="bt-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span>Inicio</button>
       <button type="button" class="bt-btn" data-tab="calendario"><span class="bt-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="16" y1="3" x2="16" y2="7"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>Calendario</button>
-      <button type="button" class="bt-btn" data-tab="avisos"><span class="bt-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 6a9 9 0 0 1 0 12"/></svg><span class="bt-badge hidden" id="annBadge">0</span></span>Avisos</button>
+      <button type="button" class="bt-btn" data-tab="avisos"><span class="bt-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 6a9 9 0 0 1 0 12"/></svg><span class="bt-badge hidden" id="annBadge">0</span></span>Anuncios</button>
     </div>
   </nav>
 </div>
@@ -1440,7 +1440,7 @@
     badge.textContent = n > 9 ? '9+' : String(n);
     badge.classList.toggle('hidden', n === 0);
     const btn = document.querySelector('.bt-btn[data-tab="avisos"]');
-    if (btn) btn.setAttribute('aria-label', n ? `Avisos, ${n} sin abrir` : 'Avisos');
+    if (btn) btn.setAttribute('aria-label', n ? `Anuncios, ${n} sin abrir` : 'Anuncios');
   }
   function annOnData() {
     if (currentTab === 'avisos') markAvisosSeen();
@@ -1450,6 +1450,7 @@
   }
 
   function showTab(name) {
+    if (name === 'anuncios') name = 'avisos';
     if (!TAB_NAMES.includes(name)) name = 'inicio';
     tabScroll[currentTab] = window.scrollY;
     currentTab = name;
@@ -1590,14 +1591,14 @@
     const box = document.createElement('div');
     box.id = 'annLightbox';
     box.setAttribute('role', 'dialog');
-    box.setAttribute('aria-label', 'Imagen del aviso');
+    box.setAttribute('aria-label', 'Imagen del anuncio');
     box.style.cssText = 'position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.92);display:flex;flex-direction:column;';
     const btnCss = 'background:rgba(255,255,255,.14);color:#fff;border:0;border-radius:99px;padding:8px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;';
     box.innerHTML = `<div style="display:flex;justify-content:space-between;gap:10px;padding:12px 14px;">
         <button type="button" data-lb-share style="${btnCss}">Compartir</button>
         <button type="button" data-lb-close style="${btnCss}">✕ Cerrar</button>
       </div>
-      <div style="flex:1;min-height:0;overflow:auto;display:flex;align-items:center;justify-content:center;touch-action:pinch-zoom pan-x pan-y;"><img alt="Imagen del aviso" style="max-width:100%;max-height:100%;object-fit:contain;"></div>`;
+      <div style="flex:1;min-height:0;overflow:auto;display:flex;align-items:center;justify-content:center;touch-action:pinch-zoom pan-x pan-y;"><img alt="Imagen del anuncio" style="max-width:100%;max-height:100%;object-fit:contain;"></div>`;
     box.querySelector('img').src = annObjUrls.get(a.attachmentUrl) || a.attachmentUrl;
     const close = () => { box.remove(); document.removeEventListener('keydown', onKey); };
     const onKey = (e) => { if (e.key === 'Escape') close(); };
@@ -1619,7 +1620,7 @@
       if (!blob) { window.open(a.attachmentUrl, '_blank', 'noopener'); return; }
       const url = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
       const l = document.createElement('a');
-      l.href = url; l.target = '_blank'; l.rel = 'noopener'; l.download = a.attachmentName || 'aviso.pdf';
+      l.href = url; l.target = '_blank'; l.rel = 'noopener'; l.download = a.attachmentName || 'anuncio.pdf';
       document.body.appendChild(l); l.click(); l.remove();
       setTimeout(() => URL.revokeObjectURL(url), 60000);
     });
@@ -1629,20 +1630,20 @@
     const a = annFind(id);
     if (!a) return;
     const text = (a.text || '').trim();
-    const title = 'Aviso — Salón del Reino';
+    const title = 'Anuncio — Salón del Reino';
     try {
       if (a.attachmentUrl && navigator.canShare) {
         const blob = await getAvisoBlob(a, true);
         if (blob) {
           const type = a.attachmentType === 'image' ? (blob.type || 'image/jpeg') : 'application/pdf';
-          const file = new File([blob], a.attachmentName || (a.attachmentType === 'image' ? 'aviso.jpg' : 'aviso.pdf'), { type });
+          const file = new File([blob], a.attachmentName || (a.attachmentType === 'image' ? 'anuncio.jpg' : 'anuncio.pdf'), { type });
           if (navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title, text }); return; }
         }
       }
       // Sin poder mandar el archivo: se comparte el texto y el link a la app (que pide iniciar sesión).
       const appLink = location.origin + location.pathname + '?codigo=' + encodeURIComponent(getCode());
       const extra = a.attachmentUrl ? '\n\n(Tiene un archivo adjunto: abrilo en la app)' : '';
-      const full = (text ? text : 'Aviso de la congregación') + extra + '\n\n' + appLink;
+      const full = (text ? text : 'Anuncio de la congregación') + extra + '\n\n' + appLink;
       if (navigator.share) { await navigator.share({ title, text: full }); return; }
       window.open('https://wa.me/?text=' + encodeURIComponent(full), '_blank', 'noopener');
     } catch (e) { /* el usuario canceló el menú de compartir */ }
@@ -1692,7 +1693,7 @@
       <div class="announcement-item">
         <div class="ann-head">
           <span class="ann-date">${a.pinned ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>Fijado · ' : ''}${dayLabel}, ${timeLabel}${esNuevo ? '<span class="ann-new">nuevo</span>' : ''}</span>
-          <button type="button" class="ann-share" data-ann-share="${escapeHtml(a.id)}" aria-label="Compartir aviso"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>Compartir</button>
+          <button type="button" class="ann-share" data-ann-share="${escapeHtml(a.id)}" aria-label="Compartir anuncio"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>Compartir</button>
         </div>
         <p class="ann-text${largo && !abierto ? ' clamp' : ''}">${escapeHtml(texto).replace(/\n/g, '<br>')}</p>
         ${largo ? `<button type="button" class="ann-more" data-ann-more="${escapeHtml(a.id)}">${abierto ? 'Ver menos' : 'Ver más'}</button>` : ''}
