@@ -13,7 +13,7 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-const CACHE_NAME = 'ver-salon-v4';
+const CACHE_NAME = 'ver-salon-v5';
 const ASSETS = [
   './ver.html',
   './manifest-ver.json',
@@ -42,6 +42,8 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+  // Los archivos de los avisos (Firebase Storage) los guarda la propia página en su caché aparte.
+  if (new URL(event.request.url).hostname === 'firebasestorage.googleapis.com') return;
   event.respondWith(
     fetch(event.request)
       .then((res) => {

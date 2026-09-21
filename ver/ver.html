@@ -196,6 +196,10 @@
   .ann-new { background: var(--accent-gold); color: #fff; border-radius: 99px; padding: 1px 7px; font-size: 10px; margin-left: 6px; vertical-align: middle; }
   .ann-text.clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
   .ann-more { background: none; border: 0; color: var(--accent-blue); font-size: 12.5px; font-weight: 600; padding: 0; margin: -4px 0 10px; cursor: pointer; font-family: inherit; }
+  .ann-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
+  .ann-head .ann-date { margin-bottom: 0; }
+  .ann-share { display: inline-flex; align-items: center; gap: 4px; flex: none; background: none; border: 1px solid var(--line); border-radius: 99px; padding: 3px 10px; font-size: 11.5px; font-weight: 600; color: var(--accent-blue); cursor: pointer; font-family: inherit; }
+  .offline-note { background: #F6F0E1; border: 1px solid #E3D3A6; color: var(--accent-gold-text); border-radius: var(--radius-s); padding: 8px 12px; font-size: 12.5px; font-weight: 600; margin-bottom: 12px; text-align: center; }
   .ann-prev-btn { width: 100%; margin-top: 12px; border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius-s); padding: 10px 12px; color: var(--accent-gold-text); font-weight: 700; font-size: 13.5px; cursor: pointer; font-family: inherit; }
 </style>
 </head>
@@ -273,6 +277,7 @@
     <div id="installPrompt" class="hidden"></div>
     <div id="personalSummary" class="hidden"></div>
     <div id="pushPrompt" class="hidden"></div>
+    <div id="offlineNote" class="offline-note hidden">Sin conexión · mostrando la última copia guardada</div>
     <div id="anunciosBoard" class="hidden" style="margin-bottom: 24px;"></div>
     <div class="search-row" id="searchRow">
       <span class="search-icon-static" aria-hidden="true">
@@ -550,7 +555,13 @@
   let currentUser = null;
   function initFirebase() {
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    return firebase.firestore();
+    const fsdb = firebase.firestore();
+    // Copia local de los datos: sin conexión se sigue viendo lo último que se descargó.
+    if (!window.__fsPersist) {
+      window.__fsPersist = true;
+      try { fsdb.enablePersistence({ synchronizeTabs: true }).catch(() => { /* varias pestañas o navegador sin soporte: se usa en línea nomás */ }); } catch (e) { /* sin soporte */ }
+    }
+    return fsdb;
   }
   function authStep(step) {
     ['authStepEmail', 'authStepSent', 'authStepDenied'].forEach(id => $(id).classList.toggle('hidden', id !== step));
@@ -1282,6 +1293,136 @@
   const annState = { openOld: false, expanded: new Set() };
   const ANN_RECENT = 3;
 
+  /* ---------- Avisos: copia sin conexión, imagen ampliada y compartir ---------- */
+  const FILES_CACHE = 'avisos-files-v1';
+  const annObjUrls = new Map();   // url del archivo -> blob: local (para no gastar datos ni depender de la red)
+  const annCached = new Set();    // urls que ya están guardadas en el dispositivo
+  const annTried = new Set();     // urls que ya intentamos bajar en esta sesión
+  const annFind = (id) => ((data && data.anuncios) || []).find(x => x.id === id);
+
+  async function cacheGet(url) {
+    try {
+      if (!window.caches) return null;
+      const c = await caches.open(FILES_CACHE);
+      const r = await c.match(url);
+      return r ? await r.blob() : null;
+    } catch (e) { return null; }
+  }
+  // Devuelve el archivo desde la copia local; si no está y hay conexión, lo baja y lo guarda.
+  // Si el almacenamiento todavía no tiene CORS habilitado, la descarga falla y se devuelve null
+  // (la app sigue funcionando con los links normales).
+  async function getAvisoBlob(a, allowNetwork) {
+    const cached = await cacheGet(a.attachmentUrl);
+    if (cached) return cached;
+    if (!allowNetwork || !navigator.onLine) return null;
+    try {
+      const res = await fetch(a.attachmentUrl, { mode: 'cors' });
+      if (!res.ok) return null;
+      try { const c = await caches.open(FILES_CACHE); await c.put(a.attachmentUrl, res.clone()); } catch (e) { /* sin espacio */ }
+      return await res.blob();
+    } catch (e) { return null; }
+  }
+  // Guarda en el dispositivo los archivos de los avisos vigentes y borra los que ya no se muestran.
+  async function syncAvisoFiles(vigentes) {
+    if (!window.caches || !navigator.onLine) return;
+    try {
+      const keep = new Set(vigentes.filter(a => a.attachmentUrl).map(a => new URL(a.attachmentUrl).href));
+      const c = await caches.open(FILES_CACHE);
+      for (const req of await c.keys()) { if (!keep.has(req.url)) { await c.delete(req); annCached.delete(req.url); } }
+      for (const a of vigentes.slice(0, 12)) {
+        if (!a.attachmentUrl || (a.attachmentSize || 0) > 12 * 1024 * 1024) continue;
+        if (annTried.has(a.attachmentUrl)) continue;
+        annTried.add(a.attachmentUrl);
+        await getAvisoBlob(a, true);
+      }
+    } catch (e) { /* mejor esfuerzo */ }
+  }
+  async function hydrateAvisoMedia(board) {
+    for (const el of board.querySelectorAll('[data-att-open]')) {
+      const a = annFind(el.getAttribute('data-att-open'));
+      if (!a || !a.attachmentUrl) continue;
+      const blob = await cacheGet(a.attachmentUrl);
+      if (!blob) continue;
+      annCached.add(a.attachmentUrl);
+      let u = annObjUrls.get(a.attachmentUrl);
+      if (!u) { u = URL.createObjectURL(blob); annObjUrls.set(a.attachmentUrl, u); }
+      const img = el.querySelector('img');
+      if (img && img.src !== u) img.src = u;
+    }
+  }
+
+  function openLightbox(a) {
+    const old = document.getElementById('annLightbox');
+    if (old) old.remove();
+    const box = document.createElement('div');
+    box.id = 'annLightbox';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', 'Imagen del aviso');
+    box.style.cssText = 'position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.92);display:flex;flex-direction:column;';
+    const btnCss = 'background:rgba(255,255,255,.14);color:#fff;border:0;border-radius:99px;padding:8px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;';
+    box.innerHTML = `<div style="display:flex;justify-content:space-between;gap:10px;padding:12px 14px;">
+        <button type="button" data-lb-share style="${btnCss}">Compartir</button>
+        <button type="button" data-lb-close style="${btnCss}">✕ Cerrar</button>
+      </div>
+      <div style="flex:1;min-height:0;overflow:auto;display:flex;align-items:center;justify-content:center;touch-action:pinch-zoom pan-x pan-y;"><img alt="Imagen del aviso" style="max-width:100%;max-height:100%;object-fit:contain;"></div>`;
+    box.querySelector('img').src = annObjUrls.get(a.attachmentUrl) || a.attachmentUrl;
+    const close = () => { box.remove(); document.removeEventListener('keydown', onKey); };
+    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    document.addEventListener('keydown', onKey);
+    box.querySelector('[data-lb-close]').addEventListener('click', close);
+    box.querySelector('[data-lb-share]').addEventListener('click', () => shareAviso(a.id));
+    document.body.appendChild(box);
+  }
+
+  function onAttClick(ev, id) {
+    const a = annFind(id);
+    if (!a || !a.attachmentUrl) return;
+    if (a.attachmentType === 'image') { ev.preventDefault(); openLightbox(a); return; }
+    // PDF: si ya está guardado en el dispositivo, se abre desde ahí (sirve sin conexión);
+    // si no, el link normal hace su trabajo.
+    if (!annCached.has(a.attachmentUrl)) return;
+    ev.preventDefault();
+    cacheGet(a.attachmentUrl).then((blob) => {
+      if (!blob) { window.open(a.attachmentUrl, '_blank', 'noopener'); return; }
+      const url = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+      const l = document.createElement('a');
+      l.href = url; l.target = '_blank'; l.rel = 'noopener'; l.download = a.attachmentName || 'aviso.pdf';
+      document.body.appendChild(l); l.click(); l.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    });
+  }
+
+  async function shareAviso(id) {
+    const a = annFind(id);
+    if (!a) return;
+    const text = (a.text || '').trim();
+    const title = 'Aviso — Salón del Reino';
+    try {
+      if (a.attachmentUrl && navigator.canShare) {
+        const blob = await getAvisoBlob(a, true);
+        if (blob) {
+          const type = a.attachmentType === 'image' ? (blob.type || 'image/jpeg') : 'application/pdf';
+          const file = new File([blob], a.attachmentName || (a.attachmentType === 'image' ? 'aviso.jpg' : 'aviso.pdf'), { type });
+          if (navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title, text }); return; }
+        }
+      }
+      // Sin poder mandar el archivo: se comparte el texto y el link a la app (que pide iniciar sesión).
+      const appLink = location.origin + location.pathname + '?codigo=' + encodeURIComponent(getCode());
+      const extra = a.attachmentUrl ? '\n\n(Tiene un archivo adjunto: abrilo en la app)' : '';
+      const full = (text ? text : 'Aviso de la congregación') + extra + '\n\n' + appLink;
+      if (navigator.share) { await navigator.share({ title, text: full }); return; }
+      window.open('https://wa.me/?text=' + encodeURIComponent(full), '_blank', 'noopener');
+    } catch (e) { /* el usuario canceló el menú de compartir */ }
+  }
+
+  function updateOfflineNote() {
+    const n = document.getElementById('offlineNote');
+    if (n) n.classList.toggle('hidden', navigator.onLine);
+  }
+  window.addEventListener('online', updateOfflineNote);
+  window.addEventListener('offline', updateOfflineNote);
+  updateOfflineNote();
+
   function annItemHtml(a) {
     const d = a.dateIso ? new Date(a.dateIso) : new Date();
     const dayLabel = d.toLocaleString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase();
@@ -1294,10 +1435,10 @@
     let attHtml = '';
     if (a.attachmentUrl) {
       if (a.attachmentType === 'image') {
-        attHtml = `<a href="${a.attachmentUrl}" target="_blank" rel="noopener"><img src="${a.attachmentUrl}" class="ann-image" alt="Imagen adjunta" loading="lazy"></a>`;
+        attHtml = `<a href="${a.attachmentUrl}" target="_blank" rel="noopener" data-att-open="${escapeHtml(a.id)}"><img src="${a.attachmentUrl}" class="ann-image" alt="Imagen adjunta" loading="lazy"></a>`;
       } else {
         attHtml = `
-          <a href="${a.attachmentUrl}" target="_blank" rel="noopener" class="ann-pdf">
+          <a href="${a.attachmentUrl}" target="_blank" rel="noopener" class="ann-pdf" data-att-open="${escapeHtml(a.id)}">
             <svg class="pdf-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="M9 15h6"/></svg>
             <div class="pdf-info">
               <span class="pdf-title">${escapeHtml(a.attachmentName || 'Documento adjunto')}</span>
@@ -1308,7 +1449,10 @@
     }
     return `
       <div class="announcement-item">
-        <span class="ann-date">${a.pinned ? '📌 Fijado · ' : ''}${dayLabel}, ${timeLabel}${esNuevo ? '<span class="ann-new">nuevo</span>' : ''}</span>
+        <div class="ann-head">
+          <span class="ann-date">${a.pinned ? '📌 Fijado · ' : ''}${dayLabel}, ${timeLabel}${esNuevo ? '<span class="ann-new">nuevo</span>' : ''}</span>
+          <button type="button" class="ann-share" data-ann-share="${escapeHtml(a.id)}" aria-label="Compartir aviso"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>Compartir</button>
+        </div>
         <p class="ann-text${largo && !abierto ? ' clamp' : ''}">${escapeHtml(texto).replace(/\n/g, '<br>')}</p>
         ${largo ? `<button type="button" class="ann-more" data-ann-more="${escapeHtml(a.id)}">${abierto ? 'Ver menos' : 'Ver más'}</button>` : ''}
         ${attHtml}
@@ -1356,6 +1500,10 @@
     }));
     const prev = board.querySelector('[data-ann-prev]');
     if (prev) prev.addEventListener('click', () => { annState.openOld = !annState.openOld; renderAnuncios(); });
+    board.querySelectorAll('[data-att-open]').forEach(el => el.addEventListener('click', (ev) => onAttClick(ev, el.getAttribute('data-att-open'))));
+    board.querySelectorAll('[data-ann-share]').forEach(btn => btn.addEventListener('click', () => shareAviso(btn.getAttribute('data-ann-share'))));
+    hydrateAvisoMedia(board);
+    syncAvisoFiles(sorted).then(() => hydrateAvisoMedia(board));
   }
 </script>
 
