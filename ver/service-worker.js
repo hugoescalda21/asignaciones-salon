@@ -13,7 +13,7 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-const CACHE_NAME = 'ver-salon-v1';
+const CACHE_NAME = 'ver-salon-v2';
 const ASSETS = [
   './ver.html',
   './manifest-ver.json',
@@ -90,7 +90,7 @@ self.addEventListener('notificationclick', function(event) {
           }
         }
         if (clients.openWindow) {
-          return clients.openWindow('/');
+          return clients.openWindow(new URL('ver.html', self.registration.scope).href);
         }
       })
     );

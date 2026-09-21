@@ -1035,7 +1035,16 @@
         const title = (payload.notification && payload.notification.title) || 'Asignaciones — Salón del Reino';
         const body = (payload.notification && payload.notification.body) || '';
         if (Notification.permission === 'granted') {
-          new Notification(title, { body, icon: 'icon-192.png' });
+          // Android/Chrome no permite "new Notification(...)" desde la página
+          // (tira un error y el aviso no se ve): hay que pedirle al service
+          // worker que lo muestre. "new Notification" queda solo como último recurso.
+          const opts = { body, icon: 'icon-192.png' };
+          navigator.serviceWorker.getRegistration()
+            .then((reg) => {
+              if (reg && reg.showNotification) return reg.showNotification(title, opts);
+              new Notification(title, opts);
+            })
+            .catch(() => { try { new Notification(title, opts); } catch (e) { /* sin forma de mostrarlo */ } });
         }
       });
       window.__fgMessagingSetup = true;
