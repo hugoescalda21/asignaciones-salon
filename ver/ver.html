@@ -198,6 +198,7 @@
   .ann-more { background: none; border: 0; color: var(--accent-blue); font-size: 12.5px; font-weight: 600; padding: 0; margin: -4px 0 10px; cursor: pointer; font-family: inherit; }
   .ann-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
   .ann-head .ann-date { margin-bottom: 0; }
+  .ann-missing { margin-top: 8px; padding: 18px 12px; text-align: center; font-size: 12.5px; color: var(--ink-soft); background: var(--bg); border: 1px dashed var(--line); border-radius: var(--radius-s); }
   .ann-share { display: inline-flex; align-items: center; gap: 4px; flex: none; background: none; border: 1px solid var(--line); border-radius: 99px; padding: 3px 10px; font-size: 11.5px; font-weight: 600; color: var(--accent-blue); cursor: pointer; font-family: inherit; }
   .offline-note { background: #F6F0E1; border: 1px solid #E3D3A6; color: var(--accent-gold-text); border-radius: var(--radius-s); padding: 8px 12px; font-size: 12.5px; font-weight: 600; margin-bottom: 12px; text-align: center; }
   .ann-prev-btn { width: 100%; margin-top: 12px; border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius-s); padding: 10px 12px; color: var(--accent-gold-text); font-weight: 700; font-size: 13.5px; cursor: pointer; font-family: inherit; }
@@ -1320,7 +1321,7 @@
       if (!res.ok) return null;
       try { const c = await caches.open(FILES_CACHE); await c.put(a.attachmentUrl, res.clone()); } catch (e) { /* sin espacio */ }
       return await res.blob();
-    } catch (e) { return null; }
+    } catch (e) { console.warn('[avisos] no se pudo guardar el archivo (¿CORS o sin conexión?)', e && e.message); return null; }
   }
   // Guarda en el dispositivo los archivos de los avisos vigentes y borra los que ya no se muestran.
   async function syncAvisoFiles(vigentes) {
@@ -1349,6 +1350,7 @@
       const img = el.querySelector('img');
       if (img && img.src !== u) img.src = u;
     }
+    updateOfflineNote();
   }
 
   function openLightbox(a) {
@@ -1417,10 +1419,17 @@
 
   function updateOfflineNote() {
     const n = document.getElementById('offlineNote');
-    if (n) n.classList.toggle('hidden', navigator.onLine);
+    if (!n) return;
+    n.classList.toggle('hidden', navigator.onLine);
+    if (navigator.onLine) return;
+    const ahora = Date.now();
+    const conArchivo = ((data && data.anuncios) || []).filter(a => a.attachmentUrl && (!a.expiresIso || new Date(a.expiresIso).getTime() > ahora));
+    const guardados = conArchivo.filter(a => annCached.has(a.attachmentUrl)).length;
+    n.textContent = 'Sin conexión · mostrando la última copia guardada' + (conArchivo.length ? ` · archivos guardados: ${guardados} de ${conArchivo.length}` : '');
   }
-  window.addEventListener('online', updateOfflineNote);
   window.addEventListener('offline', updateOfflineNote);
+  // Al recuperar la conexión: se reintenta guardar los archivos que faltaban.
+  window.addEventListener('online', () => { annTried.clear(); updateOfflineNote(); if (data) renderAnuncios(); });
   updateOfflineNote();
 
   function annItemHtml(a) {
@@ -1502,6 +1511,17 @@
     if (prev) prev.addEventListener('click', () => { annState.openOld = !annState.openOld; renderAnuncios(); });
     board.querySelectorAll('[data-att-open]').forEach(el => el.addEventListener('click', (ev) => onAttClick(ev, el.getAttribute('data-att-open'))));
     board.querySelectorAll('[data-ann-share]').forEach(btn => btn.addEventListener('click', () => shareAviso(btn.getAttribute('data-ann-share'))));
+    if (!board.dataset.imgErr) {
+      board.dataset.imgErr = '1';
+      board.addEventListener('error', (ev) => {
+        const img = ev.target;
+        if (!img || img.tagName !== 'IMG' || !img.classList.contains('ann-image')) return;
+        const ph = document.createElement('div');
+        ph.className = 'ann-missing';
+        ph.textContent = navigator.onLine ? '🖼 No se pudo cargar la imagen' : '🖼 Imagen no guardada en este dispositivo · se verá al conectarte';
+        img.replaceWith(ph);
+      }, true);
+    }
     hydrateAvisoMedia(board);
     syncAvisoFiles(sorted).then(() => hydrateAvisoMedia(board));
   }
