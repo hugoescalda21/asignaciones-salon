@@ -187,8 +187,16 @@
   .announcement-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
   .ann-text { font-size: 13.5px; line-height: 1.5; margin: 0 0 10px 0; color: var(--ink); }
   .ann-date { display: block; font-size: 11px; color: var(--ink-soft); margin-bottom: 6px; font-weight: 600; }
-  .ann-image { width: 100%; max-height: 200px; object-fit: cover; border-radius: var(--radius-s); border: 1px solid var(--line); margin-top: 8px; }
+  .ann-image { width: 100%; max-height: 160px; object-fit: cover; border-radius: var(--radius-s); border: 1px solid var(--line); margin-top: 8px; }
   .ann-pdf { display: flex; align-items: center; gap: 10px; background: var(--bg); border: 1px solid var(--line); padding: 10px 12px; border-radius: var(--radius-s); margin-top: 8px; text-decoration: none; color: var(--ink); }
+  .ann-pdf .pdf-icon { flex: none; color: #B23B2E; }
+  .ann-pdf .pdf-info { min-width: 0; display: flex; flex-direction: column; }
+  .ann-pdf .pdf-title { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ann-pdf .pdf-size { font-size: 11.5px; color: var(--ink-soft); }
+  .ann-new { background: var(--accent-gold); color: #fff; border-radius: 99px; padding: 1px 7px; font-size: 10px; margin-left: 6px; vertical-align: middle; }
+  .ann-text.clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .ann-more { background: none; border: 0; color: var(--accent-blue); font-size: 12.5px; font-weight: 600; padding: 0; margin: -4px 0 10px; cursor: pointer; font-family: inherit; }
+  .ann-prev-btn { width: 100%; margin-top: 12px; border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius-s); padding: 10px 12px; color: var(--accent-gold-text); font-weight: 700; font-size: 13.5px; cursor: pointer; font-family: inherit; }
 </style>
 </head>
 <body>
@@ -1271,59 +1279,83 @@
     else { hideInitialLoading(); $('gateView').classList.remove('hidden'); }
   })();
   /* ---------- Tablero de Anuncios ---------- */
+  const annState = { openOld: false, expanded: new Set() };
+  const ANN_RECENT = 3;
+
+  function annItemHtml(a) {
+    const d = a.dateIso ? new Date(a.dateIso) : new Date();
+    const dayLabel = d.toLocaleString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase();
+    const timeLabel = d.toLocaleString('es-ES', { hour: 'numeric', minute: '2-digit', hour12: true }).toUpperCase();
+    const esNuevo = a.dateIso && (Date.now() - d.getTime()) < 48 * 3600 * 1000;
+    const texto = a.text || '';
+    const largo = texto.length > 150 || texto.split('\n').length > 3;
+    const abierto = annState.expanded.has(a.id);
+
+    let attHtml = '';
+    if (a.attachmentUrl) {
+      if (a.attachmentType === 'image') {
+        attHtml = `<a href="${a.attachmentUrl}" target="_blank" rel="noopener"><img src="${a.attachmentUrl}" class="ann-image" alt="Imagen adjunta" loading="lazy"></a>`;
+      } else {
+        attHtml = `
+          <a href="${a.attachmentUrl}" target="_blank" rel="noopener" class="ann-pdf">
+            <svg class="pdf-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="M9 15h6"/></svg>
+            <div class="pdf-info">
+              <span class="pdf-title">${escapeHtml(a.attachmentName || 'Documento adjunto')}</span>
+              <span class="pdf-size">PDF · Toca para abrir</span>
+            </div>
+          </a>`;
+      }
+    }
+    return `
+      <div class="announcement-item">
+        <span class="ann-date">${a.pinned ? '📌 Fijado · ' : ''}${dayLabel}, ${timeLabel}${esNuevo ? '<span class="ann-new">nuevo</span>' : ''}</span>
+        <p class="ann-text${largo && !abierto ? ' clamp' : ''}">${escapeHtml(texto).replace(/\n/g, '<br>')}</p>
+        ${largo ? `<button type="button" class="ann-more" data-ann-more="${escapeHtml(a.id)}">${abierto ? 'Ver menos' : 'Ver más'}</button>` : ''}
+        ${attHtml}
+      </div>`;
+  }
+
   function renderAnuncios() {
     const board = document.getElementById('anunciosBoard');
     if (!board) return;
-    const list = data.anuncios || [];
-    const sorted = [...list].sort((a, b) => new Date(b.dateIso) - new Date(a.dateIso));
+    const ahora = Date.now();
+    // Los avisos vencidos no se muestran acá (el editor sí los ve en la app).
+    const sorted = (data.anuncios || [])
+      .filter(a => !a.expiresIso || new Date(a.expiresIso).getTime() > ahora)
+      .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || new Date(b.dateIso) - new Date(a.dateIso));
 
     if (sorted.length === 0) {
       board.classList.add('hidden');
       board.innerHTML = '';
       return;
     }
-    
+
+    const recientes = sorted.slice(0, ANN_RECENT);
+    const anteriores = sorted.slice(ANN_RECENT);
+
     let html = `
       <div class="announcements-board">
         <div class="board-header">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 21.73a2 2 0 0 0 2-2.73l-1.5-3.5"/><path d="M19.16 11.23a2.98 2.98 0 0 1-2.07 1.9 2.05 2.05 0 0 0-1.25.75l-4.22 4.22a2 2 0 0 1-3.32-.78L5.59 9.87a2 2 0 0 1 .79-2.31l4.22-4.22a2.05 2.05 0 0 0 .75-1.25 2.98 2.98 0 0 1 1.9-2.07c2.53-.78 5.48 2.18 4.7 4.7z"/><path d="m14 10-4-4"/></svg>
           Tablero de Anuncios
         </div>
-    `;
-    
-    sorted.forEach(a => {
-      const d = a.dateIso ? new Date(a.dateIso) : new Date();
-      const dayLabel = d.toLocaleString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase();
-      const timeLabel = d.toLocaleString('es-ES', { hour: 'numeric', minute: '2-digit', hour12: true }).toUpperCase();
-      
-      let attHtml = '';
-      if (a.attachmentUrl) {
-        if (a.attachmentType === 'image') {
-          attHtml = `<a href="${a.attachmentUrl}" target="_blank"><img src="${a.attachmentUrl}" class="ann-image" alt="Imagen adjunta"></a>`;
-        } else {
-          attHtml = `
-            <a href="${a.attachmentUrl}" target="_blank" class="ann-pdf">
-              <svg class="pdf-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="M9 15h6"/></svg>
-              <div class="pdf-info">
-                <span class="pdf-title">${escapeHtml(a.attachmentName || 'Documento adjunto')}</span>
-                <span class="pdf-size">Toca para abrir o descargar</span>
-              </div>
-            </a>
-          `;
-        }
-      }
-      html += `
-        <div class="announcement-item">
-          <span class="ann-date">${dayLabel}, ${timeLabel}</span>
-          <p class="ann-text">${escapeHtml(a.text).replace(/\n/g, '<br>')}</p>
-          ${attHtml}
-        </div>
-      `;
-    });
-    
+        ${recientes.map(annItemHtml).join('')}`;
+
+    if (anteriores.length) {
+      html += `<button type="button" class="ann-prev-btn" data-ann-prev="1">${annState.openOld ? 'Ocultar anteriores ▲' : `Ver anteriores (${anteriores.length}) ▼`}</button>`;
+      if (annState.openOld) html += `<div style="margin-top:14px;">${anteriores.map(annItemHtml).join('')}</div>`;
+    }
     html += `</div>`;
     board.innerHTML = html;
     board.classList.remove('hidden');
+
+    board.querySelectorAll('[data-ann-more]').forEach(btn => btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-ann-more');
+      if (annState.expanded.has(id)) annState.expanded.delete(id); else annState.expanded.add(id);
+      renderAnuncios();
+    }));
+    const prev = board.querySelector('[data-ann-prev]');
+    if (prev) prev.addEventListener('click', () => { annState.openOld = !annState.openOld; renderAnuncios(); });
   }
 </script>
 
