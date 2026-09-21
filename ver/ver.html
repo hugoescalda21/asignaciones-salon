@@ -202,15 +202,90 @@
   .ann-share { display: inline-flex; align-items: center; gap: 4px; flex: none; background: none; border: 1px solid var(--line); border-radius: 99px; padding: 3px 10px; font-size: 11.5px; font-weight: 600; color: var(--accent-blue); cursor: pointer; font-family: inherit; }
   .offline-note { background: #F6F0E1; border: 1px solid #E3D3A6; color: var(--accent-gold-text); border-radius: var(--radius-s); padding: 8px 12px; font-size: 12.5px; font-weight: 600; margin-bottom: 12px; text-align: center; }
   .ann-prev-btn { width: 100%; margin-top: 12px; border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius-s); padding: 10px 12px; color: var(--accent-gold-text); font-weight: 700; font-size: 13.5px; cursor: pointer; font-family: inherit; }
+
+  /* ============ Pestañas, tarjeta destacada, esqueleto de carga y modo oscuro ============ */
+  :root { color-scheme: light dark; --tab-h: 62px; --hero-a: #212C34; --hero-b: #33444F; --danger: #C0392B; }
+  body { padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom)); }
+  .content { padding-bottom: 28px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .tab-panel:not(.hidden) { animation: tabFade 0.16s ease-out; }
+  @keyframes tabFade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .tab-panel:not(.hidden), .spin-icon, .skel, .live-dot { animation: none !important; } }
+
+  .bottom-tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; background: var(--surface); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); box-shadow: 0 -2px 10px rgba(33,44,52,0.06); }
+  .bottom-tabs-inner { max-width: 560px; margin: 0 auto; display: flex; }
+  .bt-btn { flex: 1; min-height: 60px; border: none; background: none; color: var(--ink-soft); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; font-weight: 600; padding: 6px 4px; -webkit-tap-highlight-color: transparent; }
+  .bt-ic { position: relative; width: 58px; height: 30px; border-radius: 16px; display: flex; align-items: center; justify-content: center; transition: background 0.16s; }
+  .bt-btn.active { color: var(--ink); font-weight: 700; }
+  .bt-btn.active .bt-ic { background: rgba(169,130,47,0.2); }
+  .bt-btn.active .bt-ic svg { stroke-width: 2.4; }
+  .bt-badge { position: absolute; top: -4px; right: 6px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 99px; background: var(--danger); color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--surface); }
+
+  .next-hero { background: linear-gradient(135deg, var(--hero-a), var(--hero-b)); color: #fff; border-radius: 16px; padding: 16px 18px 18px; margin-bottom: 16px; box-shadow: 0 6px 18px rgba(33,44,52,0.22); cursor: pointer; }
+  .next-hero:active { transform: scale(0.99); }
+  .nh-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #E0B95B; }
+  .nh-title { font-family: 'Fraunces', Georgia, serif; font-size: 24px; line-height: 1.15; margin: 6px 0 4px; }
+  .nh-when { font-size: 13px; opacity: 0.9; }
+  .nh-count { display: inline-block; margin-top: 12px; background: rgba(255,255,255,0.16); border-radius: 99px; padding: 5px 13px; font-size: 12px; font-weight: 700; }
+  .sec-title { font-family: 'Fraunces', Georgia, serif; font-size: 16px; margin: 22px 2px 10px; }
+  .today-tag { background: var(--accent-gold); color: #fff; border-radius: 99px; padding: 1px 8px; font-size: 10px; font-weight: 700; margin-left: 4px; }
+  .linkbtn { display: block; width: 100%; min-height: 44px; margin-top: 10px; border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius-m); color: var(--accent-gold-text); font-weight: 700; font-size: 13px; }
+  .personal-summary { box-shadow: var(--shadow-sm); margin-bottom: 16px; }
+  .install-card, .push-card { margin-bottom: 16px; }
+
+  /* áreas táctiles de 44 px */
+  .month-nav button { width: 44px; height: 44px; }
+  .view-toggle-btn { min-height: 40px; }
+  .gcal-btn { width: 40px; height: 40px; }
+  .push-yes, .push-no { min-height: 44px; }
+  .install-card .install-btn { min-height: 40px; }
+  .search-input { min-height: 44px; }
+  .search-clear { min-width: 44px; min-height: 44px; }
+  .ann-share { min-height: 36px; padding: 6px 12px; }
+  .ann-more { padding: 8px 0; margin: -6px 0 4px; }
+  .ann-prev-btn { min-height: 44px; }
+
+  /* carga con esqueleto */
+  .initial-loading { align-items: flex-start; }
+  .skel-top { position: absolute; top: 0; left: 0; right: 0; height: 84px; background: var(--ink); }
+  .skel-wrap { width: 100%; max-width: 560px; padding: 104px 18px 0; }
+  .skel { background: linear-gradient(90deg, var(--line) 25%, var(--bg) 37%, var(--line) 63%); background-size: 400% 100%; animation: shimmer 1.3s ease infinite; border-radius: 12px; }
+  @keyframes shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+  .skel-hero { height: 118px; margin-bottom: 18px; }
+  .skel-line { height: 14px; margin-bottom: 12px; border-radius: 7px; }
+  .skel-card { height: 92px; margin-bottom: 12px; }
+
+  /* modo oscuro (si el celular lo tiene activado) */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12181D; --surface: #1B242B; --ink: #E9EEF1; --ink-soft: #AAB8C1; --ink-faint: #93A1AA; --line: #2D3A44;
+      --accent-gold: #C9A24B; --accent-gold-text: #E0BD70; --accent-blue: #86B6D4;
+      --sec-tesoros: #4FB0A3; --sec-maestros: #D9A044; --sec-vida: #E58A68;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+      --hero-a: #26333D; --hero-b: #33454F;
+    }
+    .topbar, .skel-top { background: #0C1216; }
+    .view-toggle-btn.active, .gate button { background: var(--accent-gold); color: #12181D; }
+    .install-card .install-icon { background: #0C1216; }
+    .search-input, .gate input { background: var(--surface); color: var(--ink); }
+    .offline-note { background: #2A2416; border-color: #5A4A22; }
+    .ann-pdf .pdf-icon { color: #E58A7D; }
+    .bottom-tabs { box-shadow: 0 -2px 10px rgba(0,0,0,0.35); }
+    .bt-btn.active .bt-ic { background: rgba(201,162,75,0.22); }
+  }
 </style>
 </head>
 <body>
 
-<div id="initialLoading" class="initial-loading">
-  <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" class="spin-icon"><circle cx="12" cy="12" r="9" stroke-opacity="0.25"/><path d="M21 12a9 9 0 0 0-9-9"/></svg>
-    <span style="font-size:12.5px; color:var(--ink-faint);">Cargando…</span>
+<div id="initialLoading" class="initial-loading" role="status" aria-live="polite">
+  <div class="skel-top"></div>
+  <div class="skel-wrap">
+    <div class="skel skel-hero"></div>
+    <div class="skel skel-line" style="width:42%;"></div>
+    <div class="skel skel-card"></div>
+    <div class="skel skel-card"></div>
   </div>
+  <span class="sr-only">Cargando…</span>
 </div>
 
 <div id="gateView" class="gate hidden">
@@ -223,7 +298,7 @@
 
 <div id="authGateView" class="gate hidden">
   <div id="authStepEmail">
-    <div style="font-size:26px; margin-bottom:6px;">🔒</div>
+    <div style="margin-bottom:8px;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--ink-soft);"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div>
     <h1>Iniciar sesión</h1>
     <p>Para ver las asignaciones necesitás iniciar sesión.</p>
     <button type="button" id="authGoogleBtn" style="display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:12px;">
@@ -241,13 +316,13 @@
     <p class="err hidden" id="authEmailErr"></p>
   </div>
   <div id="authStepSent" class="hidden">
-    <div style="font-size:26px; margin-bottom:6px;">✉️</div>
+    <div style="margin-bottom:8px;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--ink-soft);"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></div>
     <h1>Revisá tu correo</h1>
     <p>Te mandamos un link a <strong id="authSentEmail"></strong>. Tocalo desde este mismo celular o computadora.</p>
     <button type="button" id="authSentBackBtn" style="border:none; background:none; color:var(--ink-faint); font-size:12px; text-decoration:underline; margin-top:8px;">Volver / probar de otra forma</button>
   </div>
   <div id="authStepDenied" class="hidden">
-    <div style="font-size:26px; margin-bottom:6px;">🚫</div>
+    <div style="margin-bottom:8px;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--ink-soft);"><circle cx="12" cy="12" r="9"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/></svg></div>
     <h1>Sin acceso todavía</h1>
     <p>Tu email todavía no está autorizado para ver esta congregación.</p>
     <div style="background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:14px;">
@@ -275,31 +350,52 @@
   </div>
   <div class="gold-bar"></div>
   <div class="content">
-    <div id="installPrompt" class="hidden"></div>
-    <div id="personalSummary" class="hidden"></div>
-    <div id="pushPrompt" class="hidden"></div>
-    <div id="offlineNote" class="offline-note hidden">Sin conexión · mostrando la última copia guardada</div>
-    <div id="anunciosBoard" class="hidden" style="margin-bottom: 24px;"></div>
-    <div class="search-row" id="searchRow">
-      <span class="search-icon-static" aria-hidden="true">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.2" y2="16.2"/></svg>
-      </span>
-      <input type="text" id="searchInput" class="search-input" placeholder="Buscar por nombre, puesto o fecha…">
-      <button type="button" class="search-clear hidden" id="searchClearBtn" aria-label="Limpiar búsqueda">✕</button>
-    </div>
-    <div class="view-toggle" id="viewToggle">
-      <button type="button" class="view-toggle-btn active" data-view="tecnico">Equipo técnico</button>
-      <button type="button" class="view-toggle-btn" data-view="programa">Programa</button>
-    </div>
-    <div class="month-nav" id="monthNav">
-      <button type="button" id="prevBtn" aria-label="Mes anterior" title="Mes anterior">‹</button>
-      <h2 id="monthLabel">Mes</h2>
-      <button type="button" id="nextBtn" aria-label="Mes siguiente" title="Mes siguiente">›</button>
-    </div>
-    <div class="card" id="agendaCard"></div>
+    <div id="offlineNote" class="offline-note hidden" role="status">Sin conexión · mostrando la última copia guardada</div>
+
+    <section id="panel-inicio" class="tab-panel" aria-label="Inicio">
+      <div id="nextHero" class="hidden"></div>
+      <div id="personalSummary" class="hidden"></div>
+      <div id="pushPrompt" class="hidden"></div>
+      <div id="installPrompt" class="hidden"></div>
+      <h2 class="sec-title">Próximas reuniones</h2>
+      <div id="thisWeek"></div>
+    </section>
+
+    <section id="panel-calendario" class="tab-panel hidden" aria-label="Calendario">
+      <div class="search-row" id="searchRow">
+        <span class="search-icon-static" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.2" y2="16.2"/></svg>
+        </span>
+        <input type="text" id="searchInput" class="search-input" placeholder="Buscar por nombre, puesto o fecha…">
+        <button type="button" class="search-clear hidden" id="searchClearBtn" aria-label="Limpiar búsqueda">✕</button>
+      </div>
+      <div class="view-toggle" id="viewToggle">
+        <button type="button" class="view-toggle-btn active" data-view="tecnico">Equipo técnico</button>
+        <button type="button" class="view-toggle-btn" data-view="programa">Programa</button>
+      </div>
+      <div class="month-nav" id="monthNav">
+        <button type="button" id="prevBtn" aria-label="Mes anterior" title="Mes anterior">‹</button>
+        <h2 id="monthLabel">Mes</h2>
+        <button type="button" id="nextBtn" aria-label="Mes siguiente" title="Mes siguiente">›</button>
+      </div>
+      <div class="card" id="agendaCard"></div>
+    </section>
+
+    <section id="panel-avisos" class="tab-panel hidden" aria-label="Avisos">
+      <div id="anunciosBoard" class="hidden" style="margin-bottom: 24px;"></div>
+      <p class="empty-note" id="noAvisosNote">No hay avisos por ahora.</p>
+    </section>
+
     <p class="footer-note"><span class="live-dot"></span>Se actualiza solo — generado con Asignaciones · Salón del Reino</p>
     <p class="footer-note" style="padding-top:0;"><button type="button" id="privacyLinkBtn" style="border:none; background:none; color:var(--ink-faint); font-size:11px; text-decoration:underline; padding:0;">Política de privacidad</button></p>
   </div>
+  <nav class="bottom-tabs" id="bottomTabs" aria-label="Secciones">
+    <div class="bottom-tabs-inner">
+      <button type="button" class="bt-btn active" data-tab="inicio" aria-current="page"><span class="bt-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span>Inicio</button>
+      <button type="button" class="bt-btn" data-tab="calendario"><span class="bt-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="16" y1="3" x2="16" y2="7"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>Calendario</button>
+      <button type="button" class="bt-btn" data-tab="avisos"><span class="bt-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 6a9 9 0 0 1 0 12"/></svg><span class="bt-badge hidden" id="annBadge">0</span></span>Avisos</button>
+    </div>
+  </nav>
 </div>
 
 <div id="privacyOverlay" class="hidden" style="position:fixed; inset:0; background:rgba(33,44,52,0.55); z-index:50; display:flex; align-items:center; justify-content:center; padding:20px;">
@@ -1059,7 +1155,7 @@
       document.body.appendChild(box);
     }
     const card = document.createElement('div');
-    card.style.cssText = 'pointer-events:auto;width:100%;max-width:520px;box-sizing:border-box;background:var(--ink);color:#fff;border-left:4px solid var(--accent-gold);border-radius:10px;padding:12px 14px;box-shadow:0 6px 20px rgba(0,0,0,.25);font-family:inherit;cursor:pointer;';
+    card.style.cssText = 'pointer-events:auto;width:100%;max-width:520px;box-sizing:border-box;background:#212C34;color:#fff;border-left:4px solid #C9A24B;border-radius:10px;padding:12px 14px;box-shadow:0 6px 20px rgba(0,0,0,.25);font-family:inherit;cursor:pointer;';
     const t = document.createElement('div');
     t.style.cssText = 'font-size:14px;font-weight:700;line-height:1.3;';
     t.textContent = title;
@@ -1174,6 +1270,8 @@
   }
   function renderPersonalSummary(code) {
     const box = $('personalSummary');
+    const heroBox = $('nextHero');
+    if (heroBox) { heroBox.classList.add('hidden'); heroBox.innerHTML = ''; }
     if (!currentUser || !currentUser.email) { box.classList.add('hidden'); box.innerHTML = ''; $('pushPrompt').classList.add('hidden'); $('pushPrompt').innerHTML = ''; return; }
     const pub = (data.publishers || []).find(p => p.email === currentUser.email);
     if (!pub) { box.classList.add('hidden'); box.innerHTML = ''; $('pushPrompt').classList.add('hidden'); $('pushPrompt').innerHTML = ''; return; }
@@ -1200,10 +1298,13 @@
     });
     if (!rows.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
     rows.sort((a, b) => a.date.localeCompare(b.date));
+    renderNextHero(rows[0], pub);
+    const rest = rows.slice(1);
+    if (!rest.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
     box.classList.remove('hidden');
     box.innerHTML = `<div class="personal-summary">
       <div class="phead">
-        <div><h3>Hola, ${escapeHtml(pub.name.split(' ')[0])}</h3><p class="psub" id="personalSummarySub">Tus próximas asignaciones</p></div>
+        <div><h3>Tus otras asignaciones</h3><p class="psub" id="personalSummarySub">Después de la próxima</p></div>
       </div>
       <div id="personalSummaryBody"></div>
       <button type="button" class="psum-more-btn hidden" id="personalSummaryMoreBtn"></button>
@@ -1235,21 +1336,143 @@
     const PREVIEW_COUNT = 3;
     let expanded = false;
     function renderBody() {
-      if (!expanded) { bodyEl.innerHTML = rows.slice(0, PREVIEW_COUNT).map(flatRowHTML).join(''); }
+      if (!expanded) { bodyEl.innerHTML = rest.slice(0, PREVIEW_COUNT).map(flatRowHTML).join(''); }
       else { bodyEl.innerHTML = groupedHTML(); }
       bindAssignmentTaps(box);
     }
     const moreBtn = $('personalSummaryMoreBtn');
-    if (rows.length > PREVIEW_COUNT) {
+    if (rest.length > PREVIEW_COUNT) {
       moreBtn.classList.remove('hidden');
       const updateMoreBtn = () => {
-        moreBtn.innerHTML = (expanded ? 'Ver menos' : `Ver las ${rows.length} asignaciones`) + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" style="' + (expanded ? 'transform:rotate(180deg)' : '') + '"><path d="m6 9 6 6 6-6"/></svg>';
+        moreBtn.innerHTML = (expanded ? 'Ver menos' : `Ver todas mis asignaciones (${rows.length})`) + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" style="' + (expanded ? 'transform:rotate(180deg)' : '') + '"><path d="m6 9 6 6 6-6"/></svg>';
       };
       updateMoreBtn();
       moreBtn.addEventListener('click', () => { expanded = !expanded; renderBody(); updateMoreBtn(); });
     }
     renderBody();
   }
+  /* ---------- Pestañas, tarjeta destacada y próximas reuniones ---------- */
+  const TAB_NAMES = ['inicio', 'calendario', 'avisos'];
+  let currentTab = 'inicio';
+  const tabScroll = {};
+
+  function localIso(d) { const p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; }
+
+  function renderNextHero(r, pub) {
+    const box = $('nextHero');
+    if (!box || !r) return;
+    const d = new Date(r.date + 'T00:00:00');
+    let when = d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+    when = when.charAt(0).toUpperCase() + when.slice(1);
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    const diff = Math.round((d - hoy) / 86400000);
+    const count = diff <= 0 ? 'Hoy' : diff === 1 ? 'Mañana' : `En ${diff} días`;
+    const meeting = r.meetingType === 'finde' ? 'Fin de semana' : 'Entre semana';
+    const first = ((pub && pub.name) || '').split(' ')[0];
+    box.classList.remove('hidden');
+    box.innerHTML = `<div class="next-hero" data-date="${r.date}" data-meeting="${r.meetingType}" role="button" tabindex="0" aria-label="Ver el detalle de esa reunión">
+        <div class="nh-eyebrow">${first ? 'Hola, ' + escapeHtml(first) + ' · ' : ''}tu próxima asignación</div>
+        <div class="nh-title">${escapeHtml(r.label)}</div>
+        <div class="nh-when">${escapeHtml(when)} · ${meeting}</div>
+        <span class="nh-count">${count}</span>
+      </div>`;
+    bindAssignmentTaps(box);
+    const card = box.firstElementChild;
+    card.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); card.click(); } });
+  }
+
+  function renderUpcoming() {
+    const box = $('thisWeek');
+    if (!box || !data) return;
+    const settings = data.settings || { weekdaySemana: 4, weekdayFinde: 0, micCount: 2, usherCount: 2 };
+    const today = localIso(new Date());
+    const rows = [];
+    Object.keys(data.weeks || {}).sort().forEach(monday => {
+      ['semana', 'finde'].forEach(t => {
+        const w = data.weeks[monday][t];
+        if (!w) return;
+        const hasRoles = w.roles && Object.values(w.roles).some(Boolean);
+        const hasProgram = isProgramFilled(w.program, t);
+        if (!hasRoles && !hasProgram) return;
+        const date = dateForType(monday, t, settings);
+        if (date < today) return;
+        rows.push({ date, type: t, w });
+      });
+    });
+    rows.sort((a, b) => a.date.localeCompare(b.date));
+    const next = rows.slice(0, 2);
+    if (!next.length) { box.innerHTML = '<p class="empty-note">No hay reuniones cargadas próximamente.</p>'; return; }
+    box.innerHTML = `<div class="card">` + next.map((r) => {
+      const { dayName, day } = formatDate(r.date);
+      const roles = getRoles(r.type, settings.micCount, settings.usherCount);
+      return `<div class="agenda-item ${r.type === 'finde' ? 'finde' : ''}" data-date="${r.date}" data-meeting="${r.type}">
+        <div class="agenda-date"><div class="dow">${dayName.slice(0, 3)}</div><div class="num">${day}</div></div>
+        <div class="agenda-body">
+          <div class="agenda-type">${r.type === 'finde' ? 'Fin de semana' : 'Entre semana'}${r.date === today ? '<span class="today-tag">Hoy</span>' : ''}</div>
+          ${r.w.topic ? `<div class="agenda-topic">${escapeHtml(r.w.topic)}</div>` : ''}
+          ${technicalRowsToHTML(roles, r.w.roles || {})}
+        </div>
+      </div>`;
+    }).join('') + `</div><button type="button" class="linkbtn" data-goto="calendario">Ver el calendario completo</button>`;
+    bindAssignmentTaps(box);
+  }
+
+  // Avisos sin abrir en este dispositivo (se guarda solo en el propio celular).
+  function annVigentesList() {
+    const now = Date.now();
+    return ((data && data.anuncios) || []).filter(a => !a.expiresIso || new Date(a.expiresIso).getTime() > now);
+  }
+  function annGetSeen() {
+    try { const v = localStorage.getItem('ann-seen-' + getCode()); if (v) return v; } catch (e) { /* sin acceso */ }
+    return new Date(Date.now() - 48 * 3600 * 1000).toISOString();
+  }
+  function annSetSeen(iso) { try { localStorage.setItem('ann-seen-' + getCode(), iso); } catch (e) { /* sin acceso */ } }
+  function markAvisosSeen() {
+    let max = annGetSeen();
+    annVigentesList().forEach(a => { if (a.dateIso && a.dateIso > max) max = a.dateIso; });
+    annSetSeen(max);
+  }
+  function updateAnnBadge() {
+    const badge = $('annBadge');
+    if (!badge) return;
+    const seen = annGetSeen();
+    const n = currentTab === 'avisos' ? 0 : annVigentesList().filter(a => a.dateIso && a.dateIso > seen).length;
+    badge.textContent = n > 9 ? '9+' : String(n);
+    badge.classList.toggle('hidden', n === 0);
+    const btn = document.querySelector('.bt-btn[data-tab="avisos"]');
+    if (btn) btn.setAttribute('aria-label', n ? `Avisos, ${n} sin abrir` : 'Avisos');
+  }
+  function annOnData() {
+    if (currentTab === 'avisos') markAvisosSeen();
+    updateAnnBadge();
+    const none = $('noAvisosNote');
+    if (none) none.classList.toggle('hidden', annVigentesList().length > 0);
+  }
+
+  function showTab(name) {
+    if (!TAB_NAMES.includes(name)) name = 'inicio';
+    tabScroll[currentTab] = window.scrollY;
+    currentTab = name;
+    TAB_NAMES.forEach(t => { const panel = $('panel-' + t); if (panel) panel.classList.toggle('hidden', t !== name); });
+    document.querySelectorAll('.bt-btn').forEach(b => {
+      const on = b.dataset.tab === name;
+      b.classList.toggle('active', on);
+      if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+    });
+    if (name === 'avisos' && data) { annState.seenRef = annGetSeen(); markAvisosSeen(); renderAnuncios(); }
+    updateAnnBadge();
+    updateOfflineNote();
+    window.scrollTo(0, tabScroll[name] || 0);
+  }
+  $('bottomTabs').addEventListener('click', (e) => {
+    const b = e.target.closest('.bt-btn');
+    if (b && b.dataset.tab !== currentTab) showTab(b.dataset.tab);
+  });
+  document.addEventListener('click', (e) => {
+    const g = e.target.closest('[data-goto]');
+    if (g) showTab(g.getAttribute('data-goto'));
+  });
+
   function startViewing(code) {
     const db = initFirebase();
     currentMonday = mondayOf(new Date().toISOString().slice(0, 10));
@@ -1264,7 +1487,15 @@
       renderCurrent();
       renderPersonalSummary(code);
       renderAnuncios();
+      renderUpcoming();
+      if (!window.__tabInit) {
+        window.__tabInit = true;
+        const wanted = new URLSearchParams(location.search).get('tab') || (location.hash || '').replace('#', '');
+        if (wanted && wanted !== 'inicio') showTab(wanted);
+      }
+      annOnData();
       const url = new URL(location);
+      url.searchParams.delete('tab');
       url.searchParams.set('codigo', code);
       history.replaceState(null, '', url);
     }, (err) => {
@@ -1292,7 +1523,7 @@
   })();
   /* ---------- Tablero de Anuncios ---------- */
   const annState = { openOld: false, expanded: new Set() };
-  const ANN_RECENT = 3;
+  const ANN_RECENT = 5;
 
   /* ---------- Avisos: copia sin conexión, imagen ampliada y compartir ---------- */
   const FILES_CACHE = 'avisos-files-v1';
@@ -1425,7 +1656,7 @@
     const ahora = Date.now();
     const conArchivo = ((data && data.anuncios) || []).filter(a => a.attachmentUrl && (!a.expiresIso || new Date(a.expiresIso).getTime() > ahora));
     const guardados = conArchivo.filter(a => annCached.has(a.attachmentUrl)).length;
-    n.textContent = 'Sin conexión · mostrando la última copia guardada' + (conArchivo.length ? ` · archivos guardados: ${guardados} de ${conArchivo.length}` : '');
+    n.textContent = 'Sin conexión · mostrando la última copia guardada' + (conArchivo.length && currentTab === 'avisos' ? ` · archivos guardados: ${guardados} de ${conArchivo.length}` : '');
   }
   window.addEventListener('offline', updateOfflineNote);
   // Al recuperar la conexión: se reintenta guardar los archivos que faltaban.
@@ -1436,7 +1667,8 @@
     const d = a.dateIso ? new Date(a.dateIso) : new Date();
     const dayLabel = d.toLocaleString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase();
     const timeLabel = d.toLocaleString('es-ES', { hour: 'numeric', minute: '2-digit', hour12: true }).toUpperCase();
-    const esNuevo = a.dateIso && (Date.now() - d.getTime()) < 48 * 3600 * 1000;
+    const refSeen = annState.seenRef || (annState.seenRef = annGetSeen());
+    const esNuevo = !!(a.dateIso && a.dateIso > refSeen);
     const texto = a.text || '';
     const largo = texto.length > 150 || texto.split('\n').length > 3;
     const abierto = annState.expanded.has(a.id);
@@ -1459,7 +1691,7 @@
     return `
       <div class="announcement-item">
         <div class="ann-head">
-          <span class="ann-date">${a.pinned ? '📌 Fijado · ' : ''}${dayLabel}, ${timeLabel}${esNuevo ? '<span class="ann-new">nuevo</span>' : ''}</span>
+          <span class="ann-date">${a.pinned ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>Fijado · ' : ''}${dayLabel}, ${timeLabel}${esNuevo ? '<span class="ann-new">nuevo</span>' : ''}</span>
           <button type="button" class="ann-share" data-ann-share="${escapeHtml(a.id)}" aria-label="Compartir aviso"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>Compartir</button>
         </div>
         <p class="ann-text${largo && !abierto ? ' clamp' : ''}">${escapeHtml(texto).replace(/\n/g, '<br>')}</p>
@@ -1518,7 +1750,7 @@
         if (!img || img.tagName !== 'IMG' || !img.classList.contains('ann-image')) return;
         const ph = document.createElement('div');
         ph.className = 'ann-missing';
-        ph.textContent = navigator.onLine ? '🖼 No se pudo cargar la imagen' : '🖼 Imagen no guardada en este dispositivo · se verá al conectarte';
+        ph.textContent = navigator.onLine ? 'No se pudo cargar la imagen' : 'Imagen no guardada en este dispositivo · se verá al conectarte';
         img.replaceWith(ph);
       }, true);
     }
