@@ -6,6 +6,14 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Vista pública (`ver.html`), rediseño con pestañas — 21 de septiembre de 2026 (caché `ver-salon-v6`)
+- **Barra de pestañas abajo**: Inicio, Calendario y Avisos. Cada pantalla tiene un solo trabajo y nada empuja al calendario hacia abajo.
+- **Inicio**: tarjeta destacada con "tu próxima asignación" (con cuenta regresiva: hoy / mañana / en N días), tus otras asignaciones, y las próximas dos reuniones del Salón.
+- **Calendario**: el mes completo con la búsqueda y el selector Equipo técnico / Programa (igual que antes, en su propia pestaña).
+- **Avisos**: el tablero completo. La pestaña muestra un número rojo con los avisos que ese celular todavía no abrió (se guarda solo en el dispositivo).
+- Las notificaciones de avisos abren directo en la pestaña Avisos (`?tab=avisos`). Requiere `firebase deploy --only functions`.
+- Pulido visual: íconos propios en vez de emojis, áreas táctiles de 44 px, transiciones cortas, pantalla de carga con esqueletos y **modo oscuro** automático.
+
 ## Vista pública (`ver.html`) — 21 de septiembre de 2026 (caché `ver-salon-v5`)
 - **Sin conexión**: la vista pública guarda una copia local de los datos y de los avisos vigentes (texto, imágenes y PDF), y muestra "Sin conexión · mostrando la última copia guardada". Los archivos de avisos que vencen se borran solos del dispositivo. Los archivos se guardan solo si el almacenamiento tiene CORS habilitado (ver instrucciones en la conversación / Cloud Shell).
 - **Compartir un aviso** (botón en cada aviso y en la imagen ampliada): manda el archivo real (foto o PDF) más el texto por WhatsApp u otra app; si no se puede mandar el archivo, comparte el texto y el link a la app.
