@@ -1007,6 +1007,7 @@
   <button class="tab-btn" data-tab="timer"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg><br>Cronómetro</button>
   <button class="tab-btn" data-tab="hermanos"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20v-1.2a5.8 5.8 0 0 1 11.6 0V20"/><circle cx="17" cy="9" r="2.6"/><path d="M16 13.2c2.4.4 4 1.9 4 4V20h-3.2"/></svg><br>Hermanos</button>
   <button class="tab-btn" data-tab="ajustes"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="6" r="2"/><line x1="11" y1="6" x2="20" y2="6"/><line x1="4" y1="6" x2="7" y2="6"/><circle cx="15" cy="12" r="2"/><line x1="17" y1="12" x2="20" y2="12"/><line x1="4" y1="12" x2="13" y2="12"/><circle cx="9" cy="18" r="2"/><line x1="11" y1="18" x2="20" y2="18"/><line x1="4" y1="18" x2="7" y2="18"/></svg><br>Ajustes</button>
+  <button class="tab-btn" id="navAnunciosBtnMobile" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 6a9 9 0 0 1 0 12"/></svg><br>Avisos</button>
 </nav>
 
 <!-- Modal: código de sincronización -->
@@ -1923,7 +1924,7 @@
     else if (tab === 'timer') { renderWeeklyPartsGrid(); }
   }
   document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => {
-    if (b.id === 'navAnunciosBtn') return;
+    if (b.id === 'navAnunciosBtn' || b.id === 'navAnunciosBtnMobile') return;
     switchTab(b.dataset.tab);
   }));
 
@@ -4447,11 +4448,42 @@
   /* ---------- Gestión de Avisos ---------- */
   let currentAnuncioFile = null;
 
-  $('navAnunciosBtn') && $('navAnunciosBtn').addEventListener('click', () => {
+  function abrirAvisos() {
     if (!accessCode) return;
     $('anunciosModalOverlay').classList.remove('hidden');
     renderAnunciosList();
-  });
+  }
+  $('navAnunciosBtn') && $('navAnunciosBtn').addEventListener('click', abrirAvisos);
+  $('navAnunciosBtnMobile') && $('navAnunciosBtnMobile').addEventListener('click', abrirAvisos);
+
+  // Achica las fotos antes de subirlas (las del celular pesan varios MB): máx. 1600 px de lado, JPEG 85 %.
+  // Si algo falla (formato que el navegador no decodifica, etc.) devuelve el archivo original.
+  async function comprimirImagen(file) {
+    try {
+      if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return file;
+      const MAX = 1600;
+      let bmp;
+      try { bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }); }
+      catch (e) { bmp = await createImageBitmap(file); }
+      const scale = Math.min(1, MAX / Math.max(bmp.width, bmp.height));
+      const w = Math.max(1, Math.round(bmp.width * scale));
+      const h = Math.max(1, Math.round(bmp.height * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(bmp, 0, 0, w, h);
+      if (bmp.close) bmp.close();
+      const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.85));
+      if (!blob || blob.size >= file.size) return file;
+      const nombre = (file.name || 'foto').replace(/\.[^.]+$/, '') + '.jpg';
+      return new File([blob], nombre, { type: 'image/jpeg' });
+    } catch (err) {
+      console.warn('No se pudo optimizar la foto, se sube tal cual:', err);
+      return file;
+    }
+  }
 
   $('closeAnunciosBtn') && $('closeAnunciosBtn').addEventListener('click', () => {
     $('anunciosModalOverlay').classList.add('hidden');
@@ -4490,11 +4522,17 @@
         const esImagen = currentAnuncioFile.type.startsWith('image/');
         const esPdf = currentAnuncioFile.type === 'application/pdf';
         if (!esImagen && !esPdf) throw new Error('SOLO_IMAGEN_PDF');
-        if (currentAnuncioFile.size > 10 * 1024 * 1024) throw new Error('ARCHIVO_GRANDE');
+        let archivo = currentAnuncioFile;
+        if (esImagen) {
+          $('anuncioSubmitBtn').textContent = 'Optimizando foto...';
+          archivo = await comprimirImagen(archivo);
+          $('anuncioSubmitBtn').textContent = 'Publicando...';
+        }
+        if (archivo.size > 10 * 1024 * 1024) throw new Error('ARCHIVO_GRANDE');
         $('anuncioUploadPercent').textContent = '0';
         $('anuncioUploadProgress').classList.remove('hidden');
-        const stRef = firebase.storage().ref(`congregations/${accessCode}/anuncios/${Date.now()}_${currentAnuncioFile.name}`);
-        const uploadTask = stRef.put(currentAnuncioFile);
+        const stRef = firebase.storage().ref(`congregations/${accessCode}/anuncios/${Date.now()}_${archivo.name}`);
+        const uploadTask = stRef.put(archivo);
         
         await new Promise((resolve, reject) => {
           // Corta solo si la subida se queda SIN AVANCE 45 segundos seguidos
@@ -4530,9 +4568,9 @@
             }
           );
         });
-        attachmentName = currentAnuncioFile.name;
-        attachmentType = currentAnuncioFile.type.startsWith('image/') ? 'image' : 'pdf';
-        attachmentSize = currentAnuncioFile.size;
+        attachmentName = archivo.name;
+        attachmentType = archivo.type.startsWith('image/') ? 'image' : 'pdf';
+        attachmentSize = archivo.size;
       }
 
       const diasVence = parseInt($('anuncioVenceSel').value, 10) || 0;

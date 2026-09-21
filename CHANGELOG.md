@@ -6,6 +6,10 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## v10 — 21 de septiembre de 2026
+- **Avisos desde el celular**: nuevo botón "Avisos" en la barra inferior (antes solo estaba en la barra de arriba, que se oculta en pantallas angostas, así que solo se podía publicar desde la PC).
+- **Fotos optimizadas antes de subir**: se reducen a 1600 px de lado (JPEG 85 %), pasan de varios MB a unos cientos de KB. Sube más rápido con datos móviles y ya no se rechazan fotos por pasar los 10 MB. Los PDF se suben tal cual.
+
 ## v9 — 21 de septiembre de 2026
 - **Avisos con notificación**: al publicar un aviso hay un casillero "Avisar por notificación" (marcado por defecto). Si está marcado, les llega un push a todos los dispositivos suscriptos de la congregación ("📢 Nuevo aviso" + las primeras palabras; "📎 con archivo adjunto" si lo tiene). Borrar o fijar un aviso no notifica.
 - **Vencimiento automático**: cada aviso tiene "Mostrar hasta" (7, 30 o 90 días, o sin vencimiento). Al vencer sale del tablero público; el editor lo sigue viendo en Gestión de Avisos, marcado, y puede borrarlo.
