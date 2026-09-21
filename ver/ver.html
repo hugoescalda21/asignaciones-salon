@@ -1027,6 +1027,35 @@
   $('privacyOverlay').addEventListener('click', (e) => { if (e.target.id === 'privacyOverlay') $('privacyOverlay').classList.add('hidden'); });
 
   const VAPID_KEY = 'BJvWkjT5GqydLl7oSKd-_yalNdWXoiC3XYK2a-W8_FCeatyDHv-dhwieo9DAEWO3Ndjl2jSNYkxu3qqKA1uOMLg';
+  // Cartel dentro de la página para avisos que llegan con la app abierta.
+  function showPushBanner(title, body) {
+    let box = document.getElementById('pushBannerBox');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'pushBannerBox';
+      box.setAttribute('role', 'status');
+      box.setAttribute('aria-live', 'polite');
+      box.style.cssText = 'position:fixed;top:10px;left:0;right:0;z-index:300;display:flex;flex-direction:column;align-items:center;gap:8px;padding:0 12px;pointer-events:none;';
+      document.body.appendChild(box);
+    }
+    const card = document.createElement('div');
+    card.style.cssText = 'pointer-events:auto;width:100%;max-width:520px;box-sizing:border-box;background:var(--ink);color:#fff;border-left:4px solid var(--accent-gold);border-radius:10px;padding:12px 14px;box-shadow:0 6px 20px rgba(0,0,0,.25);font-family:inherit;cursor:pointer;';
+    const t = document.createElement('div');
+    t.style.cssText = 'font-size:14px;font-weight:700;line-height:1.3;';
+    t.textContent = title;
+    card.appendChild(t);
+    if (body) {
+      const b = document.createElement('div');
+      b.style.cssText = 'font-size:12.5px;opacity:.85;margin-top:2px;';
+      b.textContent = body;
+      card.appendChild(b);
+    }
+    const close = () => { if (card.parentNode) card.parentNode.removeChild(card); };
+    card.addEventListener('click', close);
+    box.appendChild(card);
+    setTimeout(close, 10000);
+    try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (e) { /* sin vibración */ }
+  }
   function setupForegroundMessaging() {
     if (window.__fgMessagingSetup) return;
     try {
@@ -1034,18 +1063,11 @@
       messaging.onMessage((payload) => {
         const title = (payload.notification && payload.notification.title) || 'Asignaciones — Salón del Reino';
         const body = (payload.notification && payload.notification.body) || '';
-        if (Notification.permission === 'granted') {
-          // Android/Chrome no permite "new Notification(...)" desde la página
-          // (tira un error y el aviso no se ve): hay que pedirle al service
-          // worker que lo muestre. "new Notification" queda solo como último recurso.
-          const opts = { body, icon: 'icon-192.png' };
-          navigator.serviceWorker.getRegistration()
-            .then((reg) => {
-              if (reg && reg.showNotification) return reg.showNotification(title, opts);
-              new Notification(title, opts);
-            })
-            .catch(() => { try { new Notification(title, opts); } catch (e) { /* sin forma de mostrarlo */ } });
-        }
+        // Con la página abierta y a la vista, un aviso del sistema en Android queda
+        // como una campanita chica en la barra de estado. Como la persona ya está
+        // mirando la app, el aviso se muestra como cartel dentro de la propia página.
+        // (Si la página está en segundo plano, Firebase muestra el aviso normal del sistema.)
+        showPushBanner(title, body);
       });
       window.__fgMessagingSetup = true;
     } catch (e) { /* Messaging no disponible en este navegador */ }
