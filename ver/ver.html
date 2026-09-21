@@ -1083,8 +1083,19 @@
   function renderPushPrompt(pub, code) {
     const box = $('pushPrompt');
     if (!('Notification' in window) || !('serviceWorker' in navigator) || !pub) { box.classList.add('hidden'); box.innerHTML = ''; return; }
-    if (Notification.permission === 'granted') setupForegroundMessaging();
     const storageKey = `push-decided-${code}-${pub.id}`;
+    if (Notification.permission === 'granted') {
+      setupForegroundMessaging();
+      // Auto-reparación: si el permiso ya está concedido, se vuelve a guardar el
+      // registro de este celular en Firestore cada vez que se abre la página
+      // (una vez por carga). Si el registro se había perdido, se recrea solo, sin
+      // que la persona tenga que volver a tocar "Sí, avisame". Es seguro repetirlo:
+      // el token es el mismo y el documento simplemente se reescribe.
+      if (!window.__pushSelfHealDone) {
+        window.__pushSelfHealDone = true;
+        completePushSubscription(pub, code, storageKey);
+      }
+    }
     // Sin importar si ya se decidió o quedó bloqueado, dejamos el escucha
     // activo: si Android nunca mostró el cartelito a tiempo, esto agarra
     // el cambio apenas el usuario lo activa desde el candado.
