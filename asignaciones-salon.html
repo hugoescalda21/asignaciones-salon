@@ -4468,20 +4468,46 @@
       let attachmentSize = null;
 
       if (currentAnuncioFile) {
+        const esImagen = currentAnuncioFile.type.startsWith('image/');
+        const esPdf = currentAnuncioFile.type === 'application/pdf';
+        if (!esImagen && !esPdf) throw new Error('SOLO_IMAGEN_PDF');
+        if (currentAnuncioFile.size > 10 * 1024 * 1024) throw new Error('ARCHIVO_GRANDE');
+        $('anuncioUploadPercent').textContent = '0';
         $('anuncioUploadProgress').classList.remove('hidden');
         const stRef = firebase.storage().ref(`congregations/${accessCode}/anuncios/${Date.now()}_${currentAnuncioFile.name}`);
         const uploadTask = stRef.put(currentAnuncioFile);
         
         await new Promise((resolve, reject) => {
-          uploadTask.on('state_changed', 
+          // Corta solo si la subida se queda SIN AVANCE 45 segundos seguidos
+          // (no importa cuánto tarde en total: un PDF grande con datos móviles
+          // puede tardar, mientras siga avanzando).
+          let sinAvance = false;
+          let timer;
+          const armarTimer = () => {
+            clearTimeout(timer);
+            timer = setTimeout(() => {
+              sinAvance = true;
+              uploadTask.cancel();
+            }, 45000);
+          };
+          armarTimer();
+
+          uploadTask.on('state_changed',
             (snap) => {
+              armarTimer();
               const progress = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
               $('anuncioUploadPercent').textContent = progress;
             },
-            (err) => reject(err),
+            (err) => {
+              clearTimeout(timer);
+              reject(sinAvance ? new Error('SIN_AVANCE') : err);
+            },
             async () => {
-              attachmentUrl = await uploadTask.snapshot.ref.getDownloadURL();
-              resolve();
+              clearTimeout(timer);
+              try {
+                attachmentUrl = await uploadTask.snapshot.ref.getDownloadURL();
+                resolve();
+              } catch (err) { reject(err); }
             }
           );
         });
@@ -4509,7 +4535,16 @@
       renderAnunciosList();
     } catch (e) {
       console.error("Error publicando anuncio:", e);
-      alert("Error al publicar el aviso.");
+      const code = e && e.code;
+      let msg;
+      if (e.message === 'SOLO_IMAGEN_PDF') msg = 'Solo se pueden adjuntar fotos o archivos PDF.';
+      else if (e.message === 'ARCHIVO_GRANDE') msg = 'El archivo pesa más de 10 MB. Probá con uno más liviano (o sacale una foto de menor tamaño).';
+      else if (e.message === 'SIN_AVANCE') msg = 'La subida se quedó sin avanzar por 45 segundos. Revisá tu conexión e intentá de nuevo.';
+      else if (code === 'storage/unauthorized') msg = 'No tenés permiso para subir archivos. Revisá que tu email figure como editor o admin en Ajustes → Acceso.';
+      else if (code === 'storage/unauthenticated') msg = 'Tu sesión venció. Volvé a iniciar sesión e intentá de nuevo.';
+      else if (code === 'storage/retry-limit-exceeded' || code === 'storage/bucket-not-found') msg = 'No se pudo conectar con el almacenamiento de archivos. Revisá tu conexión, y si sigue igual, que Storage esté activo en Firebase.';
+      else msg = 'Error al publicar el aviso: ' + (e.message || e);
+      alert(msg);
     } finally {
       $('anuncioSubmitBtn').disabled = false;
       $('anuncioSubmitBtn').textContent = 'Publicar Aviso';

@@ -6,6 +6,13 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## v8 — 21 de septiembre de 2026
+- **Avisos con archivo adjunto, arreglado**: la subida de fotos y PDF se quedaba en 0% porque Firebase Storage nunca se había iniciado en el proyecto. Ya está activo y funciona.
+- La subida ya no se corta a los 15 segundos fijos: solo se cancela si pasa 45 segundos sin avanzar, así un PDF grande con datos móviles puede terminar.
+- Los errores al publicar un aviso ahora dicen la causa real (sin permiso, sesión vencida, sin conexión, archivo muy pesado o de tipo no permitido) en vez de culpar siempre a CORS.
+- Se valida antes de subir: solo fotos o PDF, hasta 10 MB.
+- Nuevo `storage.rules` (hay que pegarlo a mano en Firebase → Storage → Reglas), y `firestore.rules` actualizado con el bloque de notificaciones push que ya estaba publicado en la consola.
+
 ## v6 — 14 de septiembre de 2026
 - **Login con Google** ("Continuar con Google"), junto al link por email — un toque, sin esperar el correo. Usa ventana emergente para evitar un problema conocido de Chrome con la redirección.
 - **Reparación automática de asignaciones fantasma**: si borrabas a un hermano que ya tenía algo asignado, esa asignación quedaba "viva" pero invisible, y Auto-asignar la saltaba sin avisar. Ahora se limpia sola al cargar, y borrar a alguien de ahí en más limpia sus asignaciones viejas en el momento.
