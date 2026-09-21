@@ -12,6 +12,10 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 - Los errores al publicar un aviso ahora dicen la causa real (sin permiso, sesión vencida, sin conexión, archivo muy pesado o de tipo no permitido) en vez de culpar siempre a CORS.
 - Se valida antes de subir: solo fotos o PDF, hasta 10 MB.
 - Nuevo `storage.rules` (hay que pegarlo a mano en Firebase → Storage → Reglas), y `firestore.rules` actualizado con el bloque de notificaciones push que ya estaba publicado en la consola.
+- **Notificaciones push corregidas** (función en la nube, se publica aparte con `firebase deploy --only functions`): los avisos de equipo técnico decían "tienes una asignación: Asignación"; ahora dicen el puesto real (Consola de audio, Video y Zoom, Micrófono de pasillo N, Acomodador N, Cronometrista). Al tocar el aviso se abre la vista pública en vez de una página inexistente, y el ícono chico ya no apunta a una ruta rota.
+- **Vista pública, suscripción que se repara sola:** si el permiso de notificaciones ya está concedido, cada vez que se abre `ver.html` se vuelve a guardar el registro del celular, así no hace falta volver a tocar "Sí, avisame" si el registro se perdió.
+- **Vista pública, avisos con la app abierta:** el aviso de asignación nueva se muestra como cartel dentro de la página (antes en Android quedaba solo como una campanita en la barra de estado y, en algunos casos, no se veía).
+- Nueva función `onPushSubscriptionDeleted` que deja anotado en los registros cuándo se borra el registro de un celular, para diagnosticar pérdidas de suscripción.
 
 ## v6 — 14 de septiembre de 2026
 - **Login con Google** ("Continuar con Google"), junto al link por email — un toque, sin esperar el correo. Usa ventana emergente para evitar un problema conocido de Chrome con la redirección.
