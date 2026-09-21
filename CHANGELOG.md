@@ -6,6 +6,9 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Nombre "Anuncios" — 21 de septiembre de 2026 (cachés `asignaciones-salon-v11` y `ver-salon-v7`)
+- Lo que antes se llamaba "Avisos" pasa a llamarse **Anuncios** en toda la interfaz (pestaña de la vista pública, Gestión de Anuncios, botones, mensajes y textos de las notificaciones). Los datos guardados no cambian. Las notificaciones abren la pestaña con `?tab=anuncios` (el enlace viejo `?tab=avisos` sigue funcionando). Requiere `firebase deploy --only functions`.
+
 ## Vista pública (`ver.html`), rediseño con pestañas — 21 de septiembre de 2026 (caché `ver-salon-v6`)
 - **Barra de pestañas abajo**: Inicio, Calendario y Avisos. Cada pantalla tiene un solo trabajo y nada empuja al calendario hacia abajo.
 - **Inicio**: tarjeta destacada con "tu próxima asignación" (con cuenta regresiva: hoy / mañana / en N días), tus otras asignaciones, y las próximas dos reuniones del Salón.

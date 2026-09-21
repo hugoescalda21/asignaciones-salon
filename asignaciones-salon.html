@@ -664,13 +664,13 @@
 <div id="anunciosModalOverlay" class="modal-overlay hidden" style="z-index: 100;">
   <div class="modal" style="max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
-      <h3 style="margin:0;">📢 Gestión de Avisos</h3>
+      <h3 style="margin:0;">📢 Gestión de Anuncios</h3>
       <button type="button" id="closeAnunciosBtn" style="background:none; border:none; font-size:20px; cursor:pointer;">✕</button>
     </div>
     
     <div style="background: var(--bg); padding: 12px; border-radius: var(--radius-m); margin-bottom: 20px;">
-      <label style="font-weight: 600; font-size: 13px; display:block; margin-bottom: 6px;">Nuevo Aviso</label>
-      <textarea id="anuncioTextInput" rows="3" placeholder="Escribe el aviso para la congregación..." style="width: 100%; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 8px; font-family: inherit; resize: vertical; margin-bottom: 10px;"></textarea>
+      <label style="font-weight: 600; font-size: 13px; display:block; margin-bottom: 6px;">Nuevo Anuncio</label>
+      <textarea id="anuncioTextInput" rows="3" placeholder="Escribe el anuncio para la congregación..." style="width: 100%; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 8px; font-family: inherit; resize: vertical; margin-bottom: 10px;"></textarea>
 
       <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;">
         <label style="font-size:12px; color:var(--ink-soft); display:flex; align-items:center; justify-content:space-between; gap:8px;">Mostrar hasta
@@ -683,7 +683,7 @@
         </label>
         <label style="display:flex; gap:8px; align-items:flex-start; font-size:13px;">
           <input type="checkbox" id="anuncioPinChk" style="margin-top:3px;">
-          <span>📌 Fijar arriba<br><small style="color:var(--ink-soft); font-size:11.5px;">Queda primero aunque haya avisos más nuevos.</small></span>
+          <span>📌 Fijar arriba<br><small style="color:var(--ink-soft); font-size:11.5px;">Queda primero aunque haya anuncios más nuevos.</small></span>
         </label>
         <label style="display:flex; gap:8px; align-items:flex-start; font-size:13px;">
           <input type="checkbox" id="anuncioNotifyChk" checked style="margin-top:3px;">
@@ -694,7 +694,7 @@
       <div style="display: flex; gap: 10px; align-items: center;">
         <input type="file" id="anuncioFileInput" style="display:none;" accept="image/*,.pdf">
         <button type="button" class="btn" id="anuncioAttachBtn" style="background: var(--surface); color: var(--ink); border: 1px solid var(--line); font-size: 12px; flex:1;">📎 Adjuntar foto o PDF</button>
-        <button type="button" class="btn btn-primary" id="anuncioSubmitBtn" style="flex:1;">Publicar Aviso</button>
+        <button type="button" class="btn btn-primary" id="anuncioSubmitBtn" style="flex:1;">Publicar Anuncio</button>
       </div>
       <div id="anuncioFilePreview" class="hidden" style="margin-top: 10px; font-size: 12px; color: var(--ok); display:flex; align-items:center; justify-content: space-between;">
         <span id="anuncioFileName"></span>
@@ -703,9 +703,9 @@
       <div id="anuncioUploadProgress" class="hidden" style="margin-top: 5px; font-size: 11px; color: var(--ink-soft);">Subiendo... <span id="anuncioUploadPercent">0</span>%</div>
     </div>
 
-    <h4 style="margin: 0 0 10px 0; font-size: 14px;">Avisos Activos</h4>
+    <h4 style="margin: 0 0 10px 0; font-size: 14px;">Anuncios Activos</h4>
     <div id="anunciosListContainer">
-      <p style="font-size: 13px; color: var(--ink-soft);">Cargando avisos...</p>
+      <p style="font-size: 13px; color: var(--ink-soft);">Cargando anuncios...</p>
     </div>
   </div>
 </div>
@@ -745,7 +745,7 @@
       <button class="tab-btn" data-tab="timer">Cronómetro</button>
       <button class="tab-btn" data-tab="hermanos">Hermanos</button>
       <button class="tab-btn" data-tab="ajustes">Ajustes</button>
-      <button class="tab-btn" id="navAnunciosBtn" type="button">📢 Avisos</button>
+      <button class="tab-btn" id="navAnunciosBtn" type="button">📢 Anuncios</button>
     </nav>
   </div>
 </div>
@@ -1007,7 +1007,7 @@
   <button class="tab-btn" data-tab="timer"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg><br>Cronómetro</button>
   <button class="tab-btn" data-tab="hermanos"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20v-1.2a5.8 5.8 0 0 1 11.6 0V20"/><circle cx="17" cy="9" r="2.6"/><path d="M16 13.2c2.4.4 4 1.9 4 4V20h-3.2"/></svg><br>Hermanos</button>
   <button class="tab-btn" data-tab="ajustes"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="6" r="2"/><line x1="11" y1="6" x2="20" y2="6"/><line x1="4" y1="6" x2="7" y2="6"/><circle cx="15" cy="12" r="2"/><line x1="17" y1="12" x2="20" y2="12"/><line x1="4" y1="12" x2="13" y2="12"/><circle cx="9" cy="18" r="2"/><line x1="11" y1="18" x2="20" y2="18"/><line x1="4" y1="18" x2="7" y2="18"/></svg><br>Ajustes</button>
-  <button class="tab-btn" id="navAnunciosBtnMobile" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 6a9 9 0 0 1 0 12"/></svg><br>Avisos</button>
+  <button class="tab-btn" id="navAnunciosBtnMobile" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 6a9 9 0 0 1 0 12"/></svg><br>Anuncios</button>
 </nav>
 
 <!-- Modal: código de sincronización -->
@@ -4607,11 +4607,11 @@
       else if (code === 'storage/unauthorized') msg = 'No tenés permiso para subir archivos. Revisá que tu email figure como editor o admin en Ajustes → Acceso.';
       else if (code === 'storage/unauthenticated') msg = 'Tu sesión venció. Volvé a iniciar sesión e intentá de nuevo.';
       else if (code === 'storage/retry-limit-exceeded' || code === 'storage/bucket-not-found') msg = 'No se pudo conectar con el almacenamiento de archivos. Revisá tu conexión, y si sigue igual, que Storage esté activo en Firebase.';
-      else msg = 'Error al publicar el aviso: ' + (e.message || e);
+      else msg = 'Error al publicar el anuncio: ' + (e.message || e);
       alert(msg);
     } finally {
       $('anuncioSubmitBtn').disabled = false;
-      $('anuncioSubmitBtn').textContent = 'Publicar Aviso';
+      $('anuncioSubmitBtn').textContent = 'Publicar Anuncio';
       $('anuncioUploadProgress').classList.add('hidden');
     }
   });
@@ -4622,7 +4622,7 @@
     const sorted = [...list].sort((a, b) => new Date(b.dateIso) - new Date(a.dateIso));
 
     if (sorted.length === 0) {
-      container.innerHTML = '<p style="font-size:13px; color:var(--ink-soft);">No hay avisos activos.</p>';
+      container.innerHTML = '<p style="font-size:13px; color:var(--ink-soft);">No hay anuncios activos.</p>';
       return;
     }
     
@@ -4667,7 +4667,7 @@
 
     container.querySelectorAll('.delete-anuncio-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
-        if (!confirm('¿Seguro que quieres borrar este aviso?')) return;
+        if (!confirm('¿Seguro que quieres borrar este anuncio?')) return;
         const id = e.target.dataset.id;
         const idx = data.anuncios.findIndex(x => x.id === id);
         if (idx === -1) return;
@@ -4681,7 +4681,7 @@
           renderAnunciosList();
         } catch(err) {
           console.error(err);
-          alert('Error al borrar el aviso.');
+          alert('Error al borrar el anuncio.');
         }
       });
     });
