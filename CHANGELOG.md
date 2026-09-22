@@ -6,6 +6,29 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Ícono del Tablero de Anuncios — 22 de septiembre de 2026 (caché `ver-salon-v14`)
+- El ícono junto a "Tablero de Anuncios" (una etiqueta/tag) se veía como un garabato poco reconocible. Se cambió por un megáfono, más claro para representar anuncios.
+- Requiere subir `ver/ver.html` y `ver/service-worker.js` a GitHub.
+
+## Arreglo de fondo: "Compartir" con imagen daba NotAllowedError en Android — 21 de septiembre de 2026 (caché `ver-salon-v13`)
+- Causa real (gracias al detalle del error que mandó Hugo): en Android, `navigator.share()` solo funciona si se llama en el mismo instante sincrónico del toque — cualquier espera de por medio, aunque sea consultar la copia guardada en el celular, hace que deje de contar como un toque directo y tire `NotAllowedError: Permission denied` en silencio.
+- Ahora la app mantiene en memoria las fotos y PDFs que ya guardó sola en segundo plano, y "Compartir" los usa directo, sin esperar nada. Si el archivo todavía no está en memoria (recién publicado), comparte el texto y el link al instante en vez de fallar, y lo va guardando para la próxima vez.
+- El cartel de error en pantalla que se agregó recién queda por ahora, por las dudas.
+- Requiere subir `ver/ver.html` y `ver/service-worker.js` a GitHub.
+
+## Diagnóstico temporal: "Compartir" sigue sin hacer nada en algunas fotos — 21 de septiembre de 2026 (caché `ver-salon-v12`)
+- El error real de "Compartir" estaba silenciado a propósito (para no mostrar nada cuando alguien cierra el cartel sin elegir). Como sigue fallando en algunos casos, ahora **muestra el error técnico en pantalla** (temporal, para diagnosticar) además de dejarlo en la consola. Sacar esto una vez identificada la causa real.
+- Requiere subir `ver/ver.html` y `ver/service-worker.js` a GitHub.
+
+## Arreglo: "Compartir" no hacía nada en anuncios con imagen recién cargada — 21 de septiembre de 2026 (caché `ver-salon-v10`)
+- Cuando el anuncio tenía una imagen que todavía no se había guardado sola en el celular, "Compartir" se quedaba esperando bajarla de internet — y para cuando terminaba, el navegador ya no consideraba que fue un toque directo (sobre todo en iPhone) y bloqueaba el cartel de compartir sin avisar nada. Ahora "Compartir" nunca espera una descarga: usa solo la copia que la app ya guardó sola en segundo plano, y si todavía no está, comparte el texto y el link al instante (la imagen se sigue bajando sola para la próxima vez).
+- De paso: si el anuncio tiene título, el cartel de compartir usa ese título en vez de uno genérico.
+- Requiere subir `ver/ver.html` y `ver/service-worker.js` a GitHub.
+
+## Tocar un PDF de un anuncio ya no lo descarga solo — 21 de septiembre de 2026 (caché `ver-salon-v9`)
+- Antes, si el PDF ya estaba guardado en el dispositivo (lo más común, porque la app los guarda solos al entrar a Anuncios), tocarlo lo **descargaba** en vez de abrirlo para leerlo — comportamiento distinto según si estaba guardado o no. Ahora tocar un PDF siempre lo **abre para verlo** en una pestaña nueva. Para guardar una copia está el botón "Compartir" de cada anuncio (como ya funciona con las imágenes).
+- Requiere subir `ver/ver.html` y `ver/service-worker.js` a GitHub.
+
 ## Título y edición de anuncios — 21 de septiembre de 2026 (cachés `asignaciones-salon-v12` y `ver-salon-v8`)
 - Los anuncios ahora pueden tener un **título opcional** (se destaca en negrita arriba del mensaje, en la lista de gestión, en la vista pública y en la notificación push).
 - Se puede **editar un anuncio ya publicado**: botón "✏️ Editar" en la lista de gestión, abre el mismo formulario precargado. Guardar cambios no crea un anuncio nuevo, mantiene la fecha de publicación original y **no vuelve a notificar**. Se puede cambiar el texto, el título, el vencimiento, si está fijado, y reemplazar o quitar el archivo adjunto.
