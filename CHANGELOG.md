@@ -6,6 +6,17 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Título y edición de anuncios — 21 de septiembre de 2026 (cachés `asignaciones-salon-v12` y `ver-salon-v8`)
+- Los anuncios ahora pueden tener un **título opcional** (se destaca en negrita arriba del mensaje, en la lista de gestión, en la vista pública y en la notificación push).
+- Se puede **editar un anuncio ya publicado**: botón "✏️ Editar" en la lista de gestión, abre el mismo formulario precargado. Guardar cambios no crea un anuncio nuevo, mantiene la fecha de publicación original y **no vuelve a notificar**. Se puede cambiar el texto, el título, el vencimiento, si está fijado, y reemplazar o quitar el archivo adjunto.
+- En la lista de gestión (solo para editores) se ve quién y cuándo editó cada anuncio. En la vista pública solo aparece "· editado", sin nombre.
+- Requiere subir `asignaciones-salon.html`, `service-worker.js`, `ver/ver.html` y `ver/service-worker.js` a GitHub (no toca las funciones en la nube, no hace falta `firebase deploy`).
+
+## Funciones en la nube: Node 22 y recordatorios protegidos — 21 de septiembre de 2026 (sin cambio de caché)
+- **Node 20 → 22** (Node 20 deja de permitir despliegues el 30-oct-2026). `firebase-admin` 13.10 y `firebase-functions` 7.4. Hay que actualizar `firebase-tools` (`npm i -g firebase-tools@latest`), correr `npm install` dentro de `functions` y luego `firebase deploy --only functions`.
+- **`saveReminder` ya no es público sin control**: solo acepta pedidos desde `hugoescalda21.github.io`, valida el formato (código, fecha entre ayer y +120 días, largo del token), exige que el celular ya esté registrado en `pushSubscriptions` con el mismo código y publicador, y guarda el recordatorio con un id fijo (tocar dos veces "Recordar" no lo duplica). Los errores ya no devuelven detalles internos.
+- La lógica pura (qué asignaciones son nuevas, qué anuncios se notifican, validación de recordatorios) pasó a `functions/lib.js` y `npm test` (`test-diff.js`, 27 pruebas) la verifica sin conexión.
+
 ## Nombre "Anuncios" — 21 de septiembre de 2026 (cachés `asignaciones-salon-v11` y `ver-salon-v7`)
 - Lo que antes se llamaba "Avisos" pasa a llamarse **Anuncios** en toda la interfaz (pestaña de la vista pública, Gestión de Anuncios, botones, mensajes y textos de las notificaciones). Los datos guardados no cambian. Las notificaciones abren la pestaña con `?tab=anuncios` (el enlace viejo `?tab=avisos` sigue funcionando). Requiere `firebase deploy --only functions`.
 

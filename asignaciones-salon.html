@@ -669,12 +669,18 @@
     </div>
     
     <div style="background: var(--bg); padding: 12px; border-radius: var(--radius-m); margin-bottom: 20px;">
-      <label style="font-weight: 600; font-size: 13px; display:block; margin-bottom: 6px;">Nuevo Anuncio</label>
+      <div id="anuncioEditBadge" class="hidden" style="font-size:11.5px; color:var(--gold-text, #876825); background:#F6F0E1; border:1px solid #E3D3A6; border-radius:8px; padding:6px 10px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; gap:8px;">
+        <span id="anuncioEditBadgeText"></span>
+        <button type="button" id="anuncioCancelEditBtn" style="background:none; border:none; color:var(--gold-text, #876825); font-weight:600; cursor:pointer; font-size:11.5px; white-space:nowrap;">Cancelar edición</button>
+      </div>
+      <label id="anuncioFormLabel" style="font-weight: 600; font-size: 13px; display:block; margin-bottom: 6px;">Nuevo Anuncio</label>
+      <input type="text" id="anuncioTitleInput" maxlength="80" placeholder="Título (opcional)" style="width: 100%; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 8px; font-family: inherit; font-weight:600; margin-bottom: 8px;">
       <textarea id="anuncioTextInput" rows="3" placeholder="Escribe el anuncio para la congregación..." style="width: 100%; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 8px; font-family: inherit; resize: vertical; margin-bottom: 10px;"></textarea>
 
       <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;">
         <label style="font-size:12px; color:var(--ink-soft); display:flex; align-items:center; justify-content:space-between; gap:8px;">Mostrar hasta
           <select id="anuncioVenceSel" style="border:1px solid var(--line); border-radius:var(--radius-s); padding:6px 8px; font-family:inherit; font-size:13px; background:var(--surface);">
+            <option value="keep" id="anuncioVenceKeepOpt" style="display:none;">Sin cambios</option>
             <option value="7">7 días</option>
             <option value="30" selected>30 días</option>
             <option value="90">90 días</option>
@@ -685,10 +691,15 @@
           <input type="checkbox" id="anuncioPinChk" style="margin-top:3px;">
           <span>📌 Fijar arriba<br><small style="color:var(--ink-soft); font-size:11.5px;">Queda primero aunque haya anuncios más nuevos.</small></span>
         </label>
-        <label style="display:flex; gap:8px; align-items:flex-start; font-size:13px;">
+        <label id="anuncioNotifyWrap" style="display:flex; gap:8px; align-items:flex-start; font-size:13px;">
           <input type="checkbox" id="anuncioNotifyChk" checked style="margin-top:3px;">
           <span>Avisar por notificación<br><small style="color:var(--ink-soft); font-size:11.5px;">Le llega a los dispositivos que tengan las notificaciones activadas.</small></span>
         </label>
+      </div>
+
+      <div id="anuncioExistingAtt" class="hidden" style="margin-bottom: 10px; font-size: 12px; color: var(--ink-soft); display:flex; align-items:center; justify-content: space-between; border:1px dashed var(--line); border-radius: var(--radius-s); padding:8px 10px;">
+        <span id="anuncioExistingAttName"></span>
+        <button type="button" id="anuncioExistingAttRemoveBtn" style="background:none; border:none; color:var(--danger); cursor:pointer;">✕ Quitar adjunto</button>
       </div>
 
       <div style="display: flex; gap: 10px; align-items: center;">
@@ -4447,12 +4458,69 @@
   }
   /* ---------- Gestión de Avisos ---------- */
   let currentAnuncioFile = null;
+  let editingAnuncioId = null;
+  let removeExistingAttachment = false;
 
   function abrirAvisos() {
     if (!accessCode) return;
+    resetAnuncioForm();
     $('anunciosModalOverlay').classList.remove('hidden');
     renderAnunciosList();
   }
+
+  // Vuelve el formulario de anuncios a "publicar nuevo" (sale de modo edición si estaba).
+  function resetAnuncioForm() {
+    editingAnuncioId = null;
+    currentAnuncioFile = null;
+    removeExistingAttachment = false;
+    $('anuncioEditBadge').classList.add('hidden');
+    $('anuncioFormLabel').textContent = 'Nuevo Anuncio';
+    $('anuncioSubmitBtn').textContent = 'Publicar Anuncio';
+    $('anuncioTitleInput').value = '';
+    $('anuncioTextInput').value = '';
+    $('anuncioVenceKeepOpt').style.display = 'none';
+    $('anuncioVenceSel').value = '30';
+    $('anuncioPinChk').checked = false;
+    $('anuncioNotifyWrap').classList.remove('hidden');
+    $('anuncioNotifyChk').checked = true;
+    $('anuncioExistingAtt').classList.add('hidden');
+    $('anuncioFileInput').value = '';
+    $('anuncioFilePreview').classList.add('hidden');
+  }
+
+  // Carga un anuncio ya publicado en el formulario para corregirlo.
+  function editAnuncio(a) {
+    editingAnuncioId = a.id;
+    currentAnuncioFile = null;
+    removeExistingAttachment = false;
+    $('anuncioTitleInput').value = a.title || '';
+    $('anuncioTextInput').value = a.text || '';
+    $('anuncioPinChk').checked = !!a.pinned;
+    $('anuncioVenceKeepOpt').style.display = '';
+    $('anuncioVenceSel').value = 'keep';
+    $('anuncioNotifyWrap').classList.add('hidden');
+    $('anuncioFileInput').value = '';
+    $('anuncioFilePreview').classList.add('hidden');
+    if (a.attachmentUrl) {
+      $('anuncioExistingAttName').textContent = '📎 ' + (a.attachmentName || 'Archivo adjunto') + ' (actual)';
+      $('anuncioExistingAtt').classList.remove('hidden');
+    } else {
+      $('anuncioExistingAtt').classList.add('hidden');
+    }
+    const fecha = a.dateIso ? new Date(a.dateIso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '';
+    $('anuncioEditBadgeText').textContent = 'Editando · publicado el ' + fecha + ' · no vuelve a notificar';
+    $('anuncioEditBadge').classList.remove('hidden');
+    $('anuncioFormLabel').textContent = 'Editando anuncio';
+    $('anuncioSubmitBtn').textContent = 'Guardar cambios';
+    $('anunciosModalOverlay').querySelector('.modal').scrollTop = 0;
+  }
+
+  $('anuncioCancelEditBtn') && $('anuncioCancelEditBtn').addEventListener('click', resetAnuncioForm);
+
+  $('anuncioExistingAttRemoveBtn') && $('anuncioExistingAttRemoveBtn').addEventListener('click', () => {
+    removeExistingAttachment = true;
+    $('anuncioExistingAtt').classList.add('hidden');
+  });
   $('navAnunciosBtn') && $('navAnunciosBtn').addEventListener('click', abrirAvisos);
   $('navAnunciosBtnMobile') && $('navAnunciosBtnMobile').addEventListener('click', abrirAvisos);
 
@@ -4507,10 +4575,15 @@
 
   $('anuncioSubmitBtn') && $('anuncioSubmitBtn').addEventListener('click', async () => {
     const text = $('anuncioTextInput').value.trim();
-    if (!text && !currentAnuncioFile) return;
+    const title = $('anuncioTitleInput').value.trim();
+    const editIdx = editingAnuncioId ? (data.anuncios || []).findIndex(x => x.id === editingAnuncioId) : -1;
+    const editAn = editIdx > -1 ? data.anuncios[editIdx] : null;
+    if (editingAnuncioId && !editAn) { alert('Este anuncio ya no existe (puede que lo hayan borrado).'); resetAnuncioForm(); renderAnunciosList(); return; }
+    const mantieneAdjunto = !!(editAn && editAn.attachmentUrl && !removeExistingAttachment && !currentAnuncioFile);
+    if (!text && !currentAnuncioFile && !mantieneAdjunto) return;
 
     $('anuncioSubmitBtn').disabled = true;
-    $('anuncioSubmitBtn').textContent = 'Publicando...';
+    $('anuncioSubmitBtn').textContent = editingAnuncioId ? 'Guardando...' : 'Publicando...';
 
     try {
       let attachmentUrl = null;
@@ -4573,28 +4646,56 @@
         attachmentSize = archivo.size;
       }
 
-      const diasVence = parseInt($('anuncioVenceSel').value, 10) || 0;
+      const venceVal = $('anuncioVenceSel').value;
+      const diasVence = parseInt(venceVal, 10) || 0;
+      const nuevoExpiresIso = diasVence > 0 ? new Date(Date.now() + diasVence * 86400000).toISOString() : null;
       data.anuncios = data.anuncios || [];
-      data.anuncios.push({
-        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-        text: text,
-        dateIso: new Date().toISOString(),
-        author: currentUser ? currentUser.email : 'Admin',
-        attachmentUrl,
-        attachmentName,
-        attachmentType,
-        attachmentSize,
-        expiresIso: diasVence > 0 ? new Date(Date.now() + diasVence * 86400000).toISOString() : null,
-        pinned: $('anuncioPinChk').checked,
-        notify: $('anuncioNotifyChk').checked
-      });
+
+      if (!editingAnuncioId) {
+        data.anuncios.push({
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+          text: text,
+          title: title || null,
+          dateIso: new Date().toISOString(),
+          author: currentUser ? currentUser.email : 'Admin',
+          attachmentUrl,
+          attachmentName,
+          attachmentType,
+          attachmentSize,
+          expiresIso: nuevoExpiresIso,
+          pinned: $('anuncioPinChk').checked,
+          notify: $('anuncioNotifyChk').checked
+        });
+      } else {
+        const oldAttachmentUrl = editAn.attachmentUrl;
+        editAn.title = title || null;
+        editAn.text = text;
+        editAn.pinned = $('anuncioPinChk').checked;
+        editAn.expiresIso = venceVal === 'keep' ? editAn.expiresIso : nuevoExpiresIso;
+        editAn.editedIso = new Date().toISOString();
+        editAn.editedBy = currentUser ? currentUser.email : 'Admin';
+        if (currentAnuncioFile) {
+          editAn.attachmentUrl = attachmentUrl;
+          editAn.attachmentName = attachmentName;
+          editAn.attachmentType = attachmentType;
+          editAn.attachmentSize = attachmentSize;
+          if (oldAttachmentUrl && oldAttachmentUrl !== attachmentUrl) {
+            await firebase.storage().refFromURL(oldAttachmentUrl).delete().catch(err => console.log('Error borrando adjunto anterior:', err));
+          }
+        } else if (removeExistingAttachment) {
+          editAn.attachmentUrl = null;
+          editAn.attachmentName = null;
+          editAn.attachmentType = null;
+          editAn.attachmentSize = null;
+          if (oldAttachmentUrl) {
+            await firebase.storage().refFromURL(oldAttachmentUrl).delete().catch(err => console.log('Error borrando adjunto:', err));
+          }
+        }
+        // Si no se tocó el adjunto (ni archivo nuevo ni "quitar"), se deja tal cual estaba.
+      }
       await saveData();
 
-      $('anuncioVenceSel').value = '30';
-      $('anuncioPinChk').checked = false;
-      $('anuncioNotifyChk').checked = true;
-      $('anuncioTextInput').value = '';
-      $('anuncioFileRemoveBtn').click();
+      resetAnuncioForm();
       $('anuncioUploadProgress').classList.add('hidden');
       renderAnunciosList();
     } catch (e) {
@@ -4611,7 +4712,7 @@
       alert(msg);
     } finally {
       $('anuncioSubmitBtn').disabled = false;
-      $('anuncioSubmitBtn').textContent = 'Publicar Anuncio';
+      $('anuncioSubmitBtn').textContent = editingAnuncioId ? 'Guardar cambios' : 'Publicar Anuncio';
       $('anuncioUploadProgress').classList.add('hidden');
     }
   });
@@ -4632,6 +4733,8 @@
       const vencido = !!(venc && venc.getTime() < Date.now());
       const vencTxt = !venc ? 'Sin vencimiento'
         : (vencido ? 'Vencido el ' : 'Visible hasta el ') + venc.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) + (vencido ? ' · oculto al público' : '');
+      const editadoTxt = a.editedIso ? ' · editado por ' + escapeHtml((a.editedBy || '').split('@')[0] || 'alguien') : '';
+      const tituloHtml = a.title ? `<div style="font-size:14px; font-weight:700; margin-bottom:2px;">${escapeHtml(a.title)}</div>` : '';
       let attHtml = '';
       if (a.attachmentUrl) {
         if (a.attachmentType === 'image') {
@@ -4643,17 +4746,26 @@
       return `
         <div style="border-bottom: 1px solid var(--line); padding: 10px 0; display:flex; justify-content:space-between; align-items:flex-start;${vencido ? ' opacity:.65;' : ''}">
           <div style="flex:1; padding-right:10px;">
-            <div style="font-size:11px; color:${vencido ? 'var(--danger)' : 'var(--ink-soft)'}; margin-bottom:4px;">${a.pinned ? '📌 Fijado · ' : ''}${d} · ${vencTxt}</div>
+            <div style="font-size:11px; color:${vencido ? 'var(--danger)' : 'var(--ink-soft)'}; margin-bottom:4px;">${a.pinned ? '📌 Fijado · ' : ''}${d} · ${vencTxt}${editadoTxt}</div>
+            ${tituloHtml}
             <div style="font-size:13px; line-height:1.4;">${escapeHtml(a.text).replace(/\n/g, '<br>')}</div>
             ${attHtml}
           </div>
           <div style="display:flex; flex-direction:column; gap:6px;">
+            <button type="button" class="btn edit-anuncio-btn" data-id="${a.id}" style="color:var(--blue, #3E6B8A); background:none; border:1px solid var(--blue, #3E6B8A); padding:4px 8px; font-size:11px;">✏️ Editar</button>
             <button type="button" class="btn pin-anuncio-btn" data-id="${a.id}" style="color:var(--ink); background:none; border:1px solid var(--line); padding:4px 8px; font-size:11px;">${a.pinned ? 'Quitar 📌' : '📌 Fijar'}</button>
             <button type="button" class="btn delete-anuncio-btn" data-id="${a.id}" style="color:var(--danger); background:none; border:1px solid var(--danger); padding:4px 8px; font-size:11px;">✕ Borrar</button>
           </div>
         </div>
       `;
     }).join('');
+
+    container.querySelectorAll('.edit-anuncio-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const an = (data.anuncios || []).find(x => x.id === e.currentTarget.dataset.id);
+        if (an) editAnuncio(an);
+      });
+    });
 
     container.querySelectorAll('.pin-anuncio-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
@@ -4678,6 +4790,7 @@
           }
           data.anuncios.splice(idx, 1);
           await saveData();
+          if (editingAnuncioId === id) resetAnuncioForm();
           renderAnunciosList();
         } catch(err) {
           console.error(err);
