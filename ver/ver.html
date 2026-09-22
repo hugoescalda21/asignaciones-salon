@@ -1630,14 +1630,22 @@
     const a = annFind(id);
     if (!a) return;
     const text = (a.text || '').trim();
-    const title = 'Anuncio — Salón del Reino';
+    const title = a.title || 'Anuncio — Salón del Reino';
+    // Importante: nada de esperar una descarga de red acá adentro. El toque en "Compartir" es
+    // un gesto del usuario y el navegador lo exige "fresco" para abrir el cartel de compartir
+    // (sobre todo en iPhone); si nos ponemos a esperar una descarga, para cuando termina el
+    // navegador ya no lo cuenta como toque directo y bloquea el cartel sin avisar nada.
+    // Por eso acá solo se usa la copia que la app ya bajó sola en segundo plano (cacheGet, sin
+    // red) — si todavía no está, se comparte texto + link al toque, sin esperar.
     try {
       if (a.attachmentUrl && navigator.canShare) {
-        const blob = await getAvisoBlob(a, true);
+        const blob = await cacheGet(a.attachmentUrl);
         if (blob) {
           const type = a.attachmentType === 'image' ? (blob.type || 'image/jpeg') : 'application/pdf';
           const file = new File([blob], a.attachmentName || (a.attachmentType === 'image' ? 'anuncio.jpg' : 'anuncio.pdf'), { type });
           if (navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title, text }); return; }
+        } else {
+          getAvisoBlob(a, true); // no await: lo deja guardado para la próxima vez que se comparta
         }
       }
       // Sin poder mandar el archivo: se comparte el texto y el link a la app (que pide iniciar sesión).
