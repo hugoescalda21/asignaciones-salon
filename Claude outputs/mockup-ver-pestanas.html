@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Vista pública con pestañas</title>
+<style>
+  :root{--bg:#EDEFEF;--surface:#fff;--ink:#212C34;--ink-soft:#5C6B74;--line:#DDE1E2;--gold:#A9822F;--gold-text:#876825;--blue:#3E6B8A;--ok:#3F7D4F;--red:#C0392B}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Segoe UI",Roboto,sans-serif;padding:24px 16px 60px}
+  h1{font-family:Georgia,serif;font-size:24px;margin:0 0 4px;text-align:center}
+  .sub{text-align:center;color:var(--ink-soft);font-size:14px;margin-bottom:28px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:28px;max-width:1080px;margin:0 auto}
+  .col h2{font-family:Georgia,serif;font-size:17px;margin:0 0 4px}
+  .col p.n{font-size:13px;color:var(--ink-soft);margin:0 0 12px;min-height:52px}
+  .phone{background:#111;border-radius:32px;padding:10px;max-width:350px;margin:0 auto}
+  .screen{border-radius:24px;overflow:hidden;background:var(--bg);height:660px;position:relative;display:flex;flex-direction:column}
+  .top{background:var(--ink);color:#fff;padding:12px 16px 10px;flex:none}
+  .top small{font-size:10px;letter-spacing:.12em;text-transform:uppercase;opacity:.7}
+  .top b{display:block;font-family:Georgia,serif;font-size:18px;margin-top:1px}
+  .bar{height:3px;background:var(--gold);flex:none}
+  .body{flex:1;overflow:hidden;padding:12px;position:relative}
+  .card{background:var(--surface);border:1.5px solid var(--gold);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+  .card h3{margin:0 0 8px;font-size:14px;font-family:Georgia,serif;color:var(--gold-text)}
+  .next{background:linear-gradient(135deg,#212C34,#33444f);color:#fff;border:0}
+  .next h3{color:#e0b95b}
+  .big{font-family:Georgia,serif;font-size:20px;margin:2px 0}
+  .sm{font-size:12.5px;opacity:.85}
+  .row{display:flex;gap:12px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:13.5px}
+  .row:first-of-type{border-top:0}
+  .row b{color:var(--gold-text);font-size:12px;width:52px;flex:none}
+  .more{text-align:center;color:var(--gold-text);font-weight:700;font-size:13px;padding-top:6px}
+  .sec{font-family:Georgia,serif;font-size:15px;margin:2px 2px 8px}
+  .day{background:#fff;border-radius:12px;border:1px solid var(--line);padding:10px 12px;margin-bottom:8px;font-size:13px;line-height:1.45}
+  .day b{font-size:11.5px;color:var(--gold-text);letter-spacing:.03em}
+  .day.today{border-color:var(--gold);box-shadow:0 2px 8px rgba(169,130,47,.15)}
+  .me{background:#F6F0E1;border-radius:6px;padding:0 5px;font-weight:700}
+  .search{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13.5px;color:var(--ink-soft);margin-bottom:10px}
+  .toggle{display:flex;background:#fff;border:1px solid var(--line);border-radius:99px;padding:3px;margin-bottom:10px}
+  .toggle div{flex:1;text-align:center;padding:8px;border-radius:99px;font-size:13px;font-weight:600;color:var(--ink-soft)}
+  .toggle div.a{background:var(--ink);color:#fff}
+  .month{display:flex;justify-content:space-between;align-items:center;font-family:Georgia,serif;font-size:16px;margin:2px 4px 8px}
+  .ann{background:#fff;border:1px solid var(--line);border-left:3px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px;font-size:13px}
+  .ann.new{border-left-color:var(--gold)}
+  .ann .d{font-size:11px;color:var(--ink-soft);font-weight:700;margin-bottom:3px;display:flex;justify-content:space-between;align-items:center}
+  .img{margin-top:6px;height:100px;border-radius:10px;background:linear-gradient(135deg,#e6f3ec 0 50%,#f9e3e3 50% 75%,#fbf1c9 75%);border:1px solid var(--line)}
+  .pdf{margin-top:6px;border:1px solid var(--line);background:#F4F6F6;border-radius:10px;padding:8px 10px;display:flex;gap:10px;align-items:center;font-size:12.5px}
+  .pdf i{width:30px;height:36px;border-radius:5px;background:#c0392b;color:#fff;font-size:9px;font-weight:700;font-style:normal;display:flex;align-items:center;justify-content:center;flex:none}
+  .pdf small{display:block;color:var(--ink-soft);font-size:11px}
+  .pill{background:var(--gold);color:#fff;border-radius:99px;padding:1px 8px;font-size:10px;font-weight:700}
+  .sharebtn{border:1px solid var(--line);border-radius:99px;padding:2px 9px;font-size:11px;color:var(--blue);font-weight:600}
+  /* barra inferior */
+  .tabs{flex:none;display:flex;background:#fff;border-top:1px solid var(--line);padding:6px 0 10px}
+  .tab{flex:1;text-align:center;font-size:10.5px;color:var(--ink-soft);position:relative;padding-top:2px}
+  .tab svg{display:block;margin:0 auto 2px}
+  .tab.on{color:var(--ink);font-weight:700}
+  .tab.on::before{content:"";position:absolute;top:-7px;left:25%;right:25%;height:2px;background:var(--gold)}
+  .dot{position:absolute;top:-2px;left:calc(50% + 6px);min-width:16px;height:16px;border-radius:99px;background:var(--red);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px}
+  .offline{background:#F6F0E1;border:1px solid #E3D3A6;color:var(--gold-text);border-radius:8px;padding:6px 10px;font-size:11.5px;font-weight:600;margin-bottom:10px;text-align:center}
+  .note{max-width:1080px;margin:28px auto 0;font-size:13.5px;line-height:1.6;color:var(--ink-soft);background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 18px}
+  .note b{color:var(--ink)}
+  .note ul{margin:6px 0 0;padding-left:18px}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><line x1="16" y1="3" x2="16" y2="7" stroke="currentColor" stroke-width="2"/><line x1="8" y1="3" x2="8" y2="7" stroke="currentColor" stroke-width="2"/><line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="i-mega" viewBox="0 0 24 24"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 6a9 9 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  </defs>
+</svg>
+
+<h1>Vista pública con pestañas</h1>
+<div class="sub">Tres pantallas, cada una con un solo trabajo. La barra de abajo es fija, como en cualquier app de celular.</div>
+
+<div class="grid">
+
+  <!-- INICIO -->
+  <div class="col">
+    <h2>1 · Inicio</h2>
+    <p class="n">Lo primero que se ve al entrar: lo mío y lo que viene. Responde "¿cuándo me toca?" sin tocar nada.</p>
+    <div class="phone"><div class="screen">
+      <div class="top"><small>Salón del Reino</small><b>San Agustín</b></div><div class="bar"></div>
+      <div class="body">
+        <div class="card next"><h3>Tu próxima asignación</h3>
+          <div class="big">Oración inicial</div>
+          <div class="sm">Jueves 24 de septiembre · Entre semana</div>
+          <div class="sm" style="margin-top:6px;opacity:.7">en 3 días</div></div>
+
+        <div class="card"><h3>Todas tus asignaciones (9)</h3>
+          <div class="row"><b>JUE 24</b>Oración inicial</div>
+          <div class="row"><b>JUE 24</b>¿Qué diría?</div>
+          <div class="row"><b>JUE 1</b>Acomodador de plataforma</div>
+          <div class="more">Ver las 9 ⌄</div></div>
+
+        <div class="sec">Esta semana en el Salón</div>
+        <div class="day today"><b>JUE 24 · ENTRE SEMANA</b><br>Audio: Josías Gauna · Video: Lucas Ramirez<br>Mic 1: <span class="me">Hugo</span> · Mic 2: Eduardo Sánchez</div>
+      </div>
+      <div class="tabs">
+        <div class="tab on"><svg width="22" height="22"><use href="#i-home"/></svg>Inicio</div>
+        <div class="tab"><svg width="22" height="22"><use href="#i-cal"/></svg>Calendario</div>
+        <div class="tab"><svg width="22" height="22"><use href="#i-mega"/></svg>Avisos<span class="dot">2</span></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- CALENDARIO -->
+  <div class="col">
+    <h2>2 · Calendario</h2>
+    <p class="n">El mes completo, con la búsqueda y el selector de Equipo técnico o Programa. Es lo que hoy ya existe, sin nada que lo empuje.</p>
+    <div class="phone"><div class="screen">
+      <div class="top"><small>Salón del Reino</small><b>San Agustín</b></div><div class="bar"></div>
+      <div class="body">
+        <div class="search">🔍 Buscar por nombre, puesto o fecha…</div>
+        <div class="toggle"><div class="a">Equipo técnico</div><div>Programa</div></div>
+        <div class="month"><span>‹</span><b>Septiembre 2026</b><span>›</span></div>
+        <div class="day today"><b>JUE 24 · ENTRE SEMANA</b><br>Audio: Josías Gauna · Video: Lucas Ramirez<br>Mic 1: <span class="me">Hugo</span> · Mic 2: Eduardo Sánchez<br>Plataforma: Emanuel Claria</div>
+        <div class="day"><b>DOM 27 · FIN DE SEMANA</b><br>Audio: Tobías Claria · Video: Martín Bonasich<br>Mic 1: Josías Gauna · Mic 2: Lucas Ramirez</div>
+        <div class="day"><b>JUE 1 · ENTRE SEMANA</b><br>Audio: Martín Bonasich · Video: Eduardo Sánchez</div>
+      </div>
+      <div class="tabs">
+        <div class="tab"><svg width="22" height="22"><use href="#i-home"/></svg>Inicio</div>
+        <div class="tab on"><svg width="22" height="22"><use href="#i-cal"/></svg>Calendario</div>
+        <div class="tab"><svg width="22" height="22"><use href="#i-mega"/></svg>Avisos<span class="dot">2</span></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- AVISOS -->
+  <div class="col">
+    <h2>3 · Avisos</h2>
+    <p class="n">El tablero completo, con espacio para las imágenes. Los nuevos llevan marca dorada. El número rojo sobre la pestaña se apaga al entrar.</p>
+    <div class="phone"><div class="screen">
+      <div class="top"><small>Salón del Reino</small><b>San Agustín</b></div><div class="bar"></div>
+      <div class="body">
+        <div class="offline">Sin conexión · archivos guardados: 3 de 3</div>
+        <div class="ann new"><div class="d"><span>📌 FIJADO · LUN 21, 3:34 P. M. <span class="pill">nuevo</span></span><span class="sharebtn">Compartir</span></div>
+          Limpieza general del Salón, sábado 9:00
+          <div class="img"></div></div>
+        <div class="ann new"><div class="d"><span>LUN 21, 4:10 P. M. <span class="pill">nuevo</span></span><span class="sharebtn">Compartir</span></div>
+          Baños — guía de limpieza
+          <div class="pdf"><i>PDF</i><div>Guía de Limpieza 01.pdf<small>PDF · Toca para abrir</small></div></div></div>
+        <div class="ann"><div class="d"><span>JUE 10, 8:30 P. M.</span><span class="sharebtn">Compartir</span></div>
+          Recuerden confirmar su asistencia a la visita del superintendente.</div>
+        <div style="text-align:center;color:var(--gold-text);font-weight:700;font-size:13px;border:1px solid var(--line);border-radius:10px;padding:9px;background:#fff">Ver anteriores (4) ⌄</div>
+      </div>
+      <div class="tabs">
+        <div class="tab"><svg width="22" height="22"><use href="#i-home"/></svg>Inicio</div>
+        <div class="tab"><svg width="22" height="22"><use href="#i-cal"/></svg>Calendario</div>
+        <div class="tab on"><svg width="22" height="22"><use href="#i-mega"/></svg>Avisos</div>
+      </div>
+    </div></div>
+  </div>
+
+</div>
+
+<div class="note">
+  <b>Cómo se comporta:</b>
+  <ul>
+    <li>La app abre siempre en <b>Inicio</b>. Con una notificación de <b>aviso</b>, abre directo en <b>Avisos</b>; con una de <b>asignación</b>, en <b>Inicio</b>.</li>
+    <li>El <b>número rojo</b> de Avisos cuenta los avisos que ese celular todavía no abrió. Se guarda en el propio dispositivo (no se sabe ni se guarda quién vio qué).</li>
+    <li>La <b>búsqueda</b> y todo el calendario siguen igual que hoy, pero en su propia pestaña. La búsqueda por nombre sigue mostrando también las partes del Programa.</li>
+    <li>El aviso de <b>sin conexión</b> y el guardado de archivos se muestran en Avisos, donde importan.</li>
+    <li>Las tarjetas de <b>instalar la app</b> y <b>activar notificaciones</b> se quedan en Inicio, arriba, hasta que se resuelvan.</li>
+  </ul>
+</div>
+</body>
+</html>

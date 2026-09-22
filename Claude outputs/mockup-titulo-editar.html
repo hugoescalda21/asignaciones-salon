@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Título y edición de anuncios</title>
+<style>
+  :root{--bg:#EDEFEF;--surface:#fff;--ink:#212C34;--ink-soft:#5C6B74;--line:#DDE1E2;--gold:#A9822F;--gold-text:#876825;--blue:#3E6B8A;--danger:#B0451F}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Segoe UI",Roboto,sans-serif;padding:24px 16px 60px}
+  h1{font-family:Georgia,serif;font-size:24px;margin:0 0 4px;text-align:center}
+  .sub{text-align:center;color:var(--ink-soft);font-size:14px;margin-bottom:28px;max-width:640px;margin-left:auto;margin-right:auto}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:28px;max-width:1300px;margin:0 auto}
+  .col h2{font-family:Georgia,serif;font-size:17px;margin:0 0 4px}
+  .col p.n{font-size:13px;color:var(--ink-soft);margin:0 0 12px;min-height:36px}
+  .phone{background:#111;border-radius:30px;padding:10px;max-width:340px;margin:0 auto}
+  .screen{border-radius:22px;overflow:hidden;background:var(--bg);min-height:520px;position:relative}
+  .modal{background:var(--surface);padding:18px 16px;min-height:520px}
+  .modal h3{font-family:Georgia,serif;margin:0 0 4px;font-size:18px}
+  .modal .tag{display:inline-block;background:#F6F0E1;color:var(--gold-text);border-radius:99px;padding:2px 9px;font-size:11px;font-weight:700;margin-bottom:12px}
+  label.l{font-size:12px;color:var(--ink-soft);display:block;margin:12px 0 4px}
+  label.l:first-of-type{margin-top:2px}
+  .in{border:1px solid var(--line);border-radius:10px;padding:10px;font-size:14px;background:#fafbfb}
+  .in.title{font-weight:700;font-size:15px}
+  .in.title.ph{color:#a9b2b8;font-weight:400}
+  .ta{border:1px solid var(--line);border-radius:10px;padding:10px;font-size:13.5px;min-height:70px;background:#fafbfb;line-height:1.4}
+  .att{margin:10px 0;border:1px dashed var(--line);border-radius:10px;padding:8px 10px;font-size:13px;color:var(--ink-soft);display:flex;justify-content:space-between}
+  .chk{display:flex;gap:10px;align-items:flex-start;background:#F6F0E1;border:1px solid #E3D3A6;border-radius:10px;padding:10px 12px;margin:12px 0;font-size:13px}
+  .box{width:18px;height:18px;border-radius:4px;background:var(--gold);color:#fff;font-size:13px;display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px}
+  .chk small{display:block;color:var(--ink-soft);font-size:12px;margin-top:2px}
+  .btns{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+  .b{padding:9px 16px;border-radius:10px;font-size:13.5px;font-weight:600}
+  .b1{background:var(--ink);color:#fff}.b2{background:#eef0f0;color:var(--ink)}
+  /* lista de gestión */
+  .pad{padding:14px}
+  .card{background:var(--surface);border:1.5px solid var(--gold);border-radius:14px;padding:12px 14px}
+  .card h3{margin:0 0 10px;font-size:15px;font-family:Georgia,serif;color:var(--gold-text)}
+  .gest{border-bottom:1px solid var(--line);padding:10px 0;display:flex;justify-content:space-between;gap:10px}
+  .gest:last-child{border-bottom:0}
+  .gest .d{font-size:11px;color:var(--ink-soft);margin-bottom:3px}
+  .gest .ti{font-weight:700;font-size:13.5px;margin-bottom:2px}
+  .gest .tx{font-size:12.5px;color:var(--ink-soft);line-height:1.35}
+  .gcol{display:flex;flex-direction:column;gap:5px;flex:none}
+  .gb{font-size:10.5px;padding:4px 7px;border-radius:6px;border:1px solid var(--line);background:none;color:var(--ink);white-space:nowrap;text-align:left}
+  .gb.edit{border-color:var(--blue);color:var(--blue)}
+  .gb.del{border-color:var(--danger);color:var(--danger)}
+  /* vista publica */
+  .ann{background:var(--surface);border-radius:14px;padding:12px 14px;margin-bottom:10px;border:1px solid var(--line)}
+  .ann .meta{font-size:11px;color:var(--ink-soft);margin-bottom:5px;display:flex;align-items:center;gap:6px}
+  .ann .new{background:var(--gold);color:#fff;border-radius:99px;padding:1px 7px;font-size:9.5px;font-weight:700}
+  .ann .ti{font-family:Georgia,serif;font-size:15.5px;font-weight:700;margin:0 0 4px;color:var(--ink)}
+  .ann .tx{font-size:13.5px;line-height:1.45}
+  .pdf{margin-top:8px;border:1px solid var(--line);background:#F4F6F6;border-radius:10px;padding:9px 10px;display:flex;gap:10px;align-items:center;font-size:12.5px}
+  .pdf .ico{width:28px;height:34px;border-radius:5px;background:#c0392b;color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+  .top{background:var(--ink);color:#fff;padding:12px 14px 10px}
+  .top small{font-size:10px;letter-spacing:.1em;text-transform:uppercase;opacity:.7}
+  .top b{display:block;font-family:Georgia,serif;font-size:17px;margin-top:2px}
+  .bar{height:3px;background:var(--gold)}
+  /* shade notif */
+  .shade{background:#1c2226;padding:14px 12px;color:#fff;min-height:520px}
+  .shade .time{font-size:12px;opacity:.7;margin-bottom:10px;display:flex;justify-content:space-between}
+  .notif{background:#2b3439;border-radius:18px;padding:12px 14px;margin-bottom:10px}
+  .nh{display:flex;align-items:center;gap:6px;font-size:11.5px;color:#b7c1c7;margin-bottom:6px}
+  .ic{width:16px;height:16px;border-radius:50%;background:var(--gold);display:inline-flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:700}
+  .nt{font-size:14.5px;font-weight:600;margin-bottom:2px}
+  .nb{font-size:13.5px;color:#d6dde1;line-height:1.35}
+  .lbl{font-size:11.5px;color:#9aa6ad;text-align:center;margin-top:10px}
+  .note{max-width:1300px;margin:28px auto 0;font-size:13.5px;line-height:1.55;color:var(--ink-soft);background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .note b{color:var(--ink)}
+</style>
+</head>
+<body>
+<h1>Título y edición de anuncios</h1>
+<div class="sub">Mismo modal de siempre, con un campo nuevo de título arriba del mensaje. El botón "✏️ Editar" abre ese mismo modal, precargado.</div>
+
+<div class="grid">
+
+  <div class="col">
+    <h2>1. Publicar (nuevo)</h2>
+    <p class="n">El título es opcional — si lo dejás vacío, el anuncio se ve igual que hoy.</p>
+    <div class="phone"><div class="screen"><div class="modal">
+      <h3>Nuevo anuncio</h3>
+      <label class="l">Título (opcional)</label>
+      <div class="in title ph">Ej: Limpieza general del Salón</div>
+      <label class="l">Mensaje</label>
+      <div class="ta">Este sábado a las 9:00. Traer guantes y productos de limpieza. ¡Los esperamos!</div>
+      <div class="att"><span>📎 cronograma-limpieza.pdf · 240 KB</span><span>✕</span></div>
+      <div class="chk"><div class="box">✓</div><div>Avisar por notificación<small>Si hay título, se usa como título de la notificación.</small></div></div>
+      <div class="btns"><div class="b b2">Cancelar</div><div class="b b1">Publicar</div></div>
+    </div></div></div>
+  </div>
+
+  <div class="col">
+    <h2>2. Editar (ya publicado)</h2>
+    <p class="n">Se abre precargado con lo que ya tenía. Al guardar no manda notificación nueva ni cambia la fecha original.</p>
+    <div class="phone"><div class="screen"><div class="modal">
+      <h3>Editar anuncio</h3>
+      <span class="tag">Publicado el 15 sept · sin re-notificar</span>
+      <label class="l">Título (opcional)</label>
+      <div class="in title">Cambio de horario del sábado</div>
+      <label class="l">Mensaje</label>
+      <div class="ta">La reunión de este sábado empieza a las <b>17:30</b> (antes decía 17:00).</div>
+      <div class="att"><span>Sin archivo adjunto</span><span style="color:var(--blue)">+ Adjuntar</span></div>
+      <div class="btns"><div class="b b2">Cancelar</div><div class="b b1">Guardar cambios</div></div>
+    </div></div></div>
+  </div>
+
+  <div class="col">
+    <h2>3. Lista de gestión (editor)</h2>
+    <p class="n">El título aparece en negrita. Ahora hay tres acciones por anuncio.</p>
+    <div class="phone"><div class="screen"><div class="pad">
+      <div class="card">
+        <h3>Gestión de Anuncios</h3>
+        <div class="gest">
+          <div>
+            <div class="d">📌 Fijado · 21 sept</div>
+            <div class="ti">Limpieza general del Salón</div>
+            <div class="tx">Este sábado a las 9:00. Traer guantes…</div>
+          </div>
+          <div class="gcol"><button class="gb edit">✏️ Editar</button><button class="gb">📌 Quitar</button><button class="gb del">✕ Borrar</button></div>
+        </div>
+        <div class="gest">
+          <div>
+            <div class="d">15 sept · editado</div>
+            <div class="ti">Cambio de horario del sábado</div>
+            <div class="tx">La reunión empieza a las 17:30…</div>
+          </div>
+          <div class="gcol"><button class="gb edit">✏️ Editar</button><button class="gb">📌 Fijar</button><button class="gb del">✕ Borrar</button></div>
+        </div>
+        <div class="gest">
+          <div>
+            <div class="d">10 sept</div>
+            <div class="tx">Recuerden confirmar su asistencia a la visita del superintendente.</div>
+          </div>
+          <div class="gcol"><button class="gb edit">✏️ Editar</button><button class="gb">📌 Fijar</button><button class="gb del">✕ Borrar</button></div>
+        </div>
+      </div>
+    </div></div></div>
+  </div>
+
+  <div class="col">
+    <h2>4. Vista pública</h2>
+    <p class="n">El título se destaca arriba del texto. Sin título (tercer caso), se ve como siempre.</p>
+    <div class="phone"><div class="screen">
+      <div class="top"><small>Salón del Reino</small><b>San Agustín</b></div><div class="bar"></div>
+      <div class="pad">
+        <div class="ann">
+          <div class="meta">📌 Fijado · LUN, 21 SEPT <span class="new">nuevo</span></div>
+          <div class="ti">Limpieza general del Salón</div>
+          <div class="tx">Este sábado a las 9:00. Traer guantes y productos de limpieza. ¡Los esperamos!</div>
+          <div class="pdf"><div class="ico">PDF</div><div>cronograma-limpieza.pdf</div></div>
+        </div>
+        <div class="ann">
+          <div class="meta">LUN, 15 SEPT · editado</div>
+          <div class="ti">Cambio de horario del sábado</div>
+          <div class="tx">La reunión de este sábado empieza a las 17:30 (antes decía 17:00).</div>
+        </div>
+        <div class="ann">
+          <div class="meta">JUE, 10 SEPT</div>
+          <div class="tx">Recuerden confirmar su asistencia a la visita del superintendente.</div>
+        </div>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="col">
+    <h2>5. Notificación push</h2>
+    <p class="n">Con título, el celular muestra el título como asunto y el texto como vista previa (antes siempre decía "Nuevo anuncio").</p>
+    <div class="phone"><div class="screen shade">
+      <div class="time"><span>Domingo 21 de sept.</span><span>20:14</span></div>
+      <div class="notif">
+        <div class="nh"><span class="ic">A</span> Asignaciones · hugoescalda21.github.io · ahora</div>
+        <div class="nt">📢 Limpieza general del Salón</div>
+        <div class="nb">Este sábado a las 9:00. Traer guantes y productos de limpieza…</div>
+      </div>
+      <div class="lbl">(Antes decía siempre "📢 Nuevo anuncio")</div>
+    </div></div>
+  </div>
+
+</div>
+
+<div class="note">
+  <b>En resumen:</b> el título es opcional y no rompe nada de lo que ya tenés cargado (los anuncios viejos, sin título, se ven igual que ahora). Editar reutiliza el mismo modal, no crea un anuncio nuevo ni reordena la lista, y no vuelve a notificar — así podés corregir una fecha o una falta de ortografía sin molestar a nadie. El "· editado" en la fecha es opcional, decime si lo preferís o si mejor no se note.
+</div>
+</body>
+</html>

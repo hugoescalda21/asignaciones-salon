@@ -1,0 +1,90 @@
+rules_version = '2';
+
+// Reglas de seguridad — Asignaciones del Salón del Reino
+// -----------------------------------------------------------------
+// Cómo instalarlas:
+//   1. Andá a la consola de Firebase (console.firebase.google.com).
+//   2. Abrí tu proyecto → Firestore Database → pestaña "Reglas".
+//   3. Reemplazá todo el contenido por este archivo.
+//   4. Botón "Publicar".
+//
+// Qué cambia respecto a las reglas actuales (que dejaban leer y
+// escribir a cualquiera): ahora hace falta haber iniciado sesión
+// (con el link por correo) Y que tu email esté en alguna de las
+// listas de acceso de esa congregación en particular.
+//
+// "editorEmails"              = Super Admin (ven y editan todo).
+// "tecnicoAdminEmails"        = Admin de Equipo técnico.
+// "acomodadoresAdminEmails"   = Admin de Acomodadores.
+// "asignacionesAdminEmails"   = Admin de Asignaciones (Programa).
+// "viewerEmails"               = solo pueden ver (ver.html).
+//
+// Importante: por ahora, quien esté en cualquiera de las tres listas
+// de "Admin" (técnico / acomodadores / asignaciones) puede escribir
+// en el documento entero, igual que un Super Admin — es la propia
+// interfaz la que le oculta lo que no le corresponde ver o tocar,
+// no todavía una restricción del servidor campo por campo. Eso es
+// una limitación conocida y documentada en el roadmap del proyecto.
+//
+// El primer email que crea una congregación nueva se agrega solo
+// a "editorEmails" — así el que arma la congregación no queda
+// afuera de su propia base.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /congregations/{code} {
+
+      // Crear una congregación nueva: solo hace falta estar logueado.
+      // La propia app agrega automáticamente el email de quien la
+      // crea a editorEmails en el mismo momento de guardarla.
+      allow create: if request.auth != null
+                    && request.auth.token.email in request.resource.data.settings.editorEmails;
+
+      // Leer: logueado, y el email tiene que estar en alguna de las
+      // listas de acceso de ESA congregación puntual — o la
+      // congregación todavía no tiene ningún editor cargado (caso de
+      // una congregación que ya existía antes de este sistema de
+      // login, donde el campo puede ni siquiera existir todavía —
+      // por eso .get(..., []) en vez de leerlo directo, que se rompe
+      // si el campo no está).
+      allow read: if request.auth != null && (
+                    request.auth.token.email in resource.data.settings.get('editorEmails', []) ||
+                    request.auth.token.email in resource.data.settings.get('tecnicoAdminEmails', []) ||
+                    request.auth.token.email in resource.data.settings.get('acomodadoresAdminEmails', []) ||
+                    request.auth.token.email in resource.data.settings.get('asignacionesAdminEmails', []) ||
+                    request.auth.token.email in resource.data.settings.get('viewerEmails', []) ||
+                    resource.data.settings.get('editorEmails', []).size() == 0
+                  );
+
+      // Editar: logueado, y el email tiene que estar en editores o en
+      // cualquiera de los tres roles de Admin — o la congregación no
+      // tiene editores todavía, en cuyo caso quien se conecta con el
+      // código correcto queda como el primero (Super Admin).
+      allow update: if request.auth != null && (
+                    request.auth.token.email in resource.data.settings.get('editorEmails', []) ||
+                    request.auth.token.email in resource.data.settings.get('tecnicoAdminEmails', []) ||
+                    request.auth.token.email in resource.data.settings.get('acomodadoresAdminEmails', []) ||
+                    request.auth.token.email in resource.data.settings.get('asignacionesAdminEmails', []) ||
+                    resource.data.settings.get('editorEmails', []).size() == 0
+                  );
+
+      // Nunca se borra una congregación completa desde la app.
+      allow delete: if false;
+    }
+
+    // Notificaciones push — un documento por celular/token, para
+    // avisar por asignación nueva. Separado del documento principal
+    // a propósito: así no hace falta tocar las reglas de arriba, y
+    // cualquier persona logueada (ya haya pasado el control de
+    // acceso de su congregación) puede registrar o borrar su propio
+    // token sin exponer nada del resto de los datos.
+    match /pushSubscriptions/{token} {
+      allow read: if false; // solo la función en la nube los lee (con permisos de administrador, salta las reglas)
+      allow write: if request.auth != null
+                   && request.resource.data.keys().hasAll(['code', 'pubId'])
+                   && request.resource.data.code is string
+                   && request.resource.data.pubId is string;
+      allow delete: if request.auth != null;
+    }
+  }
+}

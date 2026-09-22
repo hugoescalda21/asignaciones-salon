@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Tablero de Anuncios</title>
+<style>
+  :root{--bg:#EDEFEF;--surface:#fff;--ink:#212C34;--ink-soft:#5C6B74;--line:#DDE1E2;--gold:#A9822F;--gold-text:#876825;--blue:#3E6B8A}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Segoe UI",Roboto,sans-serif;padding:24px 16px 60px}
+  h1{font-family:Georgia,serif;font-size:24px;margin:0 0 4px;text-align:center}
+  .sub{text-align:center;color:var(--ink-soft);font-size:14px;margin-bottom:28px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:28px;max-width:1100px;margin:0 auto}
+  .col h2{font-family:Georgia,serif;font-size:17px;margin:0 0 4px}
+  .col p.n{font-size:13px;color:var(--ink-soft);margin:0 0 12px}
+  .phone{background:#111;border-radius:30px;padding:10px;max-width:350px;margin:0 auto}
+  .screen{border-radius:22px;overflow:hidden;background:var(--bg);padding:14px}
+  .card{background:var(--surface);border:1.5px solid var(--gold);border-radius:14px;padding:14px}
+  .card h3{font-family:Georgia,serif;color:var(--gold-text);font-size:18px;margin:0 0 10px;padding-bottom:8px;border-bottom:1px dashed var(--line)}
+  .ann{padding:10px 0;border-bottom:1px solid var(--line)}
+  .ann:last-of-type{border-bottom:0}
+  .d{font-size:11px;letter-spacing:.04em;color:var(--ink-soft);font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+  .new{background:var(--gold);color:#fff;border-radius:99px;padding:1px 7px;font-size:10px}
+  .t{font-size:14px;line-height:1.4}
+  .clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .more{color:var(--blue);font-size:12.5px;font-weight:600;margin-top:2px}
+  .img{margin-top:8px;height:150px;border-radius:10px;border:1px solid var(--line);background:linear-gradient(135deg,#e6f3ec 0 50%,#f9e3e3 50% 75%,#fbf1c9 75%);position:relative;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);font-size:12px}
+  .img i{position:absolute;right:8px;bottom:8px;background:rgba(33,44,52,.75);color:#fff;font-style:normal;font-size:11px;border-radius:99px;padding:2px 8px}
+  .pdf{margin-top:8px;border:1px solid var(--line);background:#F4F6F6;border-radius:10px;padding:9px 10px;display:flex;gap:10px;align-items:center}
+  .pdf .ico{width:34px;height:40px;border-radius:5px;background:#c0392b;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+  .pdf .nm{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pdf .sm{font-size:11.5px;color:var(--ink-soft)}
+  .pdf .tx{min-width:0}
+  .prev{margin-top:6px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;color:var(--gold-text);font-weight:700;font-size:13.5px;cursor:pointer;user-select:none}
+  .old{display:none}
+  .open .old{display:block}
+  .pin{color:var(--gold-text)}
+  /* modal */
+  .modal{background:var(--surface);border-radius:22px;padding:18px 16px}
+  .modal h3{font-family:Georgia,serif;margin:0 0 12px;font-size:18px}
+  label.l{font-size:12px;color:var(--ink-soft);display:block;margin:10px 0 4px}
+  .ta{border:1px solid var(--line);border-radius:10px;padding:10px;font-size:13.5px;min-height:64px;background:#fafbfb;line-height:1.4}
+  .sel{border:1px solid var(--line);border-radius:10px;padding:10px;font-size:13.5px;background:#fafbfb;display:flex;justify-content:space-between}
+  .att{margin:10px 0;border:1px dashed var(--line);border-radius:10px;padding:8px 10px;font-size:13px;color:var(--ink-soft);display:flex;justify-content:space-between}
+  .chk{display:flex;gap:10px;align-items:flex-start;background:#F6F0E1;border:1px solid #E3D3A6;border-radius:10px;padding:10px 12px;margin:12px 0;font-size:13px}
+  .box{width:18px;height:18px;border-radius:4px;background:var(--gold);color:#fff;font-size:13px;display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px}
+  .chk small{display:block;color:var(--ink-soft);font-size:12px;margin-top:2px}
+  .btns{display:flex;gap:8px;justify-content:flex-end}
+  .b{padding:9px 16px;border-radius:10px;font-size:13.5px;font-weight:600}
+  .b1{background:var(--ink);color:#fff}.b2{background:#eef0f0;color:var(--ink)}
+  .exp{font-size:11.5px;color:var(--ink-soft);margin-top:-2px}
+  .gest{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:8px;font-size:12.5px;display:flex;justify-content:space-between;gap:8px}
+  .gest .ven{color:#b0451f;font-weight:600}
+</style>
+</head>
+<body>
+<h1>Tablero de Anuncios — versión nueva</h1>
+<div class="sub">Con 7 avisos cargados. Tocá "Ver anteriores" para probar el desplegado.</div>
+
+<div class="grid">
+
+  <div class="col">
+    <h2>1. Cómo lo ve el hermano</h2>
+    <p class="n">3 avisos recientes a la vista, el resto plegado. Imagen en miniatura (al tocar se abre completa), PDF con nombre cortado y texto largo recortado.</p>
+    <div class="phone"><div class="screen">
+      <div class="card" id="board">
+        <h3>Tablero de Anuncios</h3>
+
+        <div class="ann">
+          <div class="d">LUN, 21 SEPT, 2:44 P. M. <span class="new">nuevo</span></div>
+          <div class="t">Prueba 2</div>
+          <div class="img">🖼 Guía de limpieza<i>Tocar para ampliar</i></div>
+        </div>
+
+        <div class="ann">
+          <div class="d">LUN, 21 SEPT, 2:43 P. M.</div>
+          <div class="t">Aviso de prueba</div>
+          <div class="pdf"><div class="ico">PDF</div><div class="tx"><div class="nm">Guía de Limpieza 01 - Limpieza Superficial después de cada reunión.pdf</div><div class="sm">PDF · 240 KB · Toca para abrir</div></div></div>
+        </div>
+
+        <div class="ann">
+          <div class="d"><span class="pin">📌 Fijado</span> · MAR, 15 SEPT</div>
+          <div class="t clamp">Este sábado limpieza general del Salón a las 9:00. Traer guantes y productos de limpieza. Los grupos de servicio quedan armados por número de grupo, cada uno se encarga de su sector. Al terminar compartimos un refrigerio entre todos.</div>
+          <div class="more">Ver más</div>
+        </div>
+
+        <div class="prev" onclick="document.getElementById('board').classList.toggle('open');this.firstChild.nodeValue=document.getElementById('board').classList.contains('open')?'Ocultar anteriores ▲':'Ver anteriores (4) ▼'">Ver anteriores (4) ▼</div>
+
+        <div class="old">
+          <div class="ann"><div class="d">JUE, 10 SEPT</div><div class="t">Recuerden confirmar su asistencia a la visita del superintendente.</div></div>
+          <div class="ann"><div class="d">LUN, 7 SEPT</div><div class="t">Cambio de horario de la reunión del sábado: 17:30.</div></div>
+          <div class="ann"><div class="d">VIE, 4 SEPT</div><div class="t">Se necesitan voluntarios para el sonido este fin de semana.</div></div>
+          <div class="ann"><div class="d">MIÉ, 2 SEPT</div><div class="t">Nueva ubicación del carrito de literatura.</div></div>
+        </div>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="col">
+    <h2>2. Cómo lo carga el editor</h2>
+    <p class="n">Campo nuevo "Mostrar hasta" (30 días por defecto), casillero de fijar y casillero de notificación.</p>
+    <div class="phone"><div class="modal">
+      <h3>Nuevo aviso</h3>
+      <label class="l" style="margin-top:0">Mensaje</label>
+      <div class="ta">Este sábado limpieza general del Salón a las 9:00.</div>
+      <div class="att"><span>📎 cronograma-limpieza.pdf · 240 KB</span><span>✕</span></div>
+      <label class="l">Mostrar hasta</label>
+      <div class="sel"><span>21 oct 2026 (30 días)</span><span>▼</span></div>
+      <div class="exp">Opciones: 7 días · 30 días · 90 días · Sin vencimiento</div>
+      <div class="chk" style="background:#f4f6f6;border-color:var(--line)"><div class="box" style="background:#fff;border:1.5px solid var(--line);color:transparent">✓</div><div>📌 Fijar arriba<small>Queda primero aunque haya avisos más nuevos.</small></div></div>
+      <div class="chk" style="margin-top:0"><div class="box">✓</div><div>Avisar por notificación<small>Le llega a los dispositivos con notificaciones activadas.</small></div></div>
+      <div class="btns"><div class="b b2">Cancelar</div><div class="b b1">Publicar</div></div>
+    </div></div>
+  </div>
+
+  <div class="col">
+    <h2>3. Gestión de avisos (editor)</h2>
+    <p class="n">Los vencidos salen del tablero público pero el editor los sigue viendo, marcados, y puede borrarlos o republicarlos.</p>
+    <div class="phone"><div class="modal">
+      <h3>Gestión de Avisos</h3>
+      <div class="gest"><div><b>Prueba 2</b><br><span style="color:var(--ink-soft)">Visible hasta 21 oct</span></div><span>🗑</span></div>
+      <div class="gest"><div><b>Aviso de prueba</b> 📎<br><span style="color:var(--ink-soft)">Visible hasta 21 oct</span></div><span>🗑</span></div>
+      <div class="gest"><div><b>📌 Limpieza general</b><br><span style="color:var(--ink-soft)">Sin vencimiento</span></div><span>🗑</span></div>
+      <div class="gest" style="opacity:.7"><div><b>Cambio de horario</b><br><span class="ven">Vencido el 7 oct · oculto al público</span></div><span>🗑</span></div>
+      <div class="gest" style="opacity:.7"><div><b>Carrito de literatura</b><br><span class="ven">Vencido el 2 oct · oculto al público</span></div><span>🗑</span></div>
+    </div></div>
+  </div>
+
+</div>
+</body>
+</html>

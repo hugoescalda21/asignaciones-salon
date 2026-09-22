@@ -1,0 +1,16 @@
+{
+  "name": "asignaciones-salon-functions",
+  "description": "Funciones en la nube: notificaciones push de asignaciones y anuncios, y recordatorios.",
+  "engines": {
+    "node": "22"
+  },
+  "main": "index.js",
+  "scripts": {
+    "test": "node test-diff.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.10.0",
+    "firebase-functions": "^7.4.0"
+  },
+  "private": true
+}

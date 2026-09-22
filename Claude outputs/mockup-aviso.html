@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Nuevo aviso</title>
+<style>
+  :root{--bg:#EDEFEF;--surface:#fff;--ink:#212C34;--ink-soft:#5C6B74;--line:#DDE1E2;--gold:#A9822F;--gold-text:#876825;--blue:#3E6B8A}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Segoe UI",Roboto,sans-serif;padding:24px 16px 60px}
+  h1{font-family:Georgia,serif;font-size:24px;margin:0 0 4px;text-align:center}
+  .sub{text-align:center;color:var(--ink-soft);font-size:14px;margin-bottom:28px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:28px;max-width:1100px;margin:0 auto}
+  .col h2{font-family:Georgia,serif;font-size:17px;margin:0 0 4px}
+  .col p.n{font-size:13px;color:var(--ink-soft);margin:0 0 12px}
+  .phone{background:#111;border-radius:30px;padding:10px;max-width:340px;margin:0 auto}
+  .screen{border-radius:22px;overflow:hidden;min-height:330px;position:relative}
+  /* Android shade */
+  .shade{background:#1c2226;padding:14px 12px;color:#fff}
+  .shade .time{font-size:12px;opacity:.7;margin-bottom:10px;display:flex;justify-content:space-between}
+  .notif{background:#2b3439;border-radius:18px;padding:12px 14px;margin-bottom:10px}
+  .nh{display:flex;align-items:center;gap:6px;font-size:11.5px;color:#b7c1c7;margin-bottom:6px}
+  .ic{width:16px;height:16px;border-radius:50%;background:var(--gold);display:inline-flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:700}
+  .nt{font-size:14.5px;font-weight:600;margin-bottom:2px}
+  .nb{font-size:13.5px;color:#d6dde1;line-height:1.35}
+  .acts{display:flex;gap:16px;margin-top:10px;font-size:12.5px;font-weight:600;color:#e0b95b}
+  .thumb{margin-top:8px;border-radius:10px;height:90px;background:linear-gradient(135deg,#3E6B8A,#6b93ad);display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;opacity:.95}
+  /* modal */
+  .modal{background:var(--surface);padding:18px 16px;min-height:330px}
+  .modal h3{font-family:Georgia,serif;margin:0 0 12px;font-size:18px}
+  label.l{font-size:12px;color:var(--ink-soft);display:block;margin-bottom:4px}
+  .ta{border:1px solid var(--line);border-radius:10px;padding:10px;font-size:13.5px;min-height:84px;background:#fafbfb;line-height:1.4}
+  .att{margin:10px 0;border:1px dashed var(--line);border-radius:10px;padding:8px 10px;font-size:13px;color:var(--ink-soft);display:flex;justify-content:space-between}
+  .chk{display:flex;gap:10px;align-items:flex-start;background:#F6F0E1;border:1px solid #E3D3A6;border-radius:10px;padding:10px 12px;margin:12px 0;font-size:13px}
+  .box{width:18px;height:18px;border-radius:4px;background:var(--gold);color:#fff;font-size:13px;display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px}
+  .chk small{display:block;color:var(--ink-soft);font-size:12px;margin-top:2px}
+  .btns{display:flex;gap:8px;justify-content:flex-end}
+  .b{padding:9px 16px;border-radius:10px;font-size:13.5px;font-weight:600}
+  .b1{background:var(--ink);color:#fff}.b2{background:#eef0f0;color:var(--ink)}
+  /* tablero */
+  .page{background:var(--bg);padding:16px 14px;min-height:330px}
+  .page h3{font-family:Georgia,serif;font-size:17px;margin:0 0 10px}
+  .ann{background:var(--surface);border-radius:12px;padding:12px 14px;border-left:3px solid var(--gold);margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .ann .d{font-size:11px;letter-spacing:.04em;color:var(--gold-text);font-weight:700;margin-bottom:4px}
+  .ann .t{font-size:13.5px;line-height:1.4}
+  .pdf{margin-top:8px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13px;display:flex;gap:8px;align-items:center}
+  .pdf small{color:var(--ink-soft);display:block;font-size:11.5px}
+  .banner{position:absolute;left:10px;right:10px;top:10px;background:var(--ink);color:#fff;border-left:4px solid var(--gold);border-radius:10px;padding:12px 14px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+  .banner b{font-size:14px;display:block}.banner span{font-size:12.5px}
+  .tag{display:inline-block;font-size:11px;background:#eef0f0;border-radius:99px;padding:2px 8px;margin-left:6px;color:var(--ink-soft);font-weight:600}
+</style>
+</head>
+<body>
+<h1>Nuevo aviso — cómo se vería</h1>
+<div class="sub">Ejemplo con el aviso: "Este sábado limpieza general del Salón a las 9:00. Traer guantes y productos de limpieza. ¡Los esperamos!"</div>
+
+<div class="grid">
+
+  <div class="col">
+    <h2>1. Al publicar (modal)</h2>
+    <p class="n">Casillero nuevo, marcado por defecto. Lo destildás si es un aviso menor.</p>
+    <div class="phone"><div class="screen"><div class="modal">
+      <h3>Nuevo aviso</h3>
+      <label class="l">Mensaje</label>
+      <div class="ta">Este sábado limpieza general del Salón a las 9:00. Traer guantes y productos de limpieza. ¡Los esperamos!</div>
+      <div class="att"><span>📎 cronograma-limpieza.pdf · 240 KB</span><span>✕</span></div>
+      <div class="chk"><div class="box">✓</div><div>Avisar por notificación<small>Le llega a todos los que tengan activadas las notificaciones (3 dispositivos).</small></div></div>
+      <div class="btns"><div class="b b2">Cancelar</div><div class="b b1">Publicar</div></div>
+    </div></div></div>
+  </div>
+
+  <div class="col">
+    <h2>2. Notificación en el celular</h2>
+    <p class="n">Igual que las de asignaciones, mismo ícono. Al tocarla abre el tablero.</p>
+    <div class="phone"><div class="screen shade">
+      <div class="time"><span>Domingo 21 de sept.</span><span>20:14</span></div>
+      <div class="notif">
+        <div class="nh"><span class="ic">A</span> Asignaciones · hugoescalda21.github.io · ahora</div>
+        <div class="nt">📢 Nuevo aviso</div>
+        <div class="nb">Este sábado limpieza general del Salón a las 9:00. Traer guantes y productos de limpieza…</div>
+      </div>
+      <div class="notif">
+        <div class="nh"><span class="ic">A</span> Asignaciones · hugoescalda21.github.io · ahora</div>
+        <div class="nt">📢 Nuevo aviso · 📎 con archivo adjunto</div>
+        <div class="nb">Cronograma de limpieza del mes. Tocá para verlo.</div>
+      </div>
+      <div style="font-size:11.5px;color:#9aa6ad;text-align:center;margin-top:8px">(Arriba: sin adjunto · Abajo: con adjunto)</div>
+    </div></div>
+  </div>
+
+  <div class="col">
+    <h2>3. Si tiene la app abierta</h2>
+    <p class="n">El mismo cartelito del tope que ya funciona para las asignaciones.</p>
+    <div class="phone"><div class="screen page">
+      <div class="banner"><b>📢 Nuevo aviso</b><span>Este sábado limpieza general del Salón a las 9:00. Traer guantes y productos…</span></div>
+      <div style="height:78px"></div>
+      <h3>Tablero de Anuncios</h3>
+      <div class="ann"><div class="d">DOM, 8:14 P. M. <span class="tag">nuevo</span></div><div class="t">Este sábado limpieza general del Salón a las 9:00. Traer guantes y productos de limpieza. ¡Los esperamos!</div>
+        <div class="pdf">📄<div>cronograma-limpieza.pdf<small>Toca para abrir o descargar</small></div></div></div>
+      <div class="ann" style="opacity:.75"><div class="d">JUE, 8:30 P. M.</div><div class="t">Recuerden confirmar su asistencia a la visita del superintendente.</div></div>
+    </div></div>
+  </div>
+
+</div>
+</body>
+</html>

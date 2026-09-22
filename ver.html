@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Redirigiendo…</title>
+<meta name="robots" content="noindex, nofollow">
+<script>
+  var qs = window.location.search || '';
+  window.location.replace('./ver/ver.html' + qs);
+</script>
+</head>
+<body>
+  <p>Esta página se mudó. Si no te redirige solo, <a id="link" href="./ver/ver.html">tocá acá</a>.</p>
+  <script>
+    document.getElementById('link').href = './ver/ver.html' + qs;
+  </script>
+</body>
+</html>
