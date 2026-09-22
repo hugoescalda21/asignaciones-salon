@@ -1654,7 +1654,15 @@
       const full = (text ? text : 'Anuncio de la congregación') + extra + '\n\n' + appLink;
       if (navigator.share) { await navigator.share({ title, text: full }); return; }
       window.open('https://wa.me/?text=' + encodeURIComponent(full), '_blank', 'noopener');
-    } catch (e) { /* el usuario canceló el menú de compartir */ }
+    } catch (e) {
+      // AbortError = el usuario cerró el cartel de compartir sin elegir nada (normal).
+      // Cualquier otro error se muestra (temporal, para diagnosticar) y se deja en consola.
+      if (!e || e.name !== 'AbortError') {
+        const msg = (e && (e.name + ': ' + e.message)) || String(e);
+        console.error('[compartir anuncio] error:', msg);
+        alert('No se pudo compartir. Detalle técnico (mandale esto a Hugo):\n' + msg);
+      }
+    }
   }
 
   function updateOfflineNote() {
