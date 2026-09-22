@@ -1613,16 +1613,15 @@
     const a = annFind(id);
     if (!a || !a.attachmentUrl) return;
     if (a.attachmentType === 'image') { ev.preventDefault(); openLightbox(a); return; }
-    // PDF: si ya está guardado en el dispositivo, se abre desde ahí (sirve sin conexión);
-    // si no, el link normal hace su trabajo.
+    // PDF: si ya está guardado en el dispositivo, se abre desde ahí PARA VERLO (sirve sin
+    // conexión); si no, el link normal hace su trabajo. Tocar el PDF nunca lo descarga solo:
+    // para guardar una copia está el botón "Compartir" de cada anuncio.
     if (!annCached.has(a.attachmentUrl)) return;
     ev.preventDefault();
     cacheGet(a.attachmentUrl).then((blob) => {
       if (!blob) { window.open(a.attachmentUrl, '_blank', 'noopener'); return; }
       const url = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
-      const l = document.createElement('a');
-      l.href = url; l.target = '_blank'; l.rel = 'noopener'; l.download = a.attachmentName || 'anuncio.pdf';
-      document.body.appendChild(l); l.click(); l.remove();
+      window.open(url, '_blank', 'noopener');
       setTimeout(() => URL.revokeObjectURL(url), 60000);
     });
   }
