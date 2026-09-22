@@ -186,6 +186,7 @@
   .announcement-item { margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
   .announcement-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
   .ann-text { font-size: 13.5px; line-height: 1.5; margin: 0 0 10px 0; color: var(--ink); }
+  .ann-title { font-family: Georgia, serif; font-size: 15px; font-weight: 700; margin: 0 0 4px 0; color: var(--ink); }
   .ann-date { display: block; font-size: 11px; color: var(--ink-soft); margin-bottom: 6px; font-weight: 600; }
   .ann-image { width: 100%; max-height: 160px; object-fit: cover; border-radius: var(--radius-s); border: 1px solid var(--line); margin-top: 8px; }
   .ann-pdf { display: flex; align-items: center; gap: 10px; background: var(--bg); border: 1px solid var(--line); padding: 10px 12px; border-radius: var(--radius-s); margin-top: 8px; text-decoration: none; color: var(--ink); }
@@ -1673,6 +1674,8 @@
     const texto = a.text || '';
     const largo = texto.length > 150 || texto.split('\n').length > 3;
     const abierto = annState.expanded.has(a.id);
+    const editadoTag = a.editedIso ? ' · editado' : '';
+    const tituloHtml = a.title ? `<h3 class="ann-title">${escapeHtml(a.title)}</h3>` : '';
 
     let attHtml = '';
     if (a.attachmentUrl) {
@@ -1692,9 +1695,10 @@
     return `
       <div class="announcement-item">
         <div class="ann-head">
-          <span class="ann-date">${a.pinned ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>Fijado · ' : ''}${dayLabel}, ${timeLabel}${esNuevo ? '<span class="ann-new">nuevo</span>' : ''}</span>
+          <span class="ann-date">${a.pinned ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>Fijado · ' : ''}${dayLabel}, ${timeLabel}${editadoTag}${esNuevo ? '<span class="ann-new">nuevo</span>' : ''}</span>
           <button type="button" class="ann-share" data-ann-share="${escapeHtml(a.id)}" aria-label="Compartir anuncio"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>Compartir</button>
         </div>
+        ${tituloHtml}
         <p class="ann-text${largo && !abierto ? ' clamp' : ''}">${escapeHtml(texto).replace(/\n/g, '<br>')}</p>
         ${largo ? `<button type="button" class="ann-more" data-ann-more="${escapeHtml(a.id)}">${abierto ? 'Ver menos' : 'Ver más'}</button>` : ''}
         ${attHtml}
