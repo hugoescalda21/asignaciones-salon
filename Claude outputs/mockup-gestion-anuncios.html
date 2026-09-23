@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Gestión de anuncios</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EDEFEF; --surface:#FFFFFF; --ink:#212C34; --ink-soft:#5C6B74; --ink-faint:#636C71;
+    --line:#DDE1E2; --accent-gold:#A9822F; --accent-gold-text:#876825; --accent-blue:#3E6B8A;
+    --ok:#4C7A5E; --ok-bg:#EEF4EF; --bad:#A8433A; --bad-bg:#FBEAE8; --gold-bg:#F6F0E1; --gold-line:#E3D3A6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#D9DDDE;font-family:'Public Sans',-apple-system,sans-serif;color:var(--ink);padding:24px 16px 48px}
+  h1.page{font-family:'Fraunces',serif;font-weight:500;font-size:22px;margin:0 0 4px;text-align:center}
+  p.lead{text-align:center;color:var(--ink-soft);font-size:13px;margin:0 auto 22px;max-width:720px;line-height:1.5}
+  .grid{display:flex;flex-wrap:wrap;gap:28px;justify-content:center;align-items:flex-start}
+  .col{display:flex;flex-direction:column;align-items:center;gap:10px;max-width:300px}
+  .label{font-size:13px;font-weight:700;text-align:center}
+  .label small{display:block;font-weight:600;color:var(--ink-soft);font-size:10.5px}
+  .note{font-size:12px;color:var(--ink-soft);line-height:1.5;width:100%}
+  .note b{color:var(--ink)}
+  .n{display:inline-flex;width:17px;height:17px;border-radius:50%;background:#E5B94E;color:#212C34;font-size:10px;font-weight:700;align-items:center;justify-content:center;margin-right:3px}
+  .hl{outline:2.5px solid #E5B94E;outline-offset:2px;position:relative}
+  .pin{position:absolute;top:-9px;left:-9px;width:18px;height:18px;border-radius:50%;background:#E5B94E;color:#212C34;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;z-index:3}
+
+  .phone{width:290px;height:620px;background:var(--bg);border-radius:28px;border:8px solid #1a1f24;overflow:hidden;position:relative;box-shadow:0 10px 30px rgba(0,0,0,.18);display:flex;flex-direction:column}
+  .ehead{background:#fff;padding:9px 12px 7px;display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--line);flex:none}
+  .ehead .dot{width:7px;height:7px;border-radius:50%;background:var(--accent-gold)}
+  .ehead b{font-family:'Fraunces',serif;font-weight:500;font-size:14px}
+  .ehead .cb{font-size:8.5px;background:var(--bg);border-radius:9px;padding:2px 7px;color:var(--ink-soft)}
+  .content{padding:10px 10px;flex:1;overflow:hidden;position:relative}
+  .btabs{height:44px;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:center;font-size:8px;color:var(--ink-faint);flex:none}
+  .btabs span.on{color:var(--ink);font-weight:700}
+
+  .btn{border:1px solid var(--line);background:#fff;border-radius:7px;font-size:9.5px;font-weight:700;padding:7px 8px;white-space:nowrap;text-align:center}
+  .btn.pri{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .btn.grow{flex:1}
+  .newbtn{display:flex;align-items:center;justify-content:center;gap:5px;background:var(--ink);color:#fff;border-radius:9px;font-size:10.5px;font-weight:700;padding:9px;margin-bottom:9px}
+
+  .sec{display:flex;align-items:center;gap:5px;font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:8px 0 5px;color:var(--ink-soft)}
+  .sec::after{content:'';flex:1;height:1px;background:var(--line)}
+  .sec.fold{justify-content:space-between;background:#fff;border:1px solid var(--line);border-radius:8px;padding:7px 9px;text-transform:none;letter-spacing:0;font-size:9.5px;color:var(--ink)}
+  .sec.fold::after{display:none}
+  .sec.fold small{color:var(--ink-soft);font-weight:600}
+
+  .ac{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 9px;margin-bottom:6px;position:relative}
+  .ac.pinned{border:1.5px solid var(--accent-gold)}
+  .ac .meta{font-size:7.8px;color:var(--ink-soft);margin-bottom:3px;padding-right:22px}
+  .ac .meta b{color:var(--accent-gold-text)}
+  .ac .t{font-size:10.5px;font-weight:700;margin-bottom:2px}
+  .ac .x{font-size:9px;line-height:1.4;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .ac .more{position:absolute;top:5px;right:6px;font-size:13px;color:var(--ink-soft);width:20px;text-align:center;line-height:1}
+  .ac .att{display:inline-flex;gap:4px;align-items:center;font-size:8px;color:var(--ink-soft);background:var(--bg);border-radius:5px;padding:2px 6px;margin-top:4px}
+  .chip{display:inline-flex;align-items:center;gap:4px;font-size:8px;font-weight:700;border-radius:6px;padding:2px 6px;margin-top:4px}
+  .chip.ev{background:#E7EEF3;color:var(--accent-blue)}
+  .chip.vence{background:var(--gold-bg);color:#7A5A0E}
+  .ac.old{opacity:.7}
+  .repub{display:inline-block;margin-top:5px;font-size:8.5px;font-weight:700;color:var(--accent-blue);border:1px solid var(--accent-blue);border-radius:6px;padding:3px 7px}
+
+  .sheet-ov{position:absolute;inset:0;background:rgba(33,44,52,.45);display:flex;align-items:flex-end;z-index:6}
+  .sheet{background:#fff;width:100%;border-radius:14px 14px 0 0;padding:9px 12px 12px}
+  .handle{width:34px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 8px}
+  .sheet h4{font-family:'Fraunces',serif;font-weight:500;font-size:13px;margin:0 0 2px}
+  .sheet .sub{font-size:8.5px;color:var(--ink-soft);margin-bottom:8px}
+  .mi{display:flex;align-items:center;gap:8px;padding:8px 2px;border-top:1px solid var(--line);font-size:10.5px;font-weight:600}
+  .mi i{font-style:normal;width:16px;text-align:center}
+  .mi small{display:block;font-weight:500;font-size:8px;color:var(--ink-soft)}
+  .mi.danger{color:var(--bad)}
+  .toast{position:absolute;left:10px;right:10px;bottom:52px;background:var(--ink);color:#fff;border-radius:9px;padding:8px 10px;font-size:9.5px;display:flex;justify-content:space-between;align-items:center;z-index:7}
+  .toast b{color:#F0D48A}
+
+  /* formulario */
+  .fhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .fhead b{font-family:'Fraunces',serif;font-weight:500;font-size:14px}
+  .fhead span{font-size:10px;color:var(--ink-soft)}
+  .in{background:#fff;border:1px solid var(--line);border-radius:7px;padding:7px 8px;font-size:9.5px;margin-bottom:6px;color:var(--ink)}
+  .in.ph{color:var(--ink-faint)}
+  .in.ta{height:62px;line-height:1.4}
+  .in.ta u{color:var(--accent-blue)}
+  .fl{font-size:8px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;margin:8px 0 4px}
+  .row{display:flex;gap:5px}
+  .row .in{flex:1;margin-bottom:0}
+  .pills{display:flex;flex-wrap:wrap;gap:4px}
+  .pills span{font-size:8.5px;font-weight:700;border:1px solid var(--line);background:#fff;border-radius:12px;padding:4px 8px;color:var(--ink-soft)}
+  .pills span.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .sw{display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 8px;margin-top:5px;font-size:9.5px;font-weight:600}
+  .sw small{display:block;font-size:7.8px;color:var(--ink-soft);font-weight:500}
+  .tg{width:26px;height:15px;border-radius:8px;background:#C9CFD1;position:relative;flex:none}
+  .tg::after{content:'';position:absolute;top:2px;left:2px;width:11px;height:11px;border-radius:50%;background:#fff}
+  .tg.on{background:var(--ok)}
+  .tg.on::after{left:13px}
+  .fbar{position:absolute;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:8px 10px;display:flex;gap:6px}
+
+  /* vista previa */
+  .pvlab{font-size:8px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;margin:4px 0 5px}
+  .notif{background:rgba(255,255,255,.92);border-radius:12px;padding:8px 9px;display:flex;gap:7px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:10px}
+  .notif .ico{width:22px;height:22px;border-radius:6px;background:var(--ink);color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;flex:none}
+  .notif .nt{font-size:9px;font-weight:700}
+  .notif .nt span{float:right;font-weight:500;color:var(--ink-faint);font-size:8px}
+  .notif .nb{font-size:8.5px;color:var(--ink-soft);line-height:1.35}
+
+  /* tarjeta pública */
+  .pc{background:#fff;border:1px solid var(--line);border-radius:11px;padding:10px 11px;margin-bottom:8px;position:relative}
+  .pc.pinned{border:1.5px solid var(--accent-gold)}
+  .pc .pm{font-size:8px;color:var(--ink-soft);margin-bottom:4px}
+  .pc .pt{font-size:11.5px;font-weight:700;margin-bottom:3px}
+  .pc .px{font-size:9.5px;line-height:1.45}
+  .pc .px u{color:var(--accent-blue);text-decoration:underline}
+  .evbox{display:flex;align-items:center;gap:8px;background:#F2F6F9;border:1px solid #D3E0EA;border-radius:9px;padding:7px 8px;margin-top:8px}
+  .evbox .cal{width:30px;border-radius:6px;overflow:hidden;text-align:center;background:#fff;border:1px solid #D3E0EA;flex:none}
+  .evbox .cal i{display:block;font-style:normal;background:var(--accent-blue);color:#fff;font-size:6.5px;font-weight:700;padding:1px 0;text-transform:uppercase}
+  .evbox .cal b{display:block;font-family:'Fraunces',serif;font-size:13px;font-weight:500;line-height:1.3}
+  .evbox .et{flex:1;font-size:9px;font-weight:700}
+  .evbox .et small{display:block;font-weight:500;color:var(--ink-soft);font-size:8px}
+  .evbox .gc{font-size:8px;font-weight:700;color:var(--accent-blue);border:1px solid var(--accent-blue);border-radius:6px;padding:4px 6px;white-space:nowrap;background:#fff}
+  .pfoot{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:8px;color:var(--ink-soft)}
+  .pfoot .sh{font-weight:700;color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:3px 7px}
+
+  .reco{max-width:860px;margin:32px auto 0;background:#fff;border-radius:12px;padding:18px 22px;border-left:4px solid var(--accent-gold)}
+  .reco h2{font-family:'Fraunces',serif;font-weight:500;font-size:17px;margin:0 0 8px}
+  .reco p{font-size:13px;line-height:1.6;color:var(--ink-soft);margin:0 0 8px}
+  .reco p strong{color:var(--ink)}
+</style>
+</head>
+<body>
+<h1 class="page">Anuncios — mockup de mejoras</h1>
+<p class="lead">Cuatro pantallas de quien publica (en la app de asignaciones) y una de lo que ve la congregación. Los números amarillos marcan cada una de las 7 mejoras.</p>
+
+<div class="grid">
+
+  <!-- 1. Lista -->
+  <div class="col">
+    <div class="label">1 · Lista de anuncios<small>lo primero que se ve al entrar</small></div>
+    <div class="phone">
+      <div class="ehead"><span class="dot"></span><b>Asignaciones</b><span class="cb">San Agustín</span></div>
+      <div class="content">
+        <div class="newbtn hl"><span class="pin">1</span>+ Nuevo anuncio</div>
+
+        <div class="sec">📌 Fijados · 1</div>
+        <div class="ac pinned hl"><span class="pin">2</span>
+          <div class="meta">Hace 2 días · <b>hasta el evento</b></div>
+          <div class="more">⋯</div>
+          <div class="t">Visita del superintendente</div>
+          <div class="x">Esta semana nos visita el superintendente de circuito. Los invitamos a participar en la predicación del sábado.</div>
+          <span class="chip ev">📅 Sáb 26 sept · 9:00</span>
+        </div>
+
+        <div class="sec">Activos · 2</div>
+        <div class="ac">
+          <div class="meta">Ayer · hasta el 22 oct</div>
+          <div class="more hl" style="outline-offset:0"><span class="pin" style="top:-11px;left:-12px">3</span>⋯</div>
+          <div class="t">Limpieza del Salón</div>
+          <div class="x">Le toca al grupo 3 el sábado después de la predicación. ¡Gracias por colaborar!</div>
+        </div>
+        <div class="ac">
+          <div class="meta">18 sept · hasta el 18 oct</div>
+          <div class="more">⋯</div>
+          <div class="x">Ya está disponible el programa de la asamblea de circuito. Lo pueden ver en el adjunto.</div>
+          <span class="att">📎 programa-asamblea.pdf</span>
+        </div>
+
+        <div class="sec fold hl"><span class="pin">2</span><span>Vencidos · 3 <small>· ya no se muestran</small></span><span>▴</span></div>
+        <div class="ac old">
+          <div class="meta" style="color:var(--bad)">Venció el 15 sept</div>
+          <div class="more">⋯</div>
+          <div class="t">Predicación especial</div>
+          <div class="x">Salida de grupo el domingo a las 9:30 desde el Salón.</div>
+          <span class="repub">↻ Volver a publicar 30 días</span>
+        </div>
+      </div>
+      <div class="btabs"><span>Programa</span><span>Cronómetro</span><span>Hermanos</span><span>Ajustes</span><span class="on">Anuncios</span></div>
+    </div>
+    <div class="note"><span class="n">1</span><b>La lista va primero.</b> El formulario se abre con "+ Nuevo anuncio", así no ocupa media pantalla cuando solo querés revisar.<br><span class="n">2</span><b>Ordenada por estado:</b> fijados, activos y vencidos. Los vencidos quedan plegados, y cada uno tiene <b>"Volver a publicar"</b> para mostrarlo 30 días más sin escribirlo de nuevo.</div>
+  </div>
+
+  <!-- 2. Menú -->
+  <div class="col">
+    <div class="label">2 · Menú ⋯ y borrar con Deshacer<small>en vez de tres botones apilados</small></div>
+    <div class="phone">
+      <div class="ehead"><span class="dot"></span><b>Asignaciones</b><span class="cb">San Agustín</span></div>
+      <div class="content">
+        <div class="newbtn">+ Nuevo anuncio</div>
+        <div class="sec">📌 Fijados · 1</div>
+        <div class="ac pinned"><div class="meta">Hace 2 días · <b>hasta el evento</b></div><div class="more">⋯</div><div class="t">Visita del superintendente</div><div class="x">Esta semana nos visita el superintendente de circuito.</div></div>
+        <div class="sec">Activos · 1</div>
+        <div class="ac"><div class="meta">18 sept · hasta el 18 oct</div><div class="more">⋯</div><div class="x">Ya está disponible el programa de la asamblea de circuito.</div></div>
+        <div class="toast hl" style="bottom:218px"><span class="pin">3</span><span>Anuncio borrado</span><b>Deshacer</b></div>
+        <div class="sheet-ov">
+          <div class="sheet hl" style="outline-offset:-2px"><span class="pin" style="top:6px;left:6px">3</span>
+            <div class="handle"></div>
+            <h4>Limpieza del Salón</h4>
+            <div class="sub">Publicado ayer · visible hasta el 22 oct</div>
+            <div class="mi"><i>✏️</i><span>Editar</span></div>
+            <div class="mi"><i>📌</i><span>Fijar arriba</span></div>
+            <div class="mi"><i>⧉</i><span>Duplicar<small>Se abre una copia para cambiar fecha o texto y publicarla</small></span></div>
+            <div class="mi danger"><i>🗑</i><span>Borrar</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="btabs"><span>Programa</span><span>Cronómetro</span><span>Hermanos</span><span>Ajustes</span><span class="on">Anuncios</span></div>
+    </div>
+    <div class="note"><span class="n">3</span><b>Un solo ⋯ por anuncio</b>, igual que en Equipo técnico, con <b>Editar, Fijar, Duplicar y Borrar</b>. "Duplicar" sirve para lo que se repite (la limpieza, la predicación especial). Al borrar no hay cartel de confirmación: aparece un aviso con <b>Deshacer</b> por unos segundos.</div>
+  </div>
+
+  <!-- 3. Formulario -->
+  <div class="col">
+    <div class="label">3 · Nuevo anuncio<small>con fecha de evento y vencimiento</small></div>
+    <div class="phone">
+      <div class="ehead"><span class="dot"></span><b>Asignaciones</b><span class="cb">San Agustín</span></div>
+      <div class="content" style="padding-bottom:50px">
+        <div class="fhead"><b>Nuevo anuncio</b><span>✕</span></div>
+        <div class="in"><b>Visita del superintendente</b></div>
+        <div class="in ta">Esta semana nos visita el superintendente de circuito. Los invitamos a la predicación del sábado. Más info: <u>jw.org/es</u></div>
+
+        <div class="hl" style="border-radius:8px"><span class="pin">6</span>
+          <div class="fl" style="margin-top:4px">Fecha del evento <span style="text-transform:none;font-weight:500">(opcional)</span></div>
+          <div class="row"><div class="in">📅 Sáb 26/09/2026</div><div class="in" style="flex:0 0 72px">🕘 09:00</div></div>
+        </div>
+
+        <div class="hl" style="border-radius:8px;margin-top:6px"><span class="pin">5</span>
+          <div class="fl" style="margin-top:4px">Mostrar hasta</div>
+          <div class="pills"><span class="on">Hasta el evento</span><span>7 días</span><span>30 días</span><span>Otra fecha…</span><span>Siempre</span></div>
+        </div>
+
+        <div class="sw">📌 Fijar arriba<div class="tg on"></div></div>
+        <div class="sw"><span>Avisar por notificación<small>A los que tienen las notificaciones activadas</small></span><div class="tg on"></div></div>
+        <div class="sw" style="color:var(--ink-soft)">📎 Adjuntar foto o PDF<span style="font-size:12px">＋</span></div>
+
+        <div class="fbar"><span class="btn grow">Cancelar</span><span class="btn pri grow hl"><span class="pin">4</span>Vista previa →</span></div>
+      </div>
+      <div class="btabs"><span>Programa</span><span>Cronómetro</span><span>Hermanos</span><span>Ajustes</span><span class="on">Anuncios</span></div>
+    </div>
+    <div class="note"><span class="n">5</span><b>Vencimiento a elección:</b> "Hasta el evento" (se oculta solo el día después), 7 o 30 días, <b>"Otra fecha…"</b> para elegir un día en el calendario, o "Siempre".<br><span class="n">6</span><b>Fecha del evento, opcional.</b> Si la cargás, la congregación ve el día y la hora y puede agregarlo a su Google Calendar.</div>
+  </div>
+
+  <!-- 4. Vista previa -->
+  <div class="col">
+    <div class="label">4 · Vista previa<small>antes de publicar</small></div>
+    <div class="phone">
+      <div class="ehead"><span class="dot"></span><b>Asignaciones</b><span class="cb">San Agustín</span></div>
+      <div class="content" style="padding-bottom:50px">
+        <div class="fhead"><b>Vista previa</b><span>✕</span></div>
+        <div class="hl" style="border-radius:12px;padding:1px 0 0"><span class="pin">4</span>
+          <div class="pvlab">Así llega la notificación</div>
+          <div class="notif"><div class="ico">📢</div><div><div class="nt">Visita del superintendente <span>ahora</span></div><div class="nb">Esta semana nos visita el superintendente de circuito. Los invitamos a la…</div></div></div>
+          <div class="pvlab">Así lo ve la congregación</div>
+          <div class="pc pinned">
+            <div class="pm">📌 Fijado · Recién · se muestra hasta el sáb 26</div>
+            <div class="pt">Visita del superintendente</div>
+            <div class="px">Esta semana nos visita el superintendente de circuito. Los invitamos a la predicación del sábado. Más info: <u>jw.org/es</u></div>
+            <div class="evbox"><div class="cal"><i>sept</i><b>26</b></div><div class="et">Sábado 26 · 9:00<small>Visita del superintendente</small></div><span class="gc">+ Calendar</span></div>
+            <div class="pfoot"><span></span><span class="sh">Compartir</span></div>
+          </div>
+        </div>
+        <div class="fbar"><span class="btn grow">← Volver a editar</span><span class="btn pri grow">Publicar</span></div>
+      </div>
+      <div class="btabs"><span>Programa</span><span>Cronómetro</span><span>Hermanos</span><span>Ajustes</span><span class="on">Anuncios</span></div>
+    </div>
+    <div class="note"><span class="n">4</span><b>Vista previa real</b>: la notificación como llega al celular y la tarjeta tal como la ve la congregación. Así se detecta un texto cortado o un error antes de que le llegue a todos. Si se desactiva "Avisar por notificación", la parte de arriba no aparece.</div>
+  </div>
+
+  <!-- 5. Vista pública -->
+  <div class="col">
+    <div class="label">5 · Lo que ve la congregación<small>pestaña Anuncios de la vista pública</small></div>
+    <div class="phone">
+      <div class="ehead"><span class="dot"></span><b>San Agustín</b><span style="margin-left:auto;font-size:11px;color:var(--ink-soft)">?</span></div>
+      <div class="content">
+        <div class="pc pinned">
+          <div class="pm">📌 Fijado · Hace 2 días · hasta el sáb 26</div>
+          <div class="pt">Visita del superintendente</div>
+          <div class="px">Esta semana nos visita el superintendente de circuito. Los invitamos a la predicación del sábado. Más info: <u class="hl" style="outline-offset:1px"><span class="pin" style="top:-4px;left:auto;right:-22px">7</span>jw.org/es</u></div>
+          <div class="evbox hl"><span class="pin">6</span><div class="cal"><i>sept</i><b>26</b></div><div class="et">Sábado 26 · 9:00<small>Faltan 3 días</small></div><span class="gc">+ Calendar</span></div>
+          <div class="pfoot"><span></span><span class="sh">Compartir</span></div>
+        </div>
+        <div class="pc">
+          <div class="pm">Ayer · hasta el 22 oct</div>
+          <div class="pt">Limpieza del Salón</div>
+          <div class="px">Le toca al grupo 3 el sábado después de la predicación. ¡Gracias por colaborar!</div>
+          <div class="pfoot"><span></span><span class="sh">Compartir</span></div>
+        </div>
+        <div class="pc">
+          <div class="pm">18 sept · hasta el 18 oct</div>
+          <div class="px">Ya está disponible el programa de la asamblea de circuito.</div>
+          <div class="pfoot"><span>📎 programa-asamblea.pdf</span><span class="sh">Compartir</span></div>
+        </div>
+      </div>
+      <div class="btabs"><span>Inicio</span><span>Calendario</span><span class="on">Anuncios</span></div>
+    </div>
+    <div class="note"><span class="n">6</span><b>Recuadro del evento</b> con día, hora y cuánto falta, y el botón <b>"+ Calendar"</b>, igual que en las asignaciones.<br><span class="n">7</span><b>Links que se pueden tocar:</b> si el texto trae un link, se abre con un toque.</div>
+  </div>
+
+</div>
+
+<div class="reco">
+  <h2>Resumen</h2>
+  <p><strong>Para quien publica:</strong> la lista va primero y el formulario se abre aparte (1), ordenada en fijados, activos y vencidos, con "Volver a publicar" (2). Hay un menú ⋯ con Duplicar y borrado con Deshacer (3), vista previa antes de publicar (4) y vencimiento "hasta el evento" o en otra fecha (5).</p>
+  <p><strong>Para la congregación:</strong> fecha de evento con botón a Google Calendar (6) y links que se pueden tocar (7).</p>
+  <p><strong>Lo que no cambia:</strong> la notificación sigue saliendo solo al publicar (editar no vuelve a avisar) y quien publica no aparece nunca en la vista pública. Los anuncios que ya existen siguen igual, porque no tienen fecha de evento.</p>
+</div>
+</body>
+</html>
