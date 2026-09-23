@@ -1,0 +1,70 @@
+const { launch, FILE, SHOTS, fixture } = require('./_helper');
+const data = fixture();
+// historial: una parte de programa hace 3 semanas para Mario Díaz (p11) y hace 1 semana para Jorge López (p12)
+data.weeks['2026-08-31'] = { semana: { roles: {}, program: { perlas: 'p9' } }, finde: { roles: {}, program: {} } };
+data.weeks['2026-09-14'].semana.program = { tesoros: 'p12' };
+let ok = 0, bad = 0; const check = (l, c, d) => { if (c) { ok++; console.log('  ✅', l); } else { bad++; console.log('  ❌', l, d === undefined ? '' : JSON.stringify(d)); } };
+(async () => {
+  const b = await launch();
+  const ctx = await b.newContext({ viewport: { width: 390, height: 844 } });
+  await ctx.route(/gstatic/, r => r.abort());
+  await ctx.addInitScript((d) => { localStorage.setItem('kh-schedule-data-v2', JSON.stringify(d)); localStorage.setItem('kh-onboarding-seen', '1'); localStorage.setItem('kh-month-summary-open', '0'); }, data);
+  const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
+  await p.goto(FILE); await p.waitForTimeout(1200);
+  await p.evaluate(() => document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden')));
+  await p.click('#subtabPrograma'); await p.waitForTimeout(400);
+  check('cánticos: "N.°" y teclado numérico', await p.evaluate(() => { const i = document.querySelector('[data-program-field="cancionInicial"]'); return i.placeholder === 'N.°' && i.inputMode === 'numeric'; }));
+  check('no se corre de costado', await p.evaluate(() => document.documentElement.scrollWidth === document.documentElement.clientWidth));
+  check('minutos vacíos: avisa qué usa el cronómetro', await p.evaluate(() => { const h = document.querySelector('[data-vida-field="minutos"] + .min-empty-hint'); return getComputedStyle(h).display !== 'none' && /15 min/.test(h.textContent); }));
+  check('minutos cargados: sin aviso', await p.evaluate(() => getComputedStyle(document.querySelector('[data-student-field="minutos"] + .min-empty-hint')).display === 'none'));
+  check('temas sugeridos para partes de estudiante', await p.evaluate(() => { const i = document.querySelector('[data-student-field="tema"]'); return i.getAttribute('list') === 'studentTemasList' && $('studentTemasList').options.length === 5; }));
+  // selector del presidente
+  const openCombo = async (field) => { await p.click(`select[data-program-field="${field}"] + .pub-combo, .pub-combo:has(select[data-program-field="${field}"]) .pub-combo-input`).catch(async () => { await p.evaluate(f => document.querySelector(`select[data-program-field="${f}"]`).closest('.pub-combo').querySelector('.pub-combo-input').focus(), field); }); await p.waitForTimeout(150); };
+  await p.evaluate(() => document.querySelector('select[data-program-field="presidente"]').closest('.pub-combo').querySelector('.pub-combo-input').focus());
+  await p.waitForTimeout(200);
+  const list = () => p.evaluate(() => { const l = document.querySelector('select[data-program-field="presidente"]').closest('.pub-combo').querySelector('.pub-combo-list'); return [...l.children].map(c => c.classList.contains('pub-combo-group') ? '## ' + c.textContent : c.querySelector('span').textContent + ' | ' + ((c.querySelector('.pub-combo-note') || {}).textContent || '')); });
+  const L = await list();
+  check('grupos: primero "Disponibles"', L[0] === '## Disponibles', L.slice(0, 3));
+  check('los que nunca tuvieron parte van primero', /nunca tuvo parte/.test(L[1]), L[1]);
+  const iMario = L.findIndex(x => x.startsWith('Nicolás Paz')), iJorge = L.findIndex(x => x.startsWith('Jorge López'));
+  check('Mario (hace 3 semanas) antes que Jorge (hace 1 semana)', iMario > 0 && iJorge > iMario && /hace 3 sem\./.test(L[iMario]) && /hace 1 sem\./.test(L[iJorge]), [L[iMario], L[iJorge]]);
+  check('grupo "Ya tienen algo" con qué tienen', L.includes('## Ya tienen algo en esta reunión') && L.some(x => /^Hugo Escalda \| ya tiene: .*Consola de audio/.test(x) && /Lectura de la Biblia/.test(x)), L.filter(x => x.startsWith('Hugo')));
+  check('el propio presidente no figura como "ya tiene: Presidente"', !L.some(x => /ya tiene: Presidente/.test(x) && x.startsWith('Carlos Vega')));
+  await p.screenshot({ path: SHOTS + '/pg-picker.png' });
+  // elegir a Mario como presidente → en Oración inicial figura como ocupado
+  await p.evaluate(() => { const c = document.querySelector('select[data-program-field="presidente"]').closest('.pub-combo'); c.querySelector('.pub-combo-list').dispatchEvent(new MouseEvent('mousedown', { bubbles: true })); });
+  await p.evaluate(() => { const c = document.querySelector('select[data-program-field="presidente"]').closest('.pub-combo'); const it = [...c.querySelectorAll('.pub-combo-item')].find(x => x.textContent.startsWith('Mario Díaz')); it.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })); });
+  await p.waitForTimeout(300);
+  check('se guardó el presidente', await p.evaluate(() => data.weeks['2026-09-21'].semana.program.presidente === 'p11'));
+  await p.evaluate(() => document.querySelector('select[data-program-field="oracionInicial"]').closest('.pub-combo').querySelector('.pub-combo-input').focus()); await p.waitForTimeout(200);
+  check('los demás selectores se actualizan ("ya tiene: Presidente")', await p.evaluate(() => [...document.querySelector('select[data-program-field="oracionInicial"]').closest('.pub-combo').querySelectorAll('.pub-combo-item')].some(x => x.textContent.startsWith('Mario Díaz') && /ya tiene: Presidente/.test(x.textContent))));
+  await p.keyboard.press('Escape');
+  // privilegios: marcar a Andrés como presidente
+  await p.evaluate(() => openPubModal('p15')); await p.waitForTimeout(150);
+  await p.check('#pcapPresidente'); await p.click('#pubEditForm button[type=submit]'); await p.waitForTimeout(300);
+  check('privilegio guardado', await p.evaluate(() => data.publishers.find(x => x.id === 'p15').progCaps.presidente === true));
+  await p.evaluate(() => { data.weeks['2026-09-21'].semana.program.presidente = null; renderProgramSection(); });
+  await p.evaluate(() => document.querySelector('select[data-program-field="presidente"]').closest('.pub-combo').querySelector('.pub-combo-input').focus()); await p.waitForTimeout(200);
+  const L2 = await list();
+  check('con privilegios: Andrés en Disponibles, el resto aparte', L2[0] === '## Disponibles' && L2[1].startsWith('Ariel Núñez') && L2.includes('## Sin este privilegio marcado'), L2.slice(0, 4));
+  await p.keyboard.press('Escape');
+  check('etiqueta del privilegio en Hermanos', await p.evaluate(() => { renderBrothersTable(); return /Presidente/.test(document.querySelector('tr[data-row-pub="p15"] .br-tags').textContent); }));
+  check('los privilegios sobreviven a una recarga de datos (migración)', await p.evaluate(() => migrate(JSON.parse(JSON.stringify(data))).publishers.find(x => x.id === 'p15').progCaps.presidente === true));
+  // orador visitante
+  await p.evaluate(() => $('pillFinde').click()); await p.waitForTimeout(300);
+  await p.click('[data-visitor-toggle="on"]'); await p.waitForTimeout(300);
+  check('aparece el bloque de orador visitante con foco en el nombre', await p.evaluate(() => !!document.querySelector('.visitor-block') && document.activeElement === document.querySelector('[data-visitor-field="nombre"]') && !document.querySelector('select[data-program-field="oradorPublico"]')));
+  await p.fill('[data-visitor-field="nombre"]', 'Julio Sosa'); await p.dispatchEvent('[data-visitor-field="nombre"]', 'change');
+  await p.fill('[data-visitor-field="congregacion"]', 'Villa Elvira'); await p.dispatchEvent('[data-visitor-field="congregacion"]', 'change'); await p.waitForTimeout(200);
+  check('se guarda y saca al orador local', await p.evaluate(() => { const pr = data.weeks['2026-09-21'].finde.program; return pr.oradorVisitante.nombre === 'Julio Sosa' && pr.oradorVisitante.congregacion === 'Villa Elvira' && !pr.oradorPublico && !('open' in pr.oradorVisitante); }));
+  check('aparece en WhatsApp/PDF (programEntries)', await p.evaluate(() => programEntries(weekView('2026-09-21').finde.program, 'finde').some(e => e.label === 'Discurso público' && e.name === 'Julio Sosa (Villa Elvira)')));
+  check('cuenta como parte cubierta', await p.evaluate(() => { const pr = weekView('2026-09-21').finde.program; return programCompleteness(Object.assign({}, pr, { presidente: 'p1', oracionInicial: 'p2', atalayaConductor: 'p3', atalayaLector: 'p4', oracionFinal: 'p5' }), 'finde') === 'complete'; }));
+  await p.screenshot({ path: SHOTS + '/pg-visitor.png' });
+  await p.evaluate(() => { renderProgramSection(); }); 
+  check('al volver, sigue en modo visitante', await p.evaluate(() => document.querySelector('[data-visitor-field="nombre"]').value === 'Julio Sosa'));
+  await p.click('[data-visitor-toggle="off"]'); await p.waitForTimeout(300);
+  check('"Es de esta congregación" vuelve al selector', await p.evaluate(() => !!document.querySelector('select[data-program-field="oradorPublico"]') && !data.weeks['2026-09-21'].finde.program.oradorVisitante));
+  check('sin errores de JavaScript', errs.length === 0, errs);
+  console.log(`\n${ok} OK, ${bad} fallaron`);
+  await b.close();
+})();

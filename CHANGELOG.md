@@ -6,6 +6,12 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Registro de errores, pruebas del editor y documentación al día — 23 sep 2026 (cachés asignaciones-salon-v26, ver-salon-v24)
+
+- **Registro de errores:** si algo falla en la app de asignaciones o en la vista de la congregación, queda anotado en la nube (sin datos personales: qué pasó, dónde, rol y tipo de teléfono; máximo 10 por sesión, sin repetir). El Super Admin lo ve en Ajustes → Registro de errores, y la app le avisa cuando hay errores nuevos. Se guardan 30 días. **Requiere publicar las reglas:** `firebase deploy --only firestore:rules` desde `push-salon-2026`.
+- **Pruebas del editor:** nuevas en `tests/editor/` (12 archivos, 325 pruebas) con reloj fijo para que den igual cualquier día; `node tests/editor/run.js`. Se borró `tests/app.test.js`, que era de antes del login.
+- **Documentación:** README de pruebas, ROADMAP (lo hecho y lo pendiente) y la guía "?" del editor (nueva sección Anuncios, registro de errores y espacio en la nube).
+
 ## Guardado por partes: los cambios ya no se pisan — 23 sep 2026 (caché asignaciones-salon-v25)
 
 - Antes, cada guardado subía la congregación completa. Si dos personas guardaban casi a la vez, lo del segundo podía borrar lo del primero; y si alguien editaba sin señal, al reconectarse su copia vieja pisaba todo lo que los demás habían cambiado mientras tanto.

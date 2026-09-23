@@ -98,6 +98,22 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Registro de errores — si algo falla en la app o en la vista, se anota acá (sin datos
+    // personales). Lo puede escribir cualquiera con acceso a la congregación; solo el Super
+    // Admin lo lee y lo borra (Ajustes → Registro de errores). Nunca se modifica.
+    match /congregations/{code}/errores/{id} {
+      function ajustes() { return get(/databases/$(database)/documents/congregations/$(code)).data.settings; }
+      function en(campo) { return request.auth.token.email in ajustes().get(campo, []); }
+      allow create: if request.auth != null
+                    && (en('editorEmails') || en('tecnicoAdminEmails') || en('acomodadoresAdminEmails') ||
+                        en('asignacionesAdminEmails') || en('anunciosOnlyEmails') || en('viewerEmails'))
+                    && request.resource.data.keys().hasOnly(['at', 'app', 'kind', 'msg', 'where', 'role', 'device', 'online'])
+                    && request.resource.data.msg is string && request.resource.data.msg.size() <= 500
+                    && request.resource.data.get('where', '') is string && request.resource.data.get('where', '').size() <= 1000;
+      allow read, delete: if request.auth != null && en('editorEmails');
+      allow update: if false;
+    }
+
     // Notificaciones push — un documento por celular/token, para
     // avisar por asignación nueva. Separado del documento principal
     // a propósito: así no hace falta tocar las reglas de arriba, y

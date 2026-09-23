@@ -1,0 +1,71 @@
+const { launch, FILE, SHOTS, fixture } = require('./_helper');
+const data = fixture();
+let ok = 0, bad = 0; const check = (l, c, d) => { if (c) { ok++; console.log('  ✅', l); } else { bad++; console.log('  ❌', l, d === undefined ? '' : JSON.stringify(d)); } };
+(async () => {
+  const b = await launch();
+  const ctx = await b.newContext({ viewport: { width: 390, height: 844 } });
+  await ctx.route(/gstatic/, r => r.abort());
+  await ctx.addInitScript((d) => { localStorage.setItem('kh-schedule-data-v2', JSON.stringify(d)); localStorage.setItem('kh-onboarding-seen', '1'); window.__vib = []; navigator.vibrate = (x) => { window.__vib.push(x); return true; }; }, data);
+  const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
+  await p.goto(FILE); await p.waitForTimeout(1200);
+  await p.evaluate(() => document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden')));
+  await p.evaluate(() => { const x = [...document.querySelectorAll('[data-tab="timer"]')].find(y => y.offsetParent); x.click(); });
+  await p.waitForTimeout(300);
+  check('variables del cronómetro accesibles para la prueba', await p.evaluate(() => typeof timerEndAt === 'number'));
+  const labels = () => p.evaluate(() => [...$('weeklyPartsGrid').children].map(c => (c.querySelector('.mt-l') || c.querySelector('.tc-l')).firstChild.textContent.trim()));
+  check('botón único dice "Iniciar"', await p.evaluate(() => /Iniciar/.test($('timerMainBtn').textContent) && $('timerPauseBtn').classList.contains('hidden')));
+  check('sin consejo: 6 partes', (await labels()).length === 6, await labels());
+  check('aviso de minutos faltantes', await p.evaluate(() => /sin minutos cargados · usa 15/.test([...document.querySelectorAll('.mt-part')].find(x => /Necesidades locales/.test(x.textContent)).textContent)));
+  check('consejo apagado por defecto', await p.evaluate(() => !$('timerCounselSwitch').classList.contains('on')));
+  await p.click('#timerCounselSwitch'); await p.waitForTimeout(200);
+  check('con consejo: aparece después de Lectura y de la parte de estudiante', JSON.stringify(await labels()) === JSON.stringify(['Tesoros de la Biblia','Perlas escondidas','Lectura de la Biblia','Consejo','Empiece conversaciones','Consejo','Necesidades locales','Estudio bíblico']), await labels());
+  check('la opción queda guardada en la congregación', await p.evaluate(() => data.settings.timerCounsel === true));
+  await p.click('.mt-part[data-mpart="2"]'); await p.waitForTimeout(150);
+  await p.click('#timerMainBtn'); await p.waitForTimeout(300);
+  check('corriendo: "Terminó" y avisa que sigue el consejo', await p.evaluate(() => /Terminó/.test($('timerMainBtn').textContent) && /sigue con: Consejo/.test($('timerMainBtn').textContent) && !$('timerPauseBtn').classList.contains('hidden')));
+  check('la tarjeta muestra la parte y la persona', await p.evaluate(() => /Lectura de la Biblia\s*Hugo Escalda/.test($('timerNow').textContent)));
+  await p.screenshot({ path: SHOTS + '/c-run.png' });
+  // simular que pasaron 3:05 de 4:00 → vibra al quedar menos de 1 minuto
+  await p.evaluate(() => { timerEndAt = Date.now() + 55 * 1000; tickTimer(); });
+  check('vibra al quedar 1 minuto', await p.evaluate(() => window.__vib.some(v => Array.isArray(v) && v[0] === 90)));
+  // simular que pasaron 5:00 (1 minuto de más)
+  await p.evaluate(() => { timerEndAt = Date.now() - 60 * 1000; tickTimer(); });
+  await p.click('#timerMainBtn'); await p.waitForTimeout(300);
+  check('"Terminó" guarda la lectura', await p.evaluate(() => data.timerLog[0].label === 'Lectura de la Biblia' && Math.abs(data.timerLog[0].actualSeconds - 300) <= 1));
+  check('queda lista el consejo (1:00) con el presidente', await p.evaluate(() => $('timerDisplay').textContent === '01:00' && /Consejo\s*Carlos Vega/.test($('timerNow').textContent) && /Iniciar/.test($('timerMainBtn').textContent)));
+  check('diferencia en la parte (+1:00)', await p.evaluate(() => /\+1:00/.test(document.querySelector('.mt-part[data-mpart="2"]').textContent)));
+  check('"Reunión: 1:00 atrasada"', await p.evaluate(() => /Reunión: 1:00 atrasada/.test($('timerPace').textContent) && $('timerPace').classList.contains('late')), await p.evaluate(() => $('timerPace').textContent));
+  // consejo: iniciar, pausar, seguir/terminó
+  await p.click('#timerMainBtn'); await p.evaluate(() => { timerEndAt = Date.now() + 20 * 1000; tickTimer(); });
+  await p.click('#timerPauseBtn'); await p.waitForTimeout(150);
+  check('en pausa: "Seguir" y aparece "Terminó" chico', await p.evaluate(() => /Seguir/.test($('timerMainBtn').textContent) && !$('timerFinishBtn').classList.contains('hidden')));
+  await p.click('#timerFinishBtn'); await p.waitForTimeout(300);
+  check('el consejo se guarda con nombre propio', await p.evaluate(() => data.timerLog[0].label === 'Consejo (Lectura de la Biblia)'));
+  check('ritmo: 1:00 - 0:20 = 0:40 atrasada', await p.evaluate(() => /0:40 atrasada/.test($('timerPace').textContent)), await p.evaluate(() => $('timerPace').textContent));
+  check('sigue "Empiece conversaciones" (3 min)', await p.evaluate(() => $('timerDisplay').textContent === '03:00' && /Empiece conversaciones/.test($('timerNow').textContent)));
+  await p.screenshot({ path: SHOTS + '/c-list.png', fullPage: true });
+  // pantalla completa
+  await p.click('#timerFsBtn'); await p.waitForTimeout(200);
+  check('pantalla completa visible con la parte y el tiempo', await p.evaluate(() => !$('timerFs').classList.contains('hidden') && $('timerFsTime').textContent === '03:00' && /Empiece conversaciones/.test($('timerFsPart').textContent)));
+  await p.click('#timerFs'); await p.waitForTimeout(200);
+  check('tocar la pantalla arranca', await p.evaluate(() => !!timerInterval));
+  await p.evaluate(() => { timerEndAt = Date.now() + 30 * 1000; tickTimer(); });
+  check('último minuto: fondo ámbar', await p.evaluate(() => $('timerFs').classList.contains('warning')));
+  await p.evaluate(() => { timerEndAt = Date.now() - 25 * 1000; tickTimer(); });
+  check('pasado: fondo rojo y "+00:25"', await p.evaluate(() => $('timerFs').classList.contains('danger') && $('timerFsTime').textContent === '+00:25' && /Pasado/.test($('timerFsState').textContent)));
+  await p.screenshot({ path: SHOTS + '/c-fs.png' });
+  await p.click('#timerFs'); await p.waitForTimeout(150);
+  check('tocar otra vez pausa', await p.evaluate(() => !timerInterval && /pausa/i.test($('timerFsState').textContent)));
+  await p.click('#timerFsClose'); await p.waitForTimeout(150);
+  check('✕ cierra la pantalla completa', await p.evaluate(() => $('timerFs').classList.contains('hidden')));
+  // opciones
+  await p.click('#timerBellSwitch'); await p.click('#timerVibrateSwitch');
+  check('interruptores de campanilla y vibración', await p.evaluate(() => data.settings.timerMuted === true && data.settings.timerVibrate === false && !$('timerBellSwitch').classList.contains('on')));
+  await p.click('#timerAdjustBtn');
+  check('"Ajustar tiempo" muestra los minutos', await p.evaluate(() => !$('timerInputsWrap').classList.contains('hidden')));
+  check('no se corre de costado', await p.evaluate(() => document.documentElement.scrollWidth === document.documentElement.clientWidth));
+  check('el botón grande entra en la primera pantalla', await p.evaluate(() => { window.scrollTo(0, 0); return $('timerMainBtn').getBoundingClientRect().bottom < innerHeight - 60; }));
+  check('sin errores de JavaScript', errs.length === 0, errs);
+  console.log(`\n${ok} OK, ${bad} fallaron`);
+  await b.close();
+})();

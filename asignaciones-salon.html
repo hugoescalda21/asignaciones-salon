@@ -592,6 +592,15 @@
   .an-perm.lock { color: var(--ink-soft); }
   .an-perm .switch.lock { opacity: 0.45; cursor: default; }
 
+  /* ---------- Registro de errores ---------- */
+  .err-item { border-bottom: 1px solid var(--line); padding: 8px 0; }
+  .err-item summary { display: block !important; cursor: pointer; list-style: none; font-size: 13px; line-height: 1.4; padding: 0 !important; }
+  .err-item summary::-webkit-details-marker { display: none; }
+  .err-kind { font-weight: 700; color: var(--danger); }
+  .err-msg { word-break: break-word; }
+  .err-item small { display: block; color: var(--ink-soft); font-size: 11.5px; margin-top: 2px; }
+  .err-where { white-space: pre-wrap; word-break: break-all; font-size: 10.5px; background: var(--bg); border-radius: 6px; padding: 8px; margin: 6px 0 0; max-height: 180px; overflow: auto; }
+
   /* ---------- Ajustes → Acceso (lista larga) ---------- */
   .acc-top { display: flex; justify-content: flex-end; margin: 6px 0 -2px; }
   .acc-count { font-size: 12px; color: var(--ink-soft); }
@@ -1449,6 +1458,15 @@
         <button class="btn" id="loadSampleBtn">Cargar datos de ejemplo</button>
       </div>
     </details>
+    <details class="settings-card" id="errLogCard">
+      <summary><div><h3>Registro de errores</h3><span class="sc-sub" id="errLogSub">Fallas que tuvo la app en los teléfonos de los hermanos</span></div><span class="chev">›</span></summary>
+      <p class="hint">Si algo falla en la app o en la vista de la congregación, queda anotado acá (sin datos personales: solo qué pasó, dónde y en qué tipo de teléfono). Se guardan 30 días. Si ves algo repetido, pasáselo a quien mantiene la app.</p>
+      <div id="errLogList" style="margin-top:10px;"></div>
+      <div class="settings-actions" style="margin-top:12px;">
+        <button class="btn" id="errLogRefreshBtn">Actualizar</button>
+        <button class="btn" id="errLogClearBtn">Borrar todos</button>
+      </div>
+    </details>
     <div class="settings-group">Este dispositivo</div>
     <details class="settings-card">
       <summary><div><h3>Apariencia</h3><span class="sc-sub">Claro, oscuro o automático</span></div><span class="chev">›</span></summary>
@@ -1537,6 +1555,10 @@
         <p>Botón "Compartir" en la pestaña Programa: WhatsApp (con Equipo técnico y Programa juntos), PDF de la semana o del mes, y el link de solo lectura (<code>ver/ver.html</code>) para quien no necesita editar.</p>
       </details>
       <details class="guide-item">
+        <summary><span class="gicon" data-icon="share"></span>Anuncios<span class="chev">›</span></summary>
+        <p>Pestaña Anuncios (solo para quien tiene permiso de publicar): "+ Nuevo anuncio", con título, texto, foto o PDF, y si es de un evento, su fecha y hora (la congregación lo puede agregar a Google Calendar). "Mostrar hasta" decide cuándo deja de verse: hasta el evento, 7 o 30 días, otra fecha o siempre. Antes de publicar, "Vista previa" muestra cómo llega la notificación y cómo lo ve la congregación. En la lista, el menú ⋯ de cada anuncio tiene Editar, Fijar, Duplicar y Borrar (con Deshacer); los vencidos se pueden "Volver a publicar".</p>
+      </details>
+      <details class="guide-item">
         <summary><span class="gicon" data-icon="eye"></span>Vista pública (para la congregación)<span class="chev">›</span></summary>
         <p>Es el link que compartís con "Compartir". Muestra el calendario, un buscador, y si el email de la persona está vinculado, un resumen arriba con sus propias asignaciones.</p>
         <div class="guide-diagram">
@@ -1566,6 +1588,7 @@
       <details class="guide-item">
         <summary><span class="gicon" data-icon="chart"></span>Reportes y copia de seguridad<span class="chev">›</span></summary>
         <p>Ajustes → Reporte anual de equidad (quién cubrió qué a lo largo del año) y Copia de seguridad (exportar/importar todo en un archivo, por si necesitás restaurar algo).</p>
+        <p>Ajustes → Registro de errores: si algo falla en el teléfono de alguien, queda anotado ahí (la app te avisa cuando hay errores nuevos). En Ajustes → Sincronización se ve cuánto espacio ocupan los datos en la nube.</p>
       </details>
     </div>
   </div>
@@ -1725,6 +1748,42 @@
   }
   window.addEventListener('error', showFatalErrorBanner);
   window.addEventListener('unhandledrejection', showFatalErrorBanner);
+
+  /* ---------- Registro de errores en la nube ----------
+     Si algo falla en el teléfono de alguien, queda anotado en congregations/{código}/errores
+     y el Super Admin lo ve en Ajustes → Registro de errores. Máximo 10 por sesión, sin repetir,
+     y sin datos personales: app, tipo, mensaje, dónde falló, rol y tipo de dispositivo. */
+  const ERR_APP = 'editor';
+  const errSeen = new Set();
+  let errCount = 0;
+  const errQueue = [];
+  function errDevice() {
+    const ua = navigator.userAgent || '';
+    const os = /Android/i.test(ua) ? 'Android' : /iPhone|iPad|iPod/i.test(ua) ? 'iPhone/iPad' : /Windows/i.test(ua) ? 'Windows' : /Mac OS/i.test(ua) ? 'Mac' : /Linux/i.test(ua) ? 'Linux' : 'Otro';
+    const br = /Edg\//.test(ua) ? 'Edge' : /SamsungBrowser/.test(ua) ? 'Samsung' : /Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'Otro';
+    const standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone;
+    return `${os} · ${br}${standalone ? ' · instalada' : ''}`;
+  }
+  function errRole() { try { return currentUserRole || ''; } catch (e) { return ''; } }
+  function logCloudError(kind, message, where) {
+    try {
+      const msg = String(message || '').replace(/^Uncaught\s+/, '').replace(/\s+/g, ' ').trim().slice(0, 500);
+      if (!msg || errCount >= 10 || errSeen.has(kind + '|' + msg)) return;
+      if (/ResizeObserver loop|^Script error\.?$/i.test(msg) || /-extension:\/\//.test(where || '')) return;
+      errSeen.add(kind + '|' + msg); errCount++;
+      errQueue.push({ at: new Date().toISOString(), app: ERR_APP, kind, msg, where: String(where || '').slice(0, 1000), role: errRole(), device: errDevice(), online: navigator.onLine !== false });
+      flushCloudErrors();
+    } catch (e) { /* el registro de errores nunca debe romper nada */ }
+  }
+  function flushCloudErrors() {
+    try {
+      if (typeof fbDb === 'undefined' || !fbDb || !accessCode || !currentUser || !errQueue.length) return;
+      const col = fbDb.collection('congregations').doc(accessCode).collection('errores');
+      while (errQueue.length) col.add(errQueue.shift()).catch(() => { /* sin permiso o sin red: se descarta */ });
+    } catch (e) { /* nada */ }
+  }
+  window.addEventListener('error', (e) => logCloudError('error', e.message, (e.error && e.error.stack) || `${e.filename || ''}:${e.lineno || ''}`));
+  window.addEventListener('unhandledrejection', (e) => { const r = e.reason || {}; logCloudError('promesa', r.message || String(r), r.stack || ''); });
 
   const STORAGE_KEY = 'kh-schedule-data-v2';
   const OLD_STORAGE_KEY = 'kh-schedule-data';
@@ -2049,6 +2108,7 @@
       } catch (e) {
         console.error('No se pudo sincronizar con la nube', e);
         setSyncStatus('error');
+        if (!e || e.code !== 'unavailable') logCloudError('guardado', `${(e && e.code) || ''} ${(e && e.message) || e}`.trim(), (e && e.stack) || '');
       }
     }
   }
@@ -2351,9 +2411,12 @@
       applyingRemoteUpdate = false;
       setSyncStatus('ok');
       updateCloudSize(raw);
+      flushCloudErrors();
+      checkNewCloudErrors();
     }, (err) => {
       console.error('Error de sincronización', err);
       if (err && err.code === 'permission-denied') { showAuthDenied(); }
+      else logCloudError('sincronizacion', `${(err && err.code) || ''} ${(err && err.message) || err}`.trim(), (err && err.stack) || '');
       setSyncStatus('error');
     });
   }
@@ -5808,6 +5871,69 @@
       });
     }
   });
+  /* ---- Ajustes → Registro de errores (solo Super Admin) ---- */
+  const ERR_SEEN_KEY = 'kh-err-seen';
+  const ERR_KIND = { error: 'Error', promesa: 'Error', guardado: 'No se pudo guardar', sincronizacion: 'Sin sincronizar', anuncio: 'Al publicar anuncio' };
+  function errCol() { return fbDb.collection('congregations').doc(accessCode).collection('errores'); }
+  let errNewChecked = false;
+  async function checkNewCloudErrors() {
+    if (errNewChecked || currentUserRole !== 'super' || !currentUser || !fbDb || !accessCode) return;
+    errNewChecked = true;
+    try {
+      let seen = ''; try { seen = localStorage.getItem(ERR_SEEN_KEY) || ''; } catch (e) { /* nada */ }
+      const since = seen || new Date(Date.now() - 7 * 86400000).toISOString();
+      const snap = await errCol().where('at', '>', since).limit(20).get();
+      if (snap.empty || document.getElementById('errNewBanner')) return;
+      const n = snap.size;
+      const bar = document.createElement('div');
+      bar.id = 'errNewBanner';
+      bar.className = 'top-banner backup';
+      bar.innerHTML = `<span>La app registró ${n >= 20 ? 'más de 20' : n} ${n === 1 ? 'error nuevo' : 'errores nuevos'} en los teléfonos de los hermanos.</span><div class="tb-actions"><button type="button" id="errNewSee">Ver</button><button type="button" id="errNewDismiss">Ahora no</button></div>`;
+      document.body.insertBefore(bar, document.body.firstChild);
+      $('errNewDismiss').addEventListener('click', () => bar.remove());
+      $('errNewSee').addEventListener('click', () => { bar.remove(); switchTab('ajustes'); const c = $('errLogCard'); c.open = true; loadErrLog(); c.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+    } catch (e) { console.warn('No se pudo revisar el registro de errores', e); }
+  }
+  let errLogItems = [];
+  async function loadErrLog() {
+    const box = $('errLogList');
+    if (!fbDb || !accessCode || !currentUser) { box.innerHTML = '<p class="hint" style="margin:0;">Hace falta estar conectado a la nube para ver el registro.</p>'; return; }
+    box.innerHTML = '<p class="hint" style="margin:0;">Cargando…</p>';
+    try {
+      // Limpieza: se borran los de más de 30 días.
+      const cutoff = new Date(Date.now() - 30 * 86400000).toISOString();
+      const old = await errCol().where('at', '<', cutoff).limit(100).get();
+      old.forEach(d => d.ref.delete().catch(() => {}));
+      const snap = await errCol().orderBy('at', 'desc').limit(50).get();
+      errLogItems = [];
+      snap.forEach(d => errLogItems.push(Object.assign({ id: d.id }, d.data())));
+      try { localStorage.setItem(ERR_SEEN_KEY, new Date().toISOString()); } catch (e) { /* nada */ }
+      renderErrLog();
+    } catch (e) {
+      console.warn(e);
+      box.innerHTML = `<p class="hint" style="margin:0;">No se pudo leer el registro${e && e.code === 'permission-denied' ? ': falta publicar las reglas nuevas de Firebase (firebase deploy --only firestore:rules)' : ''}.</p>`;
+    }
+  }
+  function renderErrLog() {
+    const box = $('errLogList');
+    $('errLogSub').textContent = errLogItems.length ? `${errLogItems.length === 50 ? '50 o más' : errLogItems.length} en los últimos 30 días` : 'Sin errores en los últimos 30 días';
+    if (!errLogItems.length) { box.innerHTML = '<p class="hint" style="margin:0;">✓ No hubo errores en los últimos 30 días.</p>'; return; }
+    box.innerHTML = errLogItems.map(x => `<details class="err-item">
+      <summary><span class="err-kind">${escapeHtml(ERR_KIND[x.kind] || x.kind || 'Error')}</span> <span class="err-msg">${escapeHtml(x.msg || '')}</span>
+        <small>${escapeHtml(x.at ? anRelDate(new Date(x.at)) : '')} · ${x.app === 'vista' ? 'Vista de la congregación' : 'App de asignaciones'}${x.role ? ' · ' + escapeHtml(x.role) : ''} · ${escapeHtml(x.device || '')}${x.online === false ? ' · sin conexión' : ''}</small></summary>
+      ${x.where ? `<pre class="err-where">${escapeHtml(x.where)}</pre>` : ''}
+    </details>`).join('');
+  }
+  $('errLogCard').addEventListener('toggle', () => { if ($('errLogCard').open) loadErrLog(); });
+  $('errLogRefreshBtn').addEventListener('click', loadErrLog);
+  $('errLogClearBtn').addEventListener('click', async () => {
+    if (!errLogItems.length) return;
+    const items = errLogItems.slice();
+    await Promise.all(items.map(x => errCol().doc(x.id).delete().catch(() => {})));
+    errLogItems = [];
+    renderErrLog();
+    showToast('Registro vaciado');
+  });
   $('reminderSwitch').addEventListener('click', async () => {
     if (!data.settings.remindersEnabled) {
       if (!('Notification' in window)) { showToast('Este navegador no soporta notificaciones'); return; }
@@ -6523,6 +6649,7 @@
       showToast(eraEdicion ? 'Cambios guardados' : 'Anuncio publicado');
     } catch (e) {
       console.error("Error publicando anuncio:", e);
+      if (!['SOLO_IMAGEN_PDF', 'ARCHIVO_GRANDE'].includes(e && e.message)) logCloudError('anuncio', `${(e && e.code) || ''} ${(e && e.message) || e}`.trim(), (e && e.stack) || '');
       const code = e && e.code;
       let msg;
       if (e.message === 'SOLO_IMAGEN_PDF') msg = 'Solo se pueden adjuntar fotos o archivos PDF.';

@@ -1,0 +1,46 @@
+const { launch, FILE, SHOTS, fixture } = require('./_helper');
+const data = fixture();
+Object.assign(data.settings, { editorEmails: ['super@x.com'], tecnicoAdminEmails: ['tec@x.com', 'tec2@x.com'], asignacionesAdminEmails: ['asig@x.com'], anunciosEmails: ['tec2@x.com'], anunciosOnlyEmails: ['solo@x.com'], viewerEmails: ['ver@x.com'] });
+data.anuncios = [{ id: 'a1', title: 'Limpieza', text: 'Grupo 3', dateIso: new Date().toISOString(), expiresIso: new Date(Date.now() + 9e8).toISOString() }];
+let ok = 0, bad = 0; const check = (l, c, x) => { if (c) { ok++; console.log('  ✅', l); } else { bad++; console.log('  ❌', l, x === undefined ? '' : JSON.stringify(x)); } };
+(async () => {
+  const b = await launch();
+  const open = async (email, w = 390) => {
+    const ctx = await b.newContext({ viewport: { width: w, height: 844 } });
+    await ctx.route(/gstatic/, r => r.abort());
+    await ctx.addInitScript((d) => { localStorage.setItem('kh-schedule-data-v2', JSON.stringify(d)); localStorage.setItem('kh-onboarding-seen', '1'); }, data);
+    const p = await ctx.newPage(); p.errs = []; p.on('pageerror', e => p.errs.push(e.message));
+    await p.goto(FILE); await p.waitForTimeout(900);
+    await p.evaluate((email) => { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden')); accessCode = 'C'; currentUser = { email }; currentUserRole = computeUserRole(); applyRoleUI(); }, email);
+    await p.waitForTimeout(200);
+    return p;
+  };
+  console.log('\nAdmin técnico SIN permiso');
+  let p = await open('tec@x.com');
+  check('no ve Anuncios (arriba ni abajo)', await p.evaluate(() => $('navAnunciosBtn').classList.contains('hidden') && $('navAnunciosBtnMobile').classList.contains('hidden')));
+  check('aunque llamen abrirAvisos() no se abre', await p.evaluate(() => { abrirAvisos(); return $('anunciosModalOverlay').classList.contains('hidden'); }));
+  await p.screenshot({ path: SHOTS + '/perm-tec.png' });
+  console.log('\nAdmin técnico CON permiso');
+  p = await open('tec2@x.com');
+  check('ve Anuncios y lo abre', await p.evaluate(() => { abrirAvisos(); return !$('navAnunciosBtnMobile').classList.contains('hidden') && !$('anunciosModalOverlay').classList.contains('hidden'); }));
+  console.log('\nSolo anuncios');
+  p = await open('solo@x.com');
+  check('rol "anuncios"', await p.evaluate(() => currentUserRole === 'anuncios'));
+  check('la página es la lista de anuncios', await p.evaluate(() => document.body.classList.contains('an-only') && !!$('anunciosModalOverlay').offsetParent && !!document.querySelector('.an-card') && !$('panel-programa').offsetParent));
+  check('sin pestañas ni botón cerrar', await p.evaluate(() => !document.querySelector('.bottom-tabs').offsetParent && !$('closeAnunciosBtn').offsetParent));
+  check('sin desborde', await p.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth));
+  await p.screenshot({ path: SHOTS + '/perm-solo.png' });
+  await p.click('#anNewBtn'); await p.fill('#anuncioTextInput', 'Hola'); await p.click('#anPreviewBtn'); await p.waitForTimeout(100);
+  await p.screenshot({ path: SHOTS + '/perm-solo-pv.png' });
+  await p.click('#anuncioSubmitBtn'); await p.waitForTimeout(300);
+  check('publica y vuelve a la lista', await p.evaluate(() => data.anuncios.some(a => a.text === 'Hola') && !$('anListView').classList.contains('hidden') && !!$('anunciosModalOverlay').offsetParent));
+  check('re-aplicar rol (nuevo snapshot) no rompe', await p.evaluate(() => { applyRoleUI(); applyRoleUI(); return document.querySelectorAll('#anunciosModalOverlay').length === 1 && !!$('anunciosModalOverlay').offsetParent; }));
+  const pd = await open('solo@x.com', 1280);
+  check('computadora: sin pestañas arriba', await pd.evaluate(() => !document.querySelector('.tabs').offsetParent));
+  await pd.screenshot({ path: SHOTS + '/perm-solo-d.png' });
+  // (Ajustes → Acceso se prueba en 10-acceso.test.js)
+  console.log('\nSolo ver sigue yendo a la vista pública');
+  p = await open('ver@x.com'); await p.waitForTimeout(200);
+  check('aviso de solo lectura', await p.evaluate(() => !!document.getElementById('viewerRedirect')));
+  await b.close(); console.log(`\n${ok} OK, ${bad} fallaron`);
+})();

@@ -6,7 +6,7 @@ La versión anterior quedó desactualizada — proponía como "el salto
 grande" cosas que ya están hechas hace rato, y de hecho el proyecto
 llegó bastante más lejos de lo que esa versión imaginaba.
 
-_Actualizado el 22 de septiembre de 2026: se movió el punto "Guía de uso corta" a la sección de lo ya hecho, y se sumó la guía de la vista pública que faltaba._
+_Actualizado el 23 de septiembre de 2026: se sumaron a "lo ya hecho" las notificaciones, los anuncios nuevos, los permisos, el guardado por partes, el registro de errores y las pruebas del editor; se sacaron de pendientes el monitoreo de errores y la notificación directa (resuelta con notificaciones push)._
 
 ---
 
@@ -62,60 +62,79 @@ _Actualizado el 22 de septiembre de 2026: se movió el punto "Guía de uso corta
   "Política de privacidad" — cubre Inicio, Calendario, Anuncios,
   Notificaciones, Instalar en el celular, e Iniciar sesión.
 
+**Notificaciones y recordatorios** (funciones en la nube, `push-salon-2026/`)
+- Notificación push al celular cuando a un hermano le asignan algo, y
+  recordatorio el día anterior / unas horas antes (lo elige cada uno).
+- Aviso de anuncio nuevo.
+
+**Anuncios**
+- Lista por estado (fijados, activos, vencidos plegados con "Volver a
+  publicar"), menú ⋯ con Editar / Fijar / Duplicar / Borrar con
+  Deshacer, vista previa de la notificación y de la tarjeta.
+- Fecha de evento opcional con botón a Google Calendar, vencimiento
+  "hasta el evento" u otra fecha, links clickeables.
+- Permiso aparte para publicar: Super Admin siempre; los Admin solo si
+  tienen "📢 Puede publicar anuncios"; rol "Solo anuncios" (por ejemplo,
+  el coordinador). Lo hacen cumplir las reglas del servidor.
+
+**Programa**
+- Tira con las reuniones del mes (estado de cada una: ✓ / faltan N /
+  vacía), calendario del mes y apertura en la próxima reunión.
+- Se quitó el "tema de la reunión".
+
+**Acceso y seguridad**
+- Ajustes → Acceso pensado para 170+ personas: grupos por rol,
+  buscador por nombre o email, filtros ("Sin vincular"), menú por
+  persona, vincular con el hermano.
+- Solo un Super Admin puede cambiar roles y permisos (lo exige el
+  servidor). "Solo ver" va directo a la vista de la congregación.
+
+**Datos y mantenimiento**
+- Guardado por partes: se sube solo lo que cambió, así dos personas
+  trabajando a la vez (o alguien sin señal) no se pisan.
+- Indicador del espacio usado en la nube (límite de Firebase: 1 MB
+  por documento) con aviso al Super Admin al pasar el 70 %.
+- Registro de errores: si algo falla en cualquier teléfono queda
+  anotado (sin datos personales) y el Super Admin lo ve en Ajustes.
+- Pruebas del editor al día en `tests/editor/` (325 pruebas) y de la
+  vista pública en `tests/ver.test.js`.
+
 En criollo: lo que en la versión vieja de este documento se llamaba
 "Fase A" y "Fase B" — ya está, y de forma más sólida de lo planteado
 ahí (seguridad real, no solo un código).
 
 ---
 
-## Lo que queda abierto, de menor a mayor esfuerzo
+## Lo que queda abierto
 
-### 1. Notificación directa a cada hermano de su asignación
-Lo hablamos hace un rato: hoy WhatsApp es el canal, pero un email
-automático a cada hermano cuando le asignan algo es posible. Necesita
-una función en la nube (Firebase Cloud Functions) más un servicio de
-envío de correos (vimos que ya tenés cuenta en Resend para otro
-proyecto). Implica pasar Firebase al plan pago por uso — para el
-volumen de una congregación, el costo real es prácticamente nulo,
-pero deja de ser 100% gratis.
-*Esfuerzo: medio.*
+### 1. Archivar los años viejos (cuando haga falta)
+Todo vive en un solo documento de Firestore, que admite hasta 1 MB. Con
+el uso actual alcanza para varios años (se estimó ~130 KB por año). El
+indicador de Ajustes → Sincronización muestra cuánto se usa y avisa al
+pasar el 70 %: recién ahí conviene pasar las semanas de más de un año a
+documentos aparte (sin perder los reportes).
+*Esfuerzo: medio. Sin apuro.*
 
-### 2. Multi-congregación con alta propia
-Hoy cada congregación ya tiene sus datos aislados por código — eso
-técnicamente ya funciona. Lo que falta, si en algún momento la
-compartís con otra congregación, es que se puedan dar de alta *solas*
-(un formulario simple: nombre, código, día de reunión) sin que vos
-tengas que configurarles todo a mano como hiciste con San Agustín.
+### 2. Roles por área, con restricción real del lado del servidor
+Hoy el servidor ya controla quién publica anuncios y quién cambia los
+accesos. Lo que sigue siendo solo de la interfaz: que un Admin de
+Equipo técnico no pueda tocar el Programa (y viceversa). Para que lo
+exija el servidor hay que **separar los datos en varios documentos**
+(Equipo técnico, Acomodadores, Programa, Hermanos/Ajustes), porque las
+reglas de Firestore no pueden revisar tan adentro de un documento
+único. Implica reescribir la carga, el guardado y la sincronización en
+los dos archivos y migrar los datos sin perder nada. Con hermanos de
+confianza, no hace falta por ahora.
+*Esfuerzo: alto.*
+
+### 3. Multi-congregación con alta propia
+Cada congregación ya tiene sus datos aislados por código. Lo que falta,
+si alguna vez la usa otra congregación, es que se puedan dar de alta
+solas (nombre, código, día de reunión) sin configurarles todo a mano.
 Solo tiene sentido si de verdad hay otra congregación interesada.
 *Esfuerzo: medio-alto.*
 
-### 3. Monitoreo de errores
-*(Accesibilidad ya está hecha — Escape, foco atrapado, aria-labels,
-contraste de color corregido en los dos archivos, el 14 de
-septiembre.)* Queda pendiente una forma simple de enterarte si algo
-se rompe en producción sin depender de que alguien te escriba.
-*Esfuerzo: variable, sin apuro.*
-
-### 4. Roles por área, con restricción real del lado del servidor
-Ya armamos la versión de interfaz (cada rol ve solo lo suyo, pero
-técnicamente los datos completos igual llegan al dispositivo). Para
-que sea una restricción de verdad — que el servidor directamente no
-le entregue a un Admin de Acomodadores nada que no sea Acomodadores —
-hay que **separar los datos en varios documentos** en Firestore (uno
-por Equipo técnico, uno por Acomodadores, uno por Programa, uno por
-Hermanos/Ajustes) en vez del documento único de hoy. Firestore no
-puede aplicar reglas más finas que "tocaste algo dentro de weeks" si
-todo vive junto — es una limitación real del motor de reglas, no algo
-que se arregle agregando código.
-
-Implica: reescribir `saveData()`, `loadData()` y la sincronización en
-tiempo real en los dos archivos, más migrar los datos actuales de
-San Agustín a la estructura nueva sin perder nada. Es más grande que
-cualquier cosa hecha hasta ahora — el login con Google, en
-comparación, fue chico al lado de esto.
-*Esfuerzo: alto.*
-
-### 5. Consentimiento de uso de datos, para el resumen personal
+### 4. Consentimiento de uso de datos, para el resumen personal
 Pendiente de una decisión de fondo primero: si el consentimiento de
 uso de datos que los publicadores ya firmaron en papel (el de la
 organización) alcanza para esta app externa, o si hace falta pedir
@@ -170,12 +189,9 @@ mockups armados (14 de septiembre de 2026):
 
 ## Recomendación
 
-Con las dos guías de uso ya hechas (editor y vista pública), el punto
-que queda más a mano es el **monitoreo de errores** (punto 3) — algo
-chico y sin apuro, pero útil para enterarte si algo se rompe sin
-depender de que alguien te escriba.
-
-Las notificaciones por email (punto 1) siguen siendo el siguiente
-salto real de funcionalidad, pero conviene decidirlo con calma porque
-toca la arquitectura (Cloud Functions, plan pago) — no es un cambio
-de una tarde como los que veníamos haciendo.
+Lo más valioso ahora es **usar la app unas semanas y juntar lo que
+comenten los hermanos**: las próximas mejoras van a salir de ese uso
+real. Mientras tanto, conviene mirar de vez en cuando Ajustes →
+Registro de errores (la app avisa sola si aparecen errores nuevos) y el
+indicador de espacio. Antes de subir cualquier cambio grande, correr
+las pruebas (`node tests/editor/run.js` y `node tests/ver.test.js`).

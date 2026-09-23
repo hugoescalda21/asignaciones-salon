@@ -595,6 +595,41 @@
     appId: "1:167010071335:web:0aca9b8cac2bbf5fd2ef02"
   };
 
+  /* ---------- Registro de errores en la nube ----------
+     Si algo falla, queda anotado en congregations/{código}/errores y el Super Admin lo ve
+     en la app de asignaciones (Ajustes → Registro de errores). Sin datos personales. */
+  const errSeen = new Set();
+  let errCount = 0, errReady = false;
+  const errQueue = [];
+  function errDevice() {
+    const ua = navigator.userAgent || '';
+    const os = /Android/i.test(ua) ? 'Android' : /iPhone|iPad|iPod/i.test(ua) ? 'iPhone/iPad' : /Windows/i.test(ua) ? 'Windows' : /Mac OS/i.test(ua) ? 'Mac' : /Linux/i.test(ua) ? 'Linux' : 'Otro';
+    const br = /Edg\//.test(ua) ? 'Edge' : /SamsungBrowser/.test(ua) ? 'Samsung' : /Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'Otro';
+    const standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone;
+    return `${os} · ${br}${standalone ? ' · instalada' : ''}`;
+  }
+  function logCloudError(kind, message, where) {
+    try {
+      const msg = String(message || '').replace(/^Uncaught\s+/, '').replace(/\s+/g, ' ').trim().slice(0, 500);
+      if (!msg || errCount >= 10 || errSeen.has(kind + '|' + msg)) return;
+      if (/ResizeObserver loop|^Script error\.?$/i.test(msg) || /-extension:\/\//.test(where || '')) return;
+      errSeen.add(kind + '|' + msg); errCount++;
+      errQueue.push({ at: new Date().toISOString(), app: 'vista', kind, msg, where: String(where || '').slice(0, 1000), role: '', device: errDevice(), online: navigator.onLine !== false });
+      flushCloudErrors();
+    } catch (e) { /* el registro de errores nunca debe romper nada */ }
+  }
+  function flushCloudErrors() {
+    try {
+      if (!errReady || !errQueue.length || !window.firebase || !firebase.apps.length) return;
+      const code = getCode();
+      if (!code) return;
+      const col = firebase.firestore().collection('congregations').doc(code).collection('errores');
+      while (errQueue.length) col.add(errQueue.shift()).catch(() => { /* sin permiso o sin red: se descarta */ });
+    } catch (e) { /* nada */ }
+  }
+  window.addEventListener('error', (e) => logCloudError('error', e.message, (e.error && e.error.stack) || `${e.filename || ''}:${e.lineno || ''}`));
+  window.addEventListener('unhandledrejection', (e) => { const r = e.reason || {}; logCloudError('promesa', r.message || String(r), r.stack || ''); });
+
   const ROLE_META = {
     sonido: { label: 'Consola de audio', color: 'var(--role-sonido)', icon: 'sonido' },
     video: { label: 'Video y Zoom', color: 'var(--role-video)', icon: 'video' },
@@ -1911,13 +1946,14 @@
         if (wanted && wanted !== 'inicio') showTab(wanted);
       }
       annOnData();
+      errReady = true; flushCloudErrors();
       const url = new URL(location);
       url.searchParams.delete('tab');
       url.searchParams.set('codigo', code);
       history.replaceState(null, '', url);
     }, (err) => {
       if (err && err.code === 'permission-denied') showAccessDenied();
-      else showGateError();
+      else { logCloudError('sincronizacion', `${(err && err.code) || ''} ${(err && err.message) || err}`.trim(), (err && err.stack) || ''); showGateError(); }
     });
   }
 
