@@ -6,6 +6,12 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Bienvenida de la app instalada: activar y comprobar los avisos — 23 sep 2026 (caché ver-salon-v27)
+
+- Android trata la app instalada "Ver Asignaciones" como una app aparte, con su propio permiso de notificaciones: si los avisos se habían activado en Chrome antes de instalarla, a la app instalada le podían quedar apagados y los avisos no aparecían.
+- Ahora, la primera vez que se abre la app **instalada**, aparece una bienvenida: **Activar avisos** (pide el permiso desde la propia app) y enseguida manda un aviso de prueba ("✓ Avisos activados") y pregunta "¿Te apareció?". Si no apareció o están bloqueados, explica paso a paso dónde activarlos en los ajustes del teléfono (Android o iPhone).
+- Si ya tenía permiso, la bienvenida solo comprueba con el aviso de prueba. "Ahora no" la vuelve a ofrecer a la semana; una vez comprobado, no aparece más en ese celular.
+
 ## "Probar en este celular" en la vista de la congregación — 23 sep 2026 (caché ver-salon-v26)
 
 - En la vista de la congregación → Recordatorios → "Cambiar", abajo: **🔔 Probar en este celular**. Manda dos avisos: uno sale del propio celular al instante (prueba que el teléfono muestra los avisos de la app) y otro desde la nube a los 10 segundos (prueba el camino completo, igual que una asignación). Según cuál llegue, explica qué ajustar: permiso de notificaciones de la app en Android/iPhone, ahorro de batería, o "Volver a registrar este celular".

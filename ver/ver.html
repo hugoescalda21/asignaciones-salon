@@ -188,6 +188,19 @@
   .ann-foot .ann-share { padding: 6px 12px; font-size: 12px; }
   .app-toast { position: fixed; left: 16px; right: 16px; bottom: calc(var(--tab-h, 62px) + 14px + env(safe-area-inset-bottom)); max-width: 480px; margin: 0 auto; background: #212C34; color: #fff; border-radius: 10px; padding: 11px 14px; font-size: 13px; line-height: 1.4; box-shadow: 0 6px 18px rgba(0,0,0,0.25); z-index: 350; opacity: 0; transform: translateY(8px); transition: opacity .2s, transform .2s; pointer-events: none; }
   .app-toast.show { opacity: 1; transform: none; }
+  .pw-modal { border-radius: 18px; margin: 16px; text-align: center; padding: 24px 20px 18px; }
+  .pw-ic { font-size: 40px; line-height: 1; margin-bottom: 8px; }
+  .pw-modal h3 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 21px; margin: 0 0 6px; }
+  .pw-modal p { font-size: 14px; color: var(--ink-soft); line-height: 1.5; margin: 0 0 14px; }
+  .pw-main { width: 100%; border: none; border-radius: 12px; padding: 14px; font: inherit; font-size: 16px; font-weight: 700; background: #4C7A5E; color: #fff; cursor: pointer; }
+  .pw-main:disabled { opacity: .6; }
+  .pw-later { width: 100%; border: none; background: none; padding: 12px; font: inherit; font-size: 14px; color: var(--ink-soft); cursor: pointer; }
+  #pwBody { text-align: left; font-size: 13.5px; line-height: 1.45; }
+  #pwBody .rt-help { background: var(--bg); border-radius: 10px; padding: 10px 12px; margin: 0 0 12px; }
+  #pwBody .rt-help ol { margin: 6px 0 0; padding-left: 18px; }
+  #pwBody .rt-help li { margin-bottom: 4px; }
+  .pw-q { display: flex; gap: 8px; margin: 0 0 12px; }
+  .pw-q button { flex: 1; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 11px 8px; font: inherit; font-size: 14px; font-weight: 700; color: var(--ink); cursor: pointer; }
   .rem-test { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 13px; }
   .rem-test p { margin: 3px 0 8px; color: var(--ink-soft); line-height: 1.4; }
   .rem-test-btn { width: 100%; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 10px; font: inherit; font-size: 14px; font-weight: 700; color: var(--ink); cursor: pointer; }
@@ -527,6 +540,17 @@
       <button type="button" class="rem-test-btn" id="remTestBtn">🔔 Probar en este celular</button>
       <div id="remTestOut" role="status"></div>
     </div>
+  </div>
+</div>
+
+<div id="pushWelcome" class="day-modal-overlay hidden" style="z-index:60; align-items:center;" role="dialog" aria-modal="true" aria-label="Activar avisos">
+  <div class="day-modal pw-modal">
+    <div class="pw-ic" aria-hidden="true">🔔</div>
+    <h3 id="pwTitle">Activá los avisos</h3>
+    <p id="pwText">Así te avisamos en este celular cuando tengas una asignación nueva, y te lo recordamos antes de la reunión.</p>
+    <div id="pwBody"></div>
+    <button type="button" class="pw-main" id="pwMainBtn">Activar avisos</button>
+    <button type="button" class="pw-later" id="pwLaterBtn">Ahora no</button>
   </div>
 </div>
 
@@ -1632,7 +1656,7 @@
         if (inst) steps.push('Si también la usás desde Chrome: Ajustes → Aplicaciones → <b>Chrome</b> → Notificaciones → activadas.');
         steps.push('Que el teléfono no esté en <b>No molestar</b> ni en modo ahorro de batería extremo.');
       }
-      steps.push('Después volvé acá y tocá <b>Probar en este celular</b> otra vez.');
+      steps.push('Después volvé a la app y probá de nuevo.');
       return `<div class="rt-help"><b>El teléfono no está mostrando los avisos de esta app.</b><ol>${steps.map(s => `<li>${s}</li>`).join('')}</ol></div>`;
     }
     steps.push('Tocá <b>Volver a registrar este celular</b> (abajo) y probá otra vez.');
@@ -1728,6 +1752,82 @@
       };
     }).catch(() => {});
   }
+  /* ---------- Bienvenida de la app instalada: activar y comprobar los avisos ----------
+     Android trata la app instalada como una app aparte, con su propio permiso de
+     notificaciones. La primera vez que se abre instalada (y cada vez que los avisos estén
+     apagados), se pide el permiso DESDE la app y se manda un aviso de prueba para confirmar
+     que el teléfono lo muestra. */
+  let pwCtx = null;
+  function pwKey(code, pub) { return `push-welcome-${code}-${pub.id}`; }
+  function maybeShowPushWelcome(pub, code) {
+    if (!pub || !isInstalledApp() || !('Notification' in window) || !('serviceWorker' in navigator)) return;
+    if (!$('pushWelcome').classList.contains('hidden')) return;
+    let st = null; try { st = JSON.parse(localStorage.getItem(pwKey(code, pub)) || 'null'); } catch (e) { /* nada */ }
+    const perm = Notification.permission;
+    if (st && st.ok && perm === 'granted') return;                         // ya comprobado en esta app
+    if (st && st.later && Date.now() - st.later < 7 * 86400000) return;     // "Ahora no": se vuelve a ofrecer en una semana
+    pwCtx = { pub, code };
+    paintPushWelcome(perm === 'granted' ? 'check' : perm === 'denied' ? 'blocked' : 'ask');
+    $('pushWelcome').classList.remove('hidden');
+  }
+  function paintPushWelcome(step, extra) {
+    const t = $('pwTitle'), x = $('pwText'), body = $('pwBody'), main = $('pwMainBtn'), later = $('pwLaterBtn');
+    main.disabled = false; main.classList.remove('hidden'); later.textContent = 'Ahora no'; body.innerHTML = '';
+    if (step === 'ask') {
+      t.textContent = 'Activá los avisos'; x.textContent = 'Así te avisamos en este celular cuando tengas una asignación nueva, y te lo recordamos antes de la reunión.';
+      main.textContent = 'Activar avisos'; main.dataset.step = 'ask';
+    } else if (step === 'check') {
+      t.textContent = 'Comprobá los avisos'; x.textContent = 'Te mandamos un aviso de prueba para confirmar que este celular los muestra.';
+      main.textContent = 'Mandar aviso de prueba'; main.dataset.step = 'check';
+    } else if (step === 'question') {
+      t.textContent = '¿Te apareció el aviso?'; x.textContent = 'Te acabamos de mandar "✓ Avisos activados". Tiene que haber aparecido arriba, en la barra de notificaciones.';
+      body.innerHTML = '<div class="pw-q"><button type="button" data-pw="yes">Sí, lo vi</button><button type="button" data-pw="no">No apareció</button></div>';
+      main.classList.add('hidden'); later.textContent = 'Cerrar';
+    } else if (step === 'done') {
+      t.textContent = '¡Listo!'; x.textContent = 'Los avisos funcionan en este celular. Podés elegir cuándo te recordamos cada asignación en Inicio → Recordatorios.';
+      main.textContent = 'Entendido'; main.dataset.step = 'done'; later.classList.add('hidden');
+      return;
+    } else if (step === 'blocked' || step === 'help') {
+      t.textContent = step === 'blocked' ? 'Los avisos están bloqueados' : 'El teléfono no muestra los avisos';
+      x.textContent = 'Hay que activarlos en los ajustes del teléfono. Es una sola vez:';
+      body.innerHTML = remTestHelp('none');
+      main.textContent = 'Ya los activé, probar de nuevo'; main.dataset.step = 'check';
+    }
+    later.classList.remove('hidden');
+  }
+  function pwSave(v) { if (!pwCtx) return; try { localStorage.setItem(pwKey(pwCtx.code, pwCtx.pub), JSON.stringify(v)); } catch (e) { /* nada */ } }
+  function closePushWelcome() {
+    $('pushWelcome').classList.add('hidden');
+    if (pwCtx) { renderPushPrompt(pwCtx.pub, pwCtx.code); renderReminderRow(pwCtx.pub, pwCtx.code); }
+  }
+  async function pwSendLocalTest() {
+    const reg = await navigator.serviceWorker.register('service-worker.js');
+    await reg.showNotification('✓ Avisos activados', { body: 'Así te van a llegar tus asignaciones y recordatorios.', tag: 'bienvenida', badge: '../badge-icon.png', icon: 'icon-192-ver.png' });
+  }
+  $('pwMainBtn').addEventListener('click', async () => {
+    const btn = $('pwMainBtn');
+    if (!pwCtx) return;
+    if (btn.dataset.step === 'done') { closePushWelcome(); return; }
+    btn.disabled = true; btn.textContent = 'Un momento…';
+    let perm = Notification.permission;
+    if (perm !== 'granted') { try { perm = await Notification.requestPermission(); } catch (e) { /* nada */ } }
+    if (perm !== 'granted') { paintPushWelcome(perm === 'denied' ? 'blocked' : 'help'); return; }
+    await completePushSubscription(pwCtx.pub, pwCtx.code, `push-decided-${pwCtx.code}-${pwCtx.pub.id}`);
+    try { await pwSendLocalTest(); paintPushWelcome('question'); } catch (e) { console.warn(e); paintPushWelcome('help'); }
+  });
+  $('pwBody').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-pw]');
+    if (!b) return;
+    if (b.dataset.pw === 'yes') { pwSave({ ok: Date.now() }); paintPushWelcome('done'); }
+    else paintPushWelcome('help');
+  });
+  $('pwLaterBtn').addEventListener('click', () => {
+    let st = null; try { st = JSON.parse(localStorage.getItem(pwKey(pwCtx.code, pwCtx.pub)) || 'null'); } catch (e) { /* nada */ }
+    if (!(st && st.ok)) pwSave({ later: Date.now() });
+    closePushWelcome();
+  });
+  window.addEventListener('appinstalled', () => { try { Object.keys(localStorage).filter(k => k.startsWith('push-welcome-')).forEach(k => localStorage.removeItem(k)); } catch (e) { /* nada */ } });
+
   function renderPushPrompt(pub, code) {
     const box = $('pushPrompt');
     if (!('Notification' in window) || !('serviceWorker' in navigator) || !pub) { box.classList.add('hidden'); box.innerHTML = ''; return; }
@@ -1809,6 +1909,7 @@
     // Cartel de suscripción reactivado (ya se corrigió el gcm_sender_id para Android)
     renderPushPrompt(pub, code);
     renderReminderRow(pub, code);
+    maybeShowPushWelcome(pub, code);
     // $('pushPrompt').classList.add('hidden'); $('pushPrompt').innerHTML = '';
     const settings = data.settings || { weekdaySemana: 4, weekdayFinde: 0, micCount: 2, usherCount: 2 };
     const today = new Date().toISOString().slice(0, 10);
