@@ -276,6 +276,11 @@
   }
 
   /* ---------- Guía de uso (vista pública) ---------- */
+  .topbar-inner { position: relative; }
+  .topbar-inner .eyebrow, .topbar-inner .cong-title { padding-right: 44px; }
+  .help-btn { position: absolute; top: 0; right: 0; width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.35); background: rgba(255,255,255,0.08); color: #fff; font-weight: 700; font-size: 15px; line-height: 1; display: flex; align-items: center; justify-content: center; padding: 0; }
+  .help-btn:active { background: rgba(255,255,255,0.2); }
+  .help-btn:focus-visible { outline: 2px solid var(--accent-gold); outline-offset: 2px; }
   .guide-item { border-bottom: 1px solid var(--line); padding: 10px 0; }
   .guide-item:last-child { border-bottom: none; }
   .guide-item summary { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; font-size: 12.5px; font-weight: 600; color: var(--ink); }
@@ -356,6 +361,7 @@
       <div class="eyebrow">Salón del Reino</div>
       <h1 class="cong-title" id="congTitle">Congregación</h1>
       <span class="readonly-tag">Solo lectura</span>
+      <button type="button" class="help-btn" id="guideHelpBtn" aria-label="Cómo usar esta app" title="Cómo usar esta app">?</button>
     </div>
   </div>
   <div class="gold-bar"></div>
@@ -397,7 +403,7 @@
     </section>
 
     <p class="footer-note"><span class="live-dot"></span>Se actualiza solo — generado con Asignaciones · Salón del Reino</p>
-    <p class="footer-note" style="padding-top:0;"><button type="button" id="guideLinkBtn" style="border:none; background:none; color:var(--ink-faint); font-size:11px; text-decoration:underline; padding:0; margin-right:14px;">Cómo usar esta app</button><button type="button" id="privacyLinkBtn" style="border:none; background:none; color:var(--ink-faint); font-size:11px; text-decoration:underline; padding:0;">Política de privacidad</button></p>
+    <p class="footer-note" style="padding-top:0;"><button type="button" id="privacyLinkBtn" style="border:none; background:none; color:var(--ink-faint); font-size:11px; text-decoration:underline; padding:0;">Política de privacidad</button></p>
   </div>
   <nav class="bottom-tabs" id="bottomTabs" aria-label="Secciones">
     <div class="bottom-tabs-inner">
@@ -408,8 +414,9 @@
   </nav>
 </div>
 
-<div id="guideOverlay" class="hidden" style="position:fixed; inset:0; background:rgba(33,44,52,0.55); z-index:50; display:flex; align-items:center; justify-content:center; padding:20px;">
-  <div style="background:var(--surface); border-radius:16px; padding:22px 20px; max-width:420px; width:100%; max-height:82vh; overflow-y:auto;">
+<div id="guideOverlay" class="day-modal-overlay hidden" style="z-index:50;" role="dialog" aria-modal="true" aria-label="Cómo usar esta app">
+  <div class="day-modal">
+    <div class="day-modal-handle"></div>
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
       <h3 style="font-family:'Fraunces', serif; font-size:15px; margin:0;">Cómo usar esta app</h3>
       <button type="button" id="guideCloseBtn" aria-label="Cerrar" style="border:none; background:none; color:var(--ink-faint); font-size:18px; flex-shrink:0;">✕</button>
@@ -1191,9 +1198,10 @@
   $('privacyLinkBtn').addEventListener('click', () => $('privacyOverlay').classList.remove('hidden'));
   $('privacyCloseBtn').addEventListener('click', () => $('privacyOverlay').classList.add('hidden'));
   $('privacyOverlay').addEventListener('click', (e) => { if (e.target.id === 'privacyOverlay') $('privacyOverlay').classList.add('hidden'); });
-  $('guideLinkBtn').addEventListener('click', () => $('guideOverlay').classList.remove('hidden'));
+  $('guideHelpBtn').addEventListener('click', () => { $('guideOverlay').classList.remove('hidden'); $('guideCloseBtn').focus(); });
   $('guideCloseBtn').addEventListener('click', () => $('guideOverlay').classList.add('hidden'));
   $('guideOverlay').addEventListener('click', (e) => { if (e.target.id === 'guideOverlay') $('guideOverlay').classList.add('hidden'); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('guideOverlay').classList.contains('hidden')) $('guideOverlay').classList.add('hidden'); });
 
   const VAPID_KEY = 'BJvWkjT5GqydLl7oSKd-_yalNdWXoiC3XYK2a-W8_FCeatyDHv-dhwieo9DAEWO3Ndjl2jSNYkxu3qqKA1uOMLg';
   // Cartel dentro de la página para avisos que llegan con la app abierta.

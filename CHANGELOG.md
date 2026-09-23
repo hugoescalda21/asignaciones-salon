@@ -6,6 +6,11 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Guía de uso: ícono "?" en la cabecera — 22 de septiembre de 2026 (caché `ver-salon-v16`)
+- El link "Cómo usar esta app" al pie quedaba muy escondido (había que scrollear hasta el final). Ahora es un ícono **"?"** arriba a la derecha de la cabecera, siempre visible — el mismo patrón que ya usa el editor.
+- Se sacó el link del pie (queda solo "Política de privacidad").
+- La guía ahora se abre como **hoja desde abajo**, igual que la ficha del día, en vez de un cartel centrado. Se cierra con ✕, tocando afuera o con Escape.
+
 ## Guía de uso corta en la vista pública — 22 de septiembre de 2026 (caché `ver-salon-v15`)
 - `ver.html` (lo que ve la congregación en general) no tenía ninguna explicación de cómo usarla. Se agregó un link "Cómo usar esta app" al pie, junto a "Política de privacidad", que abre una guía corta con secciones plegables: Inicio, Calendario, Anuncios, Notificaciones, Instalar en el celular, e Iniciar sesión.
 - El editor (`asignaciones-salon.html`) ya tenía su propia guía (botón "?" del header y "Ajustes → Guía de uso") desde antes — esto solo cubre el lado que le faltaba, la vista pública.

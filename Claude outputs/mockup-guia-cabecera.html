@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Guía en la cabecera</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EDEFEF; --surface:#FFFFFF; --ink:#212C34; --ink-soft:#5C6B74; --ink-faint:#636C71;
+    --line:#DDE1E2; --accent-gold:#A9822F; --accent-gold-text:#876825; --accent-blue:#3E6B8A;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#D9DDDE;font-family:'Public Sans',-apple-system,sans-serif;color:var(--ink);padding:24px 16px 48px}
+  h1.page{font-family:'Fraunces',serif;font-weight:500;font-size:22px;margin:0 0 4px;text-align:center}
+  p.lead{text-align:center;color:var(--ink-soft);font-size:13px;margin:0 0 24px}
+  .grid{display:flex;flex-wrap:wrap;gap:28px;justify-content:center}
+  .col{display:flex;flex-direction:column;align-items:center;gap:10px;max-width:300px}
+  .label{font-size:13px;font-weight:700;text-align:center}
+  .label .tag{display:inline-block;background:var(--accent-gold);color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;margin-left:6px;vertical-align:middle}
+  .note{font-size:12px;color:var(--ink-soft);text-align:center;line-height:1.5}
+
+  .phone{width:280px;height:560px;background:var(--bg);border-radius:28px;border:8px solid #1a1f24;overflow:hidden;position:relative;box-shadow:0 10px 30px rgba(0,0,0,.18);display:flex;flex-direction:column}
+  .topbar{background:var(--ink);color:#fff;padding:16px 16px 12px;position:relative}
+  .eyebrow{font-size:9px;letter-spacing:.05em;color:#D8BB82;font-weight:700;text-transform:uppercase;margin-bottom:5px}
+  .cong-title{font-family:'Fraunces',serif;font-weight:500;font-size:18px;margin:0 0 2px}
+  .readonly-tag{display:inline-block;background:rgba(255,255,255,.12);font-size:9px;font-weight:700;padding:3px 8px;border-radius:12px;margin-top:5px}
+  .gold-bar{height:3px;background:var(--accent-gold)}
+  .content{padding:12px 14px;flex:1;overflow:hidden}
+  .hero{background:linear-gradient(135deg,#212C34,#33444F);color:#fff;border-radius:12px;padding:12px 14px;margin-bottom:12px}
+  .hero small{font-size:9px;color:#D8BB82;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+  .hero div{font-family:'Fraunces',serif;font-size:17px;margin-top:4px}
+  .sec{font-family:'Fraunces',serif;font-size:13px;margin:6px 2px 8px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:8px;height:46px;margin-bottom:8px}
+  .footer{font-size:9px;color:var(--ink-faint);text-align:center;padding:4px 0 6px}
+  .footer u{margin:0 6px}
+  .tabs{height:52px;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:center;font-size:9px;color:var(--ink-faint)}
+  .tabs span.on{color:var(--accent-gold-text);font-weight:700}
+
+  /* Opción A: ícono redondo */
+  .help-a{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:50%;border:1.5px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+  /* Opción B: píldora con texto */
+  .help-b{position:absolute;top:14px;right:14px;height:28px;padding:0 11px;border-radius:14px;background:rgba(255,255,255,.12);color:#fff;display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700}
+  .help-b svg{flex:none}
+
+  .hl{outline:2.5px solid #E5B94E;outline-offset:3px;border-radius:50%;animation:pulse 1.8s ease-in-out infinite}
+  .hl-pill{outline:2.5px solid #E5B94E;outline-offset:3px;animation:pulse 1.8s ease-in-out infinite}
+  .hl-foot{background:#FFF1C9;border-radius:4px;padding:1px 3px}
+  @keyframes pulse{0%,100%{outline-color:#E5B94E}50%{outline-color:rgba(229,185,78,.25)}}
+
+  /* Guía abierta */
+  .overlay{position:absolute;inset:0;background:rgba(33,44,52,.55);display:flex;align-items:flex-end}
+  .sheet{background:var(--surface);width:100%;border-radius:16px 16px 0 0;padding:10px 16px 16px;max-height:78%;overflow:hidden}
+  .handle{width:36px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 10px}
+  .sheet-head{display:flex;justify-content:space-between;align-items:center}
+  .sheet h3{font-family:'Fraunces',serif;font-weight:500;font-size:15px;margin:0}
+  .sheet .x{color:var(--ink-faint);font-size:15px}
+  .sheet .sub{font-size:9.5px;color:var(--ink-faint);margin:2px 0 8px}
+  .gi{border-bottom:1px solid var(--line);padding:8px 0;font-size:11.5px;font-weight:600;display:flex;justify-content:space-between}
+  .gi:last-child{border-bottom:none}
+  .gi span{color:var(--ink-faint)}
+  .gi-open{border-bottom:1px solid var(--line);padding:8px 0}
+  .gi-open .t{font-size:11.5px;font-weight:600;display:flex;justify-content:space-between}
+  .gi-open .t span{color:var(--ink-faint);transform:rotate(90deg);display:inline-block}
+  .gi-open p{font-size:10.5px;color:var(--ink-soft);line-height:1.55;margin:6px 0 0}
+
+  .reco{max-width:640px;margin:32px auto 0;background:var(--surface);border-radius:12px;padding:16px 18px;border-left:4px solid var(--accent-gold);font-size:13.5px;line-height:1.6}
+  .reco strong{font-family:'Fraunces',serif;font-weight:600}
+</style>
+</head>
+<body>
+<h1 class="page">¿Dónde va la guía de uso en la vista pública?</h1>
+<p class="lead">Mockup de <code>ver.html</code> — el resaltado amarillo marca dónde queda el acceso a la guía.</p>
+
+<div class="grid">
+
+  <!-- ACTUAL -->
+  <div class="col">
+    <div class="label">Hoy (al pie de la página)</div>
+    <div class="phone">
+      <div class="topbar">
+        <div class="eyebrow">Salón del Reino</div>
+        <div class="cong-title">San Agustín</div>
+        <span class="readonly-tag">Solo lectura</span>
+      </div>
+      <div class="gold-bar"></div>
+      <div class="content">
+        <div class="hero"><small>Próxima reunión</small><div>Jueves 24</div></div>
+        <div class="sec">Próximas reuniones</div>
+        <div class="card"></div><div class="card"></div><div class="card"></div>
+        <div class="card"></div>
+        <div class="footer"><u class="hl-foot">Cómo usar esta app</u><u>Política de privacidad</u></div>
+      </div>
+      <div class="tabs"><span class="on">Inicio</span><span>Calendario</span><span>Anuncios</span></div>
+    </div>
+    <div class="note">Hay que scrollear hasta el final para verlo. En la práctica, casi nadie lo va a encontrar.</div>
+  </div>
+
+  <!-- OPCIÓN A -->
+  <div class="col">
+    <div class="label">Opción A — ícono "?"<span class="tag">Recomendada</span></div>
+    <div class="phone">
+      <div class="topbar">
+        <div class="eyebrow">Salón del Reino</div>
+        <div class="cong-title">San Agustín</div>
+        <span class="readonly-tag">Solo lectura</span>
+        <div class="help-a hl" aria-label="Cómo usar esta app">?</div>
+      </div>
+      <div class="gold-bar"></div>
+      <div class="content">
+        <div class="hero"><small>Próxima reunión</small><div>Jueves 24</div></div>
+        <div class="sec">Próximas reuniones</div>
+        <div class="card"></div><div class="card"></div><div class="card"></div>
+        <div class="card"></div>
+        <div class="footer"><u>Política de privacidad</u></div>
+      </div>
+      <div class="tabs"><span class="on">Inicio</span><span>Calendario</span><span>Anuncios</span></div>
+    </div>
+    <div class="note">Siempre visible, arriba a la derecha. Es el mismo "?" que ya usa el editor, así que es consistente entre las dos apps. Discreto, no compite con el nombre de la congregación.</div>
+  </div>
+
+  <!-- OPCIÓN B -->
+  <div class="col">
+    <div class="label">Opción B — píldora "Ayuda"</div>
+    <div class="phone">
+      <div class="topbar">
+        <div class="eyebrow">Salón del Reino</div>
+        <div class="cong-title">San Agustín</div>
+        <span class="readonly-tag">Solo lectura</span>
+        <div class="help-b hl-pill">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Ayuda
+        </div>
+      </div>
+      <div class="gold-bar"></div>
+      <div class="content">
+        <div class="hero"><small>Próxima reunión</small><div>Jueves 24</div></div>
+        <div class="sec">Próximas reuniones</div>
+        <div class="card"></div><div class="card"></div><div class="card"></div>
+        <div class="card"></div>
+        <div class="footer"><u>Política de privacidad</u></div>
+      </div>
+      <div class="tabs"><span class="on">Inicio</span><span>Calendario</span><span>Anuncios</span></div>
+    </div>
+    <div class="note">Más explícita para gente mayor que no asocia el "?" con ayuda. Ocupa más lugar y puede chocar con nombres de congregación largos.</div>
+  </div>
+
+  <!-- GUÍA ABIERTA -->
+  <div class="col">
+    <div class="label">Al tocarlo — se abre desde abajo</div>
+    <div class="phone">
+      <div class="topbar">
+        <div class="eyebrow">Salón del Reino</div>
+        <div class="cong-title">San Agustín</div>
+        <span class="readonly-tag">Solo lectura</span>
+        <div class="help-a">?</div>
+      </div>
+      <div class="gold-bar"></div>
+      <div class="content">
+        <div class="hero"><small>Próxima reunión</small><div>Jueves 24</div></div>
+        <div class="card"></div><div class="card"></div>
+      </div>
+      <div class="tabs"><span class="on">Inicio</span><span>Calendario</span><span>Anuncios</span></div>
+      <div class="overlay">
+        <div class="sheet">
+          <div class="handle"></div>
+          <div class="sheet-head"><h3>Cómo usar esta app</h3><span class="x">✕</span></div>
+          <div class="sub">Vista de solo lectura — para hacer cambios, hablá con quien administra la app.</div>
+          <div class="gi-open"><div class="t">🏠&nbsp; Inicio <span>›</span></div><p>Muestra las próximas reuniones. Si iniciaste sesión con tu email, arriba aparece un resumen con tus propias asignaciones.</p></div>
+          <div class="gi">🔍&nbsp; Calendario <span>›</span></div>
+          <div class="gi">📢&nbsp; Anuncios <span>›</span></div>
+          <div class="gi">🔔&nbsp; Notificaciones <span>›</span></div>
+          <div class="gi">📲&nbsp; Instalar en el celular <span>›</span></div>
+          <div class="gi">🔑&nbsp; Iniciar sesión <span>›</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="note">Mismo contenido que ya está hecho. Propongo que en celular salga como hoja desde abajo (igual que la ficha del día), más natural que un cartel centrado.</div>
+  </div>
+
+</div>
+
+<div class="reco">
+  <strong>Mi sugerencia:</strong> Opción A — el "?" arriba a la derecha. Es el patrón que la gente ya reconoce, es igual al del editor, y no ensucia la cabecera. El link del pie lo sacaría para no duplicar (queda solo "Política de privacidad" ahí). Y de paso, que la guía se abra como hoja desde abajo en vez de cartel centrado, para que se sienta igual que el resto de la app.
+</div>
+</body>
+</html>
