@@ -6,6 +6,15 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Guardado por partes: los cambios ya no se pisan — 23 sep 2026 (caché asignaciones-salon-v25)
+
+- Antes, cada guardado subía la congregación completa. Si dos personas guardaban casi a la vez, lo del segundo podía borrar lo del primero; y si alguien editaba sin señal, al reconectarse su copia vieja pisaba todo lo que los demás habían cambiado mientras tanto.
+- Ahora la app compara con la última copia recibida de la nube y sube **solo los campos que cambiaron** (por ejemplo, el Micrófono 2 del jueves 24). Dos personas pueden trabajar a la vez, incluso en la misma reunión, sin perder nada; solo si tocan exactamente el mismo puesto queda el último.
+- No se sube nada "a ciegas" antes de recibir la copia de la nube, y los campos vacíos por defecto no se suben como si fueran cambios.
+- Red de seguridad: si la nube rechazara el guardado por partes por un formato inesperado, se guarda completo como antes.
+- Ajustes → Sincronización muestra el espacio que ocupan los datos en la nube (Firebase admite hasta 1 MB). Con el uso actual alcanza para varios años; si pasa del 70 %, al Super Admin le aparece un aviso para archivar los años viejos.
+- Exportar CSV: se sacó la columna "Tema" que ya no se usa.
+
 ## Ajustes → Acceso para listas largas — 23 sep 2026 (caché asignaciones-salon-v24)
 
 - La lista se agrupa por rol: Super Admin, Admins, Solo anuncios y Solo ver (este último plegado, con la cantidad).

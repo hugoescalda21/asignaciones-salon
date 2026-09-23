@@ -1463,6 +1463,7 @@
       <summary><div><h3>Sincronización entre dispositivos</h3><span class="sc-sub">Código de la congregación y estado de la conexión</span></div><span class="chev">›</span></summary>
       <p class="hint">El mismo código conecta tu celular, tablet y PC con el mismo programa. Además de este código, cada persona necesita su email autorizado (ver la tarjeta "Acceso", en el grupo Congregación).</p>
       <div id="syncStatus"></div>
+      <p class="hint" id="cloudSizeInfo" style="margin-top:8px;"></p>
       <div class="settings-actions" style="margin-top:12px;">
         <button class="btn" id="changeCodeBtn">Cambiar código</button>
       </div>
@@ -1969,6 +1970,71 @@
     // El modal de código tiene prioridad; recién si no hace falta mostrarlo, se ofrece la bienvenida.
     if ($('codeModalOverlay').classList.contains('hidden')) maybeShowOnboarding();
   }
+  /* ---------- Guardado en la nube: solo lo que cambió ----------
+     Antes se subía la congregación entera en cada guardado, y así un cambio podía pisar
+     lo que otra persona había guardado un segundo antes (o todo lo hecho mientras alguien
+     estaba sin conexión). Ahora se compara con la última copia recibida de la nube
+     (cloudBase) y se mandan solo los campos que cambiaron — p. ej. "weeks › 2026-09-21 ›
+     semana › roles › mic1" —, así dos personas pueden trabajar a la vez sin pisarse. */
+  let cloudBase = null;
+  function jsonClone(v) { return v === undefined ? undefined : JSON.parse(JSON.stringify(v)); }
+  function isPlainObj(v) { return !!v && typeof v === 'object' && !Array.isArray(v); }
+  function isEmptyVal(v) { return v === null || v === '' || (Array.isArray(v) && v.length === 0) || (isPlainObj(v) && Object.values(v).every(isEmptyVal)); }
+  // Igualdad profunda sin importar el orden de las claves (la nube las devuelve ordenadas).
+  function deepEq(a, b) {
+    if (a === b) return true;
+    if (a === undefined || b === undefined || a === null || b === null) return a === b || (a == null && b == null && a === b);
+    if (Array.isArray(a)) return Array.isArray(b) && a.length === b.length && a.every((x, i) => deepEq(x, b[i]));
+    if (isPlainObj(a)) {
+      if (!isPlainObj(b)) return false;
+      const ka = Object.keys(a).filter(k => a[k] !== undefined), kb = Object.keys(b).filter(k => b[k] !== undefined);
+      return ka.length === kb.length && ka.every(k => deepEq(a[k], b[k]));
+    }
+    return false;
+  }
+  // Lista de [ruta, valor] con lo que cambió; valor undefined = borrar el campo.
+  function diffPaths(base, cur, path, out) {
+    const keys = new Set([...Object.keys(base || {}), ...Object.keys(cur || {})]);
+    keys.forEach(k => {
+      const b = base ? base[k] : undefined, c = cur ? cur[k] : undefined;
+      if (c === undefined) { if (b !== undefined) out.push([path.concat(k), undefined]); return; }
+      // Un campo vacío por defecto (null, "", []) que la nube no tiene no es un cambio:
+      // subirlo podría pisar lo que otra persona cargó en ese campo al mismo tiempo.
+      if (b === undefined && isEmptyVal(c)) return;
+      if (isPlainObj(c) && (isPlainObj(b) || b === undefined)) { diffPaths(b || {}, c, path.concat(k), out); return; }
+      if (!deepEq(b, c)) out.push([path.concat(k), c]);
+    });
+    return out;
+  }
+  function cloudDocRef() { return fbDb.collection('congregations').doc(accessCode); }
+  async function pushChangesToCloud() {
+    if (!cloudBase) return; // todavía no llegó la copia de la nube: no se sube nada a ciegas
+    let changes = diffPaths(cloudBase, jsonClone(data), [], []);
+    // "Solo anuncios" solo puede tocar los anuncios (lo exige también el servidor).
+    if (currentUser && currentUserRole === 'anuncios') changes = changes.filter(([path]) => path[0] === 'anuncios');
+    if (!changes.length) return;
+    // Muchísimos cambios juntos (p. ej. al restaurar una copia): se agrupan por sección.
+    if (changes.length > 400) {
+      const tops = [...new Set(changes.map(([path]) => path[0]))];
+      changes = tops.map(k => [[k], data[k] === undefined ? undefined : jsonClone(data[k])]);
+    }
+    const args = [];
+    changes.forEach(([path, val]) => {
+      args.push(new firebase.firestore.FieldPath(...path));
+      args.push(val === undefined ? firebase.firestore.FieldValue.delete() : jsonClone(val));
+    });
+    cloudBase = jsonClone(data); // lo que la nube va a tener; si el servidor lo rechaza, llega la copia real y se corrige sola
+    try {
+      await cloudDocRef().update(...args);
+    } catch (e) {
+      // Red de seguridad: si la nube no acepta el guardado por partes (documento inexistente o
+      // un campo con formato raro), se guarda completo como antes para no perder el cambio.
+      if (e && (e.code === 'not-found' || e.code === 'invalid-argument') && currentUserRole !== 'anuncios') {
+        console.warn('Guardado por partes rechazado; se guarda completo:', e);
+        await cloudDocRef().set(data);
+      } else throw e;
+    }
+  }
   async function saveData() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -1978,13 +2044,32 @@
     }
     if (fbDb && accessCode && !applyingRemoteUpdate) {
       try {
-        if (currentUser && currentUserRole === 'anuncios') await fbDb.collection('congregations').doc(accessCode).update({ anuncios: data.anuncios || [] });
-        else await fbDb.collection('congregations').doc(accessCode).set(data);
+        await pushChangesToCloud();
         setSyncStatus('ok');
       } catch (e) {
         console.error('No se pudo sincronizar con la nube', e);
         setSyncStatus('error');
       }
+    }
+  }
+  // Espacio que ocupa la congregación en la nube (Firebase admite hasta 1 MB por documento).
+  const CLOUD_DOC_LIMIT = 1048576;
+  let cloudSizeWarned = false;
+  function updateCloudSize(raw) {
+    let bytes = 0;
+    try { bytes = new TextEncoder().encode(JSON.stringify(raw)).length; } catch (e) { return; }
+    const pct = Math.round(bytes / CLOUD_DOC_LIMIT * 100);
+    const kb = Math.round(bytes / 1024);
+    const box = $('cloudSizeInfo');
+    if (box) box.innerHTML = `Espacio usado en la nube: <b>${kb} KB</b> de 1024 KB (${pct}%)${pct >= 70 ? ' — <b style="color:var(--danger);">conviene archivar los años viejos</b>' : ''}.`;
+    if (pct >= 70 && !cloudSizeWarned && currentUserRole === 'super' && !document.getElementById('cloudSizeBanner')) {
+      cloudSizeWarned = true;
+      const bar = document.createElement('div');
+      bar.id = 'cloudSizeBanner';
+      bar.className = 'top-banner backup';
+      bar.innerHTML = `<span>Los datos de la congregación ya ocupan el ${pct}% del espacio de la nube. Hay que archivar los años viejos antes de llegar al 100% (a partir de ahí no se puede guardar).</span><div class="tb-actions"><button type="button" id="cloudSizeDismiss">Entendido</button></div>`;
+      document.body.insertBefore(bar, document.body.firstChild);
+      $('cloudSizeDismiss').addEventListener('click', () => bar.remove());
     }
   }
 
@@ -2224,6 +2309,7 @@
     if (!initFirebase()) { setSyncStatus('error'); return; }
     setSyncStatus('connecting');
     if (fbUnsubscribe) { fbUnsubscribe(); fbUnsubscribe = null; }
+    cloudBase = null;
     const docRef = fbDb.collection('congregations').doc(code);
     try {
       const snap = await docRef.get();
@@ -2251,7 +2337,11 @@
     fbUnsubscribe = docRef.onSnapshot((snap) => {
       if (!snap.exists) return;
       applyingRemoteUpdate = true;
-      data = migrate(snap.data());
+      const raw = snap.data();
+      data = migrate(jsonClone(raw));
+      // La base de comparación es la copia YA normalizada: así los ajustes automáticos de
+      // migrate() (campos por defecto) no se suben como si fueran cambios de alguien.
+      cloudBase = jsonClone(data);
       window.data = data;
       currentUserRole = computeUserRole();
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) { /* sin acceso */ }
@@ -2260,6 +2350,7 @@
       applyRoleUI();
       applyingRemoteUpdate = false;
       setSyncStatus('ok');
+      updateCloudSize(raw);
     }, (err) => {
       console.error('Error de sincronización', err);
       if (err && err.code === 'permission-denied') { showAuthDenied(); }
@@ -5776,7 +5867,7 @@
     });
     rows.push([]);
     rows.push(['HISTORIAL DE ASIGNACIONES']);
-    rows.push(['Fecha', 'Tipo', 'Tema', 'Asignación', 'Hermano']);
+    rows.push(['Fecha', 'Tipo', 'Asignación', 'Hermano']);
     const entries = [];
     Object.entries(data.weeks).forEach(([monday, w]) => {
       ['semana', 'finde'].forEach(t => {
@@ -5786,7 +5877,7 @@
           const pid = w[t].roles[r.key];
           if (pid) {
             const p = data.publishers.find(pp => pp.id === pid);
-            entries.push([date, t === 'finde' ? 'Fin de semana' : 'Entre semana', w[t].topic || '', r.label, p ? p.name : '']);
+            entries.push([date, t === 'finde' ? 'Fin de semana' : 'Entre semana', r.label, p ? p.name : '']);
           }
         });
       });
