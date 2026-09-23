@@ -148,7 +148,7 @@ const isoDay = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate
   // Datos de prueba compartidos por Calendario e Inicio
   const pubs = [['p1', 'Hugo Escalda', 'hugo@x.com'], ['p2', 'Martín Ruiz'], ['p3', 'Lucas Gómez'], ['p4', 'Carlos Vega'], ['p5', 'Sofía Abad'], ['p6', 'Laura Paz'], ['p7', 'Ramiro Quinteros'], ['p8', 'Tomás Bravo']].map(([id, name, email]) => ({ id, name, email }));
   const calCode = [escapeHtml, constBlock('ROLE_META', '};'), fn('getRoles'), fn('dateForType'), fn('formatDate'), oneLine('  function monthKey('), oneLine('  function localIso('),
-    fn('meetingTimeOf'), fn('programEntries'), constBlock('SECTION_COLOR', '};'), fn('isProgramFilled'), constBlock('calOpenState', ';'),
+    fn('meetingTimeOf'), fn('visitorName'), fn('programEntries'), constBlock('SECTION_COLOR', '};'), fn('isProgramFilled'), constBlock('calOpenState', ';'),
     fn('calRowHTML'), fn('bindCalAccordion'), fn('renderMonth'), fn('renderUpcoming'),
     constBlock('annState', ';'), fn('annVigentesList'), fn('annItemHtml'), fn('annRelDate'), fn('annExpiresLabel'), fn('renderAnnTeaser')].join('\n');
   function calCtx(weeks, anuncios, seenIso) {
@@ -184,6 +184,13 @@ const isoDay = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate
     check('la fila cerrada avisa "Vos: …"', /Vos: Acomodador 1/.test(html));
     check('el fin de semana resume con el discurso', /Discurso: Ramiro Quinteros/.test(html));
     check('sin equipo técnico lo dice', /Equipo técnico no cargado/.test(html));
+    // Orador de otra congregación
+    const ctxV = calCtx(JSON.parse(JSON.stringify(weeks)));
+    ctxV.data.weeks['2099-09-21'].finde.program = { oradorVisitante: { nombre: 'Julio Sosa', congregacion: 'Villa Elvira' }, temaPublico: 'La paz' };
+    vm.runInContext('renderMonth();', ctxV);
+    const hv = ctxV.$('agendaCard').innerHTML;
+    check('orador visitante: aparece en el resumen de la fila', /Discurso: Julio Sosa \(Villa Elvira\)/.test(hv));
+    check('orador visitante: aparece en el programa de la reunión', /Discurso público — La paz<\/span><span class="v">Julio Sosa \(Villa Elvira\)/.test(hv));
     // abrir una reunión y re-dibujar: tiene que seguir abierta
     const item = { classList: { t: false, toggle() { this.t = !this.t; return this.t; } }, dataset: { mkey: '2099-09-27|finde' } };
     const head = { closest: () => item, setAttribute() {} };

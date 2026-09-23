@@ -367,6 +367,13 @@
   .pub-combo-item mark { background: rgba(169,130,47,0.25); color: inherit; border-radius: 2px; }
   .pub-combo-empty-opt { color: var(--ink-faint); }
   .pub-combo-none { padding: 12px; font-size: 12px; color: var(--ink-soft); text-align: center; }
+  .pub-combo-group { position: sticky; top: 0; z-index: 1; background: var(--bg); padding: 5px 11px; font-size: 10.5px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--line); }
+  .pub-combo-item { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .pub-combo-note { font-size: 11.5px; color: var(--ink-soft); font-weight: 500; flex-shrink: 0; text-align: right; }
+  .pub-combo-item.g-ocupado .pub-combo-note { color: var(--danger); }
+  /* En el Programa la lista se abre más ancha que el campo, hacia la izquierda, para que entren el nombre y la nota. */
+  .program-row .pub-combo-list { left: auto; right: 0; min-width: max(100%, min(320px, calc(100vw - 40px))); }
+  .pub-combo-item.g-ocupado, .pub-combo-item.g-nodisp, .pub-combo-item.g-sinpriv { color: var(--ink-soft); }
 
   .program-card.pc-complete { border-color: var(--ok); background: var(--ok-bg); }
   .program-card .pc-badge { display: inline-flex; align-items: center; gap: 4px; background: var(--ok); color: #fff; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 10px; float: right; }
@@ -441,6 +448,7 @@
   .tag-plataforma { background: var(--role-plat); }
   .tag-acomodador { background: var(--role-usher); }
   .tag-cronometrista { background: var(--role-crono); }
+  .tag.tag-prog { background: transparent; color: var(--role-program, #8C5A6E); border: 1px solid rgba(140,90,110,0.45); }
 
   /* ---------- Ajustes ---------- */
   .settings-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 18px 20px; margin-bottom: 16px; }
@@ -573,6 +581,13 @@
   .br-chips { display: none; }
   .br-chip { flex-shrink: 0; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); border-radius: 16px; padding: 6px 12px; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
   .br-chip.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+  /* ---------- Programa: orador visitante, minutos y cánticos ---------- */
+  .visitor-link { border: none; background: none; font: inherit; font-size: 12.5px; font-weight: 700; color: var(--accent-blue); padding: 6px 0 2px; cursor: pointer; }
+  .visitor-block { border: 1px solid var(--line); border-left: 3px solid var(--accent-gold); border-radius: var(--radius-s); padding: 6px 12px 8px; margin: 6px 0 4px; background: rgba(169,130,47,0.05); }
+  .visitor-block .split-label { margin: 2px 0 2px; }
+  .min-empty-hint { display: none; font-size: 11.5px; color: var(--accent-gold-text); font-weight: 600; flex: 1; min-width: 0; line-height: 1.3; }
+  .program-row input[type="number"]:placeholder-shown + .min-empty-hint { display: block; }
 
   /* ---------- Programa: menú "Más" (solo celular) ---------- */
   .more-wrap { display: none; }
@@ -1272,7 +1287,7 @@
       </details>
       <details class="guide-item">
         <summary><span class="gicon" data-icon="book"></span>Programa de la reunión<span class="chev">›</span></summary>
-        <p>Subpestaña "Programa": Presidente, oraciones, cánticos, Tesoros de la Biblia, Seamos mejores maestros y Nuestra Vida Cristiana. Los números de cada parte (1, 2, 3...) se acomodan solos según cuántas partes cargues. "Auto-asignar" del equipo técnico evita poner ahí a alguien que ya tiene una parte acá.</p>
+        <p>Subpestaña "Programa": Presidente, oraciones, cánticos, Tesoros de la Biblia, Seamos mejores maestros y Nuestra Vida Cristiana. Los números de cada parte (1, 2, 3...) se acomodan solos según cuántas partes cargues. Al elegir quién tiene cada parte, arriba aparecen los disponibles, empezando por quien hace más tiempo que no tiene una; más abajo, los que ya tienen algo en esa reunión y los no disponibles. En el fin de semana, "+ Viene de otra congregación" permite cargar un orador visitante. En Hermanos se puede marcar qué partes del programa puede tener cada uno (opcional). "Auto-asignar" del equipo técnico evita poner ahí a alguien que ya tiene una parte acá.</p>
       </details>
       <details class="guide-item">
         <summary><span class="gicon" data-icon="usher"></span>Sala auxiliar<span class="chev">›</span></summary>
@@ -1354,6 +1369,17 @@
           <label class="cap-item"><input type="checkbox" id="capPlataforma"> Plataforma</label>
           <label class="cap-item"><input type="checkbox" id="capAcomodador"> Acomodadores</label>
           <label class="cap-item"><input type="checkbox" id="capCronometrista"> Cronometrista</label>
+        </div>
+      </div>
+      <div class="field">
+        <label>Partes del programa que puede tener</label>
+        <p class="hint" style="margin:0 0 8px;">Opcional. Si lo marcás, al elegir quién tiene cada parte aparecen primero los que corresponden (nunca se bloquea a nadie).</p>
+        <div class="cap-grid">
+          <label class="cap-item"><input type="checkbox" id="pcapPresidente"> Presidente</label>
+          <label class="cap-item"><input type="checkbox" id="pcapOracion"> Oraciones</label>
+          <label class="cap-item"><input type="checkbox" id="pcapDiscursos"> Discursos <span class="hint" style="margin:0;">(Tesoros, Perlas, Vida Cristiana, Discurso público, conductor)</span></label>
+          <label class="cap-item"><input type="checkbox" id="pcapLector"> Lector <span class="hint" style="margin:0;">(Estudio, Atalaya)</span></label>
+          <label class="cap-item"><input type="checkbox" id="pcapEstudiante"> Estudiante <span class="hint" style="margin:0;">(Lectura, Seamos mejores maestros)</span></label>
         </div>
       </div>
       <div class="last-served hidden" id="pubLastServed"></div>
@@ -1554,6 +1580,30 @@
   const $ = (id) => document.getElementById(id);
   function hideInitialLoading() { const el = $('initialLoading'); if (el) el.remove(); }
   const emptyCaps = () => ({ sonido: false, video: false, microfono: false, plataforma: false, acomodador: false, cronometrista: false });
+  // Partes del programa que puede tener cada hermano (opcional: si nadie tiene nada marcado, no se filtra).
+  const emptyProgCaps = () => ({ presidente: false, oracion: false, discursos: false, lector: false, estudiante: false });
+  const PROG_CAP_LABEL = { presidente: 'Presidente', oracion: 'Oraciones', discursos: 'Discursos', lector: 'Lector', estudiante: 'Estudiante' };
+  // Qué privilegio pide cada lugar del programa.
+  function progCapForSlot(slot) {
+    const f = String(slot || '').split(':');
+    if (f[0] === 'stu') return 'estudiante';
+    if (f[0] === 'vida') return 'discursos';
+    const k = f[1];
+    if (k === 'presidente' || k === 'consejeroAux') return 'presidente';
+    if (k === 'oracionInicial' || k === 'oracionFinal') return 'oracion';
+    if (k === 'lectura' || k === 'lecturaAux') return 'estudiante';
+    if (k === 'estudioLector' || k === 'atalayaLector') return 'lector';
+    return 'discursos';   // tesoros, perlas, oradorPublico, estudioConductor, atalayaConductor
+  }
+  // Nombre del orador del discurso público: hermano de la lista o visitante de otra congregación.
+  function publicSpeakerName(program) {
+    if (!program) return '';
+    const p = program.oradorPublico && data.publishers.find(pp => pp.id === program.oradorPublico);
+    if (p) return p.name;
+    const v = program.oradorVisitante;
+    if (v && v.nombre) return v.nombre + (v.congregacion ? ` (${v.congregacion})` : '');
+    return '';
+  }
   const blankRoles = () => ({ sonido: null, video: null, mic1: null, mic2: null, mic3: null, plataforma: null, usher1: null, usher2: null, usher3: null, usher4: null, cronometrista: null });
   const blankProgram = (type) => type === 'finde'
     ? { presidente: null, oracionInicial: null, cancionInicial: '', oradorPublico: null, temaPublico: '', cancionIntermedia: '', atalayaConductor: null, atalayaLector: null, cancionFinal: '', oracionFinal: null }
@@ -1616,7 +1666,7 @@
     let out;
     if (raw && raw.weeks) {
       raw.settings = Object.assign(defaultSettings(), raw.settings || {});
-      raw.publishers = (raw.publishers || []).map(p => ({ id: p.id, name: p.name, notes: p.notes || '', status: p.status || 'activo', roles: Object.assign(emptyCaps(), p.roles || {}), email: p.email || null }));
+      raw.publishers = (raw.publishers || []).map(p => ({ id: p.id, name: p.name, notes: p.notes || '', status: p.status || 'activo', roles: Object.assign(emptyCaps(), p.roles || {}), email: p.email || null, progCaps: Object.assign(emptyProgCaps(), p.progCaps || {}) }));
       out = raw;
     } else {
       // formato viejo (reuniones sueltas) -> semanas
@@ -2180,36 +2230,94 @@
   }
   document.querySelectorAll('.subtab').forEach(b => b.addEventListener('click', () => switchSubtab(b.dataset.subtab)));
 
-  function allPubOptionsHTML(selectedId) {
-    const sorted = data.publishers.slice().sort((a, b) => a.name.localeCompare(b.name, 'es'));
-    return '<option value="">— Sin asignar —</option>' + sorted.map(p => `<option value="${p.id}" ${p.id === selectedId ? 'selected' : ''}>${escapeHtml(p.name)}</option>`).join('');
+  // Contexto de la reunión que se está cargando: quién ya tiene algo, quién no está disponible
+  // y cuándo tuvo cada uno su última parte del programa. Se arma una vez por dibujo.
+  let pickerCtx = null;
+  function buildPickerContext() {
+    const typeObj = weekView(currentMonday)[currentType];
+    const meetingDate = dateForType(currentMonday, currentType);
+    const slots = [];   // { pub, slot, label }
+    getRoles(currentType).forEach(r => { if (typeObj.roles[r.key]) slots.push({ pub: typeObj.roles[r.key], slot: 'role:' + r.key, label: r.label }); });
+    const pr = typeObj.program || {};
+    const PF = currentType === 'finde' ? PROGRAM_SIMPLE_FIELDS_FINDE : PROGRAM_SIMPLE_FIELDS_SEMANA;
+    PF.forEach(([k, l]) => { if (pr[k]) slots.push({ pub: pr[k], slot: 'prog:' + k, label: l }); });
+    (pr.estudiantes || []).forEach(s => ['estudiante', 'ayudante', 'estudianteAux', 'ayudanteAux'].forEach(sub => {
+      if (s[sub]) slots.push({ pub: s[sub], slot: `stu:${s.id}:${sub}`, label: (s.tema || 'Seamos mejores maestros') + (sub.endsWith('Aux') ? ' (sala aux.)' : '') });
+    }));
+    (pr.vidaCristiana || []).forEach(v => { if (v.presentador) slots.push({ pub: v.presentador, slot: 'vida:' + v.id, label: v.tema || 'Nuestra Vida Cristiana' }); });
+    // Última parte del programa de cada hermano, antes de esta reunión.
+    const last = {};
+    Object.keys(data.weeks).forEach(monday => ['semana', 'finde'].forEach(t => {
+      const w = data.weeks[monday][t];
+      if (!w || !w.program) return;
+      const d = dateForType(monday, t);
+      if (d >= meetingDate) return;
+      programAssignedIds(w.program, t).forEach(id => { if (!last[id] || last[id] < d) last[id] = d; });
+    }));
+    const privUsed = data.publishers.some(p => p.progCaps && Object.values(p.progCaps).some(Boolean));
+    pickerCtx = { slots, last, meetingDate, excluded: new Set(typeObj.excluded || []), privUsed };
+    return pickerCtx;
+  }
+  function lastPartNote(pubId) {
+    const d = pickerCtx && pickerCtx.last[pubId];
+    if (!d) return 'nunca tuvo parte';
+    const weeks = Math.round((new Date(pickerCtx.meetingDate + 'T00:00:00') - new Date(d + 'T00:00:00')) / (7 * 86400000));
+    return weeks <= 0 ? 'última: esta semana' : `última: hace ${weeks} sem.`;
+  }
+  function allPubOptionsHTML(selectedId, slot) {
+    const ctx = pickerCtx || buildPickerContext();
+    const cap = slot ? progCapForSlot(slot) : null;
+    const ORDER = { libre: 0, ocupado: 1, sinpriv: 2, nodisp: 3 };
+    const rows = data.publishers.map(p => {
+      const others = ctx.slots.filter(a => a.pub === p.id && a.slot !== slot);
+      let group, note;
+      if (p.status === 'no_disponible') { group = 'nodisp'; note = 'no disponible'; }
+      else if (ctx.excluded.has(p.id)) { group = 'nodisp'; note = 'no disponible hoy'; }
+      else if (others.length) { group = 'ocupado'; note = 'ya tiene: ' + others.map(a => a.label).join(', '); }
+      else if (cap && ctx.privUsed && !(p.progCaps && p.progCaps[cap])) { group = 'sinpriv'; note = lastPartNote(p.id); }
+      else { group = 'libre'; note = lastPartNote(p.id); }
+      return { p, group, note, last: ctx.last[p.id] || '' };
+    }).sort((a, b) => ORDER[a.group] - ORDER[b.group] || (a.group === 'libre' ? a.last.localeCompare(b.last) : 0) || a.p.name.localeCompare(b.p.name, 'es'));
+    return '<option value="">— Sin asignar —</option>' + rows.map(r =>
+      `<option value="${r.p.id}" data-group="${r.group}" data-note="${escapeHtml(r.note)}" ${r.p.id === selectedId ? 'selected' : ''}>${escapeHtml(r.p.name)}</option>`).join('');
   }
   function programRowHTML(field, label, selectedId, minLabel) {
     const suffix = minLabel ? `<span class="min-tag">${minLabel}</span>` : '';
-    return `<div class="program-row"><label>${label}${suffix}</label><select data-program-field="${field}">${allPubOptionsHTML(selectedId)}</select></div>`;
+    return `<div class="program-row"><label>${label}${suffix}</label><select data-program-field="${field}">${allPubOptionsHTML(selectedId, 'prog:' + field)}</select></div>`;
   }
+  const SONG_INPUT = (field, value) => `<input type="text" inputmode="numeric" data-program-field="${field}" value="${escapeHtml(value || '')}" placeholder="N.°" aria-label="Número de cántico">`;
 
   function numTag(n) { return `<span class="part-num">${n}</span>`; }
 
   function renderProgramSection() {
     const program = weekView(currentMonday)[currentType].program;
     const aux = !!data.settings.useAuxRoom;
+    buildPickerContext();
     let html = '<div id="programConflictBanner" class="hidden"></div><div id="programOverloadBanner" class="hidden"></div><div class="program-card">';
     html += programRowHTML('presidente', 'Presidente', program.presidente);
     html += programRowHTML('oracionInicial', 'Oración inicial', program.oracionInicial);
     if (currentType === 'finde') {
-      html += `<div class="program-row"><label>🎵 Canción inicial</label><input type="text" data-program-field="cancionInicial" value="${escapeHtml(program.cancionInicial || '')}" placeholder="N.° de cántico"></div>`;
-      html += programRowHTML('oradorPublico', 'Orador — Discurso público', program.oradorPublico, '30 min');
+      html += `<div class="program-row"><label>🎵 Canción inicial</label>${SONG_INPUT('cancionInicial', program.cancionInicial)}</div>`;
+      const vis = program.oradorVisitante && (program.oradorVisitante.nombre || program.oradorVisitante.congregacion || program.oradorVisitante.open);
+      if (vis) {
+        html += `<div class="visitor-block"><div class="split-label">Orador de otra congregación<span class="min-tag" style="display:inline; margin-left:6px;">30 min</span></div>
+          <div class="program-row"><label>Nombre</label><input type="text" data-visitor-field="nombre" value="${escapeHtml(program.oradorVisitante.nombre || '')}" placeholder="Nombre y apellido"></div>
+          <div class="program-row"><label>Congregación</label><input type="text" data-visitor-field="congregacion" value="${escapeHtml(program.oradorVisitante.congregacion || '')}" placeholder="Ej: Villa Elvira"></div>
+          <button type="button" class="visitor-link" data-visitor-toggle="off">← Es de esta congregación</button></div>`;
+      } else {
+        html += programRowHTML('oradorPublico', 'Orador — Discurso público', program.oradorPublico, '30 min');
+        html += '<div style="padding-left:2px;"><button type="button" class="visitor-link" data-visitor-toggle="on">+ Viene de otra congregación</button></div>';
+      }
       html += `<div class="program-row"><label>Tema del discurso</label><input type="text" data-program-field="temaPublico" value="${escapeHtml(program.temaPublico || '')}" placeholder="Tema (opcional)"></div>`;
-      html += `<div class="program-row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);"><label>🎵 Canción intermedia</label><input type="text" data-program-field="cancionIntermedia" value="${escapeHtml(program.cancionIntermedia || '')}" placeholder="N.° de cántico"></div>`;
+      html += `<div class="program-row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);"><label>🎵 Canción intermedia</label>${SONG_INPUT('cancionIntermedia', program.cancionIntermedia)}</div>`;
       html += programRowHTML('atalayaConductor', 'Atalaya — Conductor', program.atalayaConductor, '60 min');
       html += programRowHTML('atalayaLector', 'Atalaya — Lector', program.atalayaLector);
-      html += `<div class="program-row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);"><label>🎵 Canción final</label><input type="text" data-program-field="cancionFinal" value="${escapeHtml(program.cancionFinal || '')}" placeholder="N.° de cántico"></div>`;
+      html += `<div class="program-row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);"><label>🎵 Canción final</label>${SONG_INPUT('cancionFinal', program.cancionFinal)}</div>`;
       html += programRowHTML('oracionFinal', 'Oración final', program.oracionFinal);
       html += '</div>';
     } else {
       if (aux) html += programRowHTML('consejeroAux', 'Consejero de la sala auxiliar', program.consejeroAux);
-      html += `<div class="program-row"><label>🎵 Canción inicial</label><input type="text" data-program-field="cancionInicial" value="${escapeHtml(program.cancionInicial || '')}" placeholder="N.° de cántico"></div>`;
+      html += `<div class="program-row"><label>🎵 Canción inicial</label>${SONG_INPUT('cancionInicial', program.cancionInicial)}</div>`;
       html += programRowHTML('tesoros', `${numTag(1)} Tesoros de la Biblia`, program.tesoros, '10 min');
       html += `<div class="program-row"><label>Tema</label><input type="text" data-program-field="temaTesoros" value="${escapeHtml(program.temaTesoros || '')}" placeholder="Tema (opcional)"></div>`;
       html += programRowHTML('perlas', `${numTag(2)} Busquemos perlas escondidas`, program.perlas, '10 min');
@@ -2229,27 +2337,27 @@
       estudiantes.forEach((s) => {
         const partN = n++;
         html += `<div class="student-block" data-student-id="${s.id}">
-          <div class="program-row"><label>${numTag(partN)} Tema</label><input type="text" data-student-field="tema" value="${escapeHtml(s.tema || '')}" placeholder="Tema de la parte"></div>
-          <div class="program-row"><label>Minutos</label><input type="number" min="1" max="60" data-student-field="minutos" value="${s.minutos || ''}" placeholder="Ej: 5"></div>`;
+          <div class="program-row"><label>${numTag(partN)} Tema</label><input type="text" list="studentTemasList" data-student-field="tema" value="${escapeHtml(s.tema || '')}" placeholder="Elegí o escribí el tema"></div>
+          <div class="program-row"><label>Minutos</label><input type="number" inputmode="numeric" min="1" max="60" data-student-field="minutos" value="${s.minutos || ''}" placeholder="Ej: 5"><span class="min-empty-hint">Sin cargar: el cronómetro usa 5 min</span></div>`;
         if (aux) {
           html += `<div class="split-block"><div class="split-label">Auditorio principal</div>
-              <div class="program-row"><label>Estudiante</label><select data-student-field="estudiante">${allPubOptionsHTML(s.estudiante)}</select></div>
-              <div class="program-row"><label>Ayudante</label><select data-student-field="ayudante">${allPubOptionsHTML(s.ayudante)}</select></div>
+              <div class="program-row"><label>Estudiante</label><select data-student-field="estudiante">${allPubOptionsHTML(s.estudiante, `stu:${s.id}:estudiante`)}</select></div>
+              <div class="program-row"><label>Ayudante</label><select data-student-field="ayudante">${allPubOptionsHTML(s.ayudante, `stu:${s.id}:ayudante`)}</select></div>
             </div>
             <div class="split-block aux"><div class="split-label aux">Sala auxiliar</div>
-              <div class="program-row"><label>Estudiante</label><select data-student-field="estudianteAux">${allPubOptionsHTML(s.estudianteAux)}</select></div>
-              <div class="program-row"><label>Ayudante</label><select data-student-field="ayudanteAux">${allPubOptionsHTML(s.ayudanteAux)}</select></div>
+              <div class="program-row"><label>Estudiante</label><select data-student-field="estudianteAux">${allPubOptionsHTML(s.estudianteAux, `stu:${s.id}:estudianteAux`)}</select></div>
+              <div class="program-row"><label>Ayudante</label><select data-student-field="ayudanteAux">${allPubOptionsHTML(s.ayudanteAux, `stu:${s.id}:ayudanteAux`)}</select></div>
             </div>`;
         } else {
-          html += `<div class="program-row"><label>Estudiante</label><select data-student-field="estudiante">${allPubOptionsHTML(s.estudiante)}</select></div>
-            <div class="program-row"><label>Ayudante</label><select data-student-field="ayudante">${allPubOptionsHTML(s.ayudante)}</select></div>`;
+          html += `<div class="program-row"><label>Estudiante</label><select data-student-field="estudiante">${allPubOptionsHTML(s.estudiante, `stu:${s.id}:estudiante`)}</select></div>
+            <div class="program-row"><label>Ayudante</label><select data-student-field="ayudante">${allPubOptionsHTML(s.ayudante, `stu:${s.id}:ayudante`)}</select></div>`;
         }
         html += `<button type="button" class="remove-part-btn" data-remove-student="${s.id}">✕ Quitar esta parte</button>
         </div>`;
       });
       html += '<button type="button" class="add-part-btn" id="addStudentPartBtn">+ Agregar parte de estudiante</button></div>';
 
-      html += `<div class="program-card" style="margin-top:14px;"><div class="program-row" style="border:none;"><label>🎵 Canción intermedia</label><input type="text" data-program-field="cancionIntermedia" value="${escapeHtml(program.cancionIntermedia || '')}" placeholder="N.° de cántico"></div></div>
+      html += `<div class="program-card" style="margin-top:14px;"><div class="program-row" style="border:none;"><label>🎵 Canción intermedia</label>${SONG_INPUT('cancionIntermedia', program.cancionIntermedia)}</div></div>
 
       <div class="program-card" style="margin-top:14px;">`;
       html += '<div class="program-subhead" style="margin-top:0;">Nuestra Vida Cristiana</div>';
@@ -2257,19 +2365,21 @@
         const partN = n++;
         html += `<div class="student-block" data-vida-id="${v.id}">
           <div class="program-row"><label>${numTag(partN)} Tema</label><input type="text" data-vida-field="tema" value="${escapeHtml(v.tema || '')}" placeholder="Tema de la parte"></div>
-          <div class="program-row"><label>Minutos</label><input type="number" min="1" max="60" data-vida-field="minutos" value="${v.minutos || ''}" placeholder="Ej: 15"></div>
-          <div class="program-row"><label>Presentador</label><select data-vida-field="presentador">${allPubOptionsHTML(v.presentador)}</select></div>
+          <div class="program-row"><label>Minutos</label><input type="number" inputmode="numeric" min="1" max="60" data-vida-field="minutos" value="${v.minutos || ''}" placeholder="Ej: 15"><span class="min-empty-hint">Sin cargar: el cronómetro usa 15 min</span></div>
+          <div class="program-row"><label>Presentador</label><select data-vida-field="presentador">${allPubOptionsHTML(v.presentador, `vida:${v.id}`)}</select></div>
           <button type="button" class="remove-part-btn" data-remove-vida="${v.id}">✕ Quitar esta parte</button>
         </div>`;
       });
       html += '<button type="button" class="add-part-btn" id="addVidaPartBtn">+ Agregar parte</button>';
-      html += `<div class="program-row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);"><label>${numTag(n)} Estudio bíblico — Conductor<span class="min-tag">30 min</span></label><select data-program-field="estudioConductor">${allPubOptionsHTML(program.estudioConductor)}</select></div>`;
-      html += `<div class="program-row"><label>Estudio bíblico — Lector</label><select data-program-field="estudioLector">${allPubOptionsHTML(program.estudioLector)}</select></div>`;
-      html += `<div class="program-row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);"><label>🎵 Canción final</label><input type="text" data-program-field="cancionFinal" value="${escapeHtml(program.cancionFinal || '')}" placeholder="N.° de cántico"></div>`;
+      html += `<div class="program-row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);"><label>${numTag(n)} Estudio bíblico — Conductor<span class="min-tag">30 min</span></label><select data-program-field="estudioConductor">${allPubOptionsHTML(program.estudioConductor, 'prog:estudioConductor')}</select></div>`;
+      html += `<div class="program-row"><label>Estudio bíblico — Lector</label><select data-program-field="estudioLector">${allPubOptionsHTML(program.estudioLector, 'prog:estudioLector')}</select></div>`;
+      html += `<div class="program-row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);"><label>🎵 Canción final</label>${SONG_INPUT('cancionFinal', program.cancionFinal)}</div>`;
       html += programRowHTML('oracionFinal', 'Oración final', program.oracionFinal);
       html += '</div>';
     }
+    html += `<datalist id="studentTemasList">${['Empiece conversaciones', 'Haga revisitas', 'Haga discípulos', 'Explique sus creencias', 'Discurso'].map(t => `<option value="${t}"></option>`).join('')}</datalist>`;
     $('programSection').innerHTML = html;
+    pickerCtx = null;
     enhanceCombos($('programSection'));
     updateCardCompleteness();
     checkConflicts();
@@ -2287,10 +2397,19 @@
   $('programSection').addEventListener('change', (e) => {
     const week = ensureWeek(currentMonday);
     const program = week[currentType].program;
-    if (e.target.dataset.programField) {
+    if (e.target.dataset.visitorField) {
+      program.oradorVisitante = Object.assign({ nombre: '', congregacion: '' }, program.oradorVisitante || {});
+      delete program.oradorVisitante.open;
+      program.oradorVisitante[e.target.dataset.visitorField] = e.target.value.trim();
+      program.oradorPublico = null;
+      saveData();
+      showToast('Orador actualizado');
+    } else if (e.target.dataset.programField) {
       program[e.target.dataset.programField] = readProgramValue(e.target);
       saveData();
       showToast('Asignación actualizada');
+      // Con un selector cambiado, el resto de los selectores recalcula "ya tiene…".
+      if (e.target.tagName === 'SELECT') setTimeout(renderProgramSection, 0);
     } else if (e.target.dataset.studentField) {
       const block = e.target.closest('[data-student-id]');
       const entry = program.estudiantes.find(s => s.id === block.dataset.studentId);
@@ -2298,6 +2417,7 @@
         entry[e.target.dataset.studentField] = readProgramValue(e.target);
         saveData();
         showToast('Asignación actualizada');
+        if (e.target.tagName === 'SELECT') setTimeout(renderProgramSection, 0);
       }
     } else if (e.target.dataset.vidaField) {
       const block = e.target.closest('[data-vida-id]');
@@ -2306,6 +2426,7 @@
         entry[e.target.dataset.vidaField] = readProgramValue(e.target);
         saveData();
         showToast('Asignación actualizada');
+        if (e.target.tagName === 'SELECT') setTimeout(renderProgramSection, 0);
       }
     }
     renderMonthCalendar();
@@ -2317,6 +2438,17 @@
     checkMonthlyOverload();
   });
   $('programSection').addEventListener('click', (e) => {
+    const vt = e.target.closest && e.target.closest('[data-visitor-toggle]');
+    if (vt) {
+      const week = ensureWeek(currentMonday);
+      const program = week[currentType].program;
+      if (vt.dataset.visitorToggle === 'on') { program.oradorPublico = null; program.oradorVisitante = { nombre: '', congregacion: '', open: true }; }
+      else { delete program.oradorVisitante; }
+      saveData();
+      renderProgramSection();
+      if (vt.dataset.visitorToggle === 'on') { const i = document.querySelector('[data-visitor-field="nombre"]'); if (i) i.focus(); }
+      return;
+    }
     if (e.target.id === 'addStudentPartBtn') {
       const week = ensureWeek(currentMonday);
       week[currentType].program.estudiantes.push({ id: uid(), estudiante: null, ayudante: null, estudianteAux: null, ayudanteAux: null, tema: '', minutos: null });
@@ -2391,9 +2523,12 @@
 
     if (sel.value) wrap.classList.add('filled');
 
+    const GROUP_TITLE = { libre: 'Disponibles', ocupado: 'Ya tienen algo en esta reunión', sinpriv: 'Sin este privilegio marcado', nodisp: 'No disponibles' };
+    const grouped = options.some(o => o.dataset.group);
     function renderList(query) {
       const q = (query || '').trim().toLowerCase();
       const filtered = q ? options.filter(o => o.textContent.toLowerCase().includes(q)) : options;
+      let lastGroup = null;
       list.innerHTML = filtered.length
         ? filtered.map((o, i) => {
             const label = o.textContent;
@@ -2401,7 +2536,11 @@
             const idx = q ? label.toLowerCase().indexOf(q) : -1;
             if (idx >= 0) html = escapeHtml(label.slice(0, idx)) + '<mark>' + escapeHtml(label.slice(idx, idx + q.length)) + '</mark>' + escapeHtml(label.slice(idx + q.length));
             else html = escapeHtml(label);
-            return `<div class="pub-combo-item${i === 0 ? ' hi' : ''}" data-val="${o.value}">${html}</div>`;
+            const g = o.dataset.group || '';
+            const head = grouped && !q && g && g !== lastGroup ? `<div class="pub-combo-group">${GROUP_TITLE[g] || ''}</div>` : '';
+            lastGroup = g;
+            const note = o.dataset.note ? `<span class="pub-combo-note">${escapeHtml(o.dataset.note)}</span>` : '';
+            return `${head}<div class="pub-combo-item${i === 0 ? ' hi' : ''}${g ? ' g-' + g : ''}" data-val="${o.value}"><span>${html}</span>${note}</div>`;
           }).join('')
         : '<div class="pub-combo-none">Sin resultados</div>';
       list.classList.remove('hidden');
@@ -2807,7 +2946,7 @@
       });
       if (!prog) prog = '<div class="cal-empty">Programa no cargado</div>';
       const p = row.w.program || {};
-      const sum = row.type === 'finde' && nameOf(p.oradorPublico) ? 'Discurso: ' + nameOf(p.oradorPublico)
+      const sum = row.type === 'finde' && publicSpeakerName(p) ? 'Discurso: ' + publicSpeakerName(p)
         : nameOf(p.presidente) ? 'Presidente: ' + nameOf(p.presidente)
         : 'Audio: ' + (nameOf(rv.sonido) || '—') + ' · Video: ' + (nameOf(rv.video) || '—');
       const hora = (row.type === 'finde' ? data.settings.meetingTimeFinde : data.settings.meetingTimeSemana) || '';
@@ -2906,7 +3045,7 @@
   function programCompleteness(program, type) {
     if (!program) return 'none';
     const core = type === 'finde'
-      ? [program.presidente, program.oracionInicial, program.oradorPublico, program.atalayaConductor, program.atalayaLector, program.oracionFinal]
+      ? [program.presidente, program.oracionInicial, program.oradorPublico || (program.oradorVisitante && program.oradorVisitante.nombre), program.atalayaConductor, program.atalayaLector, program.oracionFinal]
       : [program.presidente, program.oracionInicial, program.tesoros, program.perlas, program.lectura, program.oracionFinal];
     const filledCount = core.filter(Boolean).length;
     if (filledCount === 0) return 'none';
@@ -3324,7 +3463,7 @@
     entries.push({ label: 'Presidente', name: nameOf(program.presidente) });
     entries.push({ label: 'Oración inicial', name: nameOf(program.oracionInicial) });
     if (type === 'finde') {
-      entries.push({ label: 'Discurso público', name: nameOf(program.oradorPublico), tema: program.temaPublico, min: 30 });
+      entries.push({ label: 'Discurso público', name: publicSpeakerName(program) || null, tema: program.temaPublico, min: 30 });
       entries.push({ label: 'Atalaya — Conductor', name: nameOf(program.atalayaConductor), min: 60 });
       entries.push({ label: 'Atalaya — Lector', name: nameOf(program.atalayaLector) });
       entries.push({ label: 'Oración final', name: nameOf(program.oracionFinal) });
@@ -3979,7 +4118,8 @@
     }).sort((a, b) => a.name.localeCompare(b.name, 'es'));
 
     $('brothersTableBody').innerHTML = rows.length ? rows.map(p => {
-      const tags = Object.keys(CAP_LABEL).filter(k => p.roles[k]).map(k => `<span class="tag tag-${k}">${CAP_LABEL[k]}</span>`).join('');
+      const tags = Object.keys(CAP_LABEL).filter(k => p.roles[k]).map(k => `<span class="tag tag-${k}">${CAP_LABEL[k]}</span>`).join('')
+        + Object.keys(PROG_CAP_LABEL).filter(k => p.progCaps && p.progCaps[k]).map(k => `<span class="tag tag-prog">${PROG_CAP_LABEL[k]}</span>`).join('');
       return `<tr data-row-pub="${p.id}">
         <td class="br-name"><strong>${escapeHtml(p.name)}</strong>${p.notes ? `<div class="row-note">${escapeHtml(p.notes)}</div>` : ''}</td>
         <td class="br-status"><span class="status-badge ${p.status === 'no_disponible' ? 'inactive' : 'active'}" data-toggle-status="${p.id}">${p.status === 'no_disponible' ? 'No disponible' : 'Activo'}</span></td>
@@ -4435,6 +4575,9 @@
       $('capPlataforma').checked = !!p.roles.plataforma;
       $('capAcomodador').checked = !!p.roles.acomodador;
       $('capCronometrista').checked = !!p.roles.cronometrista;
+      const pc = p.progCaps || {};
+      $('pcapPresidente').checked = !!pc.presidente; $('pcapOracion').checked = !!pc.oracion; $('pcapDiscursos').checked = !!pc.discursos;
+      $('pcapLector').checked = !!pc.lector; $('pcapEstudiante').checked = !!pc.estudiante;
       $('pubDeleteBtn').classList.remove('hidden');
       renderLastServed(p);
       renderPubAssignments(id);
@@ -4457,16 +4600,17 @@
     if (!name) return;
     const roles = { sonido: $('capSonido').checked, video: $('capVideo').checked, microfono: $('capMicrofono').checked, plataforma: $('capPlataforma').checked, acomodador: $('capAcomodador').checked, cronometrista: $('capCronometrista').checked };
     const notes = $('pubEditNotes').value.trim(), status = $('pubEditStatus').value;
+    const progCaps = { presidente: $('pcapPresidente').checked, oracion: $('pcapOracion').checked, discursos: $('pcapDiscursos').checked, lector: $('pcapLector').checked, estudiante: $('pcapEstudiante').checked };
     if (pubEditingId) {
       const p = data.publishers.find(x => x.id === pubEditingId);
-      p.name = name; p.notes = notes; p.status = status; p.roles = roles;
+      p.name = name; p.notes = notes; p.status = status; p.roles = roles; p.progCaps = progCaps;
     } else {
       const duplicate = data.publishers.find(p => p.name.trim().toLowerCase() === name.toLowerCase());
       if (duplicate) {
         const goAhead = confirm(`Ya hay un hermano cargado como "${duplicate.name}". ¿Es una persona distinta y querés agregarlo igual?\n\nSi es la misma persona, cancelá y buscalo en la lista para editarlo.`);
         if (!goAhead) return;
       }
-      data.publishers.push({ id: uid(), name, notes, status, roles });
+      data.publishers.push({ id: uid(), name, notes, status, roles, progCaps });
     }
     saveData(); renderBrothersTable(); renderRoleCards(); closePubModal();
     showToast(pubEditingId ? 'Hermano actualizado' : 'Hermano agregado');

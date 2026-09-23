@@ -6,6 +6,15 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Programa: orador visitante, selector que ayuda a elegir y privilegios — 23 de septiembre de 2026 (cachés `asignaciones-salon-v18` y `ver-salon-v21`)
+- **Orador de otra congregación** (fin de semana): "+ Viene de otra congregación" abre dos campos, nombre y congregación. Se guarda en `program.oradorVisitante` y aparece como "Nombre (Congregación)" en la vista pública, WhatsApp, PDF, el resumen del mes y el cronómetro. "← Es de esta congregación" vuelve al selector.
+- **Selector de hermanos con ayuda:** al elegir quién tiene una parte, la lista viene agrupada: *Disponibles* (primero quien hace más tiempo que no tiene una parte del programa, con "nunca tuvo parte" / "última: hace 3 sem."), *Ya tienen algo en esta reunión* (con qué), *Sin este privilegio marcado* y *No disponibles*. Al cambiar una asignación, los demás selectores se actualizan. Buscar por nombre sigue funcionando igual.
+- **Privilegios del programa en Hermanos** (opcional): Presidente, Oraciones, Discursos, Lector, Estudiante. Si ningún hermano tiene nada marcado, no se filtra; si hay, los que no lo tienen van al grupo "Sin este privilegio marcado" (nunca se bloquea a nadie). Se muestran como etiquetas en la lista de Hermanos.
+- **Temas sugeridos** en las partes de estudiante (Empiece conversaciones, Haga revisitas, Haga discípulos, Explique sus creencias, Discurso); se puede seguir escribiendo otro.
+- **Minutos vacíos:** al lado del campo avisa "Sin cargar: el cronómetro usa 5 min" (15 en Vida Cristiana).
+- **Cánticos:** el campo dice "N.°" (antes se cortaba) y abre el teclado numérico.
+- ⚠ Hasta que todos los dispositivos que editan se actualicen, uno con la versión anterior podría borrar los privilegios del programa al guardar. Conviene cargarlos después de abrir la app actualizada en esos dispositivos.
+
 ## Cronómetro: el reloj vive en la tarjeta de la parte — 23 de septiembre de 2026 (caché `asignaciones-salon-v17`)
 - Ya no hay un panel de reloj aparte arriba: la parte en curso se abre como reloj **dentro de la lista** (número, parte, quién la tiene, tiempo planeado, reloj grande y botón "Iniciar / Terminó"). Las demás quedan como filas chicas; las ya tomadas, compactas con ✓ y su diferencia.
 - Al abrir la pestaña, la primera parte que falta tomar ya viene abierta. Al tocar "Terminó", se abre la siguiente y la pantalla se desplaza sola para dejarla a la vista. La línea "Reunión: … atrasada" queda fija arriba al desplazarse.

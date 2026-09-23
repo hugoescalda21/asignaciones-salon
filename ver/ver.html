@@ -745,6 +745,11 @@
     return keys.map(k => ({ key: k, ...ROLE_META[k] }));
   }
 
+  // Orador del discurso público que viene de otra congregación (no está en la lista de hermanos).
+  function visitorName(program) {
+    const v = program && program.oradorVisitante;
+    return v && v.nombre ? v.nombre + (v.congregacion ? ` (${v.congregacion})` : '') : null;
+  }
   function programEntries(program, type) {
     if (!program) return [];
     const nameOf = id => { const p = (data.publishers || []).find(pp => pp.id === id); return p ? p.name : null; };
@@ -754,7 +759,7 @@
     entries.push({ label: 'Oración inicial', name: nameOf(program.oracionInicial) });
     if (type === 'finde') {
       if (program.cancionInicial) entries.push({ song: true, label: 'Canción inicial', value: program.cancionInicial });
-      entries.push({ label: 'Discurso público', name: nameOf(program.oradorPublico), tema: program.temaPublico });
+      entries.push({ label: 'Discurso público', name: nameOf(program.oradorPublico) || visitorName(program), tema: program.temaPublico });
       if (program.cancionIntermedia) entries.push({ song: true, label: 'Canción intermedia', value: program.cancionIntermedia });
       entries.push({ label: 'Atalaya — Conductor', name: nameOf(program.atalayaConductor) });
       entries.push({ label: 'Atalaya — Lector', name: nameOf(program.atalayaLector) });
@@ -1036,7 +1041,7 @@
     // Resumen de la línea cerrada
     const p = row.program || {};
     let sum = '';
-    if (row.type === 'finde' && pubName(p.oradorPublico)) sum = 'Discurso: ' + pubName(p.oradorPublico);
+    if (row.type === 'finde' && (pubName(p.oradorPublico) || visitorName(p))) sum = 'Discurso: ' + (pubName(p.oradorPublico) || visitorName(p));
     else if (pubName(p.presidente)) sum = 'Presidente: ' + pubName(p.presidente);
     else if (anyTec) sum = 'Audio: ' + (pubName(row.roles.sonido) || '—') + ' · Video: ' + (pubName(row.roles.video) || '—');
     else sum = 'Sin asignaciones cargadas';
