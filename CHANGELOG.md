@@ -6,6 +6,18 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Mejoras del editor — 22 de septiembre de 2026 (caché `asignaciones-salon-v14`)
+**Errores arreglados**
+- Programa: los campos de cántico y de minutos se salían de la tarjeta en el celular y la pantalla se corría de costado. Ahora tienen el ancho justo.
+- Hermanos en el celular: la tabla dejaba el email, "Este mes" y el botón de editar fuera de la pantalla. En pantallas angostas ahora cada hermano es una tarjeta con todo a la vista y "✎ Editar"; tocar la tarjeta también abre la edición. "+ Agregar hermano" queda flotando abajo. En la computadora sigue la tabla.
+- Las hojas que suben desde abajo en el celular ("Compartir" y el nuevo "Más") quedaban tapadas en parte por la barra de pestañas. Ahora quedan por encima.
+
+**Mejoras**
+- Programa (celular): los botones entran en un renglón. "Copiar semana anterior" y "No disponibles hoy" pasaron al menú "Más ▾". En la computadora siguen igual.
+- Resumen del mes plegable: cerrado de entrada en el celular y abierto en la computadora; recuerda lo que elegiste. La lista del mes usa filas desplegables con equipo técnico y programa juntos (como la vista pública) y avisa cuántos puestos faltan. La impresión del mes no cambia.
+- Cronómetro: el reloj pasó arriba de todo y muestra la parte y quién la tiene. Debajo, las partes de la reunión en orden con su tiempo y el nombre (salen del Programa); tocar una la carga en el reloj. "Marcar fin y guardar" la marca con ✓ y deja lista la siguiente. Los tiempos estándar siguen en "Otras partes".
+- Ajustes agrupados (Congregación, Avisos, Reportes y datos, Este dispositivo, Ayuda), todas las tarjetas cerradas y con una línea que dice qué hay adentro. Congregación va primero. "Recordatorio del día anterior" pasó a llamarse "Aviso de puestos sin cubrir".
+
 ## Pruebas de la vista pública guardadas en el proyecto — 22 de septiembre de 2026 (sin cambio de caché)
 - Nuevo `tests/ver.test.js` (51 pruebas, sin dependencias): Google Calendar, recordatorios, calendario desplegable, Inicio, anuncios y estructura del HTML. Se corre con `node tests/ver.test.js`.
 - `app.test.js` y su README pasaron a la carpeta `tests/`, donde el propio README decía que estaban (el script buscaba la app una carpeta más arriba). Se aclara que `app.test.js` quedó desactualizado desde que el editor pide login.

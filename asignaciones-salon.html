@@ -564,6 +564,85 @@
   #printArea h3 { font-size: 15px; margin: 0 0 2px; font-weight: 600; }
   #printArea p { margin: 0 0 16px; color: #555; font-size: 12px; }
 
+  /* ---------- Programa: campos que no se salen de la tarjeta ---------- */
+  .program-row select, .program-row input[type="text"], .program-row input[type="number"] { min-width: 0; }
+  .program-row input[data-program-field^="cancion"] { flex: 0 0 96px; text-align: center; }
+  .program-row input[type="number"] { flex: 0 0 72px; }
+
+  .br-m { display: none; }
+
+  /* ---------- Programa: menú "Más" (solo celular) ---------- */
+  .more-wrap { display: none; }
+
+  /* ---------- Resumen del mes plegable ---------- */
+  .month-summary { margin-top: 26px; }
+  .month-summary > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 12px 16px; }
+  .month-summary > summary::-webkit-details-marker { display: none; }
+  .month-summary > summary h3 { margin: 0; font-size: 16px; }
+  .month-summary > summary .ms-hint { font-size: 12px; color: var(--ink-soft); margin-left: auto; }
+  .month-summary > summary .chev { color: var(--ink-faint); font-size: 18px; transition: transform .18s; }
+  .month-summary[open] > summary { margin-bottom: 14px; }
+  .month-summary[open] > summary .chev { transform: rotate(90deg); }
+  .month-summary[open] > summary .ms-hint { display: none; }
+
+  /* ---------- Lista del mes: filas desplegables (igual que la vista pública) ---------- */
+  .cal-list { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 2px 14px; }
+  .cal-m { border-bottom: 1px solid var(--line); }
+  .cal-m:last-child { border-bottom: none; }
+  .cal-h { display: flex; align-items: center; gap: 10px; width: 100%; border: none; background: none; padding: 12px 2px; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+  .cal-bar { width: 3px; align-self: stretch; border-radius: 2px; background: var(--accent-blue); flex-shrink: 0; }
+  .cal-m.finde .cal-bar { background: var(--accent-gold); }
+  .cal-d { width: 34px; text-align: center; flex-shrink: 0; }
+  .cal-d .dow { display: block; font-size: 9.5px; color: var(--ink-faint); font-weight: 700; text-transform: uppercase; }
+  .cal-d .num { display: block; font-family: 'Fraunces', serif; font-size: 21px; line-height: 1.1; }
+  .cal-s { flex: 1; min-width: 0; }
+  .cal-t { display: block; font-size: 10.5px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.03em; }
+  .cal-sum { display: block; font-size: 12.5px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cal-miss { display: inline-block; font-size: 10.5px; font-weight: 700; color: var(--accent-gold-text); background: rgba(169,130,47,0.13); border-radius: 8px; padding: 2px 7px; margin-top: 4px; }
+  .cal-m.open .cal-miss { display: none; }
+  .cal-chev { color: var(--ink-faint); font-size: 16px; flex-shrink: 0; transition: transform .15s; }
+  .cal-m.open .cal-chev { transform: rotate(90deg); }
+  .cal-b { display: none; padding: 0 2px 14px 15px; }
+  .cal-m.open .cal-b { display: block; }
+  .cal-g { display: flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; margin: 12px 0 3px; }
+  .cal-g:first-child { margin-top: 0; }
+  .cal-g::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+  .cal-two { display: grid; grid-template-columns: 1fr 1fr; column-gap: 14px; }
+  .cal-li { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 12.5px; padding: 4px 0; line-height: 1.3; }
+  .cal-li .k { color: var(--ink-soft); min-width: 0; }
+  .cal-li .v { font-weight: 600; text-align: right; flex-shrink: 0; max-width: 60%; }
+  .cal-li .v.none { color: var(--ink-faint); font-weight: 400; }
+  .cal-two .cal-li { flex-direction: column; align-items: flex-start; gap: 0; padding: 5px 0; }
+  .cal-two .cal-li .k { font-size: 11px; }
+  .cal-two .cal-li .v { text-align: left; max-width: 100%; }
+  .cal-empty { font-size: 12px; font-style: italic; color: var(--ink-faint); padding: 2px 0; }
+
+  /* ---------- Cronómetro: reloj arriba y partes en orden ---------- */
+  .timer-now { font-size: 11px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.04em; margin: -6px 0 8px; min-height: 16px; }
+  .timer-now b { display: block; color: var(--ink); text-transform: none; letter-spacing: 0; font-size: 14px; margin-top: 2px; }
+  .mt-parts { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
+  .mt-part { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; font: inherit; color: inherit; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 10px 12px; cursor: pointer; }
+  .mt-part.selected { border: 1.5px solid var(--ok); background: var(--ok-bg, #EEF4EF); }
+  .mt-part .mt-n { width: 22px; height: 22px; border-radius: 50%; background: var(--bg); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .mt-part.done .mt-n { background: var(--ok); color: #fff; }
+  .mt-part .mt-l { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 600; line-height: 1.3; }
+  .mt-part .mt-l small { display: block; font-size: 11.5px; font-weight: 400; color: var(--ink-soft); }
+  .mt-part .mt-m { font-size: 12px; font-weight: 700; color: var(--ink-soft); flex-shrink: 0; text-align: right; }
+  .mt-part .mt-m small { display: block; font-weight: 600; color: var(--ok); }
+  .other-presets { margin: 4px 0 18px; }
+  .other-presets > summary { list-style: none; cursor: pointer; font-size: 12px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.03em; padding: 6px 0; }
+  .other-presets > summary::-webkit-details-marker { display: none; }
+  .other-presets > summary::after { content: ' ›'; }
+  .other-presets[open] > summary::after { content: ' ▾'; }
+  .other-presets .preset-grid { margin-top: 8px; margin-bottom: 0; }
+  #panel-timer .timer-panel { margin-bottom: 18px; }
+
+  /* ---------- Ajustes agrupados ---------- */
+  .settings-group { font-size: 11px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.05em; margin: 22px 2px 8px; }
+  .settings-group:first-child { margin-top: 0; }
+  .settings-card summary .sc-sub { display: block; font-size: 12px; color: var(--ink-soft); font-weight: 400; margin-top: 2px; font-family: 'Public Sans', sans-serif; }
+  .settings-card[open] summary .sc-sub { display: none; }
+
   /* ---------- Bottom tabs (mobile) ---------- */
   .bottom-tabs { display: none; }
 
@@ -592,9 +671,9 @@
     .modal { max-width: 100%; width: 100%; max-height: 92vh; border-radius: 14px 14px 0 0; padding: 22px 18px calc(18px + env(safe-area-inset-bottom)); }
 
     /* Compartir se convierte en una hoja que sube desde abajo */
-    .sheet-backdrop:not(.hidden) { display: block; position: fixed; inset: 0; background: rgba(20,24,28,0.45); z-index: 21; }
+    .sheet-backdrop:not(.hidden) { display: block; position: fixed; inset: 0; background: rgba(20,24,28,0.45); z-index: 30; }
     .share-menu {
-      position: fixed; left: 0; right: 0; bottom: 0; top: auto; margin: 0; z-index: 22;
+      position: fixed; left: 0; right: 0; bottom: 0; top: auto; margin: 0; z-index: 31;
       border-radius: 16px 16px 0 0; min-width: 0; width: 100%;
       padding: 10px 14px calc(16px + env(safe-area-inset-bottom));
       box-shadow: 0 -8px 24px rgba(0,0,0,0.22);
@@ -603,6 +682,33 @@
     @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     .sheet-handle { display: block; width: 36px; height: 4px; border-radius: 4px; background: var(--line); margin: 2px auto 10px; }
     .share-menu button { padding: 13px 12px; font-size: 14px; }
+
+    /* Programa: en el celular, "Copiar semana anterior" y "No disponibles hoy" van al menú "Más" */
+    #technicalSection .action-row { flex-wrap: nowrap; }
+    #technicalSection .action-row > .btn, #technicalSection .action-row .share-menu-wrap > .btn { padding: 11px 12px; }
+    #copyPrevBtn, #excludeBtn { display: none; }
+    .more-wrap { display: block; }
+    #autoAssignBtn, #technicalSection .share-menu-wrap:not(.more-wrap) { flex: 1; }
+    #technicalSection .share-menu-wrap:not(.more-wrap) > .btn { width: 100%; }
+
+    /* Hermanos: una tarjeta por hermano, con todo a la vista */
+    .br-table-wrap { overflow: visible; }
+    .br-table, .br-table tbody { display: block; background: none; border: none; box-shadow: none; }
+    .br-table thead { display: none; }
+    .br-table tr { display: grid; grid-template-columns: 1fr auto auto; grid-template-areas: "name status edit" "tags tags tags" "email email count"; align-items: center; column-gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 10px 12px; margin-bottom: 8px; box-shadow: var(--shadow-sm); cursor: pointer; }
+    .br-table td { display: block; padding: 0; border: none; }
+    .br-table td.br-name { grid-area: name; }
+    .br-table td.br-status { grid-area: status; }
+    .br-table td.br-tags { grid-area: tags; margin: 6px 0 4px; }
+    .br-table td.br-email { grid-area: email; font-size: 12px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .br-table td.br-count { grid-area: count; font-size: 12px; color: var(--ink-soft); }
+    .br-table td.br-edit { grid-area: edit; }
+    .br-table td.br-edit .btn { padding: 6px 10px; font-size: 12px; }
+    .br-table td.br-edit .btn::after { content: ' Editar'; font-weight: 700; }
+    .br-table .br-m { display: inline; }
+    .br-toolbar .br-add { position: fixed; right: 16px; bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 20; border-radius: 24px; box-shadow: 0 6px 16px rgba(0,0,0,0.25); padding: 12px 18px; }
+    .br-toolbar select { flex: 1; min-width: 0; }
+    #panel-hermanos { padding-bottom: 60px; }
   }
 
   @media print {
@@ -795,6 +901,15 @@
         <button class="btn" id="autoAssignBtn">Auto-asignar</button>
         <button class="btn" id="copyPrevBtn">Copiar semana anterior</button>
         <button class="btn" id="excludeBtn">No disponibles hoy</button>
+        <div class="share-menu-wrap more-wrap">
+          <button class="btn" id="moreMenuBtn" aria-haspopup="true">Más ▾</button>
+          <div class="sheet-backdrop hidden" id="moreBackdrop"></div>
+          <div class="share-menu hidden" id="moreMenu" style="left:auto; right:0;">
+            <div class="sheet-handle"></div>
+            <button type="button" data-more="copyPrevBtn">Copiar semana anterior</button>
+            <button type="button" data-more="excludeBtn">No disponibles hoy</button>
+          </div>
+        </div>
         <div class="share-menu-wrap">
           <button class="btn btn-primary" id="shareMenuBtn">Compartir ▾</button>
           <div class="sheet-backdrop hidden" id="shareBackdrop"></div>
@@ -817,18 +932,19 @@
     <div id="programSection" class="hidden"></div>
 
     <div id="monthSummaryBlock">
-      <h3 class="section-title">Resumen del mes</h3>
-      <div class="card" id="calendarWrap" style="background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-m); padding:16px 18px; margin-bottom:16px;"></div>
-      <div class="month-table-wrap" id="monthTableWrap"></div>
+      <details class="month-summary" id="monthSummaryDetails">
+        <summary><h3>Resumen del mes</h3><span class="ms-hint">Ver calendario y lista</span><span class="chev">›</span></summary>
+        <div class="card" id="calendarWrap" style="background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-m); padding:16px 18px; margin-bottom:16px;"></div>
+        <div class="month-table-wrap" id="monthTableWrap"></div>
+      </details>
     </div>
   </section>
 
   <!-- ---------------- Cronómetro ---------------- -->
   <section class="tab-panel hidden" id="panel-timer">
     <p class="hint" id="timerTopicLabel" style="margin:-6px 0 14px;"></p>
-    <div id="weeklyPartsWrap"></div>
-    <div class="preset-grid" id="presetGrid"></div>
     <div class="timer-panel">
+      <div class="timer-now" id="timerNow"></div>
       <div class="timer-display normal" id="timerDisplay">10:00</div>
       <div class="timer-progress-track"><div class="timer-progress-bar" id="timerProgressBar"></div></div>
       <div class="timer-inputs">
@@ -853,6 +969,11 @@
       <canvas id="pipCanvas" width="360" height="220" class="hidden"></canvas>
       <video id="pipVideo" muted playsinline class="hidden"></video>
     </div>
+    <div id="weeklyPartsWrap"></div>
+    <details class="other-presets" id="otherPresets">
+      <summary>Otras partes (tiempos estándar)</summary>
+      <div class="preset-grid" id="presetGrid"></div>
+    </details>
 
     <h3 class="section-title">Historial de tiempos</h3>
     <div id="timerLogWrap"></div>
@@ -867,7 +988,7 @@
     <div class="br-toolbar">
       <input type="text" id="brSearch" placeholder="Buscar por nombre o nota…">
       <select id="brFilter">
-        <option value="">Todas las asignaciones</option>
+        <option value="">Todos los hermanos</option>
         <option value="sonido">Consola de audio</option>
         <option value="video">Video y Zoom</option>
         <option value="microfono">Micrófonos</option>
@@ -889,92 +1010,9 @@
 
   <!-- ---------------- Ajustes ---------------- -->
   <section class="tab-panel hidden" id="panel-ajustes">
-    <button type="button" class="settings-card" id="guideOpenBtn" style="width:100%; display:flex; align-items:center; justify-content:space-between; text-align:left; font:inherit; cursor:pointer;">
-      <span style="font-size:14px; font-weight:600; color:var(--ink);">❓ Guía de uso</span>
-      <span class="chev">›</span>
-    </button>
-    <details class="settings-card" open>
-      <summary><h3>Sincronización entre dispositivos</h3><span class="chev">›</span></summary>
-      <p class="hint">El mismo código conecta tu celular, tablet y PC con el mismo programa. Además de este código, cada persona necesita su email autorizado (ver la tarjeta "Acceso" más abajo).</p>
-      <div id="syncStatus"></div>
-      <div class="settings-actions" style="margin-top:12px;">
-        <button class="btn" id="changeCodeBtn">Cambiar código</button>
-      </div>
-    </details>
-
-    <details class="settings-card" open>
-      <summary><h3>Acceso — quién puede editar o ver</h3><span class="chev">›</span></summary>
-      <p class="hint">Cada persona inicia sesión con su email (le llega un link, sin contraseña). Solo entran los que agregues acá — sacar a alguien le corta el acceso al instante.</p>
-      <p class="hint" style="margin-top:4px;">⚠ Esto todavía es una restricción de la interfaz, no del servidor — cualquiera de estos roles técnicamente puede leer/escribir el documento completo. Los detalles están en el roadmap.</p>
-      <div id="accessRolesList" style="margin-top:10px;"></div>
-      <div class="add-block" style="margin-top:10px; padding-top:12px; border-top:1px solid var(--line);">
-        <input type="email" id="newRoleEmail" placeholder="email@ejemplo.com" style="width:100%; border:1px solid var(--line); border-radius:var(--radius-s); padding:9px 10px; font-family:inherit; font-size:13px; margin-bottom:8px;">
-        <div style="display:flex; gap:8px;">
-          <select id="newRoleSelect" style="flex:1; border:1px solid var(--line); border-radius:var(--radius-s); padding:9px; font-family:inherit; font-size:12.5px; background:var(--bg);">
-            <option value="editorEmails">Super Admin</option>
-            <option value="tecnicoAdminEmails">Admin — Equipo técnico</option>
-            <option value="acomodadoresAdminEmails">Admin — Acomodadores</option>
-            <option value="asignacionesAdminEmails">Admin — Asignaciones</option>
-            <option value="viewerEmails">Solo ver</option>
-          </select>
-          <button class="btn" id="addRoleBtn" style="flex-shrink:0;">+ Agregar</button>
-        </div>
-      </div>
-    </details>
-
+    <div class="settings-group">Congregación</div>
     <details class="settings-card">
-      <summary><h3>Apariencia</h3><span class="chev">›</span></summary>
-      <p class="hint">"Automático" sigue la configuración de tu celular o computadora.</p>
-      <div class="theme-switcher" id="themeSwitcher">
-        <button type="button" data-theme-choice="auto" class="theme-opt">Automático</button>
-        <button type="button" data-theme-choice="light" class="theme-opt">Claro</button>
-        <button type="button" data-theme-choice="dark" class="theme-opt">Oscuro</button>
-      </div>
-    </details>
-
-    <details class="settings-card" open>
-      <summary><h3>Guardado seguro</h3><span class="chev">›</span></summary>
-      <p class="hint">Verifica que este navegador no vaya a borrar los datos guardados por su cuenta.</p>
-      <div id="persistStatus"></div>
-      <button class="btn hidden" id="persistBtn" style="margin-top:10px;">Asegurar guardado</button>
-    </details>
-
-    <details class="settings-card">
-      <summary><h3>Reporte anual de equidad</h3><span class="chev">›</span></summary>
-      <p class="hint">Cuántas veces sirvió cada hermano durante el año, para repartir mejor las asignaciones.</p>
-      <div class="year-switcher">
-        <button type="button" id="reportYearPrev">‹</button>
-        <span id="reportYearLabel">2026</span>
-        <button type="button" id="reportYearNext">›</button>
-      </div>
-      <div id="reportBars"></div>
-      <h4 class="free-title">Reuniones libres para escuchar</h4>
-      <p class="hint" style="margin-bottom:10px;">De las reuniones ya pasadas este año: en cuántas no tenía ninguna asignación ni estaba marcado como no disponible.</p>
-      <div class="br-table-wrap">
-        <table class="br-table" id="freeMeetingsTable">
-          <thead><tr><th>Hermano</th><th>Ocupado</th><th>No disponible</th><th>Libre</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <div class="report-actions">
-        <button class="btn" id="reportCsvBtn">Exportar CSV</button>
-        <button class="btn btn-primary" id="reportPdfBtn">Descargar PDF</button>
-      </div>
-    </details>
-
-    <details class="settings-card">
-      <summary><h3>Recordatorio del día anterior</h3><span class="chev">›</span></summary>
-      <div class="toggle-row">
-        <div>
-          <p>Avisarme si falta cubrir algo</p>
-          <p class="hint">Solo funciona con la app abierta ese día — no es un aviso mientras está cerrada.</p>
-        </div>
-        <button type="button" class="switch" id="reminderSwitch" aria-label="Activar recordatorio"></button>
-      </div>
-    </details>
-
-    <details class="settings-card">
-      <summary><h3>Congregación</h3><span class="chev">›</span></summary>
+      <summary><div><h3>Congregación</h3><span class="sc-sub">Nombre, días y horario de las reuniones, sala auxiliar</span></div><span class="chev">›</span></summary>
       <p class="hint">Se usa en el encabezado, la impresión y los mensajes de WhatsApp.</p>
       <div class="field"><label>Nombre de la congregación</label><input type="text" id="congNameInput"></div>
       <div class="two-col">
@@ -1002,9 +1040,61 @@
         <button type="button" class="switch" id="auxRoomSwitch" aria-label="Activar sala auxiliar"></button>
       </div>
     </details>
-
     <details class="settings-card">
-      <summary><h3>Copia de seguridad</h3><span class="chev">›</span></summary>
+      <summary><div><h3>Acceso</h3><span class="sc-sub">Quién puede editar o ver, y con qué rol</span></div><span class="chev">›</span></summary>
+      <p class="hint">Cada persona inicia sesión con su email (le llega un link, sin contraseña). Solo entran los que agregues acá — sacar a alguien le corta el acceso al instante.</p>
+      <p class="hint" style="margin-top:4px;">⚠ Esto todavía es una restricción de la interfaz, no del servidor — cualquiera de estos roles técnicamente puede leer/escribir el documento completo. Los detalles están en el roadmap.</p>
+      <div id="accessRolesList" style="margin-top:10px;"></div>
+      <div class="add-block" style="margin-top:10px; padding-top:12px; border-top:1px solid var(--line);">
+        <input type="email" id="newRoleEmail" placeholder="email@ejemplo.com" style="width:100%; border:1px solid var(--line); border-radius:var(--radius-s); padding:9px 10px; font-family:inherit; font-size:13px; margin-bottom:8px;">
+        <div style="display:flex; gap:8px;">
+          <select id="newRoleSelect" style="flex:1; border:1px solid var(--line); border-radius:var(--radius-s); padding:9px; font-family:inherit; font-size:12.5px; background:var(--bg);">
+            <option value="editorEmails">Super Admin</option>
+            <option value="tecnicoAdminEmails">Admin — Equipo técnico</option>
+            <option value="acomodadoresAdminEmails">Admin — Acomodadores</option>
+            <option value="asignacionesAdminEmails">Admin — Asignaciones</option>
+            <option value="viewerEmails">Solo ver</option>
+          </select>
+          <button class="btn" id="addRoleBtn" style="flex-shrink:0;">+ Agregar</button>
+        </div>
+      </div>
+    </details>
+    <div class="settings-group">Avisos</div>
+    <details class="settings-card">
+      <summary><div><h3>Aviso de puestos sin cubrir</h3><span class="sc-sub">Te avisa el día anterior si falta cubrir algún puesto (con la app abierta)</span></div><span class="chev">›</span></summary>
+      <div class="toggle-row">
+        <div>
+          <p>Avisarme si falta cubrir algo</p>
+          <p class="hint">Solo funciona con la app abierta ese día — no es un aviso mientras está cerrada.</p>
+        </div>
+        <button type="button" class="switch" id="reminderSwitch" aria-label="Activar recordatorio"></button>
+      </div>
+    </details>
+    <div class="settings-group">Reportes y datos</div>
+    <details class="settings-card">
+      <summary><div><h3>Reporte anual de equidad</h3><span class="sc-sub">Cuántas veces sirvió cada hermano en el año</span></div><span class="chev">›</span></summary>
+      <p class="hint">Cuántas veces sirvió cada hermano durante el año, para repartir mejor las asignaciones.</p>
+      <div class="year-switcher">
+        <button type="button" id="reportYearPrev">‹</button>
+        <span id="reportYearLabel">2026</span>
+        <button type="button" id="reportYearNext">›</button>
+      </div>
+      <div id="reportBars"></div>
+      <h4 class="free-title">Reuniones libres para escuchar</h4>
+      <p class="hint" style="margin-bottom:10px;">De las reuniones ya pasadas este año: en cuántas no tenía ninguna asignación ni estaba marcado como no disponible.</p>
+      <div class="br-table-wrap">
+        <table class="br-table" id="freeMeetingsTable">
+          <thead><tr><th>Hermano</th><th>Ocupado</th><th>No disponible</th><th>Libre</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="report-actions">
+        <button class="btn" id="reportCsvBtn">Exportar CSV</button>
+        <button class="btn btn-primary" id="reportPdfBtn">Descargar PDF</button>
+      </div>
+    </details>
+    <details class="settings-card">
+      <summary><div><h3>Copia de seguridad</h3><span class="sc-sub">Exportar o importar todo en un archivo</span></div><span class="chev">›</span></summary>
       <p class="hint">Todo se guarda solo en este navegador. Exportá seguido por las dudas.</p>
       <div class="settings-actions">
         <button class="btn btn-primary" id="exportBtn">Exportar copia (.json)</button>
@@ -1014,6 +1104,35 @@
         <button class="btn" id="loadSampleBtn">Cargar datos de ejemplo</button>
       </div>
     </details>
+    <div class="settings-group">Este dispositivo</div>
+    <details class="settings-card">
+      <summary><div><h3>Apariencia</h3><span class="sc-sub">Claro, oscuro o automático</span></div><span class="chev">›</span></summary>
+      <p class="hint">"Automático" sigue la configuración de tu celular o computadora.</p>
+      <div class="theme-switcher" id="themeSwitcher">
+        <button type="button" data-theme-choice="auto" class="theme-opt">Automático</button>
+        <button type="button" data-theme-choice="light" class="theme-opt">Claro</button>
+        <button type="button" data-theme-choice="dark" class="theme-opt">Oscuro</button>
+      </div>
+    </details>
+    <details class="settings-card">
+      <summary><div><h3>Sincronización entre dispositivos</h3><span class="sc-sub">Código de la congregación y estado de la conexión</span></div><span class="chev">›</span></summary>
+      <p class="hint">El mismo código conecta tu celular, tablet y PC con el mismo programa. Además de este código, cada persona necesita su email autorizado (ver la tarjeta "Acceso", en el grupo Congregación).</p>
+      <div id="syncStatus"></div>
+      <div class="settings-actions" style="margin-top:12px;">
+        <button class="btn" id="changeCodeBtn">Cambiar código</button>
+      </div>
+    </details>
+    <details class="settings-card">
+      <summary><div><h3>Guardado seguro</h3><span class="sc-sub">Que el navegador no borre los datos por su cuenta</span></div><span class="chev">›</span></summary>
+      <p class="hint">Verifica que este navegador no vaya a borrar los datos guardados por su cuenta.</p>
+      <div id="persistStatus"></div>
+      <button class="btn hidden" id="persistBtn" style="margin-top:10px;">Asegurar guardado</button>
+    </details>
+    <div class="settings-group">Ayuda</div>
+    <button type="button" class="settings-card" id="guideOpenBtn" style="width:100%; display:flex; align-items:center; justify-content:space-between; text-align:left; font:inherit; cursor:pointer;">
+      <span style="font-size:14px; font-weight:600; color:var(--ink);">❓ Guía de uso</span>
+      <span class="chev">›</span>
+    </button>
   </section>
 
 </main>
@@ -2551,7 +2670,87 @@
     }).join('');
     return html;
   }
-  function renderMonthTable() { $('monthTableWrap').innerHTML = monthTableHTML(); }
+  function renderMonthTable() { $('monthTableWrap').innerHTML = monthAccordionHTML(); }
+
+  // Lista del mes en pantalla: una fila desplegable por reunión, con el equipo
+  // técnico y el programa juntos (la impresión sigue usando monthTableHTML).
+  const monthOpenState = new Map();
+  function monthAccordionHTML() {
+    const prefix = currentMonday.slice(0, 7);
+    const rows = [];
+    Object.keys(data.weeks).sort().forEach(monday => {
+      ['semana', 'finde'].forEach(t => {
+        const w = data.weeks[monday][t];
+        if (!w) return;
+        const hasRoles = w.roles && Object.values(w.roles).some(Boolean);
+        const entries = programEntries(w.program || {}, t);
+        if (!hasRoles && !entries.some(e => e.name)) return;
+        const date = dateForType(monday, t);
+        if (date.slice(0, 7) !== prefix) return;
+        rows.push({ date, type: t, w, entries });
+      });
+    });
+    rows.sort((a, b) => a.date.localeCompare(b.date));
+    const heading = `<div class="month-heading">${monthKey(currentMonday)}</div>`;
+    if (!rows.length) return heading + '<p class="empty-note">Todavía no hay asignaciones cargadas este mes.</p>';
+    const nameOf = id => { const p = id && data.publishers.find(pp => pp.id === id); return p ? p.name : ''; };
+    const li = (k, v) => `<div class="cal-li"><span class="k">${escapeHtml(k)}</span><span class="v${v ? '' : ' none'}">${v ? escapeHtml(v) : '—'}</span></div>`;
+    const SEC_COLOR = { 'TESOROS DE LA BIBLIA': '#3B8178', 'SEAMOS MEJORES MAESTROS': '#986F27', 'NUESTRA VIDA CRISTIANA': '#B85C3E' };
+    const short = r => r.key === 'sonido' ? 'Audio' : r.key === 'video' ? 'Video' : r.key === 'plataforma' ? 'Plataforma' : r.key === 'cronometrista' ? 'Cronometrista'
+      : r.key.startsWith('mic') ? 'Micrófono ' + r.key.slice(3) : r.key.startsWith('usher') ? 'Acomodador ' + r.key.slice(5) : r.label;
+    return heading + '<div class="cal-list">' + rows.map(row => {
+      const key = row.date + '|' + row.type;
+      const open = monthOpenState.get(key) === true;
+      const roles = getRoles(row.type);
+      const rv = row.w.roles || {};
+      const missing = roles.filter(r => !rv[r.key]).length;
+      const tec = roles.some(r => rv[r.key])
+        ? `<div class="cal-two">${roles.map(r => li(short(r), nameOf(rv[r.key]))).join('')}</div>`
+        : '<div class="cal-empty">Equipo técnico no cargado</div>';
+      let prog = '';
+      row.entries.forEach(e => {
+        if (e.section) { prog += `<div class="cal-g" style="color:${SEC_COLOR[e.section] || 'var(--ink-soft)'}">${escapeHtml(e.section.charAt(0) + e.section.slice(1).toLowerCase())}</div>`; return; }
+        if (e.song) { prog += li(e.label, String(e.value)); return; }
+        prog += li((e.num ? e.num + '. ' : '') + e.label.trim() + (e.tema ? ' — ' + e.tema : ''), e.name);
+      });
+      if (!prog) prog = '<div class="cal-empty">Programa no cargado</div>';
+      const p = row.w.program || {};
+      const sum = row.type === 'finde' && nameOf(p.oradorPublico) ? 'Discurso: ' + nameOf(p.oradorPublico)
+        : nameOf(p.presidente) ? 'Presidente: ' + nameOf(p.presidente)
+        : 'Audio: ' + (nameOf(rv.sonido) || '—') + ' · Video: ' + (nameOf(rv.video) || '—');
+      const hora = (row.type === 'finde' ? data.settings.meetingTimeFinde : data.settings.meetingTimeSemana) || '';
+      const { dayName, day } = formatDate(row.date);
+      return `<div class="cal-m${row.type === 'finde' ? ' finde' : ''}${open ? ' open' : ''}" data-mkey="${key}">
+        <button type="button" class="cal-h" aria-expanded="${open}">
+          <span class="cal-bar"></span>
+          <span class="cal-d"><span class="dow">${dayName.slice(0, 3)}</span><span class="num">${day}</span></span>
+          <span class="cal-s"><span class="cal-t">${row.type === 'finde' ? 'Fin de semana' : 'Entre semana'}${hora ? ' · ' + hora : ''}</span><span class="cal-sum">${escapeHtml(sum)}</span>${missing ? `<span class="cal-miss">Faltan ${missing} del equipo técnico</span>` : ''}</span>
+          <span class="cal-chev" aria-hidden="true">›</span>
+        </button>
+        <div class="cal-b">
+          ${row.w.topic ? `<div class="agenda-topic">${escapeHtml(row.w.topic)}</div>` : ''}
+          <div class="cal-g" style="color:var(--role-sonido)">Equipo técnico</div>${tec}
+          <div class="cal-g" style="color:var(--role-program, #8C5A6E)">Programa</div>${prog}
+        </div>
+      </div>`;
+    }).join('') + '</div>';
+  }
+  $('monthTableWrap').addEventListener('click', (e) => {
+    const head = e.target.closest('.cal-h');
+    if (!head) return;
+    const item = head.closest('.cal-m');
+    const nowOpen = item.classList.toggle('open');
+    head.setAttribute('aria-expanded', String(nowOpen));
+    monthOpenState.set(item.dataset.mkey, nowOpen);
+  });
+  // El resumen del mes arranca cerrado en el celular y abierto en la computadora; después recuerda lo que elegiste.
+  (function initMonthSummary() {
+    const det = $('monthSummaryDetails');
+    let saved = null;
+    try { saved = localStorage.getItem('kh-month-summary-open'); } catch (e) { /* sin acceso */ }
+    det.open = saved === null ? !window.matchMedia('(max-width: 760px)').matches : saved === '1';
+    det.addEventListener('toggle', () => { try { localStorage.setItem('kh-month-summary-open', det.open ? '1' : '0'); } catch (e) { /* sin acceso */ } });
+  })();
 
   async function copyViewLink() {
     if (!accessCode) { showToast('Conectate con un código primero (Ajustes → Sincronización)'); return; }
@@ -2985,6 +3184,13 @@
   function openShareMenu(e) { e.stopPropagation(); $('shareMenu').classList.toggle('hidden'); $('shareBackdrop').classList.toggle('hidden'); }
   function closeShareMenu() { $('shareMenu').classList.add('hidden'); $('shareBackdrop').classList.add('hidden'); }
   $('shareMenuBtn').addEventListener('click', openShareMenu);
+  // Menú "Más" (solo celular): reenvía el toque a los botones originales.
+  function closeMoreMenu() { $('moreMenu').classList.add('hidden'); $('moreBackdrop').classList.add('hidden'); }
+  $('moreMenuBtn').addEventListener('click', (e) => { e.stopPropagation(); closeShareMenu(); $('moreMenu').classList.toggle('hidden'); $('moreBackdrop').classList.toggle('hidden'); });
+  $('moreBackdrop').addEventListener('click', closeMoreMenu);
+  $('moreMenu').addEventListener('click', (e) => e.stopPropagation());
+  document.addEventListener('click', closeMoreMenu);
+  $('moreMenu').querySelectorAll('[data-more]').forEach(btn => btn.addEventListener('click', () => { closeMoreMenu(); $(btn.dataset.more).click(); }));
   $('shareBackdrop').addEventListener('click', closeShareMenu);
   $('shareMenu').addEventListener('click', (e) => e.stopPropagation());
   document.addEventListener('click', closeShareMenu);
@@ -3189,37 +3395,87 @@
       : `${currentType === 'finde' ? 'Fin de semana' : 'Entre semana'} — ${dayName} ${day} (sin tema cargado)`;
   }
 
+  // Partes de la reunión seleccionada, en orden y con quién las tiene (salen del Programa).
+  let currentPartWho = '';
+  let meetingParts = [];
+  let selectedPartIdx = -1;
+  function meetingTimedParts() {
+    const w = weekView(currentMonday)[currentType] || {};
+    const DEF = { 'SEAMOS MEJORES MAESTROS': 5, 'NUESTRA VIDA CRISTIANA': 15 };
+    let sec = '';
+    const parts = [];
+    programEntries(w.program || {}, currentType).forEach(e => {
+      if (e.section) { sec = e.section; return; }
+      if (e.song || !e.name || /sala auxiliar/i.test(e.label)) return;
+      const min = Number(e.min) || (e.num ? DEF[sec] : 0);
+      if (!min) return;   // presidente, oraciones, lector: no se cronometran
+      const label = /^Atalaya/.test(e.label) ? 'Estudio de La Atalaya' : e.label.trim();
+      parts.push({ label, who: e.name, min, num: e.num || '' });
+    });
+    return parts;
+  }
+  function partDoneEntry(label) {
+    const today = new Date().toISOString().slice(0, 10);
+    return (data.timerLog || []).find(x => x.date === today && x.type === currentType && x.label === label) || null;
+  }
+  function setTimerNow(label, who) {
+    currentPartWho = who || '';
+    const el = $('timerNow');
+    if (!el) return;
+    el.innerHTML = label && label !== 'Personalizado' ? `Ahora<b>${escapeHtml(label)}${who ? ' — ' + escapeHtml(who) : ''}</b>` : '';
+  }
+  function selectMeetingPart(i) {
+    const p = meetingParts[i];
+    if (!p) return;
+    selectedPartIdx = i;
+    $('minutesInput').value = p.min; $('secondsInput').value = 0;
+    currentPresetLabel = p.label;
+    resetTimer();
+    setTimerNow(p.label, p.who);
+    renderWeeklyPartsGrid();
+  }
   function renderWeeklyPartsGrid() {
     const wrap = $('weeklyPartsWrap');
     if (!wrap) return;
-    if (currentType !== 'semana') { wrap.innerHTML = ''; return; }
-    const program = weekView(currentMonday).semana.program;
-    const pubName = (id) => { const p = data.publishers.find(pp => pp.id === id); return p ? p.name : ''; };
-    const parts = [];
-    (program.estudiantes || []).forEach(s => {
-      if (s.tema && s.minutos) {
-        const names = [pubName(s.estudiante), pubName(s.ayudante)].filter(Boolean).join(' / ');
-        parts.push({ label: s.tema, min: s.minutos, who: names });
-      }
-    });
-    (program.vidaCristiana || []).forEach(v => {
-      if (v.tema && v.minutos) parts.push({ label: v.tema, min: v.minutos, who: pubName(v.presentador) });
-    });
-    if (!parts.length) { wrap.innerHTML = ''; return; }
-    wrap.innerHTML = '<div class="program-subhead" style="margin:0 0 8px;">Partes de esta semana</div><div class="preset-grid" id="weeklyPartsGrid" style="margin-bottom:18px;">' +
-      parts.map((p, i) => `<button type="button" class="btn preset-btn" data-weekly-part="${i}">${escapeHtml(p.label)}${p.who ? `<span class="pwho">${escapeHtml(p.who)}</span>` : ''}<span class="pmin">${p.min} min</span></button>`).join('') +
-      '</div>';
-    wrap.querySelectorAll('[data-weekly-part]').forEach(btn => btn.addEventListener('click', () => {
-      const p = parts[btn.dataset.weeklyPart];
-      $('minutesInput').value = p.min; $('secondsInput').value = 0;
-      currentPresetLabel = p.label;
-      resetTimer();
-      markSelectedPresetBtn(btn);
+    meetingParts = meetingTimedParts();
+    const other = $('otherPresets');
+    if (!meetingParts.length) {
+      wrap.innerHTML = '';
+      if (other && !other.dataset.touched) other.open = true;
+      return;
+    }
+    if (other && !other.dataset.touched) other.open = false;
+    wrap.innerHTML = '<div class="program-subhead" style="margin:0 0 8px;">Partes de esta reunión, en orden</div><div class="mt-parts" id="weeklyPartsGrid">' +
+      meetingParts.map((p, i) => {
+        const done = partDoneEntry(p.label);
+        const sel = i === selectedPartIdx && currentPresetLabel === p.label;
+        return `<button type="button" class="mt-part${sel ? ' selected' : ''}${done ? ' done' : ''}" data-mpart="${i}">
+          <span class="mt-n">${done ? '✓' : escapeHtml(String(p.num || '•'))}</span>
+          <span class="mt-l">${escapeHtml(p.label)}<small>${escapeHtml(p.who)}</small></span>
+          <span class="mt-m">${p.min} min${done ? `<small>${fmtMinSec(done.actualSeconds)}</small>` : ''}</span>
+        </button>`;
+      }).join('') + '</div>';
+    wrap.querySelectorAll('[data-mpart]').forEach(btn => btn.addEventListener('click', () => {
+      selectMeetingPart(Number(btn.dataset.mpart));
+      markSelectedPresetBtn(null, true);
     }));
   }
-  function markSelectedPresetBtn(btn) {
-    document.querySelectorAll('#weeklyPartsGrid .preset-btn, #presetGrid .preset-btn').forEach(b => b.classList.remove('selected'));
+  // Después de "Marcar fin", deja lista la parte siguiente que todavía no se cronometró.
+  function advanceToNextPart() {
+    renderWeeklyPartsGrid();
+    if (selectedPartIdx < 0) { setTimerNow(''); return ''; }
+    const next = meetingParts.findIndex((p, i) => i > selectedPartIdx && !partDoneEntry(p.label));
+    if (next === -1) { selectedPartIdx = -1; setTimerNow(''); renderWeeklyPartsGrid(); return ''; }
+    selectMeetingPart(next);
+    return meetingParts[next].label;
+  }
+  function markSelectedPresetBtn(btn, keepPart) {
+    document.querySelectorAll('#presetGrid .preset-btn').forEach(b => b.classList.remove('selected'));
     if (btn) btn.classList.add('selected');
+    if (!keepPart) {
+      selectedPartIdx = -1;
+      document.querySelectorAll('#weeklyPartsGrid .mt-part').forEach(b => b.classList.remove('selected'));
+    }
   }
 
   function fillPresetGrid() {
@@ -3230,7 +3486,10 @@
       currentPresetLabel = p.label;
       resetTimer();
       markSelectedPresetBtn(btn);
+      setTimerNow(p.label, '');
     }));
+    const other = $('otherPresets');
+    if (other && !other.dataset.bound) { other.dataset.bound = '1'; other.addEventListener('toggle', () => { other.dataset.touched = '1'; }); }
   }
   function fmtMinSec(totalSeconds) {
     const s = Math.max(0, Math.round(totalSeconds));
@@ -3337,13 +3596,14 @@
     if (data.timerLog.length > 50) data.timerLog = data.timerLog.slice(0, 50);
     saveData();
     renderTimerLog();
-    showToast('Tiempo registrado');
     timerRemaining = 0; timerTotal = 0; overtimeBellPlayed = false;
-    markSelectedPresetBtn(null);
+    markSelectedPresetBtn(null, true);
     $('timerDisplay').textContent = '00:00';
     $('timerDisplay').classList.remove('warning', 'danger');
     $('timerProgressBar').style.width = '0%';
     $('timerProgressBar').classList.remove('warning', 'danger');
+    const next = advanceToNextPart();
+    showToast(next ? 'Tiempo registrado · lista la siguiente: ' + next : 'Tiempo registrado');
   }
 
   function renderTimerLog() {
@@ -3425,8 +3685,8 @@
     data.timerLog = []; saveData(); renderTimerLog();
     showToast('Historial borrado', () => { data.timerLog = backupLog; saveData(); renderTimerLog(); });
   });
-  $('minutesInput').addEventListener('change', () => { currentPresetLabel = 'Personalizado'; markSelectedPresetBtn(null); resetTimer(); });
-  $('secondsInput').addEventListener('change', () => { currentPresetLabel = 'Personalizado'; markSelectedPresetBtn(null); resetTimer(); });
+  $('minutesInput').addEventListener('change', () => { currentPresetLabel = 'Personalizado'; markSelectedPresetBtn(null); setTimerNow(''); resetTimer(); });
+  $('secondsInput').addEventListener('change', () => { currentPresetLabel = 'Personalizado'; markSelectedPresetBtn(null); setTimerNow(''); resetTimer(); });
   $('muteBtn').addEventListener('click', () => { data.settings.timerMuted = !data.settings.timerMuted; saveData(); updateMuteBtn(); });
   $('testBellBtn').addEventListener('click', async () => { await ensureTone(); playBell(); });
 
@@ -3456,13 +3716,13 @@
 
     $('brothersTableBody').innerHTML = rows.length ? rows.map(p => {
       const tags = Object.keys(CAP_LABEL).filter(k => p.roles[k]).map(k => `<span class="tag tag-${k}">${CAP_LABEL[k]}</span>`).join('');
-      return `<tr>
-        <td><strong>${escapeHtml(p.name)}</strong>${p.notes ? `<div class="row-note">${escapeHtml(p.notes)}</div>` : ''}</td>
-        <td><span class="status-badge ${p.status === 'no_disponible' ? 'inactive' : 'active'}" data-toggle-status="${p.id}">${p.status === 'no_disponible' ? 'No disponible' : 'Activo'}</span></td>
-        <td>${tags || '<span class="empty-note">—</span>'}</td>
-        <td>${p.email ? `<span class="email-linked"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>${escapeHtml(p.email)}</span>` : '<span class="email-missing">— Sin vincular</span>'}</td>
-        <td>${monthCounts[p.id] || 0}</td>
-        <td><button class="btn icon-only" data-edit-pub="${p.id}" aria-label="Editar ${escapeHtml(p.name)}" title="Editar">✎</button></td>
+      return `<tr data-row-pub="${p.id}">
+        <td class="br-name"><strong>${escapeHtml(p.name)}</strong>${p.notes ? `<div class="row-note">${escapeHtml(p.notes)}</div>` : ''}</td>
+        <td class="br-status"><span class="status-badge ${p.status === 'no_disponible' ? 'inactive' : 'active'}" data-toggle-status="${p.id}">${p.status === 'no_disponible' ? 'No disponible' : 'Activo'}</span></td>
+        <td class="br-tags">${tags || '<span class="empty-note">—</span>'}</td>
+        <td class="br-email">${p.email ? `<span class="email-linked"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>${escapeHtml(p.email)}</span>` : '<span class="email-missing">— Sin vincular</span>'}</td>
+        <td class="br-count"><span class="br-m">Este mes: </span>${monthCounts[p.id] || 0}</td>
+        <td class="br-edit"><button class="btn icon-only" data-edit-pub="${p.id}" aria-label="Editar ${escapeHtml(p.name)}" title="Editar">✎</button></td>
       </tr>`;
     }).join('') : `<tr><td colspan="6" class="empty-note">Sin resultados</td></tr>`;
 
@@ -3471,7 +3731,13 @@
       p.status = p.status === 'no_disponible' ? 'activo' : 'no_disponible';
       saveData(); renderBrothersTable(); renderRoleCards(); showToast('Estado actualizado');
     }));
-    $('brothersTableBody').querySelectorAll('[data-edit-pub]').forEach(el => el.addEventListener('click', () => openPubModal(el.dataset.editPub)));
+    $('brothersTableBody').querySelectorAll('[data-edit-pub]').forEach(el => el.addEventListener('click', (e) => { e.stopPropagation(); openPubModal(el.dataset.editPub); }));
+    // En el celular (tarjetas), tocar cualquier parte de la tarjeta abre la edición.
+    $('brothersTableBody').querySelectorAll('[data-row-pub]').forEach(tr => tr.addEventListener('click', (e) => {
+      if (e.target.closest('[data-toggle-status], [data-edit-pub], a')) return;
+      if (!window.matchMedia('(max-width: 760px)').matches) return;
+      openPubModal(tr.dataset.rowPub);
+    }));
   }
   $('brSearch').addEventListener('input', renderBrothersTable);
   $('brFilter').addEventListener('change', renderBrothersTable);
