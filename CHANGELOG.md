@@ -6,6 +6,20 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Anuncios: nueva gestión, fecha de evento y links — 23 sep 2026 (caché asignaciones-salon-v21, ver-salon-v23)
+
+**Para quien publica (app de asignaciones)**
+- Al entrar a Anuncios se ve primero la lista, separada en Fijados, Activos y Vencidos (plegados). El formulario se abre con "+ Nuevo anuncio".
+- Cada anuncio tiene un menú ⋯ con Editar, Fijar, Duplicar y Borrar. Borrar ya no pide confirmación: aparece "Deshacer" unos segundos (y lo recuperado no vuelve a notificar).
+- "Duplicar" abre una copia para cambiar fecha o texto; si tiene adjunto se reutiliza el mismo archivo, que no se borra mientras algún anuncio lo use.
+- Los vencidos tienen "Volver a publicar 30 días" (sin notificar de nuevo).
+- Fecha y hora del evento (opcional). "Mostrar hasta" ahora ofrece: Hasta el evento, 7 días, 30 días, Otra fecha… o Siempre. Con fecha de evento, por defecto se muestra hasta ese día.
+- Vista previa antes de publicar: la notificación como llega al celular y la tarjeta como la ve la congregación.
+
+**Para la congregación (vista pública)**
+- Los anuncios con evento muestran un recuadro con el día, la hora, cuánto falta y el botón "+ Calendar" para Google Calendar. Al compartir, se incluye la fecha.
+- Los links del texto se pueden tocar (los emails no se tocan).
+
 ## Tira de reuniones y sin "tema" — 23 sep 2026 (caché asignaciones-salon-v20, ver-salon-v22)
 
 - Programa: en lugar de elegir semana y después "Entre semana / Fin de semana", arriba hay una tira con todas las reuniones del mes. Cada una muestra si está completa (✓), cuánto le falta o si está vacía; las pasadas se ven atenuadas y la próxima dice "PRÓXIMA".

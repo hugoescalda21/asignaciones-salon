@@ -188,6 +188,15 @@
   .ann-foot .ann-share { padding: 6px 12px; font-size: 12px; }
   .app-toast { position: fixed; left: 16px; right: 16px; bottom: calc(var(--tab-h, 62px) + 14px + env(safe-area-inset-bottom)); max-width: 480px; margin: 0 auto; background: #212C34; color: #fff; border-radius: 10px; padding: 11px 14px; font-size: 13px; line-height: 1.4; box-shadow: 0 6px 18px rgba(0,0,0,0.25); z-index: 350; opacity: 0; transform: translateY(8px); transition: opacity .2s, transform .2s; pointer-events: none; }
   .app-toast.show { opacity: 1; transform: none; }
+  .ann-event { display: flex; align-items: center; gap: 10px; background: #F2F6F9; border: 1px solid #D3E0EA; border-radius: 10px; padding: 8px 10px; margin: 2px 0 10px; }
+  .ann-event .ae-cal { width: 40px; border-radius: 7px; overflow: hidden; text-align: center; background: #fff; border: 1px solid #D3E0EA; flex-shrink: 0; }
+  .ann-event .ae-cal i { display: block; font-style: normal; background: var(--accent-blue); color: #fff; font-size: 9.5px; font-weight: 700; padding: 1px 0; text-transform: uppercase; }
+  .ann-event .ae-cal b { display: block; font-family: Georgia, serif; font-size: 17px; line-height: 1.35; color: #212C34; }
+  .ann-event .ae-tx { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 700; color: #212C34; }
+  .ann-event .ae-tx small { display: block; font-weight: 500; color: #5C6B74; font-size: 12px; }
+  .ann-event .ae-gc { font-size: 12.5px; font-weight: 700; color: #3E6B8A; border: 1px solid #3E6B8A; border-radius: 8px; padding: 6px 10px; white-space: nowrap; background: #fff; text-decoration: none; }
+  .ann-event.past { opacity: 0.6; }
+  .ann-text a { color: var(--accent-blue); text-decoration: underline; word-break: break-all; }
   .ann-teaser { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; font: inherit; color: inherit; background: var(--surface); border: 1px solid var(--accent-gold); border-left-width: 4px; border-radius: 12px; padding: 10px 12px; margin-bottom: 14px; }
   .ann-teaser-ic { width: 30px; height: 30px; border-radius: 8px; background: rgba(169,130,47,0.14); color: var(--accent-gold-text); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .ann-teaser-tx { flex: 1; min-width: 0; line-height: 1.3; }
@@ -525,7 +534,7 @@
 
     <details class="guide-item">
       <summary>📢&nbsp;&nbsp;Anuncios<span class="gchev">›</span></summary>
-      <p>Las novedades de la congregación, con foto o PDF adjunto cuando corresponde. El botón "Compartir" de cada anuncio lo manda por WhatsApp u otra app.</p>
+      <p>Las novedades de la congregación, con foto o PDF adjunto cuando corresponde. El botón "Compartir" de cada anuncio lo manda por WhatsApp u otra app. Si el anuncio es de un evento, muestra el día y la hora, y con "+ Calendar" lo agregás a tu Google Calendar.</p>
     </details>
 
     <details class="guide-item">
@@ -2081,7 +2090,9 @@
       // Sin poder mandar el archivo: se comparte el texto y el link a la app (que pide iniciar sesión).
       const appLink = location.origin + location.pathname + '?codigo=' + encodeURIComponent(getCode());
       const extra = a.attachmentUrl ? '\n\n(Tiene un archivo adjunto: abrilo en la app)' : '';
-      const full = (text ? text : 'Anuncio de la congregación') + extra + '\n\n' + appLink;
+      let evLine = '';
+      if (a.eventDate) { const ed = new Date(a.eventDate + 'T00:00:00'); evLine = '\n\n📅 ' + ed.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }) + (a.eventTime ? ' · ' + a.eventTime : ''); }
+      const full = (text ? text : 'Anuncio de la congregación') + evLine + extra + '\n\n' + appLink;
       if (navigator.share) { navigator.share({ title, text: full }).catch(shareAvisoError); return; }
       window.open('https://wa.me/?text=' + encodeURIComponent(full), '_blank', 'noopener');
     } catch (e) { shareAvisoError(e); }
@@ -2138,11 +2149,39 @@
           ${venceLabel ? `<span class="ann-exp">${venceLabel}</span>` : ''}
         </div>
         ${tituloHtml}
-        <p class="ann-text${largo && !abierto ? ' clamp' : ''}">${escapeHtml(texto).replace(/\n/g, '<br>')}</p>
+        <p class="ann-text${largo && !abierto ? ' clamp' : ''}">${annLinkify(escapeHtml(texto)).replace(/\n/g, '<br>')}</p>
         ${largo ? `<button type="button" class="ann-more" data-ann-more="${escapeHtml(a.id)}">${abierto ? 'Ver menos' : 'Ver más'}</button>` : ''}
+        ${annEventHtml(a)}
         ${attHtml}
         <div class="ann-foot"><button type="button" class="ann-share" data-ann-share="${escapeHtml(a.id)}" aria-label="Compartir anuncio"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>Compartir</button></div>
       </div>`;
+  }
+  // Recuadro del evento: día, hora, cuánto falta y botón para Google Calendar.
+  function annEventHtml(a) {
+    if (!a.eventDate || !/^\d{4}-\d{2}-\d{2}$/.test(a.eventDate)) return '';
+    const d = new Date(a.eventDate + 'T00:00:00');
+    const now = new Date();
+    const diff = Math.round((d.getTime() - new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()) / 86400000);
+    let dia = d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric' }).replace(',', '');
+    dia = dia.charAt(0).toUpperCase() + dia.slice(1);
+    const hora = /^\d{2}:\d{2}$/.test(a.eventTime || '') ? a.eventTime : '';
+    const falta = diff < 0 ? 'Ya pasó' : diff === 0 ? 'Es hoy' : diff === 1 ? 'Es mañana' : `Faltan ${diff} días`;
+    const mes = d.toLocaleDateString('es-ES', { month: 'short' }).replace('.', '');
+    const congName = (data && data.settings && data.settings.congregationName) || 'Salón del Reino';
+    const texto = String(a.text || '').replace(/\s+/g, ' ').trim();
+    const gc = diff < 0 ? '' : `<a class="ae-gc" href="${escapeHtml(gcalUrl(a.title || 'Anuncio de la congregación', a.eventDate, (texto ? texto.slice(0, 300) + '\n\n' : '') + congName, hora))}" target="_blank" rel="noopener">+ Calendar</a>`;
+    return `<div class="ann-event${diff < 0 ? ' past' : ''}"><div class="ae-cal"><i>${escapeHtml(mes)}</i><b>${d.getDate()}</b></div><div class="ae-tx">${escapeHtml(dia)}${hora ? ' · ' + hora.replace(/^0(\d)/, '$1') : ''}<small>${falta}</small></div>${gc}</div>`;
+  }
+  // Links clickeables en un texto YA escapado (no toca los emails).
+  function annLinkify(html) {
+    return html.replace(/(\bhttps?:\/\/[^\s<]+|\bwww\.[^\s<]+|\b[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:org|com|net|ar|edu|gov|gob|info|app)(?:\/[^\s<]*)?)/gi, (m, _u, off, str) => {
+      const prev = off > 0 ? str.charAt(off - 1) : '';
+      if (prev === '@' || /[\w.\/-]/.test(prev)) return m;
+      const trail = (m.match(/[.,;:!?)]+$/) || [''])[0];
+      const url = trail ? m.slice(0, -trail.length) : m;
+      const href = /^https?:/i.test(url) ? url : 'https://' + url;
+      return `<a href="${href}" target="_blank" rel="noopener">${url}</a>${trail}`;
+    });
   }
   // "Recién", "Hace 20 min", "Hace 3 h", "Ayer", "18 sept" (con año si no es este).
   function annRelDate(d) {

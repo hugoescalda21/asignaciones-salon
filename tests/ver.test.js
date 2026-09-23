@@ -150,10 +150,10 @@ const isoDay = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate
   const calCode = [escapeHtml, constBlock('ROLE_META', '};'), fn('getRoles'), fn('dateForType'), fn('formatDate'), oneLine('  function monthKey('), oneLine('  function localIso('),
     fn('meetingTimeOf'), fn('visitorName'), fn('programEntries'), constBlock('SECTION_COLOR', '};'), fn('isProgramFilled'), constBlock('calOpenState', ';'),
     fn('calRowHTML'), fn('bindCalAccordion'), fn('renderMonth'), fn('renderUpcoming'),
-    constBlock('annState', ';'), fn('annVigentesList'), fn('annItemHtml'), fn('annRelDate'), fn('annExpiresLabel'), fn('renderAnnTeaser')].join('\n');
+    constBlock('annState', ';'), fn('annVigentesList'), fn('annItemHtml'), fn('gcalUrl'), fn('annEventHtml'), fn('annLinkify'), fn('annRelDate'), fn('annExpiresLabel'), fn('renderAnnTeaser')].join('\n');
   function calCtx(weeks, anuncios, seenIso) {
     const $ = fakeDom();
-    const ctx = { $, console, currentUser: { email: 'hugo@x.com' }, getCode: () => 'SALON', annGetSeen: () => seenIso || '2000-01-01T00:00:00Z',
+    const ctx = { $, console, URLSearchParams, currentUser: { email: 'hugo@x.com' }, getCode: () => 'SALON', annGetSeen: () => seenIso || '2000-01-01T00:00:00Z',
       data: { settings: { weekdaySemana: 4, weekdayFinde: 0, micCount: 2, usherCount: 2, meetingTimeSemana: '19:30', meetingTimeFinde: '10:00' }, publishers: pubs, weeks, anuncios: anuncios || [] },
       currentMonday: '2099-09-21' };
     vm.createContext(ctx);
@@ -230,6 +230,19 @@ const isoDay = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate
     check('muestra el vencimiento', /Vence el/.test(ctx.cards));
     check('marca "editado"', /editado/.test(ctx.cards));
     check('"Compartir" en cada tarjeta', (ctx.cards.match(/data-ann-share=/g) || []).length === 4);
+    {
+      const fut = new Date(ahora + 3 * 86400000), pas = new Date(ahora - 3 * 86400000);
+      const dstr = x => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+      ctx.evA = { id: 'e1', title: 'Visita', text: 'Más info: jw.org/es. Escribime a hugo@gmail.com o https://ejemplo.com/a?b=1&c=2', eventDate: dstr(fut), eventTime: '09:00' };
+      ctx.evB = { id: 'e2', text: 'x', eventDate: dstr(pas) };
+      vm.runInContext('this.cA = annItemHtml(evA); this.cB = annItemHtml(evB);', ctx);
+      check('recuadro del evento con día, hora y "Faltan 3 días"', /ann-event/.test(ctx.cA) && /· 9:00/.test(ctx.cA) && /Faltan 3 días/.test(ctx.cA), ctx.cA.slice(0, 300));
+      check('botón "+ Calendar" con la fecha y hora del evento', /calendar\.google\.com[^"]*dates=\d{8}T0900/.test(ctx.cA));
+      check('evento pasado: "Ya pasó" y sin botón de Calendar', /Ya pasó/.test(ctx.cB) && !/ae-gc/.test(ctx.cB));
+      check('links clickeables (jw.org/es sin el punto final)', /<a href="https:\/\/jw\.org\/es"[^>]*>jw\.org\/es<\/a>\./.test(ctx.cA));
+      check('link con http y parámetros', /href="https:\/\/ejemplo\.com\/a\?b=1&amp;c=2"/.test(ctx.cA));
+      check('los emails no se convierten en link', !/href="https:\/\/gmail\.com"/.test(ctx.cA));
+    }
     vm.runInContext(`this.rel = [annRelDate(new Date(Date.now() - 30000)), annRelDate(new Date(Date.now() - 20 * 60000)), annRelDate(new Date(2020, 0, 5))];
       this.exp = [annExpiresLabel(new Date()), annExpiresLabel(new Date(Date.now() + 86400000)), annExpiresLabel(new Date('x'))];`, ctx);
     check('"Recién" y "Hace 20 min"', ctx.rel[0] === 'Recién' && ctx.rel[1] === 'Hace 20 min', plain(ctx.rel));

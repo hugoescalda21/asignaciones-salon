@@ -527,7 +527,7 @@
   .copied-msg { font-size: 12.5px; color: var(--ok); font-weight: 600; }
 
   /* ---------- Toasts ---------- */
-  .toast-container { position: fixed; bottom: 18px; right: 18px; z-index: 40; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+  .toast-container { position: fixed; bottom: 18px; right: 18px; z-index: 130; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
   .toast {
     background: var(--emphasis); color: var(--on-emphasis); padding: 10px 16px; border-radius: var(--radius-s); font-size: 13px;
     opacity: 0; transform: translateY(8px); transition: opacity 0.25s, transform 0.25s; box-shadow: 0 3px 10px rgba(0,0,0,0.2);
@@ -581,6 +581,82 @@
   .br-chips { display: none; }
   .br-chip { flex-shrink: 0; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); border-radius: 16px; padding: 6px 12px; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
   .br-chip.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+  /* ---------- Gestión de anuncios ---------- */
+  .an-modal { max-width: 520px; }
+  .an-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+  .an-top h3 { margin: 0; }
+  .an-x { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--ink-soft); padding: 4px 6px; }
+  .an-new { width: 100%; justify-content: center; margin-bottom: 6px; }
+  .an-empty { font-size: 13px; color: var(--ink-soft); text-align: center; padding: 18px 0; }
+  .an-sec { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); margin: 16px 0 8px; }
+  .an-sec::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+  .an-fold { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-s); padding: 11px 12px; margin: 16px 0 8px; font: inherit; font-size: 13.5px; font-weight: 700; color: var(--ink); cursor: pointer; text-align: left; }
+  .an-fold small { color: var(--ink-soft); font-weight: 500; }
+  .an-card { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 11px 12px; margin-bottom: 8px; }
+  .an-card.pinned { border: 1.5px solid var(--accent-gold); }
+  .an-card.old { opacity: 0.72; }
+  .an-card .an-meta { font-size: 11.5px; color: var(--ink-soft); margin-bottom: 4px; padding-right: 34px; }
+  .an-card .an-meta b { color: var(--accent-gold-text); font-weight: 700; }
+  .an-card.old .an-meta { color: var(--danger); }
+  .an-card .an-t { font-size: 14.5px; font-weight: 700; margin-bottom: 2px; }
+  .an-card .an-x2 { font-size: 13px; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
+  .an-card .an-dots { position: absolute; top: 6px; right: 6px; width: 34px; height: 30px; border: none; background: none; font-size: 18px; color: var(--ink-soft); cursor: pointer; border-radius: 8px; }
+  .an-card .an-dots:hover { background: var(--bg); }
+  .an-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .an-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; border-radius: 7px; padding: 3px 8px; margin-top: 7px; background: var(--bg); color: var(--ink-soft); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: none; }
+  .an-chip.ev { background: #E7EEF3; color: var(--accent-blue); font-weight: 700; }
+  .an-repub { margin-top: 9px; border: 1px solid var(--accent-blue); color: var(--accent-blue); background: var(--surface); border-radius: 8px; padding: 6px 11px; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+  .an-editbadge { font-size: 12px; color: var(--accent-gold-text); background: #F6F0E1; border: 1px solid #E3D3A6; border-radius: 8px; padding: 7px 10px; margin-bottom: 10px; }
+  .an-in { width: 100%; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 9px 10px; font-family: inherit; font-size: 14px; background: var(--surface); color: var(--ink); margin-bottom: 8px; }
+  textarea.an-in { resize: vertical; line-height: 1.45; }
+  .an-title-in { font-weight: 600; }
+  .an-fl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft); margin: 10px 0 6px; }
+  .an-fl span { text-transform: none; letter-spacing: 0; font-weight: 500; }
+  .an-row { display: flex; gap: 8px; align-items: center; }
+  .an-row .an-in { margin-bottom: 0; flex: 1; min-width: 0; }
+  .an-row .an-time { flex: 0 0 132px; }
+  .an-clear { border: none; background: var(--bg); color: var(--ink-soft); border-radius: 50%; width: 30px; height: 30px; flex-shrink: 0; cursor: pointer; }
+  .an-hint { font-size: 11.5px; color: var(--ink-soft); margin: 5px 0 0; line-height: 1.4; }
+  .an-hint:empty { display: none; }
+  .an-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+  .an-pills button { border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); border-radius: 16px; padding: 7px 12px; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+  .an-pills button.on { background: var(--emphasis); color: var(--on-emphasis); border-color: var(--emphasis); }
+  .an-pills button:disabled { opacity: 0.4; cursor: default; }
+  .an-sw { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; margin-top: 10px; }
+  .an-att { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--ink-soft); border: 1px dashed var(--line); border-radius: var(--radius-s); padding: 8px 10px; margin-top: 10px; }
+  .an-att span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .an-att-new { color: var(--ok); border-style: solid; }
+  .an-att-x { background: none; border: none; color: var(--danger); cursor: pointer; font: inherit; font-size: 12px; white-space: nowrap; }
+  .an-attach { display: flex; width: 100%; align-items: center; justify-content: center; gap: 6px; margin-top: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px; font: inherit; font-size: 13px; font-weight: 600; color: var(--ink-soft); cursor: pointer; }
+  .an-err { color: var(--danger); font-size: 12.5px; font-weight: 600; margin: 10px 0 0; }
+  .an-fbar { position: sticky; bottom: -22px; display: flex; gap: 8px; background: var(--surface); border-top: 1px solid var(--line); margin: 16px -4px 0; padding: 12px 4px 4px; z-index: 2; }
+  .an-fbar .btn { flex: 1; justify-content: center; }
+  .an-pvlab { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); margin: 4px 0 7px; }
+  .an-notif { display: flex; gap: 10px; align-items: flex-start; background: var(--bg); border-radius: 14px; padding: 10px 12px; margin-bottom: 16px; }
+  .an-notif-ic { width: 30px; height: 30px; border-radius: 8px; background: var(--emphasis); color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 14px; }
+  .an-notif-tx { flex: 1; min-width: 0; font-size: 12.5px; line-height: 1.35; }
+  .an-notif-tx b { display: block; font-size: 13px; }
+  .an-notif-tx span { color: var(--ink-soft); }
+  .an-notif small { font-size: 11px; color: var(--ink-faint); }
+  .an-pc { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 13px 14px; }
+  .an-pc.pinned { border: 1.5px solid var(--accent-gold); }
+  .an-pc .pc-meta { font-size: 11.5px; color: var(--ink-soft); margin-bottom: 6px; }
+  .an-pc .pc-meta b { color: var(--accent-gold-text); }
+  .an-pc h4 { font-family: Georgia, serif; font-size: 15px; margin: 0 0 4px; }
+  .an-pc p { font-size: 13.5px; line-height: 1.5; margin: 0; word-break: break-word; }
+  .an-pc a { color: var(--accent-blue); }
+  .an-pc img { width: 100%; max-height: 160px; object-fit: cover; border-radius: var(--radius-s); border: 1px solid var(--line); margin-top: 10px; }
+  .an-pc .pc-file { margin-top: 10px; font-size: 12.5px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-s); padding: 9px 11px; }
+  .an-pc .pc-foot { display: flex; justify-content: flex-end; margin-top: 10px; }
+  .an-pc .pc-foot span { border: 1px solid var(--line); border-radius: 99px; padding: 4px 11px; font-size: 12px; font-weight: 600; color: var(--accent-blue); }
+  .ann-event { display: flex; align-items: center; gap: 10px; background: #F2F6F9; border: 1px solid #D3E0EA; border-radius: 10px; padding: 8px 10px; margin-top: 10px; }
+  .ann-event .ae-cal { width: 38px; border-radius: 7px; overflow: hidden; text-align: center; background: #fff; border: 1px solid #D3E0EA; flex-shrink: 0; }
+  .ann-event .ae-cal i { display: block; font-style: normal; background: var(--accent-blue); color: #fff; font-size: 9px; font-weight: 700; padding: 1px 0; text-transform: uppercase; }
+  .ann-event .ae-cal b { display: block; font-family: Georgia, serif; font-size: 16px; line-height: 1.35; color: #212C34; }
+  .ann-event .ae-tx { flex: 1; min-width: 0; font-size: 13px; font-weight: 700; color: #212C34; }
+  .ann-event .ae-tx small { display: block; font-weight: 500; color: #5C6B74; font-size: 11.5px; }
+  .ann-event .ae-gc { font-size: 12px; font-weight: 700; color: var(--accent-blue); border: 1px solid var(--accent-blue); border-radius: 8px; padding: 5px 9px; white-space: nowrap; background: #fff; text-decoration: none; }
 
   /* ---------- Tira de reuniones del mes ---------- */
   .mstrip-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
@@ -927,62 +1003,79 @@
 
 <!-- Anuncios Modal -->
 <div id="anunciosModalOverlay" class="modal-overlay hidden" style="z-index: 100;">
-  <div class="modal" style="max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
-      <h3 style="margin:0;">📢 Gestión de Anuncios</h3>
-      <button type="button" id="closeAnunciosBtn" style="background:none; border:none; font-size:20px; cursor:pointer;">✕</button>
+  <div class="modal an-modal">
+    <!-- Lista -->
+    <div id="anListView">
+      <div class="an-top"><h3>📢 Anuncios</h3><button type="button" class="an-x" id="closeAnunciosBtn" aria-label="Cerrar">✕</button></div>
+      <button type="button" class="btn btn-primary an-new" id="anNewBtn">+ Nuevo anuncio</button>
+      <div id="anunciosListContainer"><p class="an-empty">Cargando anuncios...</p></div>
     </div>
-    
-    <div style="background: var(--bg); padding: 12px; border-radius: var(--radius-m); margin-bottom: 20px;">
-      <div id="anuncioEditBadge" class="hidden" style="font-size:11.5px; color:var(--gold-text, #876825); background:#F6F0E1; border:1px solid #E3D3A6; border-radius:8px; padding:6px 10px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; gap:8px;">
-        <span id="anuncioEditBadgeText"></span>
-        <button type="button" id="anuncioCancelEditBtn" style="background:none; border:none; color:var(--gold-text, #876825); font-weight:600; cursor:pointer; font-size:11.5px; white-space:nowrap;">Cancelar edición</button>
-      </div>
-      <label id="anuncioFormLabel" style="font-weight: 600; font-size: 13px; display:block; margin-bottom: 6px;">Nuevo Anuncio</label>
-      <input type="text" id="anuncioTitleInput" maxlength="80" placeholder="Título (opcional)" style="width: 100%; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 8px; font-family: inherit; font-weight:600; margin-bottom: 8px;">
-      <textarea id="anuncioTextInput" rows="3" placeholder="Escribe el anuncio para la congregación..." style="width: 100%; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 8px; font-family: inherit; resize: vertical; margin-bottom: 10px;"></textarea>
 
-      <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;">
-        <label style="font-size:12px; color:var(--ink-soft); display:flex; align-items:center; justify-content:space-between; gap:8px;">Mostrar hasta
-          <select id="anuncioVenceSel" style="border:1px solid var(--line); border-radius:var(--radius-s); padding:6px 8px; font-family:inherit; font-size:13px; background:var(--surface);">
-            <option value="keep" id="anuncioVenceKeepOpt" style="display:none;">Sin cambios</option>
-            <option value="7">7 días</option>
-            <option value="30" selected>30 días</option>
-            <option value="90">90 días</option>
-            <option value="0">Sin vencimiento</option>
-          </select>
-        </label>
-        <label style="display:flex; gap:8px; align-items:flex-start; font-size:13px;">
-          <input type="checkbox" id="anuncioPinChk" style="margin-top:3px;">
-          <span>📌 Fijar arriba<br><small style="color:var(--ink-soft); font-size:11.5px;">Queda primero aunque haya anuncios más nuevos.</small></span>
-        </label>
-        <label id="anuncioNotifyWrap" style="display:flex; gap:8px; align-items:flex-start; font-size:13px;">
-          <input type="checkbox" id="anuncioNotifyChk" checked style="margin-top:3px;">
-          <span>Avisar por notificación<br><small style="color:var(--ink-soft); font-size:11.5px;">Le llega a los dispositivos que tengan las notificaciones activadas.</small></span>
-        </label>
-      </div>
+    <!-- Formulario -->
+    <div id="anFormView" class="hidden">
+      <div class="an-top"><h3 id="anuncioFormLabel">Nuevo anuncio</h3><button type="button" class="an-x" id="anFormCloseBtn" aria-label="Volver a la lista">✕</button></div>
+      <div id="anuncioEditBadge" class="an-editbadge hidden"><span id="anuncioEditBadgeText"></span></div>
+      <input type="text" id="anuncioTitleInput" class="an-in an-title-in" maxlength="80" placeholder="Título (opcional)" aria-label="Título">
+      <textarea id="anuncioTextInput" class="an-in" rows="4" placeholder="Escribí el anuncio para la congregación..." aria-label="Texto del anuncio"></textarea>
 
-      <div id="anuncioExistingAtt" class="hidden" style="margin-bottom: 10px; font-size: 12px; color: var(--ink-soft); display:flex; align-items:center; justify-content: space-between; border:1px dashed var(--line); border-radius: var(--radius-s); padding:8px 10px;">
+      <div class="an-fl">Fecha del evento <span>(opcional)</span></div>
+      <div class="an-row">
+        <input type="date" id="anEventDate" class="an-in" aria-label="Fecha del evento">
+        <input type="time" id="anEventTime" class="an-in an-time" aria-label="Hora del evento">
+        <button type="button" class="an-clear hidden" id="anEventClearBtn" aria-label="Quitar fecha del evento">✕</button>
+      </div>
+      <p class="an-hint">Si la cargás, la congregación ve el día y la hora y lo puede agregar a su Google Calendar.</p>
+
+      <div class="an-fl">Mostrar hasta</div>
+      <div class="an-pills" id="anVencePills" role="radiogroup" aria-label="Mostrar hasta">
+        <button type="button" data-vence="event">Hasta el evento</button>
+        <button type="button" data-vence="7">7 días</button>
+        <button type="button" data-vence="30">30 días</button>
+        <button type="button" data-vence="custom">Otra fecha…</button>
+        <button type="button" data-vence="0">Siempre</button>
+      </div>
+      <input type="date" id="anVenceDate" class="an-in hidden" aria-label="Mostrar hasta el día" style="margin-top:8px;">
+      <p class="an-hint" id="anVenceHint"></p>
+
+      <div class="toggle-row an-sw"><div><p>📌 Fijar arriba</p><p class="hint">Queda primero aunque haya anuncios más nuevos.</p></div><button type="button" class="switch" id="anPinSwitch" aria-label="Fijar arriba"></button></div>
+      <div class="toggle-row an-sw" id="anuncioNotifyWrap"><div><p>Avisar por notificación</p><p class="hint">Le llega a los dispositivos que tengan las notificaciones activadas.</p></div><button type="button" class="switch on" id="anNotifySwitch" aria-label="Avisar por notificación"></button></div>
+
+      <div id="anuncioExistingAtt" class="an-att hidden">
         <span id="anuncioExistingAttName"></span>
-        <button type="button" id="anuncioExistingAttRemoveBtn" style="background:none; border:none; color:var(--danger); cursor:pointer;">✕ Quitar adjunto</button>
+        <button type="button" id="anuncioExistingAttRemoveBtn" class="an-att-x">✕ Quitar</button>
       </div>
-
-      <div style="display: flex; gap: 10px; align-items: center;">
-        <input type="file" id="anuncioFileInput" style="display:none;" accept="image/*,.pdf">
-        <button type="button" class="btn" id="anuncioAttachBtn" style="background: var(--surface); color: var(--ink); border: 1px solid var(--line); font-size: 12px; flex:1;">📎 Adjuntar foto o PDF</button>
-        <button type="button" class="btn btn-primary" id="anuncioSubmitBtn" style="flex:1;">Publicar Anuncio</button>
-      </div>
-      <div id="anuncioFilePreview" class="hidden" style="margin-top: 10px; font-size: 12px; color: var(--ok); display:flex; align-items:center; justify-content: space-between;">
+      <div id="anuncioFilePreview" class="an-att an-att-new hidden">
         <span id="anuncioFileName"></span>
-        <button type="button" id="anuncioFileRemoveBtn" style="background:none; border:none; color:var(--danger); cursor:pointer;">✕ Quitar</button>
+        <button type="button" id="anuncioFileRemoveBtn" class="an-att-x">✕ Quitar</button>
       </div>
-      <div id="anuncioUploadProgress" class="hidden" style="margin-top: 5px; font-size: 11px; color: var(--ink-soft);">Subiendo... <span id="anuncioUploadPercent">0</span>%</div>
+      <input type="file" id="anuncioFileInput" style="display:none;" accept="image/*,.pdf">
+      <button type="button" class="an-attach" id="anuncioAttachBtn">📎 Adjuntar foto o PDF</button>
+      <p class="an-err hidden" id="anFormErr"></p>
+
+      <div class="an-fbar"><button type="button" class="btn" id="anFormCancelBtn">Cancelar</button><button type="button" class="btn btn-primary" id="anPreviewBtn">Vista previa →</button></div>
     </div>
 
-    <h4 style="margin: 0 0 10px 0; font-size: 14px;">Anuncios Activos</h4>
-    <div id="anunciosListContainer">
-      <p style="font-size: 13px; color: var(--ink-soft);">Cargando anuncios...</p>
+    <!-- Vista previa -->
+    <div id="anPreviewView" class="hidden">
+      <div class="an-top"><h3>Vista previa</h3><button type="button" class="an-x" id="anPreviewCloseBtn" aria-label="Volver a editar">✕</button></div>
+      <div id="anPvNotifWrap">
+        <div class="an-pvlab">Así llega la notificación</div>
+        <div class="an-notif"><div class="an-notif-ic">📢</div><div class="an-notif-tx"><b id="anPvNotifTitle"></b><span id="anPvNotifBody"></span></div><small>ahora</small></div>
+      </div>
+      <div class="an-pvlab">Así lo ve la congregación</div>
+      <div id="anPvCard"></div>
+      <div id="anuncioUploadProgress" class="an-hint hidden">Subiendo archivo... <span id="anuncioUploadPercent">0</span>%</div>
+      <div class="an-fbar"><button type="button" class="btn" id="anBackBtn">← Volver a editar</button><button type="button" class="btn btn-primary" id="anuncioSubmitBtn">Publicar</button></div>
     </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="anMenuOverlay" style="z-index: 110;">
+  <div class="modal" style="max-width:400px;">
+    <h3 id="anMenuTitle" style="margin-bottom:2px;">Anuncio</h3>
+    <p class="modal-sub" id="anMenuSub" style="margin-bottom:10px;"></p>
+    <div id="anMenuItems"></div>
+    <div class="modal-footer"><button type="button" class="btn" id="anMenuCloseBtn">Cerrar</button></div>
   </div>
 </div>
 
@@ -5546,73 +5639,339 @@
       }
     });
   }
-  /* ---------- Gestión de Avisos ---------- */
+  /* ---------- Gestión de Anuncios ---------- */
   let currentAnuncioFile = null;
   let editingAnuncioId = null;
   let removeExistingAttachment = false;
+  let dupAttachment = null;      // adjunto que viene de "Duplicar" (se reutiliza el mismo archivo)
+  const anForm = { vence: '30', venceTouched: false, pin: false, notify: true };
+  let anOldOpen = false;
 
   function abrirAvisos() {
     if (!accessCode) return;
     resetAnuncioForm();
+    showAnView('list');
     $('anunciosModalOverlay').classList.remove('hidden');
     renderAnunciosList();
   }
+  function showAnView(v) {
+    $('anListView').classList.toggle('hidden', v !== 'list');
+    $('anFormView').classList.toggle('hidden', v !== 'form');
+    $('anPreviewView').classList.toggle('hidden', v !== 'preview');
+    const m = $('anunciosModalOverlay').querySelector('.modal');
+    if (m) m.scrollTop = 0;
+  }
 
-  // Vuelve el formulario de anuncios a "publicar nuevo" (sale de modo edición si estaba).
+  // Fechas en hora local (las del formulario son "AAAA-MM-DD").
+  function anLocalDate(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+  function anEndOfDayIso(dateStr) { return new Date(dateStr + 'T23:59:59').toISOString(); }
+  function anShortDate(d) { return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).replace('.', ''); }
+  function anRelDate(d) {
+    const now = new Date();
+    const min = Math.floor((now - d) / 60000);
+    if (min < 1) return 'Recién';
+    if (min < 60) return `Hace ${min} min`;
+    const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (d >= startToday) return `Hace ${Math.floor(min / 60)} h`;
+    if (d >= new Date(startToday.getTime() - 86400000)) return 'Ayer';
+    const opts = { day: 'numeric', month: 'short' };
+    if (d.getFullYear() !== now.getFullYear()) opts.year = 'numeric';
+    return d.toLocaleDateString('es-ES', opts).replace('.', '');
+  }
+  // "Sáb 26 sept · 9:00" (o "Sábado 26 · 9:00" en formato largo)
+  function anEventLabel(a, long) {
+    if (!a.eventDate || !/^\d{4}-\d{2}-\d{2}$/.test(a.eventDate)) return '';
+    const d = new Date(a.eventDate + 'T00:00:00');
+    let s = long
+      ? d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric' })
+      : d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
+    s = s.replace(/\./g, '').replace(',', '');
+    s = s.charAt(0).toUpperCase() + s.slice(1);
+    if (a.eventTime) s += ' · ' + a.eventTime.replace(/^0(\d)/, '$1');
+    return s;
+  }
+  function anIsExpired(a) { return !!(a.expiresIso && new Date(a.expiresIso).getTime() < Date.now()); }
+  function anExpiresIsEvent(a) { return !!(a.eventDate && a.expiresIso && anLocalDate(new Date(a.expiresIso)) === a.eventDate); }
+  // Pone links clickeables en un texto YA escapado.
+  function anLinkify(html) {
+    return html.replace(/(\bhttps?:\/\/[^\s<]+|\bwww\.[^\s<]+|\b[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:org|com|net|ar|edu|gov|gob|info|app)(?:\/[^\s<]*)?)/gi, (m, _u, off, str) => {
+      const prev = off > 0 ? str.charAt(off - 1) : '';
+      if (prev === '@' || /[\w.\/-]/.test(prev)) return m;
+      const trail = (m.match(/[.,;:!?)]+$/) || [''])[0];
+      const url = trail ? m.slice(0, -trail.length) : m;
+      const href = /^https?:/i.test(url) ? url : 'https://' + url;
+      return `<a href="${href}" target="_blank" rel="noopener">${url}</a>${trail}`;
+    });
+  }
+  // El archivo adjunto lo puede estar usando otro anuncio (por "Duplicar"): en ese caso no se borra.
+  function anAttachmentInUse(url, exceptId) {
+    return (data.anuncios || []).some(x => x.id !== exceptId && x.attachmentUrl === url);
+  }
+  async function anDeleteStorage(url, exceptId) {
+    if (!url || anAttachmentInUse(url, exceptId)) return;
+    await firebase.storage().refFromURL(url).delete().catch(err => console.log('Error borrando adjunto:', err));
+  }
+
+  // ---- Formulario ----
+  function setAnSwitch(id, on) { $(id).classList.toggle('on', !!on); $(id).setAttribute('aria-pressed', on ? 'true' : 'false'); }
+  function updateAnVenceUi() {
+    const hasEvent = !!$('anEventDate').value;
+    if (anForm.vence === 'event' && !hasEvent) anForm.vence = '30';
+    document.querySelectorAll('#anVencePills [data-vence]').forEach(b => {
+      b.classList.toggle('on', b.dataset.vence === anForm.vence);
+      b.setAttribute('aria-checked', b.dataset.vence === anForm.vence ? 'true' : 'false');
+      if (b.dataset.vence === 'event') b.disabled = !hasEvent;
+    });
+    $('anVenceDate').classList.toggle('hidden', anForm.vence !== 'custom');
+    $('anEventClearBtn').classList.toggle('hidden', !hasEvent && !$('anEventTime').value);
+    let hint = '';
+    if (anForm.vence === 'event' && hasEvent) hint = 'Se deja de mostrar solo, el día después del evento.';
+    else if (anForm.vence === '0') hint = 'Queda visible hasta que lo borres.';
+    else if (anForm.vence === '7' || anForm.vence === '30') hint = 'Se muestra hasta el ' + anShortDate(new Date(Date.now() + parseInt(anForm.vence, 10) * 86400000)) + '.';
+    $('anVenceHint').textContent = hint;
+  }
+  function anShowErr(msg) { $('anFormErr').textContent = msg || ''; $('anFormErr').classList.toggle('hidden', !msg); }
+
+  // Vuelve el formulario a "publicar nuevo" (sale de modo edición si estaba).
   function resetAnuncioForm() {
     editingAnuncioId = null;
     currentAnuncioFile = null;
     removeExistingAttachment = false;
+    dupAttachment = null;
+    Object.assign(anForm, { vence: '30', venceTouched: false, pin: false, notify: true });
     $('anuncioEditBadge').classList.add('hidden');
-    $('anuncioFormLabel').textContent = 'Nuevo Anuncio';
-    $('anuncioSubmitBtn').textContent = 'Publicar Anuncio';
+    $('anuncioFormLabel').textContent = 'Nuevo anuncio';
+    $('anuncioSubmitBtn').textContent = 'Publicar';
     $('anuncioTitleInput').value = '';
     $('anuncioTextInput').value = '';
-    $('anuncioVenceKeepOpt').style.display = 'none';
-    $('anuncioVenceSel').value = '30';
-    $('anuncioPinChk').checked = false;
+    $('anEventDate').value = '';
+    $('anEventTime').value = '';
+    $('anVenceDate').value = '';
+    setAnSwitch('anPinSwitch', false);
+    setAnSwitch('anNotifySwitch', true);
     $('anuncioNotifyWrap').classList.remove('hidden');
-    $('anuncioNotifyChk').checked = true;
     $('anuncioExistingAtt').classList.add('hidden');
     $('anuncioFileInput').value = '';
     $('anuncioFilePreview').classList.add('hidden');
+    anShowErr('');
+    updateAnVenceUi();
   }
-
-  // Carga un anuncio ya publicado en el formulario para corregirlo.
-  function editAnuncio(a) {
-    editingAnuncioId = a.id;
-    currentAnuncioFile = null;
-    removeExistingAttachment = false;
+  function anFillFrom(a) {
     $('anuncioTitleInput').value = a.title || '';
     $('anuncioTextInput').value = a.text || '';
-    $('anuncioPinChk').checked = !!a.pinned;
-    $('anuncioVenceKeepOpt').style.display = '';
-    $('anuncioVenceSel').value = 'keep';
-    $('anuncioNotifyWrap').classList.add('hidden');
-    $('anuncioFileInput').value = '';
-    $('anuncioFilePreview').classList.add('hidden');
+    $('anEventDate').value = a.eventDate || '';
+    $('anEventTime').value = a.eventTime || '';
+    anForm.pin = !!a.pinned; setAnSwitch('anPinSwitch', anForm.pin);
     if (a.attachmentUrl) {
-      $('anuncioExistingAttName').textContent = '📎 ' + (a.attachmentName || 'Archivo adjunto') + ' (actual)';
+      $('anuncioExistingAttName').textContent = '📎 ' + (a.attachmentName || 'Archivo adjunto');
       $('anuncioExistingAtt').classList.remove('hidden');
-    } else {
-      $('anuncioExistingAtt').classList.add('hidden');
     }
-    const fecha = a.dateIso ? new Date(a.dateIso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '';
-    $('anuncioEditBadgeText').textContent = 'Editando · publicado el ' + fecha + ' · no vuelve a notificar';
+  }
+  // Carga un anuncio ya publicado en el formulario para corregirlo.
+  function editAnuncio(a) {
+    resetAnuncioForm();
+    editingAnuncioId = a.id;
+    anFillFrom(a);
+    if (!a.expiresIso) anForm.vence = '0';
+    else if (anExpiresIsEvent(a)) anForm.vence = 'event';
+    else { anForm.vence = 'custom'; $('anVenceDate').value = anLocalDate(new Date(a.expiresIso)); }
+    anForm.venceTouched = false;
+    $('anuncioNotifyWrap').classList.add('hidden');
+    const fecha = a.dateIso ? anShortDate(new Date(a.dateIso)) : '';
+    $('anuncioEditBadgeText').textContent = 'Editando · publicado el ' + fecha + ' · guardar no vuelve a notificar';
     $('anuncioEditBadge').classList.remove('hidden');
-    $('anuncioFormLabel').textContent = 'Editando anuncio';
+    $('anuncioFormLabel').textContent = 'Editar anuncio';
     $('anuncioSubmitBtn').textContent = 'Guardar cambios';
-    $('anunciosModalOverlay').querySelector('.modal').scrollTop = 0;
+    updateAnVenceUi();
+    showAnView('form');
+  }
+  // "Duplicar": copia para cambiar fecha o texto y publicarla como anuncio nuevo.
+  function duplicateAnuncio(a) {
+    resetAnuncioForm();
+    anFillFrom(a);
+    if (a.attachmentUrl) dupAttachment = { attachmentUrl: a.attachmentUrl, attachmentName: a.attachmentName || null, attachmentType: a.attachmentType || null, attachmentSize: a.attachmentSize || null };
+    if ($('anEventDate').value && $('anEventDate').value < anLocalDate(new Date())) { $('anEventDate').value = ''; $('anEventTime').value = ''; }
+    anForm.vence = (a.expiresIso && anExpiresIsEvent(a) && $('anEventDate').value) ? 'event' : (a.expiresIso ? '30' : '0');
+    $('anuncioFormLabel').textContent = 'Nuevo anuncio (copia)';
+    updateAnVenceUi();
+    showAnView('form');
   }
 
-  $('anuncioCancelEditBtn') && $('anuncioCancelEditBtn').addEventListener('click', resetAnuncioForm);
-
-  $('anuncioExistingAttRemoveBtn') && $('anuncioExistingAttRemoveBtn').addEventListener('click', () => {
-    removeExistingAttachment = true;
+  $('anNewBtn').addEventListener('click', () => { resetAnuncioForm(); showAnView('form'); setTimeout(() => $('anuncioTitleInput').focus(), 50); });
+  const anBackToList = () => { resetAnuncioForm(); showAnView('list'); renderAnunciosList(); };
+  $('anFormCloseBtn').addEventListener('click', anBackToList);
+  $('anFormCancelBtn').addEventListener('click', anBackToList);
+  $('anPreviewCloseBtn').addEventListener('click', () => showAnView('form'));
+  $('anBackBtn').addEventListener('click', () => showAnView('form'));
+  $('anVencePills').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-vence]');
+    if (!b || b.disabled) return;
+    anForm.vence = b.dataset.vence; anForm.venceTouched = true;
+    if (anForm.vence === 'custom' && !$('anVenceDate').value) $('anVenceDate').value = anLocalDate(new Date(Date.now() + 14 * 86400000));
+    anShowErr('');
+    updateAnVenceUi();
+  });
+  $('anVenceDate').addEventListener('change', () => { anForm.venceTouched = true; anShowErr(''); updateAnVenceUi(); });
+  $('anEventDate').addEventListener('change', () => {
+    // Anuncio nuevo con fecha de evento: por defecto se muestra hasta ese día.
+    if ($('anEventDate').value && !anForm.venceTouched && !editingAnuncioId) anForm.vence = 'event';
+    updateAnVenceUi();
+  });
+  $('anEventTime').addEventListener('change', updateAnVenceUi);
+  $('anEventClearBtn').addEventListener('click', () => { $('anEventDate').value = ''; $('anEventTime').value = ''; updateAnVenceUi(); });
+  $('anPinSwitch').addEventListener('click', () => { anForm.pin = !anForm.pin; setAnSwitch('anPinSwitch', anForm.pin); });
+  $('anNotifySwitch').addEventListener('click', () => { anForm.notify = !anForm.notify; setAnSwitch('anNotifySwitch', anForm.notify); });
+  $('anuncioExistingAttRemoveBtn').addEventListener('click', () => {
+    if (dupAttachment) dupAttachment = null; else removeExistingAttachment = true;
     $('anuncioExistingAtt').classList.add('hidden');
   });
   $('navAnunciosBtn') && $('navAnunciosBtn').addEventListener('click', abrirAvisos);
   $('navAnunciosBtnMobile') && $('navAnunciosBtnMobile').addEventListener('click', abrirAvisos);
+
+  // Hasta cuándo se muestra, según lo elegido. Devuelve { ok, iso, err }.
+  function anComputeExpires() {
+    const editAn = editingAnuncioId ? (data.anuncios || []).find(x => x.id === editingAnuncioId) : null;
+    // Editando sin tocar "Mostrar hasta" (ni la fecha del evento, si vence con el evento): queda igual.
+    if (editAn && !anForm.venceTouched && !(anForm.vence === 'event' && $('anEventDate').value !== (editAn.eventDate || ''))) return { ok: true, iso: editAn.expiresIso || null };
+    const v = anForm.vence;
+    if (v === '0') return { ok: true, iso: null };
+    if (v === '7' || v === '30') return { ok: true, iso: new Date(Date.now() + parseInt(v, 10) * 86400000).toISOString() };
+    if (v === 'event') {
+      const d = $('anEventDate').value;
+      if (!d) return { ok: false, err: 'Cargá la fecha del evento o elegí otra opción en "Mostrar hasta".' };
+      if (d < anLocalDate(new Date())) return { ok: false, err: 'La fecha del evento ya pasó: así el anuncio no se vería. Cambiá la fecha o elegí otra opción en "Mostrar hasta".' };
+      return { ok: true, iso: anEndOfDayIso(d) };
+    }
+    const d = $('anVenceDate').value;
+    if (!d) return { ok: false, err: 'Elegí hasta qué día se muestra.' };
+    if (d < anLocalDate(new Date())) return { ok: false, err: 'Esa fecha ya pasó: elegí un día de hoy en adelante.' };
+    return { ok: true, iso: anEndOfDayIso(d) };
+  }
+  function anCurrentAttachment() {
+    if (currentAnuncioFile) return { attachmentName: currentAnuncioFile.name, attachmentType: currentAnuncioFile.type.startsWith('image/') ? 'image' : 'pdf', local: true };
+    if (dupAttachment) return dupAttachment;
+    const editAn = editingAnuncioId ? (data.anuncios || []).find(x => x.id === editingAnuncioId) : null;
+    if (editAn && editAn.attachmentUrl && !removeExistingAttachment) return editAn;
+    return null;
+  }
+
+  // ---- Vista previa ----
+  function anPreviewText(text, max) {
+    const t = String(text || '').replace(/\s+/g, ' ').trim();
+    return t.length > max ? t.slice(0, max - 1).trimEnd() + '…' : t;
+  }
+  let anPreviewObjUrl = null;
+  $('anPreviewBtn').addEventListener('click', () => {
+    const title = $('anuncioTitleInput').value.trim();
+    const text = $('anuncioTextInput').value.trim();
+    const att = anCurrentAttachment();
+    if (!text && !att) { anShowErr('Escribí el anuncio o adjuntá una foto o PDF.'); return; }
+    if ($('anEventTime').value && !$('anEventDate').value) { anShowErr('Cargaste una hora de evento sin fecha: elegí el día o borrá la hora.'); return; }
+    const exp = anComputeExpires();
+    if (!exp.ok) { anShowErr(exp.err); return; }
+    anShowErr('');
+    // Notificación (igual a como la arma el servidor)
+    const showNotif = !editingAnuncioId && anForm.notify;
+    $('anPvNotifWrap').classList.toggle('hidden', !showNotif);
+    $('anPvNotifTitle').textContent = title ? '📢 ' + title : '📢 Nuevo anuncio' + (att ? ' · 📎 con archivo adjunto' : '');
+    $('anPvNotifBody').textContent = anPreviewText(text, 90) || 'Toca para ver el archivo adjunto.';
+    // Tarjeta como en la vista pública
+    const ev = { eventDate: $('anEventDate').value || null, eventTime: $('anEventTime').value || null };
+    const editAn = editingAnuncioId ? (data.anuncios || []).find(x => x.id === editingAnuncioId) : null;
+    const meta = [];
+    if (anForm.pin) meta.push('<b>📌 Fijado</b>');
+    meta.push(editAn && editAn.dateIso ? anRelDate(new Date(editAn.dateIso)) : 'Recién');
+    if (exp.iso) meta.push('se muestra hasta el ' + new Date(exp.iso).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }).replace('.', '').replace(',', ''));
+    let attHtml = '';
+    if (anPreviewObjUrl) { URL.revokeObjectURL(anPreviewObjUrl); anPreviewObjUrl = null; }
+    if (att) {
+      if (att.attachmentType === 'image') {
+        const src = att.local ? (anPreviewObjUrl = URL.createObjectURL(currentAnuncioFile)) : att.attachmentUrl;
+        attHtml = `<img src="${escapeHtml(src)}" alt="Imagen adjunta">`;
+      } else attHtml = `<div class="pc-file">📄 ${escapeHtml(att.attachmentName || 'Documento adjunto')} · PDF</div>`;
+    }
+    let evHtml = '';
+    if (ev.eventDate) {
+      const d = new Date(ev.eventDate + 'T00:00:00');
+      evHtml = `<div class="ann-event"><div class="ae-cal"><i>${d.toLocaleDateString('es-ES', { month: 'short' }).replace('.', '')}</i><b>${d.getDate()}</b></div><div class="ae-tx">${escapeHtml(anEventLabel(ev, true))}<small>${escapeHtml(title || 'Evento')}</small></div><span class="ae-gc">+ Calendar</span></div>`;
+    }
+    $('anPvCard').innerHTML = `<div class="an-pc${anForm.pin ? ' pinned' : ''}">
+      <div class="pc-meta">${meta.join(' · ')}</div>
+      ${title ? `<h4>${escapeHtml(title)}</h4>` : ''}
+      ${text ? `<p>${anLinkify(escapeHtml(text)).replace(/\n/g, '<br>')}</p>` : ''}
+      ${evHtml}${attHtml}
+      <div class="pc-foot"><span>Compartir</span></div>
+    </div>`;
+    showAnView('preview');
+  });
+
+  // ---- Menú ⋯ ----
+  function openAnMenu(id) {
+    const a = (data.anuncios || []).find(x => x.id === id);
+    if (!a) return;
+    $('anMenuTitle').textContent = a.title || anPreviewText(a.text, 40) || 'Anuncio';
+    const venc = a.expiresIso ? new Date(a.expiresIso) : null;
+    $('anMenuSub').textContent = (a.dateIso ? 'Publicado: ' + anRelDate(new Date(a.dateIso)).toLowerCase() : '') +
+      (venc ? (anIsExpired(a) ? ' · venció el ' : ' · visible hasta el ') + anShortDate(venc) : ' · sin vencimiento');
+    const item = (k, ic, label, sub, cls) => `<button type="button" class="role-menu-item${cls ? ' ' + cls : ''}" data-anm="${k}"><span class="rmi-ic">${ic}</span><span><b>${label}</b>${sub ? `<small>${sub}</small>` : ''}</span></button>`;
+    $('anMenuItems').innerHTML =
+      item('edit', '✏️', 'Editar', '') +
+      (anIsExpired(a) ? item('repub', '↻', 'Volver a publicar 30 días', 'Se vuelve a mostrar, sin notificar de nuevo') : item('pin', '📌', a.pinned ? 'Quitar de fijados' : 'Fijar arriba', '')) +
+      item('dup', '⧉', 'Duplicar', 'Se abre una copia para cambiar fecha o texto y publicarla') +
+      item('del', '🗑', 'Borrar', '', 'danger');
+    $('anMenuOverlay').dataset.id = id;
+    $('anMenuOverlay').classList.remove('hidden');
+  }
+  const closeAnMenu = () => $('anMenuOverlay').classList.add('hidden');
+  $('anMenuCloseBtn').addEventListener('click', closeAnMenu);
+  $('anMenuOverlay').addEventListener('click', (e) => { if (e.target.id === 'anMenuOverlay') closeAnMenu(); });
+  $('anMenuItems').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-anm]');
+    if (!b) return;
+    const id = $('anMenuOverlay').dataset.id;
+    const a = (data.anuncios || []).find(x => x.id === id);
+    closeAnMenu();
+    if (!a) return;
+    const k = b.dataset.anm;
+    if (k === 'edit') editAnuncio(a);
+    else if (k === 'dup') duplicateAnuncio(a);
+    else if (k === 'pin') anTogglePin(a);
+    else if (k === 'repub') anRepublish(a);
+    else if (k === 'del') anDelete(a);
+  });
+  async function anTogglePin(a) {
+    a.pinned = !a.pinned;
+    try { await saveData(); } catch (err) { console.error(err); alert('No se pudo guardar el cambio.'); }
+    renderAnunciosList();
+    showToast(a.pinned ? 'Anuncio fijado arriba' : 'Anuncio quitado de fijados');
+  }
+  async function anRepublish(a) {
+    const prev = a.expiresIso;
+    a.expiresIso = new Date(Date.now() + 30 * 86400000).toISOString();
+    try { await saveData(); } catch (err) { console.error(err); a.expiresIso = prev; alert('No se pudo guardar el cambio.'); return; }
+    renderAnunciosList();
+    showToast('Se vuelve a mostrar hasta el ' + anShortDate(new Date(a.expiresIso)));
+  }
+  // Borrar sin cartel de confirmación: aviso con "Deshacer" unos segundos.
+  async function anDelete(a) {
+    const idx = data.anuncios.findIndex(x => x.id === a.id);
+    if (idx === -1) return;
+    data.anuncios.splice(idx, 1);
+    let undone = false;
+    try { await saveData(); } catch (err) { console.error(err); data.anuncios.splice(idx, 0, a); alert('Error al borrar el anuncio.'); renderAnunciosList(); return; }
+    if (editingAnuncioId === a.id) resetAnuncioForm();
+    renderAnunciosList();
+    showToast('Anuncio borrado', async () => {
+      undone = true;
+      // Vuelve sin volver a notificar (el servidor avisa por los anuncios que "aparecen").
+      const back = Object.assign({}, a, { notify: false });
+      data.anuncios.splice(Math.min(idx, data.anuncios.length), 0, back);
+      try { await saveData(); } catch (err) { console.error(err); }
+      renderAnunciosList();
+    });
+    setTimeout(() => { if (!undone) anDeleteStorage(a.attachmentUrl, a.id); }, 7000);
+  }
+
 
   // Achica las fotos antes de subirlas (las del celular pesan varios MB): máx. 1600 px de lado, JPEG 85 %.
   // Si algo falla (formato que el navegador no decodifica, etc.) devuelve el archivo original.
@@ -5669,8 +6028,12 @@
     const editIdx = editingAnuncioId ? (data.anuncios || []).findIndex(x => x.id === editingAnuncioId) : -1;
     const editAn = editIdx > -1 ? data.anuncios[editIdx] : null;
     if (editingAnuncioId && !editAn) { alert('Este anuncio ya no existe (puede que lo hayan borrado).'); resetAnuncioForm(); renderAnunciosList(); return; }
-    const mantieneAdjunto = !!(editAn && editAn.attachmentUrl && !removeExistingAttachment && !currentAnuncioFile);
-    if (!text && !currentAnuncioFile && !mantieneAdjunto) return;
+    const mantieneAdjunto = !!(!currentAnuncioFile && (dupAttachment || (editAn && editAn.attachmentUrl && !removeExistingAttachment)));
+    if (!text && !currentAnuncioFile && !mantieneAdjunto) { showAnView('form'); anShowErr('Escribí el anuncio o adjuntá una foto o PDF.'); return; }
+    const exp = anComputeExpires();
+    if (!exp.ok) { showAnView('form'); anShowErr(exp.err); return; }
+    const eventDate = $('anEventDate').value || null;
+    const eventTime = eventDate ? ($('anEventTime').value || null) : null;
 
     $('anuncioSubmitBtn').disabled = true;
     $('anuncioSubmitBtn').textContent = editingAnuncioId ? 'Guardando...' : 'Publicando...';
@@ -5736,32 +6099,30 @@
         attachmentSize = archivo.size;
       }
 
-      const venceVal = $('anuncioVenceSel').value;
-      const diasVence = parseInt(venceVal, 10) || 0;
-      const nuevoExpiresIso = diasVence > 0 ? new Date(Date.now() + diasVence * 86400000).toISOString() : null;
       data.anuncios = data.anuncios || [];
 
       if (!editingAnuncioId) {
-        data.anuncios.push({
+        const att = currentAnuncioFile ? { attachmentUrl, attachmentName, attachmentType, attachmentSize }
+          : (dupAttachment || { attachmentUrl: null, attachmentName: null, attachmentType: null, attachmentSize: null });
+        data.anuncios.push(Object.assign({
           id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
           text: text,
           title: title || null,
           dateIso: new Date().toISOString(),
           author: currentUser ? currentUser.email : 'Admin',
-          attachmentUrl,
-          attachmentName,
-          attachmentType,
-          attachmentSize,
-          expiresIso: nuevoExpiresIso,
-          pinned: $('anuncioPinChk').checked,
-          notify: $('anuncioNotifyChk').checked
-        });
+          expiresIso: exp.iso,
+          eventDate, eventTime,
+          pinned: anForm.pin,
+          notify: anForm.notify
+        }, att));
       } else {
         const oldAttachmentUrl = editAn.attachmentUrl;
         editAn.title = title || null;
         editAn.text = text;
-        editAn.pinned = $('anuncioPinChk').checked;
-        editAn.expiresIso = venceVal === 'keep' ? editAn.expiresIso : nuevoExpiresIso;
+        editAn.pinned = anForm.pin;
+        editAn.expiresIso = exp.iso;
+        editAn.eventDate = eventDate;
+        editAn.eventTime = eventTime;
         editAn.editedIso = new Date().toISOString();
         editAn.editedBy = currentUser ? currentUser.email : 'Admin';
         if (currentAnuncioFile) {
@@ -5769,25 +6130,24 @@
           editAn.attachmentName = attachmentName;
           editAn.attachmentType = attachmentType;
           editAn.attachmentSize = attachmentSize;
-          if (oldAttachmentUrl && oldAttachmentUrl !== attachmentUrl) {
-            await firebase.storage().refFromURL(oldAttachmentUrl).delete().catch(err => console.log('Error borrando adjunto anterior:', err));
-          }
+          if (oldAttachmentUrl && oldAttachmentUrl !== attachmentUrl) await anDeleteStorage(oldAttachmentUrl, editAn.id);
         } else if (removeExistingAttachment) {
           editAn.attachmentUrl = null;
           editAn.attachmentName = null;
           editAn.attachmentType = null;
           editAn.attachmentSize = null;
-          if (oldAttachmentUrl) {
-            await firebase.storage().refFromURL(oldAttachmentUrl).delete().catch(err => console.log('Error borrando adjunto:', err));
-          }
+          if (oldAttachmentUrl) await anDeleteStorage(oldAttachmentUrl, editAn.id);
         }
         // Si no se tocó el adjunto (ni archivo nuevo ni "quitar"), se deja tal cual estaba.
       }
       await saveData();
 
+      const eraEdicion = !!editingAnuncioId;
       resetAnuncioForm();
       $('anuncioUploadProgress').classList.add('hidden');
+      showAnView('list');
       renderAnunciosList();
+      showToast(eraEdicion ? 'Cambios guardados' : 'Anuncio publicado');
     } catch (e) {
       console.error("Error publicando anuncio:", e);
       const code = e && e.code;
@@ -5802,7 +6162,7 @@
       alert(msg);
     } finally {
       $('anuncioSubmitBtn').disabled = false;
-      $('anuncioSubmitBtn').textContent = editingAnuncioId ? 'Guardar cambios' : 'Publicar Anuncio';
+      $('anuncioSubmitBtn').textContent = editingAnuncioId ? 'Guardar cambios' : 'Publicar';
       $('anuncioUploadProgress').classList.add('hidden');
     }
   });
@@ -5810,84 +6170,55 @@
   function renderAnunciosList() {
     const container = $('anunciosListContainer');
     const list = data.anuncios || [];
-    const sorted = [...list].sort((a, b) => new Date(b.dateIso) - new Date(a.dateIso));
+    const byDate = (a, b) => new Date(b.dateIso || 0) - new Date(a.dateIso || 0);
+    const vencidos = list.filter(anIsExpired).sort((a, b) => new Date(b.expiresIso) - new Date(a.expiresIso));
+    const vigentes = list.filter(a => !anIsExpired(a));
+    const fijados = vigentes.filter(a => a.pinned).sort(byDate);
+    const activos = vigentes.filter(a => !a.pinned).sort(byDate);
 
-    if (sorted.length === 0) {
-      container.innerHTML = '<p style="font-size:13px; color:var(--ink-soft);">No hay anuncios activos.</p>';
+    if (!list.length) {
+      container.innerHTML = '<p class="an-empty">Todavía no hay anuncios. Tocá "+ Nuevo anuncio" para publicar el primero.</p>';
       return;
     }
-    
-    container.innerHTML = sorted.map(a => {
-      const d = a.dateIso ? new Date(a.dateIso).toLocaleString() : 'Recién publicado';
+    const card = (a) => {
+      const old = anIsExpired(a);
       const venc = a.expiresIso ? new Date(a.expiresIso) : null;
-      const vencido = !!(venc && venc.getTime() < Date.now());
-      const vencTxt = !venc ? 'Sin vencimiento'
-        : (vencido ? 'Vencido el ' : 'Visible hasta el ') + venc.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) + (vencido ? ' · oculto al público' : '');
-      const editadoTxt = a.editedIso ? ' · editado por ' + escapeHtml((a.editedBy || '').split('@')[0] || 'alguien') : '';
-      const tituloHtml = a.title ? `<div style="font-size:14px; font-weight:700; margin-bottom:2px;">${escapeHtml(a.title)}</div>` : '';
-      let attHtml = '';
-      if (a.attachmentUrl) {
-        if (a.attachmentType === 'image') {
-          attHtml = `<a href="${a.attachmentUrl}" target="_blank"><img src="${a.attachmentUrl}" style="max-width:100%; max-height:100px; object-fit:cover; border-radius:4px; margin-top:8px; border:1px solid var(--line);"></a>`;
-        } else {
-          attHtml = `<a href="${a.attachmentUrl}" target="_blank" style="display:flex; align-items:center; gap:8px; margin-top:8px; font-size:12px; color:var(--ink); text-decoration:none; padding:8px; border:1px solid var(--line); border-radius:4px;">📎 ${escapeHtml(a.attachmentName || 'Documento')}</a>`;
-        }
-      }
-      return `
-        <div style="border-bottom: 1px solid var(--line); padding: 10px 0; display:flex; justify-content:space-between; align-items:flex-start;${vencido ? ' opacity:.65;' : ''}">
-          <div style="flex:1; padding-right:10px;">
-            <div style="font-size:11px; color:${vencido ? 'var(--danger)' : 'var(--ink-soft)'}; margin-bottom:4px;">${a.pinned ? '📌 Fijado · ' : ''}${d} · ${vencTxt}${editadoTxt}</div>
-            ${tituloHtml}
-            <div style="font-size:13px; line-height:1.4;">${escapeHtml(a.text).replace(/\n/g, '<br>')}</div>
-            ${attHtml}
-          </div>
-          <div style="display:flex; flex-direction:column; gap:6px;">
-            <button type="button" class="btn edit-anuncio-btn" data-id="${a.id}" style="color:var(--blue, #3E6B8A); background:none; border:1px solid var(--blue, #3E6B8A); padding:4px 8px; font-size:11px;">✏️ Editar</button>
-            <button type="button" class="btn pin-anuncio-btn" data-id="${a.id}" style="color:var(--ink); background:none; border:1px solid var(--line); padding:4px 8px; font-size:11px;">${a.pinned ? 'Quitar 📌' : '📌 Fijar'}</button>
-            <button type="button" class="btn delete-anuncio-btn" data-id="${a.id}" style="color:var(--danger); background:none; border:1px solid var(--danger); padding:4px 8px; font-size:11px;">✕ Borrar</button>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    container.querySelectorAll('.edit-anuncio-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const an = (data.anuncios || []).find(x => x.id === e.currentTarget.dataset.id);
-        if (an) editAnuncio(an);
-      });
-    });
-
-    container.querySelectorAll('.pin-anuncio-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        const an = (data.anuncios || []).find(x => x.id === e.currentTarget.dataset.id);
-        if (!an) return;
-        an.pinned = !an.pinned;
-        try { await saveData(); } catch (err) { console.error(err); alert('No se pudo guardar el cambio.'); }
-        renderAnunciosList();
-      });
-    });
-
-    container.querySelectorAll('.delete-anuncio-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        if (!confirm('¿Seguro que quieres borrar este anuncio?')) return;
-        const id = e.target.dataset.id;
-        const idx = data.anuncios.findIndex(x => x.id === id);
-        if (idx === -1) return;
-        const an = data.anuncios[idx];
-        try {
-          if (an && an.attachmentUrl) {
-            await firebase.storage().refFromURL(an.attachmentUrl).delete().catch(err => console.log("Error borrando archivo:", err));
-          }
-          data.anuncios.splice(idx, 1);
-          await saveData();
-          if (editingAnuncioId === id) resetAnuncioForm();
-          renderAnunciosList();
-        } catch(err) {
-          console.error(err);
-          alert('Error al borrar el anuncio.');
-        }
-      });
-    });
+      let vencTxt;
+      if (old) vencTxt = 'Venció el ' + anShortDate(venc) + ' · ya no se muestra';
+      else if (!venc) vencTxt = 'sin vencimiento';
+      else if (anExpiresIsEvent(a)) vencTxt = '<b>hasta el evento</b>';
+      else vencTxt = 'hasta el ' + anShortDate(venc);
+      const fecha = a.dateIso ? `<span title="${escapeHtml(new Date(a.dateIso).toLocaleString('es-ES'))}">${anRelDate(new Date(a.dateIso))}</span>` : 'Recién';
+      const editado = a.editedIso ? ' · editado por ' + escapeHtml((a.editedBy || '').split('@')[0] || 'alguien') : '';
+      const ev = anEventLabel(a);
+      const chips = [
+        ev ? `<span class="an-chip ev">📅 ${escapeHtml(ev)}</span>` : '',
+        a.attachmentUrl ? `<a class="an-chip" href="${escapeHtml(a.attachmentUrl)}" target="_blank" rel="noopener">${a.attachmentType === 'image' ? '🖼' : '📎'} ${escapeHtml(a.attachmentName || 'Archivo adjunto')}</a>` : ''
+      ].join('');
+      return `<div class="an-card${a.pinned && !old ? ' pinned' : ''}${old ? ' old' : ''}">
+        <div class="an-meta">${old ? '' : fecha + ' · '}${vencTxt}${editado}</div>
+        <button type="button" class="an-dots" data-an-menu="${escapeHtml(a.id)}" aria-label="Opciones del anuncio">⋯</button>
+        ${a.title ? `<div class="an-t">${escapeHtml(a.title)}</div>` : ''}
+        ${a.text ? `<div class="an-x2">${escapeHtml(a.text)}</div>` : ''}
+        ${chips ? `<div class="an-chips">${chips}</div>` : ''}
+        ${old ? `<button type="button" class="an-repub" data-an-repub="${escapeHtml(a.id)}">↻ Volver a publicar 30 días</button>` : ''}
+      </div>`;
+    };
+    let html = '';
+    if (fijados.length) html += `<div class="an-sec">📌 Fijados · ${fijados.length}</div>` + fijados.map(card).join('');
+    html += `<div class="an-sec">Activos · ${activos.length}</div>` + (activos.length ? activos.map(card).join('') : '<p class="an-empty" style="padding:6px 0;">No hay otros anuncios visibles.</p>');
+    if (vencidos.length) {
+      html += `<button type="button" class="an-fold" id="anOldToggle" aria-expanded="${anOldOpen}"><span>Vencidos · ${vencidos.length} <small>· ya no se muestran</small></span><span>${anOldOpen ? '▴' : '▾'}</span></button>`;
+      if (anOldOpen) html += vencidos.map(card).join('');
+    }
+    container.innerHTML = html;
+    container.querySelectorAll('[data-an-menu]').forEach(b => b.addEventListener('click', () => openAnMenu(b.dataset.anMenu)));
+    container.querySelectorAll('[data-an-repub]').forEach(b => b.addEventListener('click', () => {
+      const a = (data.anuncios || []).find(x => x.id === b.dataset.anRepub);
+      if (a) anRepublish(a);
+    }));
+    const t = $('anOldToggle');
+    if (t) t.addEventListener('click', () => { anOldOpen = !anOldOpen; renderAnunciosList(); });
   }
 </script>
 
