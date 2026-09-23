@@ -6,6 +6,11 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Google Calendar: se ve cuáles ya agregaste — 22 de septiembre de 2026 (caché `ver-salon-v18`)
+- En "Tus otras asignaciones", después de tocar el botón de calendario de una asignación, el ícono pasa a un ✓ verde y queda así la próxima vez que abras la app. Se puede volver a tocar para agregarla otra vez.
+- Límites: marca que se abrió Google Calendar, no que se guardó (Google no se lo avisa a la app), y queda guardado solo en ese celular. Las fechas pasadas se limpian solas.
+- Se descartó la suscripción automática al calendario: con los recordatorios nuevos quedaba casi redundante, y Google puede tardar hasta un día en reflejar cambios. El mockup queda en `Claude outputs/mockup-suscripcion-calendario.html` por si se retoma.
+
 ## Recordatorios automáticos y horario de reunión — 22 de septiembre de 2026 (cachés `asignaciones-salon-v13` y `ver-salon-v17`) — **requiere `firebase deploy --only functions`**
 - **Editor → Ajustes → Congregación:** dos campos nuevos y opcionales, "Hora — Entre semana" y "Hora — Fin de semana". Sin horario, todo sigue como antes.
 - **Vista pública → Inicio:** nueva fila "🔔 Recordatorios" debajo de tus asignaciones. "Cambiar" abre una hoja con tres opciones combinables: el día anterior (20:00), el mismo día a la mañana (8:00) y unas horas antes (1, 2 o 3 h; solo aparece si hay horario cargado). Si las notificaciones no están activadas, la fila ofrece "Activar".

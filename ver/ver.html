@@ -64,6 +64,7 @@
   .personal-summary .prow-label { flex: 1; min-width: 0; }
   .gcal-btn { border: none; background: var(--bg); color: var(--ink-soft); border-radius: 50%; width: 30px; height: 30px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
   .gcal-btn:active { background: var(--line); }
+  .gcal-btn.added { background: rgba(76, 122, 94, 0.16); color: #4C7A5E; }
   .personal-summary .pmonth-divider { font-family: 'Fraunces', serif; font-size: 11px; font-weight: 600; color: var(--accent-gold-text); text-transform: uppercase; letter-spacing: 0.04em; margin: 12px 0 4px; padding-top: 6px; border-top: 1px solid var(--line); }
   .personal-summary .ptype-label { font-size: 10px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.03em; margin: 6px 0 2px; }
   .install-card { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--accent-gold); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
@@ -632,6 +633,37 @@
     const v = type === 'finde' ? s.meetingTimeFinde : s.meetingTimeSemana;
     return /^\d{2}:\d{2}$/.test(v || '') ? v : '';
   }
+  /* ---------- Google Calendar: recordar cuáles ya se agregaron ----------
+     Google no avisa si el evento se guardó, así que se marca como "agregado"
+     al tocar el botón. Queda guardado en este celular (no se comparte entre
+     dispositivos). Se puede volver a tocar para agregarlo otra vez. */
+  const GCAL_ICON_ADD = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M12 14v4M10 16h4"/></svg>';
+  const GCAL_ICON_ADDED = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  function gcalKey(r) { return `${r.date}|${r.meetingType}|${r.label}`; }
+  function gcalBtnAttrs(added) {
+    const t = added ? 'Ya está en Google Calendar (tocá para agregarlo otra vez)' : 'Agregar a Google Calendar';
+    return `aria-label="${t}" title="${t}"`;
+  }
+  function loadGcalAdded(storeKey, todayIso) {
+    try {
+      const arr = JSON.parse(localStorage.getItem(storeKey) || '[]');
+      // Se descartan las fechas ya pasadas para que no crezca para siempre.
+      return new Set(Array.isArray(arr) ? arr.filter(k => typeof k === 'string' && k.slice(0, 10) >= todayIso) : []);
+    } catch (e) { return new Set(); }
+  }
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest && e.target.closest('.gcal-btn[data-gkey]');
+    if (!btn) return;
+    const storeKey = btn.dataset.gstore;
+    const set = loadGcalAdded(storeKey, new Date().toISOString().slice(0, 10));
+    set.add(btn.dataset.gkey);
+    try { localStorage.setItem(storeKey, JSON.stringify([...set])); } catch (err) { /* sin acceso a localStorage */ }
+    // Se actualiza el botón en el momento, sin frenar la apertura del link.
+    btn.classList.add('added');
+    btn.innerHTML = GCAL_ICON_ADDED;
+    const t = 'Ya está en Google Calendar (tocá para agregarlo otra vez)';
+    btn.setAttribute('aria-label', t); btn.setAttribute('title', t);
+  });
   function gcalUrl(title, dateStr, detailsText, timeStr) {
     const params = new URLSearchParams({ action: 'TEMPLATE', text: title, details: detailsText || '' });
     if (/^\d{2}:\d{2}$/.test(timeStr || '')) {
@@ -1532,10 +1564,14 @@
     </div>`;
     const bodyEl = $('personalSummaryBody');
     const congName = (data.settings && data.settings.congregationName) || 'Salón del Reino';
+    const gcalStore = `gcal-added-${code}-${pub.id}`;
+    const gcalAdded = loadGcalAdded(gcalStore, today);
     const flatRowHTML = (r) => {
       const meetingLabel = r.meetingType === 'finde' ? 'Fin de semana' : 'Entre semana';
       const gcalHref = gcalUrl(r.label, r.date, `${meetingLabel} — ${congName}`, meetingTimeOf(r.meetingType));
-      return `<div class="prow" data-date="${r.date}" data-meeting="${r.meetingType}"><div class="pdate">${r.dayLabel}</div><div class="prow-label">${escapeHtml(r.label)}</div><a class="gcal-btn" href="${gcalHref}" target="_blank" rel="noopener" aria-label="Agregar a Google Calendar" title="Agregar a Google Calendar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M12 14v4M10 16h4"/></svg></a></div>`;
+      const gkey = gcalKey(r);
+      const added = gcalAdded.has(gkey);
+      return `<div class="prow" data-date="${r.date}" data-meeting="${r.meetingType}"><div class="pdate">${r.dayLabel}</div><div class="prow-label">${escapeHtml(r.label)}</div><a class="gcal-btn${added ? ' added' : ''}" href="${gcalHref}" target="_blank" rel="noopener" data-gkey="${escapeHtml(gkey)}" data-gstore="${escapeHtml(gcalStore)}" ${gcalBtnAttrs(added)}>${added ? GCAL_ICON_ADDED : GCAL_ICON_ADD}</a></div>`;
     };
     function groupedHTML() {
       const monthOrder = []; const byMonth = {};
