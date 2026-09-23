@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Fin estimado de la reunión</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EDEFEF; --surface:#FFFFFF; --ink:#212C34; --ink-soft:#5C6B74; --ink-faint:#636C71;
+    --line:#DDE1E2; --accent-gold:#A9822F; --accent-gold-text:#876825; --accent-blue:#3E6B8A;
+    --ok:#4C7A5E; --ok-bg:#EEF4EF; --warn:#B7791F; --warn-bg:#FBF3E2; --bad:#B23B2E; --bad-bg:#FBE9E7;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#D9DDDE;font-family:'Public Sans',-apple-system,sans-serif;color:var(--ink);padding:24px 16px 48px}
+  h1.page{font-family:'Fraunces',serif;font-weight:500;font-size:22px;margin:0 0 4px;text-align:center}
+  p.lead{text-align:center;color:var(--ink-soft);font-size:13px;margin:0 auto 22px;max-width:680px;line-height:1.5}
+  .grid{display:flex;flex-wrap:wrap;gap:28px;justify-content:center;align-items:flex-start}
+  .col{display:flex;flex-direction:column;align-items:center;gap:10px;max-width:300px}
+  .label{font-size:13px;font-weight:700;text-align:center}
+  .label small{display:block;font-weight:600;color:var(--ink-soft);font-size:10.5px}
+  .note{font-size:12px;color:var(--ink-soft);line-height:1.5;width:100%}
+  .note b{color:var(--ink)}
+  .hl{outline:2.5px solid #E5B94E;outline-offset:2px}
+
+  .phone{width:290px;height:620px;background:var(--bg);border-radius:28px;border:8px solid #1a1f24;overflow:hidden;position:relative;box-shadow:0 10px 30px rgba(0,0,0,.18);display:flex;flex-direction:column}
+  .ehead{background:#fff;padding:10px 12px 8px;display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--line);flex:none}
+  .ehead .dot{width:7px;height:7px;border-radius:50%;background:var(--accent-gold)}
+  .ehead b{font-family:'Fraunces',serif;font-weight:500;font-size:15px}
+  .ehead .cb{font-size:9px;background:var(--bg);border-radius:9px;padding:2px 7px;color:var(--ink-soft)}
+  .top{display:flex;align-items:center;gap:6px;padding:7px 10px 0;flex:none}
+  .top .meet{flex:1;font-size:9.5px;color:var(--ink-soft)}
+  .top .fs{font-size:8.5px;font-weight:700;border:1px solid var(--line);background:#fff;border-radius:6px;padding:3px 6px;color:var(--ink-soft)}
+  .pace{margin:6px 10px 0;display:flex;align-items:center;justify-content:space-between;border-radius:9px;padding:6px 10px;font-size:10px;font-weight:700;flex:none}
+  .pace.late{background:var(--bad-bg);color:var(--bad)}
+  .pace.even{background:#fff;border:1px solid var(--line)}
+  .pace small{font-weight:600;color:var(--ink-soft)}
+  .content{padding:7px 10px;flex:1;overflow:hidden;position:relative}
+  .btabs{height:46px;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:center;font-size:8px;color:var(--ink-faint);flex:none}
+  .btabs span.on{color:var(--ink);font-weight:700}
+
+  .row{display:flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 9px;margin-bottom:4px;font-size:10px}
+  .row .c{width:16px;height:16px;border-radius:50%;background:var(--bg);font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+  .row.done{opacity:.8}
+  .row.done .c{background:var(--ok);color:#fff}
+  .row .l{flex:1;min-width:0;line-height:1.25}
+  .row .l small{display:block;color:var(--ink-soft);font-size:8.5px}
+  .row .m{font-weight:700;color:var(--ink-soft);font-size:9px;text-align:right}
+  .row .m small{display:block;font-size:8.5px}
+  .over{color:var(--bad)} .under{color:var(--ok)}
+  .row.cons{margin-left:16px;border-style:dashed;padding:4px 9px;font-size:9px}
+  .row.cons .c{width:13px;height:13px;font-size:7px}
+  .row.compact{padding:4px 9px}
+
+  .active{background:#fff;border:2px solid var(--ok);border-radius:12px;padding:8px 10px 10px;margin-bottom:4px;box-shadow:0 4px 14px rgba(76,122,94,.18)}
+  .active.warn{border-color:var(--warn);box-shadow:0 4px 14px rgba(183,121,31,.2)}
+  .active.bad{border-color:var(--bad);box-shadow:0 4px 14px rgba(178,59,46,.2)}
+  .active .ah{display:flex;align-items:center;gap:7px}
+  .active .ah .c{width:18px;height:18px;border-radius:50%;background:var(--ok);color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+  .active.warn .ah .c{background:var(--warn)} .active.bad .ah .c{background:var(--bad)}
+  .active .ah .l{flex:1;font-size:11px;font-weight:700;line-height:1.25}
+  .active .ah .l small{display:block;font-weight:500;color:var(--ink-soft);font-size:9px}
+  .active .ah .plan{font-size:9px;font-weight:700;color:var(--ink-soft)}
+  .active .t{font-family:'Fraunces',serif;font-size:52px;text-align:center;line-height:1.05;margin:4px 0 3px;font-variant-numeric:tabular-nums}
+  .active .t.ok{color:var(--ok)} .active .t.warn{color:var(--warn)} .active .t.bad{color:var(--bad)}
+  .active .bar{height:5px;border-radius:3px;background:var(--bg);overflow:hidden;margin:0 4px 8px}
+  .active .bar i{display:block;height:100%}
+  .big{width:100%;border:none;border-radius:10px;padding:10px;font-size:12px;font-weight:700;color:#fff;background:var(--ink);text-align:center}
+  .big.go{background:var(--ok)}
+  .big small{display:block;font-size:8.5px;font-weight:600;opacity:.85;margin-top:1px}
+  .smalls{display:flex;justify-content:center;gap:14px;margin-top:5px;font-size:9px;font-weight:700;color:var(--ink-soft)}
+  .fade{position:absolute;left:0;right:0;height:18px;pointer-events:none}
+  .fade.t{top:0;background:linear-gradient(var(--bg),rgba(237,239,239,0))}
+  .arrow{position:absolute;right:14px;font-size:9px;font-weight:700;color:var(--accent-blue);background:#fff;border:1px solid var(--line);border-radius:10px;padding:2px 7px}
+
+  .flow{display:flex;align-items:center;gap:6px;justify-content:center;flex-wrap:wrap;max-width:880px;margin:30px auto 0}
+  .flow .st{background:#fff;border-radius:10px;padding:8px 12px;font-size:12px;text-align:center;border:1px solid var(--line)}
+  .flow .st b{display:block;font-size:12.5px}
+  .flow .ar{color:var(--ink-faint)}
+
+  .reco{max-width:840px;margin:28px auto 0;background:#fff;border-radius:12px;padding:18px 22px;border-left:4px solid var(--accent-gold)}
+  .reco h2{font-family:'Fraunces',serif;font-weight:500;font-size:17px;margin:0 0 8px}
+  .reco p{font-size:13px;line-height:1.6;color:var(--ink-soft);margin:0 0 8px}
+  .reco p strong{color:var(--ink)}
+
+  .pin{position:absolute;top:-9px;left:-9px;width:18px;height:18px;border-radius:50%;background:#E5B94E;color:#212C34;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;z-index:3}
+  .hl{position:relative}
+  .n{display:inline-flex;width:17px;height:17px;border-radius:50%;background:#E5B94E;color:#212C34;font-size:10px;font-weight:700;align-items:center;justify-content:center;margin-right:3px}
+  .endbar{margin:6px 10px 0;border-radius:10px;padding:7px 10px;flex:none;display:flex;align-items:center;gap:8px}
+  .endbar .ico{font-size:15px}
+  .endbar .tx{flex:1;line-height:1.25}
+  .endbar .tx b{display:block;font-size:12px}
+  .endbar .tx small{display:block;font-size:8.5px;color:var(--ink-soft);font-weight:600}
+  .endbar .chev{font-size:11px;color:var(--ink-soft)}
+  .endbar.ok{background:var(--ok-bg);border:1px solid #b9d3bf}
+  .endbar.ok b{color:var(--ok)}
+  .endbar.late{background:var(--bad-bg);border:1px solid #E7C3BE}
+  .endbar.late b{color:var(--bad)}
+  .tip{margin:5px 10px 0;background:#fff;border:1px dashed #E7C3BE;border-radius:9px;padding:6px 9px;font-size:9px;line-height:1.4;color:var(--ink);flex:none}
+  .tip b{color:var(--bad)}
+  .sheet-ov{position:absolute;inset:0;background:rgba(33,44,52,.45);display:flex;align-items:flex-end;z-index:6}
+  .sheet{background:#fff;width:100%;border-radius:14px 14px 0 0;padding:9px 12px 12px;position:relative}
+  .handle{width:34px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 8px}
+  .sheet h4{font-family:'Fraunces',serif;font-weight:500;font-size:13px;margin:0 0 2px}
+  .sheet .sub{font-size:8.5px;color:var(--ink-soft);margin-bottom:8px}
+  .calc{font-size:10px;border-top:1px solid var(--line)}
+  .calc div{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line)}
+  .calc div span:last-child{font-weight:700;font-variant-numeric:tabular-nums}
+  .calc div.tot{font-size:11px;border-bottom:none}
+  .calc div.tot span:last-child{color:var(--bad)}
+  .calc small{color:var(--ink-soft)}
+  .setrow{display:flex;justify-content:space-between;align-items:center;background:var(--bg);border-radius:8px;padding:6px 8px;margin-top:6px;font-size:9.5px;font-weight:600}
+  .setrow span:last-child{border:1px solid var(--line);background:#fff;border-radius:6px;padding:2px 7px}
+  .fsbox{background:#101820;color:#fff;border-radius:12px;padding:14px 10px 12px;text-align:center;margin-bottom:8px}
+  .fsbox .fl{font-size:10px;opacity:.8}
+  .fsbox .ft{font-family:'Fraunces',serif;font-size:54px;line-height:1.05;color:#F0A38F;font-variant-numeric:tabular-nums}
+  .fsbox .fe{display:inline-block;margin-top:6px;font-size:10px;font-weight:700;background:rgba(240,163,143,.18);color:#F7C3B6;border-radius:8px;padding:3px 9px}
+</style>
+</head>
+<body>
+<h1 class="page">Cronómetro: ¿a qué hora termina la reunión?</h1>
+<p class="lead">En vez de sumar solo las partes ya tomadas, la barra de arriba calcula la hora de fin con el reloj real: incluye si se empezó tarde, la parte en curso, los cánticos, las oraciones y los cambios de parte.</p>
+
+<div class="grid">
+
+  <!-- 1. A horario -->
+  <div class="col">
+    <div class="label">1 · Va a horario<small>jueves 24, 20:05</small></div>
+    <div class="phone">
+      <div class="ehead"><span class="dot"></span><b>Asignaciones</b><span class="cb">San Agustín</span></div>
+      <div class="top"><span class="meet">Entre semana — Jueves 24 · 19:30</span><span class="fs">⛶ Pantalla completa</span></div>
+      <div class="endbar ok hl"><span class="pin">1</span><span class="ico">🕘</span><span class="tx"><b>Termina ~21:14 · a horario</b><small>Fin previsto 21:15 · empezó 19:31</small></span><span class="chev">›</span></div>
+      <div class="content">
+        <div class="row done compact"><span class="c">✓</span><span class="l">Perlas escondidas</span><span class="m">10 min<small class="under">−0:20</small></span></div>
+        <div class="row done compact"><span class="c">✓</span><span class="l">Lectura de la Biblia</span><span class="m">4 min<small class="under">−0:15</small></span></div>
+        <div class="active">
+          <div class="ah"><span class="c">4</span><span class="l">Inicie conversaciones<small>Sofía Abad / Laura Paz</small></span><span class="plan">3 min</span></div>
+          <div class="t ok">01:20</div>
+          <div class="bar"><i style="width:55%;background:var(--ok)"></i></div>
+          <div class="big">■ Terminó<small>Guarda 1:40 y sigue con: Haga revisitas</small></div>
+          <div class="smalls"><span>Pausar</span><span>Reiniciar</span></div>
+        </div>
+        <div class="row"><span class="c">5</span><span class="l">Haga revisitas<small>Ana Martínez / Laura Paz</small></span><span class="m">4 min</span></div>
+        <div class="row"><span class="c">6</span><span class="l">Necesidades locales<small>Carlos Vega</small></span><span class="m">15 min</span></div>
+        <div class="row"><span class="c">7</span><span class="l">Estudio bíblico<small>Martín Ruiz / Lucas Gómez</small></span><span class="m">30 min</span></div>
+      </div>
+      <div class="btabs"><span>Programa</span><span class="on">Cronómetro</span><span>Hermanos</span><span>Ajustes</span><span>Anuncios</span></div>
+    </div>
+    <div class="note"><span class="n">1</span><b>Hora de fin estimada</b> en lugar de "1:40 atrasada". Se calcula con la hora actual + lo que falta (partes pendientes, cánticos, oraciones y palabras de conclusión) y se compara con el fin previsto: la hora de inicio de Ajustes (19:30) + la duración de la reunión (1 h 45). Verde si termina a horario (±1 min).</div>
+  </div>
+
+  <!-- 2. Atrasada -->
+  <div class="col">
+    <div class="label">2 · Va atrasada<small>jueves 24, 20:47 — Estudio bíblico en curso</small></div>
+    <div class="phone">
+      <div class="ehead"><span class="dot"></span><b>Asignaciones</b><span class="cb">San Agustín</span></div>
+      <div class="top"><span class="meet">Entre semana — Jueves 24 · 19:30</span><span class="fs">⛶ Pantalla completa</span></div>
+      <div class="endbar late hl"><span class="pin">2</span><span class="ico">🕘</span><span class="tx"><b>Termina ~21:19 · 4 min tarde</b><small>Fin previsto 21:15 · empezó 19:33</small></span><span class="chev">›</span></div>
+      <div class="tip hl"><span class="pin">3</span>Para terminar a las 21:15, el <b>Estudio bíblico</b> debería durar <b>26 min</b> en vez de 30.</div>
+      <div class="content">
+        <div class="row done compact"><span class="c">✓</span><span class="l">Haga revisitas</span><span class="m">4 min<small class="over">+0:40</small></span></div>
+        <div class="row done compact"><span class="c">✓</span><span class="l">Necesidades locales</span><span class="m">15 min<small class="over">+1:30</small></span></div>
+        <div class="active">
+          <div class="ah"><span class="c">7</span><span class="l">Estudio bíblico<small>Martín Ruiz / Lucas Gómez</small></span><span class="plan">30 min</span></div>
+          <div class="t ok">24:10</div>
+          <div class="bar"><i style="width:19%;background:var(--ok)"></i></div>
+          <div class="big">■ Terminó<small>Guarda 5:50</small></div>
+          <div class="smalls"><span>Pausar</span><span>Reiniciar</span></div>
+        </div>
+      </div>
+      <div class="btabs"><span>Programa</span><span class="on">Cronómetro</span><span>Hermanos</span><span>Ajustes</span><span>Anuncios</span></div>
+    </div>
+    <div class="note"><span class="n">2</span><b>Incluye todo lo que hoy no cuenta</b>: empezó 3 min tarde, los cambios de parte fueron lentos y dos partes se pasaron. La parte en curso cuenta en vivo: si se pasa de tiempo, la hora de fin se corre en ese momento.<br><span class="n">3</span><b>Ayuda para recuperar</b>, pensada para el presidente o el conductor: cuánto deberían durar las partes que faltan para terminar a horario. Si faltan varias, lo reparte entre ellas ("las 3 partes que faltan: 40 s menos cada una"). Si ya no se llega, lo dice sin vueltas.</div>
+  </div>
+
+  <!-- 3. Detalle y pantalla completa -->
+  <div class="col">
+    <div class="label">3 · Al tocar la barra<small>de dónde sale la cuenta</small></div>
+    <div class="phone">
+      <div class="ehead"><span class="dot"></span><b>Asignaciones</b><span class="cb">San Agustín</span></div>
+      <div class="top"><span class="meet">Entre semana — Jueves 24 · 19:30</span><span class="fs">⛶ Pantalla completa</span></div>
+      <div class="content">
+        <div class="fsbox hl"><span class="pin">5</span><div class="fl">Estudio bíblico · Martín Ruiz</div><div class="ft">24:10</div><span class="fe">Fin ~21:19 · +4 min</span></div>
+        <div class="sheet-ov" style="top:150px">
+          <div class="sheet hl" style="outline-offset:-2px"><span class="pin" style="top:6px;left:6px">4</span>
+            <div class="handle"></div>
+            <h4>Termina ~21:19</h4>
+            <div class="sub">4 min después del fin previsto (21:15)</div>
+            <div class="calc">
+              <div><span>Ahora</span><span>20:47</span></div>
+              <div><span>Estudio bíblico <small>(le quedan)</small></span><span>24:10</span></div>
+              <div><span>Palabras de conclusión</span><span>3:00</span></div>
+              <div><span>Canción final y oración <small>(aprox.)</small></span><span>5:00</span></div>
+              <div class="tot"><span>Fin estimado</span><span>21:19</span></div>
+            </div>
+            <div class="setrow"><span>Duración de la reunión</span><span>1 h 45 min ▾</span></div>
+            <div class="setrow"><span>Cántico + oración (aprox.)</span><span>5 min ▾</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="btabs"><span>Programa</span><span class="on">Cronómetro</span><span>Hermanos</span><span>Ajustes</span><span>Anuncios</span></div>
+    </div>
+    <div class="note"><span class="n">4</span><b>Se ve de dónde sale la cuenta</b>, así nadie desconfía del número. Ahí mismo se ajusta la duración de la reunión (entre semana y fin de semana por separado) y cuánto se calcula para cada cántico con oración.<br><span class="n">5</span><b>En pantalla completa</b>, debajo del reloj grande, una línea chica con la hora de fin, así el que cronometra no necesita salir de esa vista.</div>
+  </div>
+
+</div>
+
+<div class="reco">
+  <h2>Resumen</h2>
+  <p><strong>Qué cambia:</strong> la barra de arriba pasa de "1:40 atrasada" (que solo sumaba las partes terminadas) a <strong>"Termina ~21:19 · 4 min tarde"</strong>, calculado con el reloj real (1). Así cuenta el comienzo tarde, los cambios de parte, los cánticos y las oraciones, y la parte en curso en vivo (2). Si va tarde, dice cuánto deberían durar las partes que faltan (3). Tocándola se ve la cuenta y se ajustan la duración y los cánticos (4). También aparece en pantalla completa (5).</p>
+  <p><strong>Antes de empezar la reunión</strong> la barra muestra solo "Empieza 19:30 · termina 21:15". <strong>Fin de semana:</strong> igual, con su hora (10:00) y su duración.</p>
+  <p><strong>Lo que no cambia:</strong> la lista, la tarjeta-reloj, el consejo opcional y la diferencia de cada parte (+0:40 / −0:15) siguen como están.</p>
+</div>
+</body>
+</html>
