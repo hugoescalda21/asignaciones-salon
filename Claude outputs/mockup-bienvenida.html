@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Bienvenida</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EDEFEF; --surface:#FFFFFF; --ink:#212C34; --ink-soft:#5C6B74; --ink-faint:#636C71;
+    --line:#DDE1E2; --accent-gold:#A9822F; --accent-gold-text:#876825; --accent-blue:#3E6B8A;
+    --role-mic:#B4633F; --role-plat:#4C7A5E; --role-sonido:#3E6B8A; --role-usher:#7A8C63; --role-program:#8C5A6E;
+    --sec-tesoros:#3B8178; --sec-maestros:#986F27; --sec-vida:#B85C3E;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#D9DDDE;font-family:'Public Sans',-apple-system,sans-serif;color:var(--ink);padding:24px 16px 48px}
+  h1.page{font-family:'Fraunces',serif;font-weight:500;font-size:22px;margin:0 0 4px;text-align:center}
+  p.lead{text-align:center;color:var(--ink-soft);font-size:13px;margin:0 auto 22px;max-width:660px;line-height:1.5}
+  h2.sec{font-family:'Fraunces',serif;font-weight:500;font-size:18px;text-align:center;margin:34px 0 14px}
+  .grid{display:flex;flex-wrap:wrap;gap:28px;justify-content:center;align-items:flex-start}
+  .col{display:flex;flex-direction:column;align-items:center;gap:10px;max-width:300px}
+  .label{font-size:13px;font-weight:700;text-align:center}
+  .label .tag{display:inline-block;background:var(--accent-gold);color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;margin-left:6px;vertical-align:middle}
+  .note{font-size:12px;color:var(--ink-soft);text-align:left;line-height:1.5;width:100%}
+  .note b{color:var(--ink)}
+  .note .n{display:inline-flex;width:17px;height:17px;border-radius:50%;background:#E5B94E;color:#212C34;font-size:10px;font-weight:700;align-items:center;justify-content:center;margin-right:4px}
+  .hl{outline:2.5px solid #E5B94E;outline-offset:2px;position:relative}
+  .pin{position:absolute;top:-9px;left:-9px;width:18px;height:18px;border-radius:50%;background:#E5B94E;color:#212C34;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;z-index:2}
+
+  .phone{width:290px;height:640px;background:var(--bg);border-radius:28px;border:8px solid #1a1f24;overflow:hidden;position:relative;box-shadow:0 10px 30px rgba(0,0,0,.18);display:flex;flex-direction:column}
+  .topbar{background:var(--ink);color:#fff;padding:12px 14px 9px;position:relative;flex:none}
+  .eyebrow{font-size:8.5px;letter-spacing:.05em;color:#D8BB82;font-weight:700;text-transform:uppercase;margin-bottom:3px}
+  .cong-title{font-family:'Fraunces',serif;font-weight:500;font-size:16px}
+  .help{position:absolute;top:11px;right:12px;width:24px;height:24px;border-radius:50%;border:1.5px solid rgba(255,255,255,.35);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px}
+  .gold-bar{height:3px;background:var(--accent-gold);flex:none}
+  .content{padding:10px 11px;flex:1;overflow:hidden}
+  .tabs{height:48px;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:center;font-size:9px;color:var(--ink-faint);flex:none}
+  .tabs span{position:relative}
+  .tabs span.on{color:var(--accent-gold-text);font-weight:700}
+  .badge{position:absolute;top:-10px;right:-10px;background:#C0392B;color:#fff;border-radius:8px;font-size:8px;font-weight:700;padding:1px 5px}
+  .stitle{font-family:'Fraunces',serif;font-weight:500;font-size:13px;margin:10px 2px 6px}
+
+  .hero{background:linear-gradient(135deg,#212C34,#33444F);color:#fff;border-radius:12px;padding:10px 12px;margin-bottom:8px;position:relative}
+  .hero small{font-size:8px;color:#D8BB82;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+  .hero .t{font-family:'Fraunces',serif;font-size:16px;margin-top:2px}
+  .hero .s{font-size:9.5px;opacity:.85;margin-top:1px}
+  .hero .cnt{position:absolute;top:10px;right:10px;font-size:8.5px;font-weight:700;background:rgba(255,255,255,.15);padding:2px 7px;border-radius:8px}
+  .remrow{display:flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:6px 8px;margin-bottom:8px;font-size:9.5px}
+  .remrow i{font-style:normal;width:20px;height:20px;border-radius:6px;background:var(--ink);display:flex;align-items:center;justify-content:center;font-size:10px}
+  .remrow b{display:block;font-size:10px}
+  .remrow span{color:var(--ink-soft)}
+  .remrow a{margin-left:auto;color:var(--accent-blue);font-weight:700}
+
+  /* viejo: agenda con globitos */
+  .card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:2px 10px}
+  .ag{display:flex;gap:9px;padding:8px 0;border-bottom:1px solid var(--line)}
+  .ag:last-child{border-bottom:none}
+  .ad{width:28px;text-align:center;flex:none}
+  .ad .d{font-size:7.5px;color:var(--ink-faint);font-weight:700;text-transform:uppercase}
+  .ad .n{font-family:'Fraunces',serif;font-size:16px;line-height:1.1}
+  .ab{flex:1;border-left:3px solid var(--accent-blue);padding-left:8px;min-width:0}
+  .ab.f{border-left-color:var(--accent-gold)}
+  .at{font-size:8px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px}
+  .sl{font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin:4px 0 2px}
+  .chips{display:flex;flex-wrap:wrap;gap:3px}
+  .chip{display:flex;align-items:center;gap:3px;background:var(--bg);border-radius:12px;padding:2px 6px 2px 3px;font-size:9px;font-weight:600}
+  .chip i{width:10px;height:10px;border-radius:50%;display:inline-block}
+
+  /* nuevo: filas desplegables (igual que Calendario) */
+  .cal{background:#fff;border:1px solid var(--line);border-radius:8px;padding:0 9px}
+  .cm{border-bottom:1px solid var(--line)}
+  .cm:last-child{border-bottom:none}
+  .ch{display:flex;align-items:center;gap:8px;padding:8px 0}
+  .bar{width:3px;align-self:stretch;border-radius:2px;background:var(--accent-blue);flex:none}
+  .bar.f{background:var(--accent-gold)}
+  .cs{flex:1;min-width:0}
+  .ct{font-size:8px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em}
+  .ct .nx{font-size:7px;color:#fff;background:var(--accent-blue);border-radius:5px;padding:1px 4px;margin-left:3px}
+  .csum{font-size:9.5px;margin-top:1px}
+  .cme{display:inline-block;font-size:8px;font-weight:700;color:var(--accent-gold-text);background:rgba(169,130,47,.13);border-radius:7px;padding:1px 5px;margin-top:2px}
+  .chev{color:var(--ink-faint);font-size:12px}
+  .chev.o{transform:rotate(90deg)}
+  .cb{padding:0 0 8px 11px}
+  .g{display:flex;align-items:center;gap:4px;font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin:5px 0 1px}
+  .g::after{content:'';flex:1;height:1px;background:var(--line)}
+  .two{display:grid;grid-template-columns:1fr 1fr;column-gap:8px}
+  .c2{padding:2px 0;line-height:1.2}
+  .c2 .k{display:block;font-size:7.5px;color:var(--ink-soft)}
+  .c2 .v{font-size:9px;font-weight:600}
+  .c2.mine{background:rgba(169,130,47,.13);margin:0 -3px;padding:2px 3px;border-radius:3px}
+  .c2.mine .v{color:var(--accent-gold-text)}
+  .li{display:flex;justify-content:space-between;gap:6px;font-size:9px;padding:2px 0}
+  .li span:first-child{color:var(--ink-soft)}
+  .li span:last-child{font-weight:600}
+  .more{display:block;text-align:center;font-size:9.5px;font-weight:700;color:var(--accent-gold-text);padding:7px}
+
+  /* teaser de anuncio */
+  .teaser{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--accent-gold);border-left:4px solid var(--accent-gold);border-radius:9px;padding:7px 9px;margin-bottom:8px}
+  .teaser .ic{width:22px;height:22px;border-radius:6px;background:rgba(169,130,47,.14);display:flex;align-items:center;justify-content:center;color:var(--accent-gold-text);flex:none}
+  .teaser .tx{flex:1;min-width:0;font-size:9.5px;line-height:1.3}
+  .teaser .tx small{display:block;font-size:7.5px;font-weight:700;color:var(--accent-gold-text);text-transform:uppercase;letter-spacing:.04em}
+  .teaser .tx b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .teaser a{font-size:9.5px;font-weight:700;color:var(--accent-blue)}
+
+  .unlinked{background:#fff;border:1px dashed var(--line);border-radius:9px;padding:8px 10px;margin-bottom:8px;font-size:9.5px;color:var(--ink-soft);line-height:1.4}
+  .unlinked b{color:var(--ink);display:block;font-size:10px;margin-bottom:1px}
+
+  /* Anuncios */
+  .board{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px}
+  .bh{display:flex;align-items:center;gap:6px;font-family:'Fraunces',serif;font-size:14px;margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid var(--line)}
+  .ann{border-bottom:1px solid var(--line);padding:8px 0}
+  .ann:last-child{border-bottom:none}
+  .ah{display:flex;justify-content:space-between;align-items:center;gap:6px}
+  .ad2{font-size:7.5px;font-weight:700;color:var(--ink-faint);letter-spacing:.02em}
+  .new{background:var(--accent-gold);color:#fff;border-radius:8px;padding:0 5px;font-size:7.5px;margin-left:4px}
+  .sh{border:1px solid var(--line);border-radius:10px;padding:2px 7px;font-size:8.5px;font-weight:600;color:var(--accent-blue);white-space:nowrap}
+  .atitle{font-family:Georgia,serif;font-weight:700;font-size:11.5px;margin:4px 0 2px}
+  .atext{font-size:9.5px;line-height:1.45;color:var(--ink);margin:0}
+  .img{height:70px;border-radius:6px;margin-top:6px;background:linear-gradient(135deg,#c9d6df,#8fa6b5);display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px}
+  .pdf{display:flex;gap:7px;align-items:center;border:1px solid var(--line);border-radius:7px;padding:6px 8px;margin-top:6px;font-size:9px}
+  .pdf b{display:block}
+  .pdf span{color:var(--ink-soft);font-size:8px}
+
+  /* nuevo */
+  .a2{background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 10px;margin-bottom:7px}
+  .a2.pinned{border:1.5px solid var(--accent-gold);background:linear-gradient(0deg,#fff,#fff) padding-box}
+  .a2 .meta{display:flex;align-items:center;gap:5px;font-size:8.5px;color:var(--ink-soft)}
+  .a2 .meta .pinlbl{font-weight:700;color:var(--accent-gold-text);display:flex;align-items:center;gap:2px}
+  .a2 .meta .dot{opacity:.5}
+  .a2 .meta .exp{margin-left:auto;font-size:8px;background:var(--bg);border-radius:6px;padding:1px 5px}
+  .a2 .foot{display:flex;justify-content:flex-end;margin-top:6px}
+
+  .toast{position:absolute;left:10px;right:10px;bottom:58px;background:#212C34;color:#fff;border-radius:9px;padding:8px 10px;font-size:9.5px;line-height:1.4;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+  .toast.old{background:#fff;color:#212C34;border:1px solid #ccc;font-family:monospace;font-size:8.5px}
+
+  .reco{max-width:820px;margin:34px auto 0;background:#fff;border-radius:12px;padding:18px 22px;border-left:4px solid var(--accent-gold)}
+  .reco h2{font-family:'Fraunces',serif;font-weight:500;font-size:17px;margin:0 0 8px}
+  .reco p{font-size:13px;line-height:1.6;color:var(--ink-soft);margin:0 0 8px}
+  .reco p strong{color:var(--ink)}
+
+
+  .wl{position:absolute;inset:0;background:var(--surface);display:flex;flex-direction:column;padding:26px 18px 16px;z-index:5}
+  .wl .skip{position:absolute;top:14px;right:14px;font-size:10px;font-weight:700;color:var(--ink-soft)}
+  .wl .art{height:190px;border-radius:16px;display:flex;align-items:center;justify-content:center;margin:14px 0 16px;position:relative}
+  .wl h3{font-family:'Fraunces',serif;font-weight:500;font-size:20px;margin:0 0 6px;line-height:1.2}
+  .wl p{font-size:11px;color:var(--ink-soft);line-height:1.5;margin:0}
+  .wl .dots{display:flex;gap:5px;justify-content:center;margin:auto 0 12px}
+  .wl .dots i{width:6px;height:6px;border-radius:3px;background:var(--line)}
+  .wl .dots i.on{width:18px;background:var(--ink)}
+  .wl .go{display:block;text-align:center;background:var(--ink);color:#fff;border-radius:11px;padding:11px;font-size:12px;font-weight:700}
+  .wl .go.green{background:#4C7A5E}
+  .wl .sub{display:block;text-align:center;font-size:10.5px;color:var(--ink-soft);padding:9px 0 0}
+  .mini-hero{background:linear-gradient(135deg,#212C34,#33444F);color:#fff;border-radius:12px;padding:11px 12px;width:88%}
+  .mini-hero small{font-size:7.5px;color:#D8BB82;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+  .mini-hero b{display:block;font-family:'Fraunces',serif;font-weight:500;font-size:15px;margin-top:2px}
+  .mini-hero span{font-size:8.5px;opacity:.85}
+  .mini-row{background:#fff;border:1px solid var(--line);border-radius:9px;padding:6px 8px;font-size:8.5px;display:flex;gap:6px;align-items:center;margin-top:5px;width:88%;color:var(--ink)}
+  .mini-row i{width:3px;align-self:stretch;border-radius:2px;background:var(--accent-blue);font-style:normal}
+  .mini-row i.f{background:var(--accent-gold)}
+  .notif-mock{background:#fff;border-radius:12px;padding:9px 10px;width:88%;box-shadow:0 4px 14px rgba(0,0,0,.12);display:flex;gap:8px;font-size:9px;color:var(--ink)}
+  .notif-mock .ic{width:22px;height:22px;border-radius:6px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;flex:none;font-size:11px}
+  .notif-mock b{display:block;font-size:9.5px}
+  .ehead{background:#fff;padding:10px 12px 8px;display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--line);flex:none}
+  .ehead .dot{width:7px;height:7px;border-radius:50%;background:var(--accent-gold)}
+  .ehead b{font-family:'Fraunces',serif;font-weight:500;font-size:14px}
+  .ehead .cb{font-size:8.5px;background:var(--bg);border-radius:9px;padding:2px 7px;color:var(--ink-soft)}
+  .sheet-ov{position:absolute;inset:0;background:rgba(33,44,52,.45);display:flex;align-items:flex-end;z-index:6}
+  .sheet{background:#fff;width:100%;border-radius:16px 16px 0 0;padding:10px 14px 14px;position:relative}
+  .handle{width:34px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 10px}
+  .sheet h4{font-family:'Fraunces',serif;font-weight:500;font-size:16px;margin:0 0 3px}
+  .sheet .lead2{font-size:10px;color:var(--ink-soft);margin:0 0 10px;line-height:1.45}
+  .role{display:inline-block;font-size:8.5px;font-weight:700;background:#E7EEF3;color:var(--accent-blue);border-radius:7px;padding:2px 7px;margin-bottom:8px}
+  .tip{display:flex;gap:9px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--line);font-size:10px;line-height:1.4}
+  .tip .ti{width:26px;height:26px;border-radius:8px;background:var(--bg);display:flex;align-items:center;justify-content:center;flex:none;font-size:13px}
+  .tip b{display:block;font-size:10.5px}
+  .tip span{color:var(--ink-soft)}
+  .btnk{display:block;text-align:center;background:var(--ink);color:#fff;border-radius:10px;padding:10px;font-size:11.5px;font-weight:700;margin-top:10px}
+  .chk{display:flex;gap:9px;align-items:center;padding:7px 0;border-top:1px solid var(--line);font-size:10px}
+  .chk .c{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);flex:none;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:700}
+  .chk .c.on{background:#4C7A5E;border-color:#4C7A5E}
+  .chk .t{flex:1;line-height:1.3}
+  .chk .t small{display:block;color:var(--ink-soft);font-size:8.5px}
+  .chk .go2{font-size:9px;font-weight:700;color:var(--accent-blue)}
+  .chk.done .t{color:var(--ink-soft)}
+  .prog{height:6px;border-radius:3px;background:var(--bg);overflow:hidden;margin:4px 0 8px}
+  .prog i{display:block;height:100%;background:#4C7A5E;width:60%}
+  .pl{display:flex;justify-content:space-between;font-size:9px;font-weight:700;color:var(--ink-soft)}
+  .reco{max-width:920px;margin:32px auto 0;background:#fff;border-radius:12px;padding:18px 22px;border-left:4px solid var(--accent-gold)}
+  .reco h2{font-family:'Fraunces',serif;font-weight:500;font-size:17px;margin:0 0 8px}
+  .reco p{font-size:13px;line-height:1.6;color:var(--ink-soft);margin:0 0 8px}
+  .reco p strong{color:var(--ink)}
+  h2.sec{font-family:'Fraunces',serif;font-weight:500;font-size:18px;text-align:center;margin:34px 0 14px}
+</style>
+</head>
+<body>
+<h1 class="page">Pantallas de bienvenida</h1>
+<p class="lead">Una para la vista de la congregación (todos los hermanos) y otra para la app de asignaciones, distinta según el rol. Aparecen una sola vez por celular y se pueden volver a ver desde el "?".</p>
+
+<h2 class="sec">Vista de la congregación</h2>
+<div class="grid">
+
+  <div class="col">
+    <div class="label">1 · Hola, Rebeca</div>
+    <div class="phone">
+      <div class="wl">
+        <span class="skip">Saltar</span>
+        <div class="art hl" style="background:#EEF1F2"><span class="pin">1</span>
+          <div style="width:100%;display:flex;flex-direction:column;align-items:center">
+            <div class="mini-hero"><small>Tu próxima asignación</small><b>Empiece conversaciones</b><span>Jueves 2 de octubre · 19:30</span></div>
+            <div class="mini-row"><i></i>Jue 2 · Entre semana · <b>Vos</b></div>
+          </div>
+        </div>
+        <h3>Hola, Rebeca 👋</h3>
+        <p>Acá vas a ver tus asignaciones de la congregación: qué te toca, cuándo, y con quién.</p>
+        <div class="dots"><i class="on"></i><i></i><i></i></div>
+        <span class="go">Siguiente</span>
+      </div>
+    </div>
+    <div class="note"><span class="n">1</span><b>Empieza con lo suyo:</b> su próxima asignación real, con su nombre. Así entiende para qué sirve la app desde el primer segundo. <b>Si su email todavía no está vinculado</b>, en lugar de eso dice: "Pedile al administrador que vincule tu email (rebeca@…) a tu nombre para ver tus asignaciones".</div>
+  </div>
+
+  <div class="col">
+    <div class="label">2 · Calendario y anuncios</div>
+    <div class="phone">
+      <div class="wl">
+        <span class="skip">Saltar</span>
+        <div class="art" style="background:#F6F0E1">
+          <div style="width:100%;display:flex;flex-direction:column;align-items:center">
+            <div class="mini-row"><i></i>Jue 2 · Entre semana · Presidente: Carlos V.</div>
+            <div class="mini-row"><i class="f"></i>Sáb 4 · Fin de semana · Discurso: Ramiro Q.</div>
+            <div class="mini-row" style="border-color:var(--accent-gold)">📢 <b>Limpieza del Salón</b> · grupo 3</div>
+          </div>
+        </div>
+        <h3>Toda la congregación, en un lugar</h3>
+        <p><b>Calendario:</b> todas las reuniones con cada asignación. <b>Anuncios:</b> las novedades, con fotos o PDF. Tocá cualquier asignación para agregarla a tu Google Calendar.</p>
+        <div class="dots"><i></i><i class="on"></i><i></i></div>
+        <span class="go">Siguiente</span>
+      </div>
+    </div>
+    <div class="note">Una sola pantalla para las otras dos pestañas, así la bienvenida no se hace larga.</div>
+  </div>
+
+  <div class="col">
+    <div class="label">3 · Avisos (y al final, instalar)</div>
+    <div class="phone">
+      <div class="wl">
+        <span class="skip">Saltar</span>
+        <div class="art" style="background:#E7EEF3">
+          <div class="notif-mock"><span class="ic">📢</span><div><b>Hola Rebeca, tenés una asignación</b>Empiece conversaciones · jue 2 oct</div></div>
+        </div>
+        <h3>Que no se te pase ninguna</h3>
+        <p>Te avisamos cuando te den una asignación nueva y te lo recordamos antes de la reunión.</p>
+        <div class="dots"><i></i><i></i><i class="on"></i></div>
+        <span class="go green hl" style="outline-offset:2px"><span class="pin">2</span>🔔 Activar avisos</span>
+        <span class="sub">Ahora no</span>
+      </div>
+    </div>
+    <div class="note"><span class="n">2</span><b>El paso de avisos que armamos hoy</b> queda como final: pide el permiso, manda "✓ Avisos activados" y pregunta "¿Te apareció?". Si abrió desde Chrome y no instaló la app, antes ofrece <b>"Instalar la app"</b> (en iPhone explica cómo: Compartir → Agregar a inicio), porque así los avisos funcionan mejor.</div>
+  </div>
+
+</div>
+
+<h2 class="sec">App de asignaciones (según el rol)</h2>
+<div class="grid">
+
+  <div class="col">
+    <div class="label">4 · Admin de Equipo técnico</div>
+    <div class="phone">
+      <div class="ehead"><span class="dot"></span><b>Asignaciones</b><span class="cb">San Agustín</span></div>
+      <div class="content"></div>
+      <div class="sheet-ov">
+        <div class="sheet hl" style="outline-offset:-2px"><span class="pin" style="top:6px;left:6px">3</span>
+          <div class="handle"></div>
+          <span class="role">Admin — Equipo técnico</span>
+          <h4>Hola, Martín</h4>
+          <p class="lead2">Vas a cargar quién está en audio, video, micrófonos y plataforma en cada reunión.</p>
+          <div class="tip"><span class="ti">📅</span><div><b>Elegí la reunión arriba</b><span>La tira muestra el mes: cada reunión dice si está completa o cuánto le falta.</span></div></div>
+          <div class="tip"><span class="ti">✨</span><div><b>Auto-asignar</b><span>Completa los puestos vacíos repartiendo parejo, sin repetir la semana anterior. Se puede deshacer.</span></div></div>
+          <div class="tip"><span class="ti">📤</span><div><b>Compartir</b><span>Mandá el equipo de la semana por WhatsApp o en PDF.</span></div></div>
+          <span class="btnk">Empezar</span>
+        </div>
+      </div>
+      <div class="btabs"><span class="on">Programa</span></div>
+    </div>
+    <div class="note"><span class="n">3</span><b>Una sola pantalla, según el rol</b>, con los tres consejos que más le sirven. Hay versiones para <b>Acomodadores</b>, <b>Asignaciones</b> (Programa, orador visitante, cánticos) y <b>Solo anuncios</b> (publicar, vista previa, fecha de evento).</div>
+  </div>
+
+  <div class="col">
+    <div class="label">5 · Super Admin: puesta en marcha</div>
+    <div class="phone">
+      <div class="ehead"><span class="dot"></span><b>Asignaciones</b><span class="cb">San Agustín</span></div>
+      <div class="content"></div>
+      <div class="sheet-ov">
+        <div class="sheet hl" style="outline-offset:-2px"><span class="pin" style="top:6px;left:6px">4</span>
+          <div class="handle"></div>
+          <h4>Puesta en marcha</h4>
+          <div class="pl"><span>3 de 5 listos</span><span>60%</span></div>
+          <div class="prog"><i></i></div>
+          <div class="chk done"><span class="c on">✓</span><div class="t">Nombre y horario de las reuniones<small>Jueves 19:30 · Sábado 18:00</small></div></div>
+          <div class="chk done"><span class="c on">✓</span><div class="t">Hermanos cargados<small>48 hermanos</small></div></div>
+          <div class="chk done"><span class="c on">✓</span><div class="t">Accesos dados<small>6 admins · 163 solo ver</small></div></div>
+          <div class="chk"><span class="c"></span><div class="t">Emails vinculados a hermanos<small>12 sin vincular</small></div><span class="go2">Ver ›</span></div>
+          <div class="chk"><span class="c"></span><div class="t">Avisos activados por los hermanos<small>21 de 151 con email</small></div><span class="go2">Ver ›</span></div>
+          <span class="btnk">Seguir más tarde</span>
+        </div>
+      </div>
+      <div class="btabs"><span class="on">Programa</span><span>Cronómetro</span><span>Hermanos</span><span>Ajustes</span><span>Anuncios</span></div>
+    </div>
+    <div class="note"><span class="n">4</span><b>Lista con tildes que se completan solas</b> según los datos reales. Cada punto pendiente lleva directo a donde se resuelve (Acceso → "Sin vincular", Notificaciones de los hermanos, etc.). No sirve solo el primer día: queda en Ajustes → "Puesta en marcha" para ver de un vistazo qué falta.</div>
+  </div>
+
+</div>
+
+<div class="reco">
+  <h2>Resumen</h2>
+  <p><strong>Vista de la congregación:</strong> tres pantallas que se deslizan: su próxima asignación con su nombre (1), calendario y anuncios, y el paso de avisos, con instalar la app si hace falta (2). "Saltar" siempre visible.</p>
+  <p><strong>App de asignaciones:</strong> una pantalla según el rol, con tres consejos (3). Para el Super Admin, una lista de puesta en marcha que muestra qué falta y lleva a resolverlo (4).</p>
+  <p><strong>Cuándo aparecen:</strong> una sola vez por celular. Se pueden volver a ver desde el "?". Quien ya usa la app también la ve una vez con esta actualización, pero con "Saltar" a mano.</p>
+</div>
+</body>
+</html>
