@@ -5,7 +5,9 @@
 const assert = require('assert');
 const {
   roleLabel, collectNewlyAssignedIds, avisoPreview,
-  selectNewAvisos, notificationForNewAvisos, validateReminder, reminderDocId
+  selectNewAvisos, notificationForNewAvisos, validateReminder, reminderDocId,
+  arParts, parseHHMM, meetingDateFor, assignmentsOnDate, normalizeReminderPrefs,
+  remindersDue, reminderMessage, sentReminderId
 } = require('./lib');
 
 let passed = 0;
@@ -140,6 +142,87 @@ t('reminderDocId: estable, 40 hex y distinto si cambia algo', () => {
   assert.strictEqual(a, reminderDocId(TOKEN, '2026-09-24T22:00:00.000Z', 1));
   assert.notStrictEqual(a, reminderDocId(TOKEN, '2026-09-24T22:00:00.000Z', 3));
   assert.notStrictEqual(a, reminderDocId(TOKEN + 'y', '2026-09-24T22:00:00.000Z', 1));
+});
+
+// ---- Recordatorios automáticos ----
+const CONG = {
+  settings: { weekdaySemana: 4, weekdayFinde: 0, micCount: 2, usherCount: 2, meetingTimeSemana: '19:30', meetingTimeFinde: '10:00' },
+  weeks: {
+    '2026-09-21': {
+      semana: { roles: { mic1: 'p1', sonido: 'p2' }, program: { lectura: 'p1', estudiantes: [{ tema: 'Empiece conversaciones', estudiante: 'p3', ayudante: 'p1' }] } },
+      finde: { roles: { usher1: 'p1' }, program: {} }
+    }
+  }
+};
+const at = (iso) => new Date(iso);   // las horas de abajo están en UTC (Argentina = UTC-3)
+
+t('arParts: pasa a hora argentina (cruza la medianoche)', () => {
+  assert.deepStrictEqual(arParts(at('2026-09-24T02:00:00Z')), { dateIso: '2026-09-23', minutes: 23 * 60 });
+});
+t('parseHHMM', () => {
+  assert.strictEqual(parseHHMM('19:30'), 1170);
+  assert.strictEqual(parseHHMM(''), null);
+  assert.strictEqual(parseHHMM('25:00'), null);
+  assert.strictEqual(parseHHMM(undefined), null);
+});
+t('meetingDateFor: jueves y domingo (0 = domingo, no se confunde con "sin dato")', () => {
+  assert.strictEqual(meetingDateFor('2026-09-21', 'semana', CONG.settings), '2026-09-24');
+  assert.strictEqual(meetingDateFor('2026-09-21', 'finde', CONG.settings), '2026-09-27');
+});
+t('assignmentsOnDate: junta equipo técnico y programa (incluye ayudante)', () => {
+  const r = assignmentsOnDate(CONG, 'p1', '2026-09-24');
+  assert.strictEqual(r.length, 1);
+  assert.deepStrictEqual(r[0].labels, ['Micrófono de pasillo 1', 'Lectura de la Biblia', 'Empiece conversaciones']);
+  assert.strictEqual(r[0].timeMin, 1170);
+  assert.deepStrictEqual(assignmentsOnDate(CONG, 'p1', '2026-09-25'), []);
+});
+t('normalizeReminderPrefs: por defecto solo el día anterior', () => {
+  assert.deepStrictEqual(normalizeReminderPrefs(undefined), { dayBefore: true, morning: false, hoursBefore: 0 });
+  assert.deepStrictEqual(normalizeReminderPrefs({ dayBefore: false, hoursBefore: 9 }), { dayBefore: false, morning: false, hoursBefore: 0 });
+});
+t('remindersDue: el día anterior a las 20:00, sin configurar nada', () => {
+  const due = remindersDue(CONG, { pubId: 'p1' }, at('2026-09-23T23:00:00Z'));
+  assert.strictEqual(due.length, 1);
+  assert.strictEqual(due[0].kind, 'dayBefore');
+  assert.strictEqual(due[0].dateIso, '2026-09-24');
+  const m = reminderMessage(due[0]);
+  assert.strictEqual(m.title, 'Mañana tenés 3 asignaciones');
+  assert.strictEqual(m.body, 'Micrófono de pasillo 1 · Lectura de la Biblia · Empiece conversaciones — jueves 24 a las 19:30');
+});
+t('remindersDue: fuera de la franja no avisa', () => {
+  assert.deepStrictEqual(remindersDue(CONG, { pubId: 'p1' }, at('2026-09-23T23:30:00Z')), []);
+  assert.deepStrictEqual(remindersDue(CONG, { pubId: 'p1' }, at('2026-09-23T22:30:00Z')), []);
+});
+t('remindersDue: el mismo día a la mañana', () => {
+  const due = remindersDue(CONG, { pubId: 'p2', reminderPrefs: { dayBefore: false, morning: true } }, at('2026-09-24T11:00:00Z'));
+  assert.strictEqual(due.length, 1);
+  assert.deepStrictEqual(reminderMessage(due[0]), { title: 'Hoy: Consola de audio', body: 'Reunión entre semana · jueves 24 a las 19:30' });
+});
+t('remindersDue: 2 horas antes (19:30 -> 17:30)', () => {
+  const due = remindersDue(CONG, { pubId: 'p2', reminderPrefs: { hoursBefore: 2 } }, at('2026-09-24T20:30:00Z'));
+  assert.strictEqual(due.length, 1);
+  assert.deepStrictEqual(reminderMessage(due[0]), { title: 'Hoy a las 19:30: Consola de audio', body: 'Reunión entre semana · en 2 horas' });
+});
+t('remindersDue: si "horas antes" cae a la misma hora que el de la mañana, manda uno solo', () => {
+  const due = remindersDue(CONG, { pubId: 'p1', reminderPrefs: { dayBefore: false, morning: true, hoursBefore: 2 } }, at('2026-09-27T11:00:00Z'));
+  assert.strictEqual(due.length, 1);
+  assert.strictEqual(due[0].kind, 'hours');
+  assert.strictEqual(reminderMessage(due[0]).title, 'Hoy a las 10:00: Acomodador 1');
+});
+t('remindersDue: sin horario cargado, "horas antes" no hace nada', () => {
+  const sinHora = { ...CONG, settings: { ...CONG.settings, meetingTimeSemana: '' } };
+  assert.deepStrictEqual(remindersDue(sinHora, { pubId: 'p2', reminderPrefs: { dayBefore: false, hoursBefore: 2 } }, at('2026-09-24T20:30:00Z')), []);
+  const due = remindersDue(sinHora, { pubId: 'p2' }, at('2026-09-23T23:00:00Z'));
+  assert.strictEqual(reminderMessage(due[0]).body, 'Reunión entre semana · jueves 24');
+});
+t('remindersDue: si le sacaron la asignación, no avisa', () => {
+  assert.deepStrictEqual(remindersDue(CONG, { pubId: 'p9' }, at('2026-09-23T23:00:00Z')), []);
+});
+t('sentReminderId: estable y distinto por tipo/fecha', () => {
+  const a = sentReminderId(TOKEN, 'dayBefore', '2026-09-24');
+  assert.match(a, /^[0-9a-f]{40}$/);
+  assert.strictEqual(a, sentReminderId(TOKEN, 'dayBefore', '2026-09-24'));
+  assert.notStrictEqual(a, sentReminderId(TOKEN, 'morning', '2026-09-24'));
 });
 
 console.log('\n' + passed + ' pruebas OK' + (process.exitCode ? ' — HAY FALLAS' : ''));

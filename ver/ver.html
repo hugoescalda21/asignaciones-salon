@@ -275,6 +275,27 @@
     .bt-btn.active .bt-ic { background: rgba(201,162,75,0.22); }
   }
 
+  /* ---------- Recordatorios ---------- */
+  .rem-row { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 14px; }
+  .rem-ic { width: 30px; height: 30px; border-radius: 8px; background: var(--ink); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 14px; }
+  .rem-tx { flex: 1; min-width: 0; line-height: 1.3; }
+  .rem-tx b { display: block; font-size: 13px; }
+  .rem-tx span { font-size: 11.5px; color: var(--ink-soft); }
+  .rem-link { border: none; background: none; color: var(--accent-blue); font-weight: 700; font-size: 12.5px; padding: 6px 2px; flex-shrink: 0; }
+  .rem-lead { font-size: 12px; color: var(--ink-soft); line-height: 1.5; margin: 2px 0 6px; }
+  .rem-opt { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .rem-opt:last-of-type { border-bottom: none; }
+  .rem-ot { flex: 1; font-size: 13.5px; font-weight: 600; line-height: 1.3; }
+  .rem-ot span { display: block; font-size: 11.5px; color: var(--ink-soft); font-weight: 400; }
+  .rem-ot select { margin-top: 5px; border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; font: inherit; font-size: 12px; font-weight: 600; background: var(--surface); color: var(--ink); }
+  .rem-sw { width: 44px; height: 26px; border-radius: 13px; border: none; background: #C9CFD1; position: relative; flex-shrink: 0; padding: 0; transition: background .15s; }
+  .rem-sw::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.25); transition: left .15s; }
+  .rem-sw[aria-checked="true"] { background: #4C7A5E; }
+  .rem-sw[aria-checked="true"]::after { left: 21px; }
+  .rem-sw:focus-visible { outline: 2px solid var(--accent-gold); outline-offset: 2px; }
+  .rem-foot { font-size: 11.5px; color: var(--ink-soft); background: var(--bg); border-radius: 8px; padding: 8px 10px; line-height: 1.45; margin: 12px 0 0; }
+  .rem-status { font-size: 11.5px; color: var(--ink-soft); text-align: center; min-height: 16px; margin: 8px 0 0; }
+
   /* ---------- Guía de uso (vista pública) ---------- */
   .topbar-inner { position: relative; }
   .topbar-inner .eyebrow, .topbar-inner .cong-title { padding-right: 44px; }
@@ -372,6 +393,7 @@
       <div id="nextHero" class="hidden"></div>
       <div id="personalSummary" class="hidden"></div>
       <div id="pushPrompt" class="hidden"></div>
+      <div id="reminderRow" class="hidden"></div>
       <div id="installPrompt" class="hidden"></div>
       <h2 class="sec-title">Próximas reuniones</h2>
       <div id="thisWeek"></div>
@@ -414,6 +436,22 @@
   </nav>
 </div>
 
+<div id="reminderOverlay" class="day-modal-overlay hidden" style="z-index:50;" role="dialog" aria-modal="true" aria-label="Recordatorios">
+  <div class="day-modal">
+    <div class="day-modal-handle"></div>
+    <div style="display:flex; align-items:center; justify-content:space-between;">
+      <h3 style="font-family:'Fraunces', serif; font-size:16px; margin:0;">¿Cuándo te avisamos?</h3>
+      <button type="button" id="reminderCloseBtn" aria-label="Cerrar" style="border:none; background:none; color:var(--ink-faint); font-size:18px; flex-shrink:0;">✕</button>
+    </div>
+    <p class="rem-lead">Te llega una notificación a este celular antes de cada asignación. Podés activar más de uno.</p>
+    <div class="rem-opt"><div class="rem-ot">El día anterior<span>A las 20:00</span></div><button type="button" class="rem-sw" role="switch" aria-checked="false" data-pref="dayBefore" aria-label="Avisar el día anterior"></button></div>
+    <div class="rem-opt"><div class="rem-ot">El mismo día, a la mañana<span>A las 8:00</span></div><button type="button" class="rem-sw" role="switch" aria-checked="false" data-pref="morning" aria-label="Avisar el mismo día a la mañana"></button></div>
+    <div class="rem-opt" id="remHoursOpt"><div class="rem-ot">Unas horas antes<br><select id="remHoursSel" aria-label="Cuántas horas antes"><option value="1">1 hora antes</option><option value="2" selected>2 horas antes</option><option value="3">3 horas antes</option></select></div><button type="button" class="rem-sw" role="switch" aria-checked="false" data-pref="hours" aria-label="Avisar unas horas antes"></button></div>
+    <p class="rem-foot">✓ Si te cambian o te sacan una asignación, el aviso se ajusta solo. Nunca te avisa de algo que ya no tenés.</p>
+    <p class="rem-status" id="remStatus" role="status"></p>
+  </div>
+</div>
+
 <div id="guideOverlay" class="day-modal-overlay hidden" style="z-index:50;" role="dialog" aria-modal="true" aria-label="Cómo usar esta app">
   <div class="day-modal">
     <div class="day-modal-handle"></div>
@@ -440,7 +478,7 @@
 
     <details class="guide-item">
       <summary>🔔&nbsp;&nbsp;Notificaciones<span class="gchev">›</span></summary>
-      <p>Si aceptás el cartelito que aparece, te avisa en el celular apenas te asignan algo nuevo — no hace falta abrir la app para enterarte.</p>
+      <p>Si aceptás el cartelito que aparece, te avisa en el celular apenas te asignan algo nuevo. En Inicio → "Recordatorios" elegís si además querés que te lo recuerde el día anterior, a la mañana o unas horas antes.</p>
     </details>
 
     <details class="guide-item">
@@ -588,16 +626,33 @@
     return { dayName: dayName.charAt(0).toUpperCase() + dayName.slice(1), day: d.getDate() };
   }
   function monthKey(iso) { const d = new Date(iso + 'T00:00:00'); return d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }); }
-  function gcalUrl(title, dateStr, detailsText) {
-    // Evento de todo el día: no hay un horario de reunión configurado en la
-    // app, así que evitamos poner una hora que podría estar mal.
-    const start = dateStr.replace(/-/g, '');
-    const endObj = new Date(dateStr + 'T00:00:00');
-    endObj.setDate(endObj.getDate() + 1);
-    const end = endObj.toISOString().slice(0, 10).replace(/-/g, '');
-    const params = new URLSearchParams({ action: 'TEMPLATE', text: title, dates: `${start}/${end}`, details: detailsText || '' });
+  // Horario de la reunión cargado por el editor ("HH:MM"), o '' si no hay.
+  function meetingTimeOf(type) {
+    const s = data.settings || {};
+    const v = type === 'finde' ? s.meetingTimeFinde : s.meetingTimeSemana;
+    return /^\d{2}:\d{2}$/.test(v || '') ? v : '';
+  }
+  function gcalUrl(title, dateStr, detailsText, timeStr) {
+    const params = new URLSearchParams({ action: 'TEMPLATE', text: title, details: detailsText || '' });
+    if (/^\d{2}:\d{2}$/.test(timeStr || '')) {
+      // Con horario: evento de 1 h 45 min, en hora argentina.
+      const [hh, mm] = timeStr.split(':').map(Number);
+      const startMin = hh * 60 + mm, endAbs = startMin + 105;
+      const endDay = new Date(dateStr + 'T00:00:00Z'); endDay.setUTCDate(endDay.getUTCDate() + Math.floor(endAbs / 1440));
+      const stamp = (iso, min) => iso.replace(/-/g, '') + 'T' + String(Math.floor(min / 60)).padStart(2, '0') + String(min % 60).padStart(2, '0') + '00';
+      params.set('dates', `${stamp(dateStr, startMin)}/${stamp(endDay.toISOString().slice(0, 10), endAbs % 1440)}`);
+      params.set('ctz', 'America/Argentina/Buenos_Aires');
+    } else {
+      // Sin horario cargado: evento de todo el día, para no inventar una hora.
+      const start = dateStr.replace(/-/g, '');
+      const endObj = new Date(dateStr + 'T00:00:00');
+      endObj.setDate(endObj.getDate() + 1);
+      const end = endObj.toISOString().slice(0, 10).replace(/-/g, '');
+      params.set('dates', `${start}/${end}`);
+    }
     return `https://calendar.google.com/calendar/render?${params.toString()}`;
   }
+
   function getRoles(type, micCount, usherCount) {
     const keys = ['sonido', 'video'];
     for (let i = 1; i <= (micCount || 2); i++) keys.push('mic' + i);
@@ -1262,14 +1317,115 @@
       const messaging = firebase.messaging();
       const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: registration });
       if (token) {
-        await firebase.firestore().collection('pushSubscriptions').doc(token).set({ code, pubId: pub.id, createdAt: new Date().toISOString() });
+        // merge: no pisa lo que ya había; las preferencias de recordatorio viajan con el registro del celular.
+        await firebase.firestore().collection('pushSubscriptions').doc(token).set({ code, pubId: pub.id, createdAt: new Date().toISOString(), reminderPrefs: loadReminderPrefs(code, pub.id) }, { merge: true });
         localStorage.setItem(storageKey, 'accepted');
         setupForegroundMessaging();
+        return true;
       }
     } catch (e) {
       console.error('No se pudo completar la suscripción a notificaciones', e);
     }
+    return false;
   }
+
+  /* ---------- Recordatorios (el día anterior / a la mañana / unas horas antes) ---------- */
+  // La preferencia se guarda en este celular y en su registro de notificaciones
+  // (pushSubscriptions). La función en la nube decide cada media hora a quién avisar.
+  const REMINDER_DEFAULTS = { dayBefore: true, morning: false, hoursBefore: 0 };
+  function loadReminderPrefs(code, pubId) {
+    try {
+      const v = JSON.parse(localStorage.getItem(`reminder-prefs-${code}-${pubId}`) || 'null');
+      if (v && typeof v === 'object') return { ...REMINDER_DEFAULTS, ...v };
+    } catch (e) { /* sin acceso a localStorage */ }
+    return { ...REMINDER_DEFAULTS };
+  }
+  function storeReminderPrefs(code, pubId, prefs) {
+    try { localStorage.setItem(`reminder-prefs-${code}-${pubId}`, JSON.stringify(prefs)); } catch (e) { /* no se pudo guardar */ }
+  }
+  function hasMeetingTimes() {
+    const s = data.settings || {};
+    return !!(s.meetingTimeSemana || s.meetingTimeFinde);
+  }
+  function reminderSummary(p) {
+    const parts = [];
+    if (p.dayBefore) parts.push('El día anterior');
+    if (p.morning) parts.push('A la mañana');
+    if (p.hoursBefore && hasMeetingTimes()) parts.push(p.hoursBefore + ' h antes');
+    return parts.length ? parts.join(' · ') : 'Ninguno activado';
+  }
+  let remCtx = null;
+  function renderReminderRow(pub, code) {
+    const box = $('reminderRow');
+    const hide = () => { box.classList.add('hidden'); box.innerHTML = ''; };
+    if (!pub || !('Notification' in window) || !('serviceWorker' in navigator)) return hide();
+    if (!$('pushPrompt').classList.contains('hidden')) return hide();   // el cartel de "¿te avisamos?" ya cubre esto
+    const perm = Notification.permission;
+    let sub, action = '';
+    if (perm === 'granted') {
+      sub = reminderSummary(loadReminderPrefs(code, pub.id));
+      action = '<button type="button" class="rem-link" id="reminderChangeBtn">Cambiar</button>';
+    } else if (perm === 'denied') {
+      sub = 'Las notificaciones están bloqueadas en este navegador. Activalas desde el ícono junto a la dirección.';
+    } else {
+      sub = 'Desactivados en este celular';
+      action = '<button type="button" class="rem-link" id="reminderEnableBtn">Activar</button>';
+    }
+    box.classList.remove('hidden');
+    box.innerHTML = `<div class="rem-row"><div class="rem-ic" aria-hidden="true">🔔</div><div class="rem-tx"><b>Recordatorios</b><span>${escapeHtml(sub)}</span></div>${action}</div>`;
+    if ($('reminderChangeBtn')) $('reminderChangeBtn').addEventListener('click', () => openReminderSheet(pub, code));
+    if ($('reminderEnableBtn')) $('reminderEnableBtn').addEventListener('click', async () => {
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') await completePushSubscription(pub, code, `push-decided-${code}-${pub.id}`);
+      } catch (e) { console.error('No se pudo activar las notificaciones', e); }
+      renderReminderRow(pub, code);
+    });
+  }
+  function paintReminderSheet() {
+    if (!remCtx) return;
+    const p = loadReminderPrefs(remCtx.code, remCtx.pub.id);
+    document.querySelectorAll('#reminderOverlay .rem-sw').forEach((sw) => {
+      const k = sw.dataset.pref;
+      const on = k === 'hours' ? !!p.hoursBefore : !!p[k];
+      sw.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+    if (p.hoursBefore) $('remHoursSel').value = String(p.hoursBefore);
+    $('remHoursOpt').classList.toggle('hidden', !hasMeetingTimes());
+  }
+  function openReminderSheet(pub, code) {
+    remCtx = { pub, code };
+    $('remStatus').textContent = '';
+    paintReminderSheet();
+    $('reminderOverlay').classList.remove('hidden');
+    $('reminderCloseBtn').focus();
+  }
+  function closeReminderSheet() {
+    $('reminderOverlay').classList.add('hidden');
+    if (remCtx) renderReminderRow(remCtx.pub, remCtx.code);
+  }
+  async function saveReminderPrefs(mutator) {
+    if (!remCtx) return;
+    const { pub, code } = remCtx;
+    const p = loadReminderPrefs(code, pub.id);
+    mutator(p);
+    storeReminderPrefs(code, pub.id, p);
+    paintReminderSheet();
+    $('remStatus').textContent = 'Guardando…';
+    const ok = await completePushSubscription(pub, code, `push-decided-${code}-${pub.id}`);
+    $('remStatus').textContent = ok ? 'Guardado ✓' : 'No se pudo guardar. Revisá la conexión y probá de nuevo.';
+  }
+  document.querySelectorAll('#reminderOverlay .rem-sw').forEach((sw) => {
+    sw.addEventListener('click', () => saveReminderPrefs((p) => {
+      const k = sw.dataset.pref;
+      if (k === 'hours') p.hoursBefore = p.hoursBefore ? 0 : parseInt($('remHoursSel').value, 10);
+      else p[k] = !p[k];
+    }));
+  });
+  $('remHoursSel').addEventListener('change', () => saveReminderPrefs((p) => { p.hoursBefore = parseInt($('remHoursSel').value, 10); }));
+  $('reminderCloseBtn').addEventListener('click', closeReminderSheet);
+  $('reminderOverlay').addEventListener('click', (e) => { if (e.target.id === 'reminderOverlay') closeReminderSheet(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('reminderOverlay').classList.contains('hidden')) closeReminderSheet(); });
   function setupPermissionWatcher(pub, code, storageKey) {
     if (pushWatcherSetup || !('permissions' in navigator)) return;
     pushWatcherSetup = true;
@@ -1312,6 +1468,7 @@
     $('pushNoBtn').addEventListener('click', () => {
       localStorage.setItem(storageKey, 'declined');
       box.classList.add('hidden'); box.innerHTML = '';
+      renderReminderRow(pub, code);
     });
     $('pushYesBtn').addEventListener('click', async () => {
       try {
@@ -1327,17 +1484,20 @@
         console.error('No se pudo activar las notificaciones', e);
       }
       box.classList.add('hidden'); box.innerHTML = '';
+      renderReminderRow(pub, code);
     });
   }
   function renderPersonalSummary(code) {
     const box = $('personalSummary');
     const heroBox = $('nextHero');
     if (heroBox) { heroBox.classList.add('hidden'); heroBox.innerHTML = ''; }
+    $('reminderRow').classList.add('hidden'); $('reminderRow').innerHTML = '';
     if (!currentUser || !currentUser.email) { box.classList.add('hidden'); box.innerHTML = ''; $('pushPrompt').classList.add('hidden'); $('pushPrompt').innerHTML = ''; return; }
     const pub = (data.publishers || []).find(p => p.email === currentUser.email);
     if (!pub) { box.classList.add('hidden'); box.innerHTML = ''; $('pushPrompt').classList.add('hidden'); $('pushPrompt').innerHTML = ''; return; }
     // Cartel de suscripción reactivado (ya se corrigió el gcm_sender_id para Android)
     renderPushPrompt(pub, code);
+    renderReminderRow(pub, code);
     // $('pushPrompt').classList.add('hidden'); $('pushPrompt').innerHTML = '';
     const settings = data.settings || { weekdaySemana: 4, weekdayFinde: 0, micCount: 2, usherCount: 2 };
     const today = new Date().toISOString().slice(0, 10);
@@ -1374,7 +1534,7 @@
     const congName = (data.settings && data.settings.congregationName) || 'Salón del Reino';
     const flatRowHTML = (r) => {
       const meetingLabel = r.meetingType === 'finde' ? 'Fin de semana' : 'Entre semana';
-      const gcalHref = gcalUrl(r.label, r.date, `${meetingLabel} — ${congName}`);
+      const gcalHref = gcalUrl(r.label, r.date, `${meetingLabel} — ${congName}`, meetingTimeOf(r.meetingType));
       return `<div class="prow" data-date="${r.date}" data-meeting="${r.meetingType}"><div class="pdate">${r.dayLabel}</div><div class="prow-label">${escapeHtml(r.label)}</div><a class="gcal-btn" href="${gcalHref}" target="_blank" rel="noopener" aria-label="Agregar a Google Calendar" title="Agregar a Google Calendar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M12 14v4M10 16h4"/></svg></a></div>`;
     };
     function groupedHTML() {
@@ -1429,12 +1589,13 @@
     const diff = Math.round((d - hoy) / 86400000);
     const count = diff <= 0 ? 'Hoy' : diff === 1 ? 'Mañana' : `En ${diff} días`;
     const meeting = r.meetingType === 'finde' ? 'Fin de semana' : 'Entre semana';
+    const hora = meetingTimeOf(r.meetingType);
     const first = ((pub && pub.name) || '').split(' ')[0];
     box.classList.remove('hidden');
     box.innerHTML = `<div class="next-hero" data-date="${r.date}" data-meeting="${r.meetingType}" role="button" tabindex="0" aria-label="Ver el detalle de esa reunión">
         <div class="nh-eyebrow">${first ? 'Hola, ' + escapeHtml(first) + ' · ' : ''}tu próxima asignación</div>
         <div class="nh-title">${escapeHtml(r.label)}</div>
-        <div class="nh-when">${escapeHtml(when)} · ${meeting}</div>
+        <div class="nh-when">${escapeHtml(when)}${hora ? ' · ' + hora : ''} · ${meeting}</div>
         <span class="nh-count">${count}</span>
       </div>`;
     bindAssignmentTaps(box);

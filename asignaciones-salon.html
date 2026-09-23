@@ -493,7 +493,7 @@
   .field { margin-bottom: 12px; }
   .field:last-child { margin-bottom: 0; }
   .field label { display: block; font-size: 12px; color: var(--ink-soft); font-weight: 600; margin-bottom: 5px; }
-  .field input[type="text"], .field select {
+  .field input[type="text"], .field input[type="time"], .field select {
     width: 100%; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 8px 9px;
     font-size: 13.5px; font-family: inherit; background: var(--surface); color: var(--ink);
   }
@@ -989,6 +989,11 @@
         <div class="field"><label>Día — Entre semana</label><select id="weekdaySemanaSelect"></select></div>
         <div class="field"><label>Día — Fin de semana</label><select id="weekdayFindeSelect"></select></div>
       </div>
+      <div class="two-col" style="margin-top:12px;">
+        <div class="field"><label>Hora — Entre semana</label><input type="time" id="meetingTimeSemanaInput"></div>
+        <div class="field"><label>Hora — Fin de semana</label><input type="time" id="meetingTimeFindeInput"></div>
+      </div>
+      <p class="hint" style="margin-top:6px;">Opcional. Se usa para los recordatorios "unas horas antes" y para que las asignaciones en el calendario salgan con horario. Si lo dejás vacío, todo sigue como antes.</p>
       <div class="toggle-row" style="margin-top:14px; padding-top:14px; border-top:1px solid var(--line);">
         <div>
           <p>Usar sala auxiliar</p>
@@ -3965,6 +3970,8 @@
     $('usherCountSelect').value = data.settings.usherCount || 2;
     $('weekdaySemanaSelect').value = data.settings.weekdaySemana;
     $('weekdayFindeSelect').value = data.settings.weekdayFinde;
+    $('meetingTimeSemanaInput').value = data.settings.meetingTimeSemana || '';
+    $('meetingTimeFindeInput').value = data.settings.meetingTimeFinde || '';
     $('congBadge').textContent = data.settings.congregationName;
     updateMuteBtn();
     applyTheme();
@@ -4025,6 +4032,9 @@
   });
   $('weekdaySemanaSelect').addEventListener('change', (e) => { data.settings.weekdaySemana = parseInt(e.target.value); saveData(); renderMonthTable(); renderMonthCalendar(); updatePillDates(); });
   $('weekdayFindeSelect').addEventListener('change', (e) => { data.settings.weekdayFinde = parseInt(e.target.value); saveData(); renderMonthTable(); renderMonthCalendar(); updatePillDates(); });
+  // Horario de las reuniones (opcional, formato HH:MM): recordatorios "unas horas antes" y eventos de calendario con hora.
+  $('meetingTimeSemanaInput').addEventListener('change', (e) => { data.settings.meetingTimeSemana = /^\d{2}:\d{2}$/.test(e.target.value) ? e.target.value : ''; saveData(); });
+  $('meetingTimeFindeInput').addEventListener('change', (e) => { data.settings.meetingTimeFinde = /^\d{2}:\d{2}$/.test(e.target.value) ? e.target.value : ''; saveData(); });
 
   function exportBackup() {
     hapticTap();

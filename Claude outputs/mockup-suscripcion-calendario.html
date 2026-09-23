@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Suscripción al calendario</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EDEFEF; --surface:#FFFFFF; --ink:#212C34; --ink-soft:#5C6B74; --ink-faint:#636C71;
+    --line:#DDE1E2; --accent-gold:#A9822F; --accent-gold-text:#876825; --accent-blue:#3E6B8A;
+    --ok:#4C7A5E;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#D9DDDE;font-family:'Public Sans',-apple-system,sans-serif;color:var(--ink);padding:24px 16px 48px}
+  h1.page{font-family:'Fraunces',serif;font-weight:500;font-size:22px;margin:0 0 4px;text-align:center}
+  p.lead{text-align:center;color:var(--ink-soft);font-size:13px;margin:0 auto 24px;max-width:620px;line-height:1.5}
+  .grid{display:flex;flex-wrap:wrap;gap:28px;justify-content:center}
+  .col{display:flex;flex-direction:column;align-items:center;gap:10px;max-width:290px}
+  .label{font-size:13px;font-weight:700;text-align:center}
+  .label .n{display:inline-flex;width:20px;height:20px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;align-items:center;justify-content:center;margin-right:6px}
+  .note{font-size:12px;color:var(--ink-soft);text-align:center;line-height:1.5}
+
+  .phone{width:280px;height:580px;background:var(--bg);border-radius:28px;border:8px solid #1a1f24;overflow:hidden;position:relative;box-shadow:0 10px 30px rgba(0,0,0,.18);display:flex;flex-direction:column}
+  .topbar{background:var(--ink);color:#fff;padding:14px 16px 10px;position:relative}
+  .eyebrow{font-size:9px;letter-spacing:.05em;color:#D8BB82;font-weight:700;text-transform:uppercase;margin-bottom:4px}
+  .cong-title{font-family:'Fraunces',serif;font-weight:500;font-size:17px}
+  .help{position:absolute;top:12px;right:14px;width:26px;height:26px;border-radius:50%;border:1.5px solid rgba(255,255,255,.35);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px}
+  .gold-bar{height:3px;background:var(--accent-gold)}
+  .content{padding:12px 12px;flex:1;overflow:hidden}
+  .tabs{height:50px;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:center;font-size:9px;color:var(--ink-faint);flex:none}
+  .tabs span.on{color:var(--accent-gold-text);font-weight:700}
+
+  .hero{background:linear-gradient(135deg,#212C34,#33444F);color:#fff;border-radius:12px;padding:11px 13px;margin-bottom:10px}
+  .hero small{font-size:8.5px;color:#D8BB82;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+  .hero .t{font-family:'Fraunces',serif;font-size:16px;margin-top:3px}
+  .hero .s{font-size:10px;opacity:.8;margin-top:2px}
+
+  .ps{background:var(--surface);border:2px solid var(--accent-gold);border-radius:12px;padding:10px 11px;margin-bottom:10px}
+  .ps h3{font-family:'Fraunces',serif;font-weight:500;font-size:13px;margin:0}
+  .ps .psub{font-size:9.5px;color:var(--ink-soft);margin:1px 0 4px}
+  .prow{display:flex;align-items:center;gap:7px;padding:6px 0;border-bottom:1px solid var(--line);font-size:11px}
+  .prow:last-child{border-bottom:none}
+  .pdate{font-size:9px;font-weight:700;color:var(--accent-gold-text);width:44px;flex:none}
+  .plabel{flex:1}
+  .gcal{width:24px;height:24px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--ink-soft);flex:none}
+
+  /* Tarjeta nueva */
+  .sub-card{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--accent-gold);border-radius:12px;padding:10px 11px}
+  .sub-ic{width:30px;height:30px;border-radius:8px;background:var(--ink);display:flex;align-items:center;justify-content:center;flex:none}
+  .sub-txt{flex:1;min-width:0}
+  .sub-title{font-size:11.5px;font-weight:700}
+  .sub-desc{font-size:9.5px;color:var(--ink-soft);line-height:1.35;margin-top:1px}
+  .sub-btn{background:var(--accent-gold);color:#fff;border:none;border-radius:8px;font-size:10.5px;font-weight:700;padding:7px 9px;flex:none}
+  .hl{outline:2.5px solid #E5B94E;outline-offset:3px;animation:pulse 1.8s ease-in-out infinite}
+  @keyframes pulse{0%,100%{outline-color:#E5B94E}50%{outline-color:rgba(229,185,78,.25)}}
+
+  /* Tarjeta en estado "ya suscripto" */
+  .sub-ok{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 11px;font-size:10.5px;color:var(--ink-soft)}
+  .sub-ok .chk{width:18px;height:18px;border-radius:50%;background:var(--ok);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;flex:none}
+  .sub-ok a{margin-left:auto;color:var(--accent-blue);font-weight:700;text-decoration:none;white-space:nowrap}
+
+  /* Hoja */
+  .overlay{position:absolute;inset:0;background:rgba(33,44,52,.5);display:flex;align-items:flex-end}
+  .sheet{background:var(--surface);width:100%;border-radius:16px 16px 0 0;padding:10px 16px 16px}
+  .handle{width:36px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 12px}
+  .sheet h3{font-family:'Fraunces',serif;font-weight:500;font-size:16px;margin:0 0 4px}
+  .sheet .lead2{font-size:11px;color:var(--ink-soft);line-height:1.5;margin:0 0 10px}
+  .ben{list-style:none;padding:0;margin:0 0 12px;font-size:10.5px;line-height:1.45}
+  .ben li{display:flex;gap:7px;margin-bottom:6px}
+  .ben li b{color:var(--ok)}
+  .btn-main{width:100%;background:var(--accent-gold);color:#fff;border:none;border-radius:10px;padding:10px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:7px}
+  .btn-sec{width:100%;background:none;border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:9px;font-size:11px;font-weight:600;margin-top:7px}
+  .warn{font-size:9.5px;color:var(--ink-soft);background:#FBF5E6;border-radius:8px;padding:7px 9px;line-height:1.45;margin-top:10px}
+  .tiny{font-size:9px;color:var(--ink-faint);text-align:center;margin-top:9px}
+  .tiny u{color:var(--accent-blue)}
+
+  /* Google Calendar falso */
+  .gc-top{background:#fff;padding:12px 14px 8px;border-bottom:1px solid #e3e3e3;display:flex;align-items:center;gap:8px}
+  .gc-top .m{font-size:15px;font-weight:500;color:#3c4043}
+  .gc-body{background:#fff;flex:1;padding:6px 0;overflow:hidden}
+  .gc-day{display:flex;gap:10px;padding:6px 14px}
+  .gc-d{width:34px;text-align:center;flex:none}
+  .gc-d .w{font-size:8.5px;color:#70757a;font-weight:600}
+  .gc-d .n{font-size:17px;color:#3c4043}
+  .gc-evs{flex:1;display:flex;flex-direction:column;gap:4px;padding-top:2px}
+  .ev{border-radius:5px;padding:5px 8px;font-size:10.5px;color:#fff;line-height:1.3}
+  .ev small{display:block;font-size:8.5px;opacity:.9}
+  .ev.mine{background:#A9822F}
+  .ev.other{background:#1a73e8}
+  .gc-legend{background:#fff;border-top:1px solid #e3e3e3;padding:8px 14px;font-size:9.5px;color:#3c4043;display:flex;flex-direction:column;gap:5px}
+  .gc-legend span{display:flex;align-items:center;gap:6px}
+  .gc-legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+
+  .flow{max-width:760px;margin:36px auto 0;background:var(--surface);border-radius:12px;padding:18px 20px}
+  .flow h2{font-family:'Fraunces',serif;font-weight:500;font-size:17px;margin:0 0 12px}
+  .steps{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:14px}
+  .st{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:11.5px;text-align:center;min-width:120px}
+  .st b{display:block;font-size:12px;margin-bottom:2px}
+  .arr{color:var(--ink-faint);font-size:16px}
+  .flow p{font-size:13px;line-height:1.6;color:var(--ink-soft);margin:0 0 8px}
+  .flow p strong{color:var(--ink)}
+</style>
+</head>
+<body>
+<h1 class="page">Suscripción de tus asignaciones a Google Calendar</h1>
+<p class="lead">Mockup de <code>ver.html</code>. Te suscribís una sola vez y tus asignaciones aparecen solas en tu calendario, incluidas las nuevas y los cambios. Ya no hace falta acordarse de cuáles agregaste.</p>
+
+<div class="grid">
+
+  <!-- 1. Inicio con la tarjeta nueva -->
+  <div class="col">
+    <div class="label"><span class="n">1</span>Inicio: tarjeta nueva</div>
+    <div class="phone">
+      <div class="topbar"><div class="eyebrow">Salón del Reino</div><div class="cong-title">San Agustín</div><div class="help">?</div></div>
+      <div class="gold-bar"></div>
+      <div class="content">
+        <div class="hero"><small>Tu próxima asignación</small><div class="t">Micrófonos</div><div class="s">Jueves 24 · Entre semana</div></div>
+        <div class="ps">
+          <h3>Tus otras asignaciones</h3><div class="psub">Después de la próxima</div>
+          <div class="prow"><span class="pdate">DOM 27</span><span class="plabel">Acomodador</span><span class="gcal"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span></div>
+          <div class="prow"><span class="pdate">JUE 1</span><span class="plabel">Audio</span><span class="gcal"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span></div>
+        </div>
+        <div class="sub-card hl">
+          <div class="sub-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D8BB82" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8.5 15.5l2.5 2.5 4.5-5"/></svg></div>
+          <div class="sub-txt"><div class="sub-title">Todo en tu calendario</div><div class="sub-desc">Se agregan y actualizan solas</div></div>
+          <button class="sub-btn">Activar</button>
+        </div>
+      </div>
+      <div class="tabs"><span class="on">Inicio</span><span>Calendario</span><span>Anuncios</span></div>
+    </div>
+    <div class="note">Solo la ve quien inició sesión y tiene su email vinculado a un hermano, porque el calendario es personal. Va debajo del resumen, con el mismo estilo que "Instalá esta app".</div>
+  </div>
+
+  <!-- 2. Hoja explicativa -->
+  <div class="col">
+    <div class="label"><span class="n">2</span>Al tocar "Activar"</div>
+    <div class="phone">
+      <div class="topbar"><div class="eyebrow">Salón del Reino</div><div class="cong-title">San Agustín</div><div class="help">?</div></div>
+      <div class="gold-bar"></div>
+      <div class="content">
+        <div class="hero"><small>Tu próxima asignación</small><div class="t">Micrófonos</div></div>
+      </div>
+      <div class="tabs"><span class="on">Inicio</span><span>Calendario</span><span>Anuncios</span></div>
+      <div class="overlay">
+        <div class="sheet">
+          <div class="handle"></div>
+          <h3>Tus asignaciones en tu calendario</h3>
+          <p class="lead2">Te suscribís una vez y listo, no tenés que agregar nada a mano.</p>
+          <ul class="ben">
+            <li><b>✓</b>Aparecen todas tus asignaciones, las de ahora y las que vengan.</li>
+            <li><b>✓</b>Si te cambian o te sacan una, se actualiza sola.</li>
+            <li><b>✓</b>Quedan en un calendario aparte, "Asignaciones · San Agustín", que podés ocultar o quitar cuando quieras.</li>
+          </ul>
+          <button class="btn-main hl">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            Agregar a Google Calendar
+          </button>
+          <button class="btn-sec">Copiar link (iPhone, Outlook, otros)</button>
+          <div class="warn">⏱ Google revisa los cambios cada algunas horas, así que un cambio de último momento puede tardar hasta un día en verse. <b>Lo que vale siempre es lo que dice esta app.</b></div>
+          <div class="tiny">El link es personal, no lo compartas · <u>Generar uno nuevo</u></div>
+        </div>
+      </div>
+    </div>
+    <div class="note">En el celular, "Agregar a Google Calendar" abre la web de Google una sola vez para confirmar. Después aparece solo en la app de Calendar.</div>
+  </div>
+
+  <!-- 3. Resultado en Google Calendar -->
+  <div class="col">
+    <div class="label"><span class="n">3</span>Cómo se ve en Google Calendar</div>
+    <div class="phone">
+      <div class="gc-top">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5f6368" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        <span class="m">Septiembre</span>
+      </div>
+      <div class="gc-body">
+        <div class="gc-day"><div class="gc-d"><div class="w">MIÉ</div><div class="n">23</div></div><div class="gc-evs"><div class="ev other">Dentista<small>10:00 – 11:00</small></div></div></div>
+        <div class="gc-day"><div class="gc-d"><div class="w">JUE</div><div class="n">24</div></div><div class="gc-evs"><div class="ev mine">🎤 Micrófonos<small>Todo el día · Reunión entre semana</small></div></div></div>
+        <div class="gc-day"><div class="gc-d"><div class="w">DOM</div><div class="n">27</div></div><div class="gc-evs"><div class="ev mine">🚪 Acomodador<small>Todo el día · Reunión del fin de semana</small></div></div></div>
+        <div class="gc-day"><div class="gc-d"><div class="w">JUE</div><div class="n">1</div></div><div class="gc-evs"><div class="ev mine">🎛 Audio<small>Todo el día · Reunión entre semana</small></div><div class="ev mine">📖 Lectura de la Biblia<small>Todo el día · Programa</small></div></div></div>
+        <div class="gc-day"><div class="gc-d"><div class="w">SÁB</div><div class="n">3</div></div><div class="gc-evs"><div class="ev other">Cumple de Juan<small>Todo el día</small></div></div></div>
+      </div>
+      <div class="gc-legend">
+        <span><i style="background:#1a73e8"></i>Tu calendario personal</span>
+        <span><i style="background:#A9822F"></i>Asignaciones · San Agustín <em style="color:#70757a">(suscripto)</em></span>
+      </div>
+    </div>
+    <div class="note">Tus asignaciones van en un calendario separado con su propio color y no se mezclan con tus eventos. Tanto de Equipo técnico como del Programa. Son de todo el día porque la app no tiene cargado el horario de la reunión.</div>
+  </div>
+
+  <!-- 4. Estado después -->
+  <div class="col">
+    <div class="label"><span class="n">4</span>Después de activarlo</div>
+    <div class="phone">
+      <div class="topbar"><div class="eyebrow">Salón del Reino</div><div class="cong-title">San Agustín</div><div class="help">?</div></div>
+      <div class="gold-bar"></div>
+      <div class="content">
+        <div class="hero"><small>Tu próxima asignación</small><div class="t">Micrófonos</div><div class="s">Jueves 24 · Entre semana</div></div>
+        <div class="ps">
+          <h3>Tus otras asignaciones</h3><div class="psub">Después de la próxima</div>
+          <div class="prow"><span class="pdate">DOM 27</span><span class="plabel">Acomodador</span></div>
+          <div class="prow"><span class="pdate">JUE 1</span><span class="plabel">Audio</span></div>
+        </div>
+        <div class="sub-ok hl"><span class="chk">✓</span>Sincronizado con tu calendario<a>Opciones</a></div>
+      </div>
+      <div class="tabs"><span class="on">Inicio</span><span>Calendario</span><span>Anuncios</span></div>
+    </div>
+    <div class="note">La tarjeta queda chiquita y los íconos de calendario de cada fila desaparecen porque ya no hacen falta. "Opciones" vuelve a abrir la hoja, para copiar el link o generar uno nuevo.</div>
+  </div>
+
+</div>
+
+<div class="flow">
+  <h2>Cómo funciona por dentro</h2>
+  <div class="steps">
+    <div class="st"><b>Firestore</b>SALON2026</div><span class="arr">→</span>
+    <div class="st"><b>Función nueva</b><code>calendarFeed</code><br>arma el .ics</div><span class="arr">→</span>
+    <div class="st"><b>Link privado</b>uno por hermano</div><span class="arr">→</span>
+    <div class="st"><b>Google Calendar</b>lo consulta<br>cada algunas horas</div>
+  </div>
+  <p><strong>Qué hay que hacer:</strong> una función más en la nube (<code>onRequest</code>, en la misma región que las otras) que, cuando Google pregunta, arma en el momento un archivo de calendario (.ics) solo con las asignaciones de esa persona. No guarda nada extra, siempre lee los datos actuales. Hace falta <code>firebase deploy</code> como con las otras funciones.</p>
+  <p><strong>Privacidad:</strong> el link tiene un código largo al azar, distinto para cada hermano, y solo sirve para leer sus propias asignaciones. Google no puede iniciar sesión, así que el link no pide login. Si alguien lo consigue ve las asignaciones de esa persona, nada más. Por eso está el botón "Generar uno nuevo", que anula el anterior al instante.</p>
+  <p><strong>Costo:</strong> cada suscripción genera unas pocas consultas por día. Para el tamaño de una congregación entra con holgura en el uso gratuito de Cloud Functions.</p>
+  <p><strong>Lo que no se puede cambiar:</strong> Google decide cada cuánto actualiza, normalmente entre algunas horas y un día. La app no lo puede forzar. Por eso el aviso dice que lo que vale siempre es lo que muestra la app.</p>
+</div>
+</body>
+</html>

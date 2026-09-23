@@ -6,6 +6,15 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Recordatorios automáticos y horario de reunión — 22 de septiembre de 2026 (cachés `asignaciones-salon-v13` y `ver-salon-v17`) — **requiere `firebase deploy --only functions`**
+- **Editor → Ajustes → Congregación:** dos campos nuevos y opcionales, "Hora — Entre semana" y "Hora — Fin de semana". Sin horario, todo sigue como antes.
+- **Vista pública → Inicio:** nueva fila "🔔 Recordatorios" debajo de tus asignaciones. "Cambiar" abre una hoja con tres opciones combinables: el día anterior (20:00), el mismo día a la mañana (8:00) y unas horas antes (1, 2 o 3 h; solo aparece si hay horario cargado). Si las notificaciones no están activadas, la fila ofrece "Activar".
+- **Automático para todos:** quien tiene las notificaciones activadas recibe el aviso del día anterior sin configurar nada.
+- **El aviso dice qué asignación es y a qué hora** ("Mañana: Micrófono de pasillo 1 · jueves 24 a las 19:30"). Si hay varias el mismo día, llegan juntas.
+- **Siempre con datos actuales:** nueva función `sendScheduledReminders` que corre cada media hora; si te sacaron una asignación, no te avisa. Cada aviso enviado se anota en `sentReminders` para no repetirlo (se limpia solo).
+- Con horario cargado, la tarjeta de la próxima asignación muestra la hora y el botón de Google Calendar crea el evento de 19:30 a 21:15 en vez de todo el día.
+- Se sacaron los botones "Recordar 1/3 días antes" de la notificación de asignación nueva. Los recordatorios que ya estaban pedidos con esos botones se siguen mandando hasta que se cumplan.
+
 ## Guía de uso: ícono "?" en la cabecera — 22 de septiembre de 2026 (caché `ver-salon-v16`)
 - El link "Cómo usar esta app" al pie quedaba muy escondido (había que scrollear hasta el final). Ahora es un ícono **"?"** arriba a la derecha de la cabecera, siempre visible — el mismo patrón que ya usa el editor.
 - Se sacó el link del pie (queda solo "Política de privacidad").

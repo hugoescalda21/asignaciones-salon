@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Recordatorios y horario</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EDEFEF; --surface:#FFFFFF; --ink:#212C34; --ink-soft:#5C6B74; --ink-faint:#636C71;
+    --line:#DDE1E2; --accent-gold:#A9822F; --accent-gold-text:#876825; --accent-blue:#3E6B8A; --ok:#4C7A5E;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#D9DDDE;font-family:'Public Sans',-apple-system,sans-serif;color:var(--ink);padding:24px 16px 48px}
+  h1.page{font-family:'Fraunces',serif;font-weight:500;font-size:22px;margin:0 0 4px;text-align:center}
+  p.lead{text-align:center;color:var(--ink-soft);font-size:13px;margin:0 auto 24px;max-width:640px;line-height:1.5}
+  .grid{display:flex;flex-wrap:wrap;gap:28px;justify-content:center}
+  .col{display:flex;flex-direction:column;align-items:center;gap:10px;max-width:290px}
+  .label{font-size:13px;font-weight:700;text-align:center}
+  .label .n{display:inline-flex;width:20px;height:20px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;align-items:center;justify-content:center;margin-right:6px}
+  .label .who{display:block;font-size:10.5px;font-weight:600;color:var(--ink-soft);margin-top:2px}
+  .note{font-size:12px;color:var(--ink-soft);text-align:center;line-height:1.5}
+  .hl{outline:2.5px solid #E5B94E;outline-offset:3px;animation:pulse 1.8s ease-in-out infinite}
+  @keyframes pulse{0%,100%{outline-color:#E5B94E}50%{outline-color:rgba(229,185,78,.25)}}
+
+  .phone{width:280px;height:580px;background:var(--bg);border-radius:28px;border:8px solid #1a1f24;overflow:hidden;position:relative;box-shadow:0 10px 30px rgba(0,0,0,.18);display:flex;flex-direction:column}
+  .topbar{background:var(--ink);color:#fff;padding:14px 16px 10px;position:relative}
+  .eyebrow{font-size:9px;letter-spacing:.05em;color:#D8BB82;font-weight:700;text-transform:uppercase;margin-bottom:4px}
+  .cong-title{font-family:'Fraunces',serif;font-weight:500;font-size:17px}
+  .help{position:absolute;top:12px;right:14px;width:26px;height:26px;border-radius:50%;border:1.5px solid rgba(255,255,255,.35);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px}
+  .gold-bar{height:3px;background:var(--accent-gold)}
+  .content{padding:12px;flex:1;overflow:hidden}
+  .tabs{height:50px;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:center;font-size:9px;color:var(--ink-faint);flex:none}
+  .tabs span.on{color:var(--accent-gold-text);font-weight:700}
+
+  /* Editor */
+  .ed-top{background:var(--ink);color:#fff;padding:12px 14px 0}
+  .ed-top .h{font-family:'Fraunces',serif;font-size:16px;display:flex;align-items:center;gap:8px}
+  .ed-top .badge{font-family:'Public Sans';font-size:8.5px;background:rgba(255,255,255,.14);padding:2px 7px;border-radius:9px}
+  .ed-tabs{display:flex;gap:12px;font-size:9.5px;margin-top:10px;color:rgba(255,255,255,.65)}
+  .ed-tabs span{padding-bottom:7px}
+  .ed-tabs span.on{color:#fff;border-bottom:2px solid var(--accent-gold);font-weight:700}
+  .scard{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 13px}
+  .scard h3{font-family:'Fraunces',serif;font-weight:500;font-size:13.5px;margin:0 0 3px;display:flex;justify-content:space-between}
+  .scard h3 span{color:var(--ink-faint);transform:rotate(90deg)}
+  .hint{font-size:9.5px;color:var(--ink-soft);line-height:1.4;margin:0 0 9px}
+  .two{display:flex;gap:8px;margin-bottom:9px}
+  .fld{flex:1}
+  .fld label{display:block;font-size:9px;color:var(--ink-soft);font-weight:600;margin-bottom:3px}
+  .inp{border:1px solid var(--line);border-radius:4px;padding:6px 7px;font-size:10.5px;background:#fff;display:flex;justify-content:space-between}
+  .inp.new{border-color:var(--accent-gold);background:#FFFBF0}
+  .newblock{border-radius:6px;padding:2px}
+  .newtag{display:inline-block;font-size:8px;font-weight:700;background:var(--accent-gold);color:#fff;border-radius:6px;padding:1px 5px;margin-left:4px;vertical-align:1px}
+
+  /* Inicio */
+  .hero{background:linear-gradient(135deg,#212C34,#33444F);color:#fff;border-radius:12px;padding:11px 13px;margin-bottom:10px}
+  .hero small{font-size:8.5px;color:#D8BB82;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+  .hero .t{font-family:'Fraunces',serif;font-size:16px;margin-top:3px}
+  .hero .s{font-size:10px;opacity:.85;margin-top:2px}
+  .ps{background:var(--surface);border:2px solid var(--accent-gold);border-radius:12px;padding:10px 11px;margin-bottom:10px}
+  .ps h3{font-family:'Fraunces',serif;font-weight:500;font-size:13px;margin:0}
+  .ps .psub{font-size:9.5px;color:var(--ink-soft);margin:1px 0 4px}
+  .prow{display:flex;gap:7px;padding:6px 0;border-bottom:1px solid var(--line);font-size:11px}
+  .prow:last-child{border-bottom:none}
+  .pdate{font-size:9px;font-weight:700;color:var(--accent-gold-text);width:44px;flex:none}
+  .row{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:10.5px;margin-bottom:7px}
+  .row .ic{width:24px;height:24px;border-radius:7px;background:var(--ink);display:flex;align-items:center;justify-content:center;flex:none;font-size:12px}
+  .row .tx{flex:1;min-width:0;line-height:1.3}
+  .row .tx b{display:block;font-size:10.5px}
+  .row .tx span{color:var(--ink-soft);font-size:9.5px}
+  .row a{color:var(--accent-blue);font-weight:700;font-size:10px;white-space:nowrap}
+  .row.gold{border-color:var(--accent-gold)}
+  .row .go{background:var(--accent-gold);color:#fff;border-radius:7px;font-size:9.5px;font-weight:700;padding:5px 8px}
+
+  /* Hoja */
+  .overlay{position:absolute;inset:0;background:rgba(33,44,52,.5);display:flex;align-items:flex-end}
+  .sheet{background:var(--surface);width:100%;border-radius:16px 16px 0 0;padding:10px 16px 16px}
+  .handle{width:36px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 12px}
+  .sheet h3{font-family:'Fraunces',serif;font-weight:500;font-size:16px;margin:0 0 3px}
+  .sheet .lead2{font-size:10.5px;color:var(--ink-soft);line-height:1.45;margin:0 0 8px}
+  .opt{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .opt:last-of-type{border-bottom:none}
+  .opt .ot{flex:1;font-size:11.5px;font-weight:600;line-height:1.3}
+  .opt .ot span{display:block;font-size:9.5px;color:var(--ink-soft);font-weight:400}
+  .sw{width:34px;height:20px;border-radius:10px;background:#C9CFD1;position:relative;flex:none}
+  .sw::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+  .sw.on{background:var(--ok)}
+  .sw.on::after{left:16px}
+  .sel{display:inline-flex;align-items:center;gap:3px;border:1px solid var(--line);border-radius:6px;padding:2px 6px;font-size:10px;font-weight:700;color:var(--ink);margin-top:3px}
+  .foot{font-size:9.5px;color:var(--ink-soft);background:#EEF4F0;border-radius:8px;padding:7px 9px;line-height:1.45;margin-top:10px}
+  .btn-main{width:100%;background:var(--accent-gold);color:#fff;border:none;border-radius:10px;padding:9px;font-size:11.5px;font-weight:700;margin-top:10px}
+
+  /* Pantalla de bloqueo */
+  .lock{flex:1;background:linear-gradient(160deg,#3a4b57,#1b242b);color:#fff;padding:26px 12px;display:flex;flex-direction:column}
+  .clock{text-align:center;font-size:44px;font-weight:300;letter-spacing:-1px}
+  .date{text-align:center;font-size:11px;opacity:.8;margin-bottom:18px}
+  .notif{background:rgba(255,255,255,.92);color:#1b242b;border-radius:14px;padding:9px 11px;margin-bottom:8px}
+  .notif .app{display:flex;align-items:center;gap:6px;font-size:9px;color:#5c6b74;margin-bottom:3px}
+  .notif .app i{width:14px;height:14px;border-radius:4px;background:var(--accent-gold);display:inline-block}
+  .notif .app em{margin-left:auto;font-style:normal}
+  .notif b{font-size:11.5px;display:block}
+  .notif p{font-size:10.5px;margin:1px 0 0;line-height:1.35}
+  .lock .when{font-size:9px;opacity:.7;margin:10px 4px 4px;text-transform:uppercase;letter-spacing:.05em}
+
+  /* Google Calendar */
+  .gc-top{background:#fff;padding:12px 14px 8px;border-bottom:1px solid #e3e3e3;font-size:15px;color:#3c4043}
+  .gc-body{background:#fff;flex:1;padding:6px 0}
+  .gc-day{display:flex;gap:10px;padding:6px 14px}
+  .gc-d{width:34px;text-align:center;flex:none}
+  .gc-d .w{font-size:8.5px;color:#70757a;font-weight:600}
+  .gc-d .n{font-size:17px;color:#3c4043}
+  .gc-evs{flex:1;display:flex;flex-direction:column;gap:4px;padding-top:2px}
+  .ev{border-radius:5px;padding:5px 8px;font-size:10.5px;color:#fff;line-height:1.3}
+  .ev small{display:block;font-size:8.5px;opacity:.9}
+  .ev.mine{background:#A9822F}
+  .ev.other{background:#1a73e8}
+
+  .flow{max-width:780px;margin:36px auto 0;background:var(--surface);border-radius:12px;padding:18px 22px}
+  .flow h2{font-family:'Fraunces',serif;font-weight:500;font-size:17px;margin:0 0 10px}
+  .flow p{font-size:13px;line-height:1.6;color:var(--ink-soft);margin:0 0 9px}
+  .flow p strong{color:var(--ink)}
+  .cmp{width:100%;border-collapse:collapse;font-size:12.5px;margin:6px 0 14px}
+  .cmp th,.cmp td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  .cmp th{font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em}
+  .cmp td:first-child{font-weight:600;color:var(--ink)}
+</style>
+</head>
+<body>
+<h1 class="page">Recordatorios mejorados + horario de reunión</h1>
+<p class="lead">Mockup de las dos apps. El editor carga una sola vez el horario de cada reunión. Cada hermano elige en la vista pública cuándo quiere que le avisen, y el aviso dice qué asignación tiene.</p>
+
+<div class="grid">
+
+  <!-- 1. Editor: horario -->
+  <div class="col">
+    <div class="label"><span class="n">1</span>Horario de las reuniones<span class="who">Editor · Ajustes → Congregación</span></div>
+    <div class="phone">
+      <div class="ed-top">
+        <div class="h">Asignaciones <span class="badge">San Agustín</span></div>
+        <div class="ed-tabs"><span>Programa</span><span>Cronómetro</span><span>Hermanos</span><span class="on">Ajustes</span></div>
+      </div>
+      <div class="content">
+        <div class="scard">
+          <h3>Congregación <span>›</span></h3>
+          <p class="hint">Se usa en el encabezado, la impresión y los mensajes de WhatsApp.</p>
+          <div class="fld" style="margin-bottom:9px"><label>Nombre de la congregación</label><div class="inp">San Agustín</div></div>
+          <div class="two">
+            <div class="fld"><label>Día — Entre semana</label><div class="inp">Jueves <span>▾</span></div></div>
+            <div class="fld"><label>Día — Fin de semana</label><div class="inp">Domingo <span>▾</span></div></div>
+          </div>
+          <div class="newblock hl">
+            <div class="two" style="margin-bottom:5px">
+              <div class="fld"><label>Hora — Entre semana<span class="newtag">NUEVO</span></label><div class="inp new">19:30 <span>🕒</span></div></div>
+              <div class="fld"><label>Hora — Fin de semana<span class="newtag">NUEVO</span></label><div class="inp new">10:00 <span>🕒</span></div></div>
+            </div>
+            <p class="hint" style="margin:0 2px 2px">Se usa para los avisos "unas horas antes" y para que los eventos del calendario salgan con horario (duración 1 h 45 min). Si lo dejás vacío, todo sigue como hoy.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="note">Va al lado de los días que ya existen. Es opcional: sin horario, los avisos "unas horas antes" no se ofrecen y los eventos quedan de todo el día.</div>
+  </div>
+
+  <!-- 2. Inicio -->
+  <div class="col">
+    <div class="label"><span class="n">2</span>Inicio<span class="who">Vista pública</span></div>
+    <div class="phone">
+      <div class="topbar"><div class="eyebrow">Salón del Reino</div><div class="cong-title">San Agustín</div><div class="help">?</div></div>
+      <div class="gold-bar"></div>
+      <div class="content">
+        <div class="hero"><small>Tu próxima asignación</small><div class="t">Micrófonos</div><div class="s">Jueves 24 · 19:30 · Entre semana</div></div>
+        <div class="ps">
+          <h3>Tus otras asignaciones</h3><div class="psub">Después de la próxima</div>
+          <div class="prow"><span class="pdate">DOM 27</span>Acomodador</div>
+          <div class="prow"><span class="pdate">JUE 1</span>Audio</div>
+        </div>
+        <div class="row hl"><div class="ic">🔔</div><div class="tx"><b>Recordatorios</b><span>El día anterior · 2 h antes</span></div><a>Cambiar</a></div>
+        <div class="row gold"><div class="ic">📅</div><div class="tx"><b>Todo en tu calendario</b><span>Se agregan y actualizan solas</span></div><span class="go">Activar</span></div>
+      </div>
+      <div class="tabs"><span class="on">Inicio</span><span>Calendario</span><span>Anuncios</span></div>
+    </div>
+    <div class="note">Una línea chica bajo tus asignaciones muestra qué avisos tenés y deja cambiarlos. La hora de la reunión aparece también en la tarjeta de la próxima asignación.</div>
+  </div>
+
+  <!-- 3. Hoja de recordatorios -->
+  <div class="col">
+    <div class="label"><span class="n">3</span>Al tocar "Cambiar"<span class="who">Vista pública</span></div>
+    <div class="phone">
+      <div class="topbar"><div class="eyebrow">Salón del Reino</div><div class="cong-title">San Agustín</div><div class="help">?</div></div>
+      <div class="gold-bar"></div>
+      <div class="content"><div class="hero"><small>Tu próxima asignación</small><div class="t">Micrófonos</div></div></div>
+      <div class="tabs"><span class="on">Inicio</span><span>Calendario</span><span>Anuncios</span></div>
+      <div class="overlay">
+        <div class="sheet">
+          <div class="handle"></div>
+          <h3>¿Cuándo te avisamos?</h3>
+          <p class="lead2">Te llega una notificación a este celular antes de cada asignación. Podés activar más de uno.</p>
+          <div class="opt"><div class="ot">El día anterior<span>A las 20:00</span></div><div class="sw on"></div></div>
+          <div class="opt"><div class="ot">El mismo día, a la mañana<span>A las 8:00</span></div><div class="sw"></div></div>
+          <div class="opt hl"><div class="ot">Unas horas antes<span class="sel">2 horas antes ▾</span></div><div class="sw on"></div></div>
+          <div class="foot">✓ Si te cambian o te sacan una asignación, el aviso se ajusta solo. Nunca te avisa de algo que ya no tenés.</div>
+        </div>
+      </div>
+    </div>
+    <div class="note">"Unas horas antes" ofrece 1, 2 o 3 horas, y solo aparece si el editor cargó el horario. Si alguien todavía no activó las notificaciones, en lugar de los interruptores ve el botón para activarlas.</div>
+  </div>
+
+  <!-- 4. Notificaciones -->
+  <div class="col">
+    <div class="label"><span class="n">4</span>Cómo llegan los avisos<span class="who">Pantalla del celular</span></div>
+    <div class="phone">
+      <div class="lock">
+        <div class="clock">17:30</div>
+        <div class="date">Jueves 24 de septiembre</div>
+        <div class="when">Miércoles 23 · 20:00</div>
+        <div class="notif"><div class="app"><i></i>Asignaciones · San Agustín<em>ayer</em></div><b>Mañana: Micrófonos 🎤</b><p>Reunión entre semana · jueves 24 a las 19:30</p></div>
+        <div class="when">Hoy · 17:30</div>
+        <div class="notif hl"><div class="app"><i></i>Asignaciones · San Agustín<em>ahora</em></div><b>Hoy a las 19:30: Micrófonos 🎤</b><p>Reunión entre semana · en 2 horas</p></div>
+        <div class="when">Si tiene dos el mismo día</div>
+        <div class="notif"><div class="app"><i></i>Asignaciones · San Agustín</div><b>Mañana tenés 2 asignaciones</b><p>Audio · Lectura de la Biblia — jueves 1 a las 19:30</p></div>
+      </div>
+    </div>
+    <div class="note">El aviso dice cuál es la asignación y a qué hora, no el genérico de hoy. Si ese día tenés dos, llegan juntas en un solo aviso. Tocarlo abre la app.</div>
+  </div>
+
+  <!-- 5. Calendario con horario -->
+  <div class="col">
+    <div class="label"><span class="n">5</span>El calendario, ahora con hora<span class="who">Google Calendar</span></div>
+    <div class="phone">
+      <div class="gc-top">Septiembre</div>
+      <div class="gc-body">
+        <div class="gc-day"><div class="gc-d"><div class="w">MIÉ</div><div class="n">23</div></div><div class="gc-evs"><div class="ev other">Dentista<small>10:00 – 11:00</small></div></div></div>
+        <div class="gc-day"><div class="gc-d"><div class="w">JUE</div><div class="n">24</div></div><div class="gc-evs"><div class="ev mine">🎤 Micrófonos<small>19:30 – 21:15 · Reunión entre semana</small></div></div></div>
+        <div class="gc-day"><div class="gc-d"><div class="w">DOM</div><div class="n">27</div></div><div class="gc-evs"><div class="ev mine">🚪 Acomodador<small>10:00 – 11:45 · Reunión del fin de semana</small></div></div></div>
+        <div class="gc-day"><div class="gc-d"><div class="w">JUE</div><div class="n">1</div></div><div class="gc-evs"><div class="ev mine">🎛 Audio<small>19:30 – 21:15</small></div><div class="ev mine">📖 Lectura de la Biblia<small>19:30 – 21:15</small></div></div></div>
+      </div>
+    </div>
+    <div class="note">Con el horario cargado, la suscripción al calendario (el mockup anterior) muestra cada asignación en su franja horaria y no como evento de todo el día.</div>
+  </div>
+
+</div>
+
+<div class="flow">
+  <h2>Qué cambia respecto de hoy</h2>
+  <table class="cmp">
+    <tr><th></th><th>Hoy</th><th>Con este cambio</th></tr>
+    <tr><td>Cómo se activa</td><td>Tocando "Recordar 1/3 días antes" en la notificación de asignación nueva. Si la deslizaste, no hay forma de activarlo.</td><td>Se elige una vez en la app y vale para todas las asignaciones, presentes y futuras.</td></tr>
+    <tr><td>iPhone</td><td>Los botones no aparecen, así que no hay recordatorios.</td><td>Funciona, siempre que la app esté instalada en la pantalla de inicio (requisito de Apple para cualquier notificación web).</td></tr>
+    <tr><td>Texto del aviso</td><td>"Tenés una asignación mañana", sin decir cuál.</td><td>"Mañana: Micrófonos · jueves 24 a las 19:30".</td></tr>
+    <tr><td>Cuándo llega</td><td>Solo a las 8:00.</td><td>El día anterior a las 20:00, el mismo día a las 8:00 y/o 1–3 horas antes.</td></tr>
+    <tr><td>Si te cambian la asignación</td><td>El recordatorio ya programado igual llega, aunque ya no te toque.</td><td>Se calcula con los datos del momento, así que nunca avisa de algo que ya no tenés.</td></tr>
+  </table>
+  <p><strong>Por dentro:</strong> el horario se guarda en los Ajustes de la congregación. La preferencia de cada hermano queda en el registro de su celular, el mismo que ya existe para las notificaciones. La función de recordatorios pasa de correr una vez por día a correr una vez por hora: revisa quién tiene asignación próxima según los datos actuales y a quién le toca avisar en esa hora. Deja anotado cada aviso enviado para no mandarlo dos veces.</p>
+  <p><strong>Lo que se quita:</strong> los botones "Recordar 1/3 días antes" de la notificación de asignación nueva, porque ya no hacen falta. Los recordatorios que alguien ya haya pedido con esos botones se respetan hasta que se cumplan.</p>
+  <p><strong>Costo y despliegue:</strong> correr cada hora son unas 720 ejecuciones por mes, muy dentro del uso gratuito. Hay que hacer <code>firebase deploy --only functions</code> como la vez pasada, además de subir los HTML (eso lo hago yo con git).</p>
+</div>
+</body>
+</html>

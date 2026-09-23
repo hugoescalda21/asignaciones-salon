@@ -11,7 +11,8 @@ const db = admin.firestore();
 const messaging = admin.messaging();
 
 const REGION = 'southamerica-east1';
-const { roleLabel, collectNewlyAssignedIds, avisoPreview, selectNewAvisos, notificationForNewAvisos, validateReminder, reminderDocId, ROLES_MAP } = require('./lib');
+const { roleLabel, collectNewlyAssignedIds, avisoPreview, selectNewAvisos, notificationForNewAvisos, validateReminder, reminderDocId, ROLES_MAP,
+  arParts, addDaysIso, remindersDue, reminderMessage, sentReminderId } = require('./lib');
 
 // La app vive en GitHub Pages bajo /asignaciones-salon/, no en la raíz del
 // dominio: un link o ícono con "/" apunta a hugoescalda21.github.io/ y no a la app.
@@ -174,18 +175,9 @@ exports.onCongregationWrite = onDocumentUpdated({ document: 'congregations/{code
             badge: BADGE_URL,
             vibrate: [200, 100, 200, 100, 200, 100, 200],
             requireInteraction: true,
-            tag: `asignacion-${Date.now()}`,
-            data: JSON.stringify({
-              code: code,
-              pubId: pubId,
-              token: token,
-              assignments: assignments,
-              meetingDateIso: meetingDateIso
-            }),
-            actions: [
-              { action: 'remind-1d', title: 'Recordar 1 día antes' },
-              { action: 'remind-3d', title: 'Recordar 3 días antes' }
-            ]
+            tag: `asignacion-${Date.now()}`
+            // Ya no lleva los botones "Recordar 1/3 días antes": los recordatorios
+            // ahora se eligen una sola vez en la app (ver sendScheduledReminders).
           }
         }
       }).then((resp) => {
@@ -301,4 +293,73 @@ exports.sendDailyReminders = onSchedule({ schedule: '0 8 * * *', timeZone: 'Amer
 
   await Promise.allSettled(sendPromises);
   await Promise.allSettled(deletePromises);
+});
+
+
+// Recordatorios automáticos. Corre cada media hora y, para cada celular
+// suscripto, calcula con los datos ACTUALES si le toca un aviso en esta franja:
+// el día anterior (20:00), el mismo día a la mañana (8:00) o unas horas antes
+// de la reunión (si el editor cargó el horario). Cada hermano elige cuáles en
+// la vista pública; sin elegir nada recibe solo el del día anterior.
+// Cada aviso enviado queda anotado en sentReminders para no repetirlo.
+exports.sendScheduledReminders = onSchedule({ schedule: '0,30 * * * *', timeZone: 'America/Argentina/Buenos_Aires', region: REGION }, async () => {
+  const SLOT_MS = 30 * 60000;
+  const slot = new Date(Math.round(Date.now() / SLOT_MS) * SLOT_MS);   // tolera que el disparo llegue unos segundos antes o después
+
+  const subsSnap = await db.collection('pushSubscriptions').get();
+  const congCache = {};
+  const getCong = async (code) => {
+    if (!(code in congCache)) {
+      const snap = await db.collection('congregations').doc(code).get();
+      congCache[code] = snap.exists ? snap.data() : null;
+    }
+    return congCache[code];
+  };
+
+  const staleTokens = [];
+  const sends = [];
+  let enviados = 0;
+  for (const doc of subsSnap.docs) {
+    const sub = doc.data();
+    if (!sub.code || !sub.pubId) continue;
+    const cong = await getCong(sub.code);
+    if (!cong) continue;
+    const token = doc.id;
+    for (const due of remindersDue(cong, sub, slot)) {
+      const markRef = db.collection('sentReminders').doc(sentReminderId(token, due.kind, due.dateIso));
+      try {
+        await markRef.create({ token, kind: due.kind, dateIso: due.dateIso, pubId: sub.pubId, code: sub.code, sentAt: new Date().toISOString() });
+      } catch (e) {
+        continue;   // ya se había mandado este mismo aviso
+      }
+      const { title, body } = reminderMessage(due);
+      sends.push(messaging.send({
+        token,
+        notification: { title, body },
+        android: { priority: 'high' },
+        webpush: {
+          headers: { Urgency: 'high', TTL: '10800' },
+          fcmOptions: { link: verLink(sub.code) },
+          notification: { badge: BADGE_URL, vibrate: [200, 100, 200], tag: `recordatorio-${due.dateIso}-${due.kind}` }
+        }
+      }).then(() => { enviados++; }).catch((err) => {
+        console.error('[recordatorio] error enviando:', err && err.code, err && err.message);
+        if (err && (err.code === 'messaging/registration-token-not-registered' || err.code === 'messaging/invalid-registration-token')) {
+          staleTokens.push(token);
+        }
+      }));
+    }
+  }
+  await Promise.allSettled(sends);
+  if (staleTokens.length) {
+    await Promise.allSettled([...new Set(staleTokens)].map((t) => db.collection('pushSubscriptions').doc(t).delete()));
+  }
+  if (sends.length) console.log('[recordatorio] franja', slot.toISOString(), '— enviados:', enviados, 'de', sends.length);
+
+  // Limpieza una vez por día (franja de las 3:00): borra las marcas de avisos viejos.
+  const { dateIso: today, minutes } = arParts(slot);
+  if (minutes === 3 * 60) {
+    const old = await db.collection('sentReminders').where('dateIso', '<', addDaysIso(today, -3)).limit(400).get();
+    await Promise.allSettled(old.docs.map((d) => d.ref.delete()));
+  }
 });
