@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Prueba — cronómetro flotante</title>
+<style>
+  :root { --bg:#EDEFEF; --surface:#fff; --ink:#212C34; --soft:#5C6B74; --line:#DDE1E2; --ok:#3F6B50; --warn:#9A6A12; --bad:#A8433A; --blue:#3E6B8A; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: -apple-system, "Segoe UI", Roboto, sans-serif; padding: 16px 16px 40px; }
+  h1 { font-family: Georgia, serif; font-weight: 500; font-size: 21px; margin: 4px 0 4px; }
+  p.lead { color: var(--soft); font-size: 14px; line-height: 1.45; margin: 0 0 14px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+  .lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--soft); margin: 0 0 8px; }
+  .quick { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .quick button { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 10px 0; font: inherit; font-size: 15px; font-weight: 700; color: var(--ink); }
+  .quick button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  #clock { display: block; width: 100%; height: auto; border-radius: 12px; background: var(--ok); }
+  .row { display: flex; gap: 8px; margin-top: 10px; }
+  .btn { flex: 1; border: none; border-radius: 12px; padding: 14px 10px; font: inherit; font-size: 16px; font-weight: 700; color: #fff; background: var(--ink); }
+  .btn.go { background: var(--ok); }
+  .btn.float { background: var(--blue); }
+  .btn.light { background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
+  .btn:disabled { opacity: .45; }
+  label.opt { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; margin-top: 10px; line-height: 1.35; }
+  label.opt input { width: 20px; height: 20px; margin: 1px 0 0; flex-shrink: 0; }
+  label.opt small { display: block; color: var(--soft); font-size: 12.5px; }
+  ol { margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.55; }
+  #result { font-size: 14.5px; line-height: 1.5; }
+  #result .big { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  #result .good { color: var(--ok); } #result .meh { color: var(--warn); } #result .bad { color: var(--bad); }
+  #log { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; background: var(--bg); border-radius: 8px; padding: 8px; max-height: 190px; overflow: auto; white-space: pre-wrap; margin-top: 8px; }
+  .muted { color: var(--soft); font-size: 12.5px; }
+  video { position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none; left: 0; bottom: 0; }
+</style>
+</head>
+<body>
+<h1>Prueba: cronómetro flotante</h1>
+<p class="lead">Página de prueba (no forma parte de la app). Sirve para ver si en tu celular el cronómetro puede flotar encima de JW Library y seguir contando bien.</p>
+
+<div class="card">
+  <div class="lbl">Cómo probar</div>
+  <ol>
+    <li>Elegí <b>10 min</b> (o más) y tocá <b>▶ Empezar</b>.</li>
+    <li>Tocá <b>🗗 Flotar</b>: tiene que aparecer una ventanita con el reloj.</li>
+    <li>Abrí <b>JW Library</b> y usala normalmente unos 10 minutos. Mirá si la ventanita sigue bajando segundo a segundo y si cambia de color al final.</li>
+    <li>Volvé a esta página y mandame una captura del recuadro <b>Resultado</b>.</li>
+  </ol>
+</div>
+
+<div class="card">
+  <div class="lbl">Tiempo</div>
+  <div class="quick" id="quick">
+    <button type="button" data-min="1">1</button><button type="button" data-min="3">3</button><button type="button" data-min="5">5</button><button type="button" data-min="10" class="on">10</button><button type="button" data-min="30">30</button>
+  </div>
+  <div style="margin-top:12px;"><canvas id="clock" width="480" height="270" aria-label="Reloj"></canvas></div>
+  <div class="row">
+    <button type="button" class="btn go" id="startBtn">▶ Empezar</button>
+    <button type="button" class="btn float" id="floatBtn">🗗 Flotar</button>
+  </div>
+  <div class="row"><button type="button" class="btn light" id="resetBtn">Reiniciar</button></div>
+  <label class="opt"><input type="checkbox" id="keepAlive" checked><span>Mantener activo con audio silencioso<small>Ayuda a que el teléfono no frene el reloj en segundo plano. Si la prueba anda mal, repetila con esto destildado para comparar.</small></span></label>
+  <label class="opt"><input type="checkbox" id="vibOn" checked><span>Vibrar faltando 1 minuto y al llegar a cero<small>Para ver si el teléfono deja vibrar con otra app adelante.</small></span></label>
+</div>
+
+<div class="card">
+  <div class="lbl">Resultado</div>
+  <div id="result"><span class="muted">Todavía no hay datos: empezá el reloj, hacelo flotar y usá otra app un rato.</span></div>
+  <div id="log"></div>
+</div>
+
+<video id="pipVideo" playsinline muted></video>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const canvas = $('clock'), ctx = canvas.getContext('2d'), video = $('pipVideo');
+  let totalSec = 600, endAt = 0, remaining = 600, running = false, pausedLeft = 600;
+  let warned1 = false, warned0 = false;
+  const stats = { hiddenSince: 0, hiddenMs: 0, bgTicks: 0, bgMaxGap: 0, lastTick: 0, pipOpened: false, pipError: '', vib: [], hiddenPeriods: 0, audio: 'no' };
+  const logLines = [];
+  function log(msg) {
+    const t = new Date(); const s = `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}:${String(t.getSeconds()).padStart(2, '0')}`;
+    logLines.unshift(`${s}  ${msg}`); if (logLines.length > 60) logLines.pop();
+    $('log').textContent = logLines.join('\n');
+  }
+  function fmt(sec) { const neg = sec < 0; sec = Math.abs(sec); return `${neg ? '+' : ''}${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`; }
+  function color() { return remaining < 0 ? '#A8433A' : remaining <= 60 ? '#9A6A12' : '#3F6B50'; }
+  function draw() {
+    const w = canvas.width, h = canvas.height;
+    ctx.fillStyle = color(); ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '700 150px Georgia, serif';
+    ctx.fillText(fmt(remaining), w / 2, h / 2 - 8);
+    ctx.font = '600 26px -apple-system, Roboto, sans-serif';
+    ctx.globalAlpha = 0.9;
+    const sub = !running && remaining === totalSec ? `${totalSec / 60} min · listo` : !running ? 'En pausa' : remaining < 0 ? 'Pasado de tiempo' : remaining <= 60 ? 'Último minuto' : `${Math.round(totalSec / 60)} min`;
+    ctx.fillText(sub, w / 2, h - 34);
+    ctx.globalAlpha = 1;
+  }
+  function vibrate(pattern, why) {
+    if (!$('vibOn').checked) return;
+    let ok = false;
+    try { ok = !!(navigator.vibrate && navigator.vibrate(pattern)); } catch (e) { ok = false; }
+    stats.vib.push({ why, ok, hidden: document.hidden });
+    log(`Vibrar (${why}) ${document.hidden ? 'con otra app adelante' : 'con esta página a la vista'}: ${ok ? 'el teléfono aceptó' : 'NO lo permitió'}`);
+    renderResult();
+  }
+  function tick() {
+    const now = Date.now();
+    if (running) remaining = Math.round((endAt - now) / 1000);
+    if (document.hidden && stats.lastTick) { stats.bgTicks++; stats.bgMaxGap = Math.max(stats.bgMaxGap, now - stats.lastTick); }
+    stats.lastTick = now;
+    if (running && remaining <= 60 && remaining > 0 && totalSec > 60 && !warned1) { warned1 = true; vibrate([90, 70, 90], 'falta 1 min'); }
+    if (running && remaining <= 0 && !warned0) { warned0 = true; vibrate([250, 120, 250], 'llegó a cero'); }
+    draw();
+    if ('mediaSession' in navigator) try { navigator.mediaSession.setPositionState && 0; } catch (e) { /* nada */ }
+  }
+
+  // Tics desde un Worker: los navegadores frenan menos los timers de un Worker que los de la página.
+  const workerSrc = 'let t=null;onmessage=e=>{if(e.data==="start"&&!t)t=setInterval(()=>postMessage(1),250);if(e.data==="stop"){clearInterval(t);t=null;}}';
+  let worker = null;
+  try { worker = new Worker(URL.createObjectURL(new Blob([workerSrc], { type: 'text/javascript' }))); worker.onmessage = tick; worker.postMessage('start'); log('Reloj con Worker: sí'); }
+  catch (e) { setInterval(tick, 250); log('Reloj con Worker: no (se usa el de la página)'); }
+
+  // Audio silencioso (las páginas con audio sonando no se congelan en segundo plano).
+  let audioCtx = null;
+  function startSilentAudio() {
+    if (!$('keepAlive').checked || audioCtx) return;
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+      gain.gain.value = 0.0001; osc.frequency.value = 40;
+      osc.connect(gain); gain.connect(audioCtx.destination); osc.start();
+      stats.audio = 'sí'; log('Audio silencioso: activado');
+    } catch (e) { stats.audio = 'no se pudo'; log('Audio silencioso: no se pudo (' + e.message + ')'); }
+  }
+  function stopSilentAudio() { if (audioCtx) { audioCtx.close().catch(() => {}); audioCtx = null; stats.audio = 'no'; log('Audio silencioso: apagado'); } }
+  $('keepAlive').addEventListener('change', () => { if ($('keepAlive').checked && running) startSilentAudio(); else if (!$('keepAlive').checked) stopSilentAudio(); });
+
+  function start() {
+    if (running) { // pausa
+      running = false; pausedLeft = remaining; $('startBtn').textContent = '▶ Seguir'; $('startBtn').className = 'btn go';
+      log('Pausa'); draw(); setMediaState(); return;
+    }
+    running = true; endAt = Date.now() + pausedLeft * 1000;
+    $('startBtn').textContent = '❚❚ Pausar'; $('startBtn').className = 'btn';
+    startSilentAudio(); requestWake();
+    log(`Empieza (${fmt(pausedLeft)})`); tick(); setMediaState();
+  }
+  function reset() {
+    running = false; remaining = pausedLeft = totalSec; warned1 = warned0 = false;
+    $('startBtn').textContent = '▶ Empezar'; $('startBtn').className = 'btn go';
+    Object.assign(stats, { hiddenMs: 0, bgTicks: 0, bgMaxGap: 0, vib: [], hiddenPeriods: 0 });
+    draw(); renderResult(); log('Reinicio'); setMediaState();
+  }
+  $('startBtn').addEventListener('click', start);
+  $('resetBtn').addEventListener('click', reset);
+  $('quick').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-min]'); if (!b) return;
+    document.querySelectorAll('#quick button').forEach(x => x.classList.toggle('on', x === b));
+    totalSec = Number(b.dataset.min) * 60; reset();
+  });
+
+  // Ventana flotante: el reloj se dibuja en un canvas que se "filma" como video.
+  let streamReady = false;
+  async function ensureVideo() {
+    if (streamReady) return;
+    const stream = canvas.captureStream ? canvas.captureStream(4) : null;
+    if (!stream) throw new Error('Este navegador no puede convertir el reloj en video');
+    video.srcObject = stream; streamReady = true;
+    await video.play();
+  }
+  $('floatBtn').addEventListener('click', async () => {
+    try {
+      if (document.pictureInPictureElement) { await document.exitPictureInPicture(); return; }
+      await ensureVideo();
+      if (video.requestPictureInPicture && document.pictureInPictureEnabled !== false) {
+        await video.requestPictureInPicture();
+      } else if (video.webkitSupportsPresentationMode && video.webkitSupportsPresentationMode('picture-in-picture')) {
+        video.webkitSetPresentationMode('picture-in-picture');
+      } else throw new Error('Este navegador no tiene ventana flotante para videos');
+      stats.pipOpened = true; stats.pipError = ''; log('Ventana flotante: ABIERTA');
+      if (!running) start();
+    } catch (e) { stats.pipError = e.message || String(e); log('Ventana flotante: no se pudo — ' + stats.pipError); }
+    renderResult();
+  });
+  video.addEventListener('leavepictureinpicture', () => log('Ventana flotante: cerrada'));
+
+  // Botones de la ventanita (play/pausa del sistema).
+  function setMediaState() {
+    if (!('mediaSession' in navigator)) return;
+    try { navigator.mediaSession.playbackState = running ? 'playing' : 'paused'; navigator.mediaSession.metadata = new MediaMetadata({ title: 'Cronómetro', artist: 'Asignaciones' }); } catch (e) { /* nada */ }
+  }
+  if ('mediaSession' in navigator) {
+    try { navigator.mediaSession.setActionHandler('play', () => { if (!running) start(); }); } catch (e) { /* nada */ }
+    try { navigator.mediaSession.setActionHandler('pause', () => { if (running) start(); }); } catch (e) { /* nada */ }
+  }
+
+  // Pantalla encendida
+  let wake = null;
+  async function requestWake() { try { if ('wakeLock' in navigator && !wake) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); } } catch (e) { /* nada */ } }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { stats.hiddenSince = Date.now(); stats.hiddenPeriods++; stats.lastTick = Date.now(); log('Pasaste a otra app'); }
+    else {
+      if (stats.hiddenSince) stats.hiddenMs += Date.now() - stats.hiddenSince;
+      stats.hiddenSince = 0; log(`Volviste a esta página (${Math.round(stats.bgMaxGap / 1000)} s fue el salto más largo del reloj)`);
+      renderResult(); if (running) requestWake();
+    }
+  });
+
+  function renderResult() {
+    const mins = Math.round(stats.hiddenMs / 60000 * 10) / 10;
+    const gap = Math.round(stats.bgMaxGap / 1000);
+    const perSec = stats.hiddenMs ? stats.bgTicks / (stats.hiddenMs / 1000) : 0;
+    const vibBg = stats.vib.filter(v => v.hidden);
+    let verdict, cls;
+    if (!stats.pipOpened) { verdict = stats.pipError ? `La ventana flotante no se abrió: ${stats.pipError}` : 'Falta abrir la ventana flotante (🗗 Flotar).'; cls = stats.pipError ? 'bad' : 'meh'; }
+    else if (!stats.hiddenMs) { verdict = 'La ventana flotante se abrió ✓. Ahora usá otra app unos minutos y volvé.'; cls = 'meh'; }
+    else if (gap <= 2) { verdict = '✓ Funciona: el reloj siguió al segundo con otra app adelante.'; cls = 'good'; }
+    else if (gap <= 10) { verdict = `Funciona a medias: en segundo plano el reloj se trabó hasta ${gap} s (la hora igual es la correcta, pero la ventanita no se actualiza segundo a segundo).`; cls = 'meh'; }
+    else { verdict = `✗ El teléfono congeló el reloj hasta ${gap} s con otra app adelante.`; cls = 'bad'; }
+    $('result').innerHTML = `<div class="big ${cls}">${verdict}</div>
+      <div>Ventana flotante: <b>${stats.pipOpened ? 'sí se abrió' : stats.pipError ? 'no' : 'sin probar'}</b></div>
+      <div>Tiempo con otra app adelante: <b>${mins} min</b> (${stats.hiddenPeriods} ${stats.hiddenPeriods === 1 ? 'vez' : 'veces'})</div>
+      <div>Actualizaciones en segundo plano: <b>${perSec ? perSec.toFixed(1) + ' por segundo' : '—'}</b> · salto más largo: <b>${stats.hiddenMs ? gap + ' s' : '—'}</b></div>
+      <div>Vibración con otra app adelante: <b>${!vibBg.length ? 'no llegó a probarse' : vibBg.every(v => v.ok) ? 'sí' : 'no la permitió'}</b></div>
+      <div>Audio silencioso: <b>${stats.audio}</b></div>
+      <div class="muted" style="margin-top:6px;">${navigator.userAgent.replace(/\s*\(KHTML.*?\)\s*/, ' ').slice(0, 160)}</div>`;
+  }
+  setInterval(() => { if (!document.hidden) renderResult(); }, 3000);
+  draw();
+  log('Página lista' + (document.pictureInPictureEnabled ? ' · ventana flotante disponible' : ' · el navegador no anuncia ventana flotante (igual se prueba)'));
+</script>
+</body>
+</html>
