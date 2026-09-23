@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Acceso con buscador</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EDEFEF; --surface:#FFFFFF; --ink:#212C34; --ink-soft:#5C6B74; --ink-faint:#636C71;
+    --line:#DDE1E2; --accent-gold:#A9822F; --accent-gold-text:#876825; --accent-blue:#3E6B8A;
+    --ok:#4C7A5E; --ok-bg:#EEF4EF; --bad:#A8433A; --warn-bg:#FBF3E0;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#D9DDDE;font-family:'Public Sans',-apple-system,sans-serif;color:var(--ink);padding:24px 16px 48px}
+  h1.page{font-family:'Fraunces',serif;font-weight:500;font-size:22px;margin:0 0 4px;text-align:center}
+  p.lead{text-align:center;color:var(--ink-soft);font-size:13px;margin:0 auto 22px;max-width:720px;line-height:1.5}
+  .grid{display:flex;flex-wrap:wrap;gap:28px;justify-content:center;align-items:flex-start}
+  .col{display:flex;flex-direction:column;align-items:center;gap:10px;max-width:300px}
+  .label{font-size:13px;font-weight:700;text-align:center}
+  .label small{display:block;font-weight:600;color:var(--ink-soft);font-size:10.5px}
+  .note{font-size:12px;color:var(--ink-soft);line-height:1.5;width:100%}
+  .note b{color:var(--ink)}
+  .n{display:inline-flex;width:17px;height:17px;border-radius:50%;background:#E5B94E;color:#212C34;font-size:10px;font-weight:700;align-items:center;justify-content:center;margin-right:3px}
+  .hl{outline:2.5px solid #E5B94E;outline-offset:2px;position:relative}
+  .pin{position:absolute;top:-9px;left:-9px;width:18px;height:18px;border-radius:50%;background:#E5B94E;color:#212C34;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;z-index:3}
+
+  .phone{width:290px;height:620px;background:var(--bg);border-radius:28px;border:8px solid #1a1f24;overflow:hidden;position:relative;box-shadow:0 10px 30px rgba(0,0,0,.18);display:flex;flex-direction:column}
+  .ehead{background:#fff;padding:9px 12px 7px;display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--line);flex:none}
+  .ehead .dot{width:7px;height:7px;border-radius:50%;background:var(--accent-gold)}
+  .ehead b{font-family:'Fraunces',serif;font-weight:500;font-size:14px}
+  .ehead .cb{font-size:8.5px;background:var(--bg);border-radius:9px;padding:2px 7px;color:var(--ink-soft)}
+  .content{padding:10px;flex:1;overflow:hidden;position:relative}
+  .btabs{height:44px;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:center;font-size:8px;color:var(--ink-faint);flex:none}
+  .btabs span.on{color:var(--ink);font-weight:700}
+
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 11px}
+  .ch{display:flex;align-items:baseline;justify-content:space-between;gap:6px}
+  .ch h3{font-family:'Fraunces',serif;font-weight:500;font-size:14px;margin:0}
+  .ch small{font-size:8.5px;color:var(--ink-soft)}
+  .addb{display:block;text-align:center;background:var(--ink);color:#fff;border-radius:8px;font-size:9.5px;font-weight:700;padding:7px;margin:8px 0}
+  .search{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:9.5px;color:var(--ink-faint);background:#fff}
+  .search b{color:var(--ink);font-weight:600}
+  .search .clr{margin-left:auto;color:var(--ink-faint)}
+  .chips{display:flex;gap:4px;margin:6px 0 4px;flex-wrap:wrap}
+  .chips span{font-size:8px;font-weight:700;border:1px solid var(--line);border-radius:11px;padding:3px 7px;color:var(--ink-soft);background:#fff}
+  .chips span.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .chips span.warn{border-color:#E3C98A;color:#7A5A0E;background:var(--warn-bg)}
+  .sec{display:flex;align-items:center;gap:5px;font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:8px 0 2px;color:var(--ink-soft)}
+  .sec::after{content:'';flex:1;height:1px;background:var(--line)}
+  .p{padding:6px 0;border-bottom:1px solid var(--line)}
+  .p:last-child{border-bottom:none}
+  .p .top{display:flex;align-items:center;gap:6px}
+  .p .nm{flex:1;min-width:0}
+  .p .nm b{display:block;font-size:10px}
+  .p .nm small{display:block;font-size:8px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .p .nm mark{background:#F6E6B5;color:inherit;border-radius:2px;padding:0 1px}
+  .tag{font-size:7.5px;font-weight:700;border-radius:5px;padding:2px 5px;white-space:nowrap}
+  .tag.role{background:var(--bg);color:var(--ink-soft)}
+  .tag.an{background:#E7EEF3;color:var(--accent-blue)}
+  .tag.unl{background:var(--warn-bg);color:#7A5A0E}
+  .dots{font-size:12px;color:var(--ink-soft);width:16px;text-align:center}
+  .fold{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:8px;padding:7px 9px;margin-top:8px;font-size:9.5px;font-weight:700}
+  .fold small{font-weight:500;color:var(--ink-soft)}
+  .link{font-size:8.5px;font-weight:700;color:var(--accent-blue);border:1px solid var(--accent-blue);border-radius:6px;padding:2px 6px;white-space:nowrap}
+
+  .sheet-ov{position:absolute;inset:0;background:rgba(33,44,52,.45);display:flex;align-items:flex-end;z-index:6}
+  .sheet{background:#fff;width:100%;border-radius:14px 14px 0 0;padding:9px 12px 12px}
+  .handle{width:34px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 8px}
+  .sheet h4{font-family:'Fraunces',serif;font-weight:500;font-size:13px;margin:0}
+  .sheet .sub{font-size:8.5px;color:var(--ink-soft);margin:1px 0 8px}
+  .fl{font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);margin:8px 0 4px}
+  .opts{display:flex;flex-direction:column;gap:3px}
+  .opts span{font-size:9.5px;border:1px solid var(--line);border-radius:7px;padding:6px 8px;display:flex;justify-content:space-between}
+  .opts span.on{border:1.5px solid var(--ink);font-weight:700}
+  .perm{display:flex;align-items:center;justify-content:space-between;margin-top:6px;font-size:9.5px;font-weight:600;background:var(--bg);border-radius:7px;padding:6px 8px}
+  .tg{width:26px;height:15px;border-radius:8px;background:#C9CFD1;position:relative;flex:none}
+  .tg::after{content:'';position:absolute;top:2px;left:2px;width:11px;height:11px;border-radius:50%;background:#fff}
+  .tg.on{background:var(--ok)}
+  .tg.on::after{left:13px}
+  .mi{display:flex;align-items:center;gap:8px;padding:7px 2px;border-top:1px solid var(--line);font-size:10px;font-weight:600;margin-top:6px}
+  .mi.danger{color:var(--bad)}
+
+  .reco{max-width:900px;margin:32px auto 0;background:#fff;border-radius:12px;padding:18px 22px;border-left:4px solid var(--accent-gold)}
+  .reco h2{font-family:'Fraunces',serif;font-weight:500;font-size:17px;margin:0 0 8px}
+  .reco p{font-size:13px;line-height:1.6;color:var(--ink-soft);margin:0 0 8px}
+  .reco p strong{color:var(--ink)}
+</style>
+</head>
+<body>
+<h1 class="page">Ajustes → Acceso con 170 personas — mockup</h1>
+<p class="lead">Los que administran quedan siempre arriba y a la vista. Los 160 y pico de "Solo ver" se pliegan, y a cualquiera lo encontrás escribiendo su nombre o su email.</p>
+
+<div class="grid">
+
+  <!-- 1. Vista normal -->
+  <div class="col">
+    <div class="label">1 · Al abrir Acceso<small>agrupado por rol</small></div>
+    <div class="phone">
+      <div class="ehead"><span class="dot"></span><b>Asignaciones</b><span class="cb">San Agustín</span></div>
+      <div class="content">
+        <div class="card">
+          <div class="ch"><h3>Acceso</h3><small>170 personas</small></div>
+          <span class="addb hl"><span class="pin">1</span>+ Agregar persona</span>
+          <div class="search hl"><span class="pin">2</span>🔍 Buscar por nombre o email</div>
+          <div class="chips hl"><span class="pin">3</span><span class="on">Todos</span><span>Admins 6</span><span>Anuncios 4</span><span>Solo ver 163</span><span class="warn">Sin vincular 12</span></div>
+
+          <div class="sec">Super Admin · 2</div>
+          <div class="p"><div class="top"><div class="nm"><b>Hugo Escalda <span style="font-weight:400;color:var(--ink-faint)">(vos)</span></b><small>hugoescalda@gmail.com</small></div><span class="dots">⋯</span></div></div>
+          <div class="p"><div class="top"><div class="nm"><b>Carlos Vega</b><small>cvega@gmail.com</small></div><span class="dots">⋯</span></div></div>
+
+          <div class="sec hl" style="outline-offset:1px"><span class="pin" style="top:-11px">4</span>Admins · 4</div>
+          <div class="p"><div class="top"><div class="nm"><b>Martín Ruiz</b><small>Equipo técnico · mruiz82@gmail.com</small></div><span class="tag an">📢</span><span class="dots">⋯</span></div></div>
+          <div class="p"><div class="top"><div class="nm"><b>Lucas Gómez</b><small>Asignaciones · lucasg@hotmail.com</small></div><span class="dots">⋯</span></div></div>
+          <div class="p"><div class="top"><div class="nm"><b>Nicolás Paz</b><small>Acomodadores · npaz@gmail.com</small></div><span class="dots">⋯</span></div></div>
+          <div class="p"><div class="top"><div class="nm"><b>Tomás Bravo</b><small>Equipo técnico · tbravo@gmail.com</small></div><span class="dots">⋯</span></div></div>
+
+          <div class="sec">Solo anuncios · 1</div>
+          <div class="p"><div class="top"><div class="nm"><b>Ramiro Quinteros</b><small>rquinteros@gmail.com</small></div><span class="tag an">📢</span><span class="dots">⋯</span></div></div>
+
+          <div class="fold hl"><span class="pin">5</span><span>Solo ver · 163 <small>· tocá para ver o buscá arriba</small></span><span>▾</span></div>
+        </div>
+      </div>
+      <div class="btabs"><span>Programa</span><span>Cronómetro</span><span>Hermanos</span><span class="on">Ajustes</span><span>Anuncios</span></div>
+    </div>
+    <div class="note"><span class="n">1</span><b>"+ Agregar persona" arriba</b>: con 170 filas, hoy el formulario queda al final de todo.<br><span class="n">2</span><b>Buscador</b> por nombre del hermano vinculado o por email.<br><span class="n">3</span><b>Filtros con cantidad</b>, incluido <b>"Sin vincular"</b>: emails que todavía no están asociados a ningún hermano.<br><span class="n">4</span><b>Una línea por persona</b>: nombre, rol y email. 📢 = puede publicar anuncios.<br><span class="n">5</span><b>"Solo ver" plegado</b>, porque casi nunca se toca.</div>
+  </div>
+
+  <!-- 2. Buscando -->
+  <div class="col">
+    <div class="label">2 · Buscando "mar"<small>resultados de todos los roles</small></div>
+    <div class="phone">
+      <div class="ehead"><span class="dot"></span><b>Asignaciones</b><span class="cb">San Agustín</span></div>
+      <div class="content">
+        <div class="card">
+          <div class="ch"><h3>Acceso</h3><small>5 de 170</small></div>
+          <span class="addb">+ Agregar persona</span>
+          <div class="search"><b>mar</b><span class="clr">✕</span></div>
+          <div class="chips"><span class="on">Todos</span><span>Admins 1</span><span>Anuncios 1</span><span>Solo ver 4</span><span class="warn">Sin vincular 1</span></div>
+
+          <div class="sec">Admins · 1</div>
+          <div class="p"><div class="top"><div class="nm"><b><mark>Mar</mark>tín Ruiz</b><small>Equipo técnico · mruiz82@gmail.com</small></div><span class="tag an">📢</span><span class="dots">⋯</span></div></div>
+          <div class="sec">Solo ver · 4</div>
+          <div class="p hl" style="outline-offset:0"><span class="pin">6</span><div class="top"><div class="nm"><b><mark>Mar</mark>cela Díaz</b><small>marcela.diaz@gmail.com</small></div><span class="dots">⋯</span></div></div>
+          <div class="p"><div class="top"><div class="nm"><b><mark>Mar</mark>io Sosa</b><small>msosa@yahoo.com</small></div><span class="dots">⋯</span></div></div>
+          <div class="p"><div class="top"><div class="nm"><b>Ana <mark>Mar</mark>tínez</b><small>anamtz@gmail.com</small></div><span class="dots">⋯</span></div></div>
+          <div class="p"><div class="top"><div class="nm"><b style="color:var(--ink-soft);font-weight:600">maria.l.2020@gmail.com</b><small>sin hermano vinculado</small></div><span class="link">Vincular</span><span class="dots">⋯</span></div></div>
+        </div>
+      </div>
+      <div class="btabs"><span>Programa</span><span>Cronómetro</span><span>Hermanos</span><span class="on">Ajustes</span><span>Anuncios</span></div>
+    </div>
+    <div class="note"><span class="n">6</span><b>Encuentra por nombre aunque el email no se parezca</b> ("Marcela" → marcela.diaz, "Martín" → mruiz82). Resalta lo que coincide. Los resultados siguen agrupados por rol, y los grupos se abren solos mientras buscás.</div>
+  </div>
+
+  <!-- 3. Menú de la persona -->
+  <div class="col">
+    <div class="label">3 · Tocar una persona<small>rol, anuncios, vincular y quitar</small></div>
+    <div class="phone">
+      <div class="ehead"><span class="dot"></span><b>Asignaciones</b><span class="cb">San Agustín</span></div>
+      <div class="content">
+        <div class="card" style="opacity:.6">
+          <div class="ch"><h3>Acceso</h3><small>170 personas</small></div>
+          <span class="addb">+ Agregar persona</span>
+          <div class="search">🔍 Buscar por nombre o email</div>
+          <div class="sec">Admins · 4</div>
+          <div class="p"><div class="top"><div class="nm"><b>Martín Ruiz</b><small>Equipo técnico · mruiz82@gmail.com</small></div><span class="dots">⋯</span></div></div>
+        </div>
+        <div class="sheet-ov">
+          <div class="sheet hl" style="outline-offset:-2px"><span class="pin" style="top:6px;left:6px">7</span>
+            <div class="handle"></div>
+            <h4>Martín Ruiz</h4>
+            <div class="sub">mruiz82@gmail.com · vinculado a Martín Ruiz</div>
+            <div class="fl">Rol</div>
+            <div class="opts">
+              <span>Super Admin</span>
+              <span class="on">Admin — Equipo técnico <b>✓</b></span>
+              <span>Admin — Acomodadores</span>
+              <span>Admin — Asignaciones</span>
+              <span>Solo anuncios</span>
+              <span>Solo ver</span>
+            </div>
+            <div class="perm">📢 Puede publicar anuncios<div class="tg on"></div></div>
+            <div class="mi">🔗 Cambiar hermano vinculado</div>
+            <div class="mi danger" style="margin-top:0">✕ Quitar acceso</div>
+          </div>
+        </div>
+      </div>
+      <div class="btabs"><span>Programa</span><span>Cronómetro</span><span>Hermanos</span><span class="on">Ajustes</span><span>Anuncios</span></div>
+    </div>
+    <div class="note"><span class="n">7</span><b>Todo lo de una persona en un solo lugar</b>: cambiar rol, permiso de anuncios, vincular con un hermano y quitar el acceso, con Deshacer. La lista queda limpia, sin un desplegable y un interruptor en cada una de las 170 filas.</div>
+  </div>
+
+</div>
+
+<div class="reco">
+  <h2>Resumen</h2>
+  <p><strong>Lo que cambia:</strong> "+ Agregar persona" pasa arriba (1), se agregan buscador (2) y filtros con cantidades, incluido "Sin vincular" (3), una línea por persona agrupada por rol (4), "Solo ver" plegado (5), búsqueda por nombre del hermano (6) y el menú de cada persona (7).</p>
+  <p><strong>Lo que no cambia:</strong> los roles, el permiso de anuncios y las reglas del servidor siguen igual. Solo es una forma más cómoda de ver y manejar la misma lista.</p>
+</div>
+</body>
+</html>
