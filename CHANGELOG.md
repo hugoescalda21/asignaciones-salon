@@ -6,6 +6,13 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Arreglo urgente: la app no se conectaba a la nube — 23 sep 2026 (caché asignaciones-salon-v29)
+
+- **Qué pasaba:** con el guardado por partes, al cargar algo en una semana nueva solo en el Programa, la semana llegaba a la nube sin la parte de Equipo técnico ("roles"). Al abrir la app, un cálculo que recorre todas las semanas fallaba con ese dato incompleto ("Cannot read properties of undefined (reading 'sonido')"), y como eso pasaba antes de conectarse, la app quedaba sin sincronizar.
+- **Arreglo:** (1) una semana nueva se sube a la nube completa, con toda su estructura; (2) al abrir, la app completa cualquier semana a la que le falte algo (así se reparan solas las que ya quedaron incompletas, sin perder lo cargado); (3) si algo falla al dibujar la pantalla, la app igual se conecta a la nube y sigue sincronizando.
+- El cartel de error ahora muestra el detalle, y los errores quedan guardados en el teléfono aunque no haya conexión (Ajustes → Registro de errores).
+- Pruebas: `14-datos-incompletos` (reproduce el caso) y un caso nuevo en `11-guardado-nube` — 359 en total.
+
 ## Cronómetro: a qué hora termina la reunión — 23 sep 2026 (caché asignaciones-salon-v27)
 
 - La barra de arriba ya no suma solo las partes terminadas ("1:40 atrasada"): calcula con el reloj real **a qué hora termina la reunión** ("Termina ~21:19 · 4 min tarde"). Suma lo que le queda a la parte en curso (en vivo), las partes que faltan, 20 s por cada cambio de parte, los cánticos con oración, las palabras de conclusión, y lo compara con el fin previsto (hora de inicio de Ajustes + duración). Muestra también cuándo empezó (aprox.).

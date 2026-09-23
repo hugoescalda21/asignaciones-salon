@@ -58,6 +58,11 @@ const paths = (cs) => cs.flatMap(c => c.filter((_, i) => i % 2 === 0).map(x => x
   const cn = await calls(A); console.log('nueva semana:', paths(cn));
   const S2 = JSON.parse(JSON.stringify(S)); cn.forEach(c => applyUpdate(S2, c));
   check('semana nueva se crea en la nube con su asignación', S2.weeks['2026-10-05'] && S2.weeks['2026-10-05'].semana.roles.sonido === 'p1', S2.weeks['2026-10-05']);
+  // Semana nueva cargando SOLO el programa: igual tiene que llegar con toda su estructura (roles, etc.)
+  await A.evaluate(() => { window.__calls = []; ensureWeek('2026-10-12').finde.program.presidente = 'p2'; saveData(); });
+  const cn2 = await calls(A);
+  const S3 = JSON.parse(JSON.stringify(S2)); cn2.forEach(c => applyUpdate(S3, c));
+  check('semana nueva solo con programa: llega con roles de técnico (antes llegaba sin ellos y rompía la app)', S3.weeks['2026-10-12'] && S3.weeks['2026-10-12'].finde.roles && 'sonido' in S3.weeks['2026-10-12'].finde.roles && S3.weeks['2026-10-12'].semana.roles && S3.weeks['2026-10-12'].finde.program.presidente === 'p2', S3.weeks['2026-10-12']);
   // borrar un campo
   await A.evaluate(() => { window.__calls = []; delete data.weeks['2026-09-21'].semana.program.perlas; saveData(); });
   const cd = await calls(A);

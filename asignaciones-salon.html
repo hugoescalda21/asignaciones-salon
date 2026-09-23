@@ -2029,6 +2029,7 @@
     return dataObj;
   }
 
+  function isObjLike(v) { return !!v && typeof v === 'object' && !Array.isArray(v); }
   function migrate(raw) {
     let out;
     if (raw && raw.weeks) {
@@ -2045,6 +2046,18 @@
         out.weeks[monday][t].roles = Object.assign(blankRoles(), m.roles || {});
       });
     }
+    // Cada semana con su estructura completa (una semana a la que le falte "roles" o "program"
+    // rompía los cálculos al abrir la app y no la dejaba conectarse a la nube).
+    out.weeks = out.weeks || {};
+    Object.keys(out.weeks).forEach(monday => {
+      const w = out.weeks[monday] = isObjLike(out.weeks[monday]) ? out.weeks[monday] : {};
+      ['semana', 'finde'].forEach(t => {
+        const m = w[t] = isObjLike(w[t]) ? w[t] : {};
+        m.roles = Object.assign(blankRoles(), isObjLike(m.roles) ? m.roles : {});
+        m.excluded = Array.isArray(m.excluded) ? m.excluded : [];
+        m.program = isObjLike(m.program) ? m.program : {};
+      });
+    });
     // Los fines de semana ya no llevan cronometrista: se limpia cualquier valor viejo.
     Object.values(out.weeks).forEach(w => { if (w.finde && w.finde.roles) w.finde.roles.cronometrista = null; });
     cleanOrphanedIds(out);
@@ -2067,11 +2080,10 @@
       $('pillSemana').classList.toggle('active', nx.type === 'semana');
       $('pillFinde').classList.toggle('active', nx.type === 'finde');
     }
-    initUiFromData();
-    renderAll();
-    checkBackupReminder();
-    checkMeetingReminder();
-    updateOnlineStatus();
+    // Si algo falla al dibujar la pantalla, igual se conecta a la nube (que trae los datos correctos).
+    for (const fn of [initUiFromData, renderAll, checkBackupReminder, checkMeetingReminder, updateOnlineStatus]) {
+      try { fn(); } catch (e) { console.error(e); logCloudError('error', e && e.message, e && e.stack); if (!fatalErrorShown) showFatalErrorBanner({ error: e }); }
+    }
     await initCloudSync();
     // El modal de código tiene prioridad; recién si no hace falta mostrarlo, se ofrece la bienvenida.
     if ($('codeModalOverlay').classList.contains('hidden')) maybeShowOnboarding();
@@ -2104,10 +2116,14 @@
     keys.forEach(k => {
       const b = base ? base[k] : undefined, c = cur ? cur[k] : undefined;
       if (c === undefined) { if (b !== undefined) out.push([path.concat(k), undefined]); return; }
-      // Un campo vacío por defecto (null, "", []) que la nube no tiene no es un cambio:
+      if (isPlainObj(c)) {
+        if (isPlainObj(b)) diffPaths(b, c, path.concat(k), out);
+        else out.push([path.concat(k), c]); // objeto nuevo (p. ej. una semana nueva): se sube entero, con toda su estructura
+        return;
+      }
+      // Un valor vacío por defecto (null, "", []) que la nube no tiene no es un cambio:
       // subirlo podría pisar lo que otra persona cargó en ese campo al mismo tiempo.
       if (b === undefined && isEmptyVal(c)) return;
-      if (isPlainObj(c) && (isPlainObj(b) || b === undefined)) { diffPaths(b || {}, c, path.concat(k), out); return; }
       if (!deepEq(b, c)) out.push([path.concat(k), c]);
     });
     return out;
@@ -2452,9 +2468,10 @@
       window.data = data;
       currentUserRole = computeUserRole();
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) { /* sin acceso */ }
-      initUiFromData();
-      renderAll();
-      applyRoleUI();
+      // Si algo falla al dibujar, la sincronización sigue funcionando igual.
+      for (const fn of [initUiFromData, renderAll, applyRoleUI]) {
+        try { fn(); } catch (e) { console.error(e); logCloudError('error', e && e.message, e && e.stack); if (!fatalErrorShown) showFatalErrorBanner({ error: e }); }
+      }
       applyingRemoteUpdate = false;
       setSyncStatus('ok');
       updateCloudSize(raw);
