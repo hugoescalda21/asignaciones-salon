@@ -6,6 +6,15 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Ajustes → Acceso para listas largas — 23 sep 2026 (caché asignaciones-salon-v24)
+
+- La lista se agrupa por rol: Super Admin, Admins, Solo anuncios y Solo ver (este último plegado, con la cantidad).
+- Buscador por nombre del hermano vinculado o por email (sin importar tildes), que resalta lo que coincide.
+- Filtros con cantidad: Todos, Admins, Anuncios (los que pueden publicar), Solo ver y "Sin vincular" (emails que no están asociados a ningún hermano).
+- Una línea por persona: nombre, rol y email; 📢 si puede publicar anuncios; botón "Vincular" si no tiene hermano asociado.
+- Al tocar una persona se abre su menú: cambiar rol, permiso de anuncios, vincular / cambiar / desvincular hermano y quitar acceso (con Deshacer).
+- "+ Agregar persona" pasó arriba y el rol por defecto es "Solo ver" (antes era Super Admin).
+
 ## Permiso para publicar anuncios — 23 sep 2026 (caché asignaciones-salon-v23)
 
 - Ajustes → Acceso: cada Admin (Equipo técnico, Acomodadores, Asignaciones) tiene un interruptor "📢 Puede publicar anuncios". Los Super Admin siempre pueden. Al agregar a alguien se puede marcar "También puede publicar anuncios".

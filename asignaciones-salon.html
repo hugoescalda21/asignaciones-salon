@@ -592,6 +592,38 @@
   .an-perm.lock { color: var(--ink-soft); }
   .an-perm .switch.lock { opacity: 0.45; cursor: default; }
 
+  /* ---------- Ajustes → Acceso (lista larga) ---------- */
+  .acc-top { display: flex; justify-content: flex-end; margin: 6px 0 -2px; }
+  .acc-count { font-size: 12px; color: var(--ink-soft); }
+  .acc-add-btn { width: 100%; justify-content: center; margin-top: 8px; }
+  .acc-add { margin-top: 10px; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-s); background: var(--bg); }
+  .acc-add input, .acc-add select { background: var(--surface) !important; }
+  .acc-search { width: 100%; margin-top: 10px; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 9px 10px; font-family: inherit; font-size: 13.5px; background: var(--surface); color: var(--ink); }
+  .acc-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 9px 0 2px; }
+  .acc-chips button { border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); border-radius: 14px; padding: 5px 11px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+  .acc-chips button.on { background: var(--emphasis); color: var(--on-emphasis); border-color: var(--emphasis); }
+  .acc-chips button.warn:not(.on) { background: #FBF3E0; border-color: #E3C98A; color: #7A5A0E; }
+  .acc-sec { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); margin: 14px 0 2px; }
+  .acc-sec::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+  .acc-row { display: flex; align-items: center; gap: 6px; border-bottom: 1px solid var(--line); }
+  .acc-row:last-child { border-bottom: none; }
+  .acc-main { flex: 1; min-width: 0; border: none; background: none; text-align: left; padding: 9px 0; font: inherit; color: var(--ink); cursor: pointer; }
+  .acc-main b { display: block; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .acc-main b.acc-mail { font-weight: 600; color: var(--ink-soft); }
+  .acc-main small { display: block; font-size: 11.5px; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .acc-main mark, .acc-pick mark { background: #F6E6B5; color: inherit; border-radius: 2px; }
+  .acc-an { font-size: 11px; background: #E7EEF3; border-radius: 6px; padding: 2px 5px; flex-shrink: 0; }
+  .acc-link { border: 1px solid var(--accent-blue); color: var(--accent-blue); background: var(--surface); border-radius: 8px; padding: 4px 9px; font: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer; flex-shrink: 0; }
+  .acc-dots { border: none; background: none; width: 32px; height: 32px; border-radius: 8px; font-size: 17px; color: var(--ink-soft); cursor: pointer; flex-shrink: 0; }
+  .acc-dots:hover { background: var(--bg); }
+  .acc-fold { display: flex; width: 100%; justify-content: space-between; align-items: center; margin-top: 14px; border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius-s); padding: 10px 12px; font: inherit; font-size: 13.5px; font-weight: 700; color: var(--ink); cursor: pointer; text-align: left; }
+  .acc-fold small { font-weight: 500; color: var(--ink-soft); }
+  .acc-roles { display: flex; flex-direction: column; gap: 5px; }
+  .acc-roles button { display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--line); background: var(--surface); border-radius: 9px; padding: 9px 11px; font: inherit; font-size: 13px; color: var(--ink); cursor: pointer; text-align: left; }
+  .acc-roles button.on { border: 2px solid var(--emphasis); font-weight: 700; }
+  .acc-pick { display: flex; width: 100%; border: none; border-bottom: 1px solid var(--line); background: none; padding: 10px 2px; font: inherit; font-size: 13.5px; color: var(--ink); text-align: left; cursor: pointer; }
+  .acc-pick:hover { background: var(--bg); }
+
   /* ---------- Gestión de anuncios ---------- */
   .an-modal { max-width: 520px; }
   .an-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
@@ -1080,6 +1112,15 @@
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="accMenuOverlay">
+  <div class="modal" style="max-width:420px;">
+    <h3 id="accMenuTitle" style="margin-bottom:2px; word-break:break-all;">Persona</h3>
+    <p class="modal-sub" id="accMenuSub" style="margin-bottom:10px; word-break:break-all;"></p>
+    <div id="accMenuBody"></div>
+    <div class="modal-footer"><button type="button" class="btn" id="accMenuCloseBtn">Cerrar</button></div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="anMenuOverlay" style="z-index: 110;">
   <div class="modal" style="max-width:400px;">
     <h3 id="anMenuTitle" style="margin-bottom:2px;">Anuncio</h3>
@@ -1342,8 +1383,9 @@
       <summary><div><h3>Acceso</h3><span class="sc-sub">Quién puede editar o ver, y con qué rol</span></div><span class="chev">›</span></summary>
       <p class="hint">Cada persona inicia sesión con su email (le llega un link, sin contraseña). Solo entran los que agregues acá — sacar a alguien le corta el acceso al instante.</p>
       <p class="hint" style="margin-top:4px;">🔒 Quién tiene acceso y quién publica anuncios lo controla también el servidor: solo un Super Admin puede cambiarlo. El resto de los permisos por rol todavía es una restricción de la interfaz (detalles en el roadmap).</p>
-      <div id="accessRolesList" style="margin-top:10px;"></div>
-      <div class="add-block" style="margin-top:10px; padding-top:12px; border-top:1px solid var(--line);">
+      <div class="acc-top"><span id="accCount" class="acc-count"></span></div>
+      <button type="button" class="btn btn-primary acc-add-btn" id="accAddToggle">+ Agregar persona</button>
+      <div class="add-block acc-add hidden" id="accAddBlock">
         <input type="email" id="newRoleEmail" placeholder="email@ejemplo.com" style="width:100%; border:1px solid var(--line); border-radius:var(--radius-s); padding:9px 10px; font-family:inherit; font-size:13px; margin-bottom:8px;">
         <div style="display:flex; gap:8px;">
           <select id="newRoleSelect" style="flex:1; border:1px solid var(--line); border-radius:var(--radius-s); padding:9px; font-family:inherit; font-size:12.5px; background:var(--bg);">
@@ -1352,12 +1394,15 @@
             <option value="acomodadoresAdminEmails">Admin — Acomodadores</option>
             <option value="asignacionesAdminEmails">Admin — Asignaciones</option>
             <option value="anunciosOnlyEmails">Solo anuncios</option>
-            <option value="viewerEmails">Solo ver</option>
+            <option value="viewerEmails" selected>Solo ver</option>
           </select>
           <button class="btn" id="addRoleBtn" style="flex-shrink:0;">+ Agregar</button>
         </div>
         <label id="newRoleAnWrap" class="hidden" style="display:flex; align-items:center; gap:8px; margin-top:9px; font-size:12.5px; font-weight:600;"><input type="checkbox" id="newRoleAnChk"> 📢 También puede publicar anuncios</label>
       </div>
+      <input type="search" id="accSearch" class="acc-search" placeholder="🔍 Buscar por nombre o email" aria-label="Buscar por nombre o email" autocomplete="off">
+      <div class="acc-chips" id="accChips" role="group" aria-label="Filtrar por rol"></div>
+      <div id="accessRolesList"></div>
     </details>
     <div class="settings-group">Avisos</div>
     <details class="settings-card">
@@ -5440,81 +5485,237 @@
     if (on) list.push(email);
     data.settings.anunciosEmails = list;
   }
+
+  /* ---- Lista de Acceso: grupos por rol, buscador y filtros ---- */
+  const ROLE_SHORT = { tecnicoAdminEmails: 'Equipo técnico', acomodadoresAdminEmails: 'Acomodadores', asignacionesAdminEmails: 'Asignaciones' };
+  const accState = { filter: 'all', viewerOpen: false, menuEmail: null, picking: false };
+  function accNorm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+  function accPubOf(email) { const e = String(email).toLowerCase(); return (data.publishers || []).find(p => p.email && String(p.email).toLowerCase() === e) || null; }
+  function accPeople() {
+    const out = [];
+    ROLE_FIELDS.forEach(field => (data.settings[field] || []).forEach(email => {
+      const pub = accPubOf(email);
+      const canAn = field === 'editorEmails' || field === 'anunciosOnlyEmails' || (AN_PERM_FIELDS.includes(field) && (data.settings.anunciosEmails || []).includes(email));
+      out.push({ email, field, pub, name: pub ? pub.name : '', canAn });
+    }));
+    return out;
+  }
+  function accFieldOf(email) { return ROLE_FIELDS.find(f => (data.settings[f] || []).includes(email)) || null; }
+  function accHl(text, q) {
+    const t = String(text || '');
+    if (!q) return escapeHtml(t);
+    const n = accNorm(t);
+    const i = n.length === t.length ? n.indexOf(q) : -1;
+    if (i < 0) return escapeHtml(t);
+    return escapeHtml(t.slice(0, i)) + '<mark>' + escapeHtml(t.slice(i, i + q.length)) + '</mark>' + escapeHtml(t.slice(i + q.length));
+  }
+  const ACC_FILTERS = [
+    ['all', 'Todos', () => true],
+    ['admins', 'Admins', r => AN_PERM_FIELDS.includes(r.field)],
+    ['anuncios', 'Anuncios', r => r.canAn],
+    ['viewer', 'Solo ver', r => r.field === 'viewerEmails'],
+    ['unlinked', 'Sin vincular', r => !r.pub]
+  ];
   function renderAccessLists() {
-    const rows = [];
-    ROLE_FIELDS.forEach(field => { (data.settings[field] || []).forEach(email => rows.push({ email, field })); });
-    rows.sort((a, b) => a.email.localeCompare(b.email));
-    $('accessRolesList').innerHTML = rows.length
-      ? rows.map(r => `<div class="role-mini" style="padding:9px 0; border-bottom:1px solid var(--line); font-size:12.5px;">
-          <div style="font-weight:600; margin-bottom:6px; word-break:break-all;">${escapeHtml(r.email)}${currentUser && r.email === currentUser.email ? ' <span style="font-weight:400; color:var(--ink-faint);">(vos)</span>' : ''}</div>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <select class="role-change-select" data-email="${escapeHtml(r.email)}" data-current-field="${r.field}" style="flex:1; border:1px solid var(--line); border-radius:6px; padding:7px; font-family:inherit; font-size:12px; background:var(--bg);">
-              ${ROLE_FIELDS.map(f => `<option value="${f}" ${f === r.field ? 'selected' : ''}>${ROLE_LABELS[f]}</option>`).join('')}
-            </select>
-            <button type="button" class="rm-btn" data-remove-email="${escapeHtml(r.email)}" data-field="${r.field}" aria-label="Quitar a ${escapeHtml(r.email)}" style="border:none; background:none; color:var(--ink-faint); font-size:15px; flex-shrink:0; padding:4px 6px;">✕</button>
-          </div>
-          ${anPermRowHTML(r)}
-        </div>`).join('')
-      : '<p class="hint" style="margin:0;">Todavía no agregaste a nadie.</p>';
+    const all = accPeople();
+    const q = accNorm(($('accSearch') && $('accSearch').value || '').trim());
+    const matched = q ? all.filter(r => accNorm(r.name).includes(q) || accNorm(r.email).includes(q)) : all;
+    $('accCount').textContent = q ? `${matched.length} de ${all.length}` : `${all.length} ${all.length === 1 ? 'persona' : 'personas'}`;
+    $('accChips').innerHTML = ACC_FILTERS.map(([k, label, fn]) => {
+      const n = matched.filter(fn).length;
+      if (k === 'unlinked' && !all.some(r => !r.pub)) return '';
+      return `<button type="button" data-acc-filter="${k}" class="${accState.filter === k ? 'on' : ''}${k === 'unlinked' ? ' warn' : ''}" aria-pressed="${accState.filter === k}">${label}${k === 'all' ? '' : ' ' + n}</button>`;
+    }).join('');
+    const fn = (ACC_FILTERS.find(f => f[0] === accState.filter) || ACC_FILTERS[0])[2];
+    const rows = matched.filter(fn);
+    if (!all.length) { $('accessRolesList').innerHTML = '<p class="hint" style="margin:10px 0 0;">Todavía no agregaste a nadie.</p>'; return; }
+    if (!rows.length) { $('accessRolesList').innerHTML = '<p class="hint" style="margin:12px 0 0;">No hay nadie que coincida.</p>'; return; }
+    const byName = (a, b) => (a.name || a.email).localeCompare(b.name || b.email, 'es');
+    const rowHTML = (r) => {
+      const you = currentUser && r.email === currentUser.email ? ' <span style="font-weight:400; color:var(--ink-faint);">(vos)</span>' : '';
+      const sub = [ROLE_SHORT[r.field], r.name ? accHl(r.email, q) : 'sin hermano vinculado'].filter(Boolean).join(' · ');
+      const e = escapeHtml(r.email);
+      return `<div class="acc-row">
+        <button type="button" class="acc-main" data-acc="${e}">${r.name ? `<b>${accHl(r.name, q)}${you}</b>` : `<b class="acc-mail">${accHl(r.email, q)}${you}</b>`}<small>${sub}</small></button>
+        ${r.canAn && r.field !== 'editorEmails' ? '<span class="acc-an" title="Puede publicar anuncios" aria-label="Puede publicar anuncios">📢</span>' : ''}
+        ${!r.pub ? `<button type="button" class="acc-link" data-acc-link="${e}">Vincular</button>` : ''}
+        <button type="button" class="acc-dots" data-acc="${e}" aria-label="Opciones de ${e}">⋯</button>
+      </div>`;
+    };
+    const groups = [['Super Admin', ['editorEmails']], ['Admins', AN_PERM_FIELDS], ['Solo anuncios', ['anunciosOnlyEmails']], ['Solo ver', ['viewerEmails']]];
+    let html = '';
+    groups.forEach(([title, fields]) => {
+      const g = rows.filter(r => fields.includes(r.field)).sort(byName);
+      if (!g.length) return;
+      const fold = title === 'Solo ver' && !q && accState.filter === 'all';
+      if (fold) {
+        html += `<button type="button" class="acc-fold" id="accViewerFold" aria-expanded="${accState.viewerOpen}"><span>Solo ver · ${g.length} <small>· ${accState.viewerOpen ? 'tocá para plegar' : 'tocá para ver o buscá arriba'}</small></span><span>${accState.viewerOpen ? '▴' : '▾'}</span></button>`;
+        if (accState.viewerOpen) html += g.map(rowHTML).join('');
+      } else {
+        html += `<div class="acc-sec">${title} · ${g.length}</div>` + g.map(rowHTML).join('');
+      }
+    });
+    $('accessRolesList').innerHTML = html;
+    if (accState.menuEmail && !$('accMenuOverlay').classList.contains('hidden')) {
+      if (accFieldOf(accState.menuEmail)) renderAccMenu(); else closeAccMenu();
+    }
   }
   function addRoleEmail() {
     const email = $('newRoleEmail').value.trim().toLowerCase();
     const field = $('newRoleSelect').value;
     if (!email || !email.includes('@')) { showToast('Ingresá un email válido'); return; }
-    if (ROLE_FIELDS.some(f => (data.settings[f] || []).includes(email))) { showToast('Ese email ya tiene un rol asignado — cambialo desde la lista'); return; }
+    if (ROLE_FIELDS.some(f => (data.settings[f] || []).includes(email))) { showToast('Ese email ya tiene un rol asignado — buscalo en la lista'); return; }
     data.settings[field] = data.settings[field] || [];
     data.settings[field].push(email);
     setAnunciosPerm(email, AN_PERM_FIELDS.includes(field) && $('newRoleAnChk').checked);
     $('newRoleEmail').value = '';
     $('newRoleAnChk').checked = false;
+    $('accAddBlock').classList.add('hidden');
     saveData();
     renderAccessLists();
-    showToast('Agregado');
+    showToast(`Agregado como ${ROLE_LABELS[field]}`);
   }
   $('addRoleBtn').addEventListener('click', addRoleEmail);
+  $('newRoleEmail').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addRoleEmail(); } });
   const updateNewRoleAnWrap = () => $('newRoleAnWrap').classList.toggle('hidden', !AN_PERM_FIELDS.includes($('newRoleSelect').value));
   $('newRoleSelect').addEventListener('change', updateNewRoleAnWrap);
   updateNewRoleAnWrap();
+  $('accAddToggle').addEventListener('click', () => {
+    const b = $('accAddBlock');
+    b.classList.toggle('hidden');
+    if (!b.classList.contains('hidden')) setTimeout(() => $('newRoleEmail').focus(), 30);
+  });
+  $('accSearch').addEventListener('input', renderAccessLists);
+  $('accChips').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-acc-filter]');
+    if (!b) return;
+    accState.filter = b.dataset.accFilter === accState.filter ? 'all' : b.dataset.accFilter;
+    renderAccessLists();
+  });
   $('accessRolesList').addEventListener('click', (e) => {
+    if (e.target.closest('#accViewerFold')) { accState.viewerOpen = !accState.viewerOpen; renderAccessLists(); return; }
+    const link = e.target.closest('[data-acc-link]');
+    if (link) { openAccMenu(link.dataset.accLink, true); return; }
+    const row = e.target.closest('[data-acc]');
+    if (row) openAccMenu(row.dataset.acc, false);
+  });
+
+  // ---- Menú de cada persona: rol, anuncios, hermano vinculado y quitar ----
+  function openAccMenu(email, picking) {
+    accState.menuEmail = email;
+    accState.picking = !!picking;
+    renderAccMenu();
+    $('accMenuOverlay').classList.remove('hidden');
+    if (picking) setTimeout(() => $('accPickSearch') && $('accPickSearch').focus(), 50);
+  }
+  function closeAccMenu() { $('accMenuOverlay').classList.add('hidden'); accState.menuEmail = null; accState.picking = false; }
+  function accIsLastSuper(email) { return data.settings.editorEmails.length === 1 && data.settings.editorEmails[0] === email; }
+  function renderAccMenu() {
+    const email = accState.menuEmail;
+    const field = accFieldOf(email);
+    if (!field) { closeAccMenu(); return; }
+    const pub = accPubOf(email);
+    $('accMenuTitle').textContent = pub ? pub.name : email;
+    $('accMenuSub').textContent = pub ? `${email} · vinculado a ${pub.name}` : `${ROLE_LABELS[field]} · sin hermano vinculado`;
+    if (accState.picking) {
+      $('accMenuBody').innerHTML = `<p class="hint" style="margin:0 0 8px;">¿A qué hermano corresponde ${escapeHtml(email)}? Así ve sus propias asignaciones en la vista de la congregación.</p>
+        <input type="search" id="accPickSearch" class="acc-search" style="margin-top:0;" placeholder="🔍 Buscar hermano" autocomplete="off">
+        <div id="accPickList" style="margin-top:6px; max-height:45vh; overflow:auto;"></div>
+        <button type="button" class="role-menu-item" data-accm="back" style="margin-top:8px;"><span class="rmi-ic">←</span><span><b>Volver</b></span></button>`;
+      renderAccPickList();
+      return;
+    }
+    const roleBtns = ROLE_FIELDS.map(f => `<button type="button" data-acc-role="${f}" class="${f === field ? 'on' : ''}" aria-pressed="${f === field}"><span>${ROLE_LABELS[f]}</span>${f === field ? '<b>✓</b>' : ''}</button>`).join('');
+    const item = (k, ic, label, sub, cls) => `<button type="button" class="role-menu-item${cls ? ' ' + cls : ''}" data-accm="${k}"><span class="rmi-ic">${ic}</span><span><b>${label}</b>${sub ? `<small>${sub}</small>` : ''}</span></button>`;
+    $('accMenuBody').innerHTML = `<div class="an-fl" style="margin-top:0;">Rol</div><div class="acc-roles">${roleBtns}</div>
+      ${anPermRowHTML({ email, field })}
+      <div style="margin-top:10px;">
+        ${item('link', '🔗', pub ? 'Cambiar hermano vinculado' : 'Vincular a un hermano', pub ? '' : 'Para que vea sus propias asignaciones')}
+        ${pub ? item('unlink', '⛓', 'Desvincular', `Deja de estar asociado a ${escapeHtml(pub.name)}`) : ''}
+        ${item('remove', '✕', 'Quitar acceso', 'Deja de poder entrar', 'danger')}
+      </div>`;
+  }
+  function renderAccPickList() {
+    const email = accState.menuEmail;
+    const q = accNorm(($('accPickSearch') && $('accPickSearch').value || '').trim());
+    const current = accPubOf(email);
+    const list = (data.publishers || [])
+      .filter(p => !p.email || p === current)
+      .filter(p => !q || accNorm(p.name).includes(q))
+      .sort((a, b) => a.name.localeCompare(b.name, 'es'));
+    $('accPickList').innerHTML = list.length
+      ? list.map(p => `<button type="button" class="acc-pick" data-acc-pick="${escapeHtml(p.id)}">${accHl(p.name, q)}${p === current ? ' <small style="color:var(--ok); font-weight:700;">· actual</small>' : ''}</button>`).join('')
+      : `<p class="hint" style="margin:8px 0;">${q ? 'Ningún hermano coincide.' : 'Todos los hermanos ya tienen un email vinculado.'} Los que ya tienen email no aparecen: desvinculalos primero desde su ficha en Hermanos.</p>`;
+  }
+  $('accMenuCloseBtn').addEventListener('click', closeAccMenu);
+  $('accMenuOverlay').addEventListener('click', (e) => { if (e.target.id === 'accMenuOverlay') closeAccMenu(); });
+  $('accMenuOverlay').addEventListener('input', (e) => { if (e.target.id === 'accPickSearch') renderAccPickList(); });
+  $('accMenuBody').addEventListener('click', (e) => {
+    const email = accState.menuEmail;
+    const field = accFieldOf(email);
+    if (!email || !field) return;
+    const roleB = e.target.closest('[data-acc-role]');
+    if (roleB) {
+      const newField = roleB.dataset.accRole;
+      if (newField === field) return;
+      if (currentUser && email === currentUser.email && field === 'editorEmails' && accIsLastSuper(email)) { showToast('No podés cambiar tu propio rol si sos el único Super Admin'); return; }
+      data.settings[field] = data.settings[field].filter(x => x !== email);
+      data.settings[newField] = data.settings[newField] || [];
+      data.settings[newField].push(email);
+      if (!AN_PERM_FIELDS.includes(newField)) setAnunciosPerm(email, false); // el permiso solo se guarda para los roles de admin
+      saveData();
+      renderAccessLists();
+      showToast(`Ahora es ${ROLE_LABELS[newField]}`);
+      return;
+    }
     const sw = e.target.closest('[data-an-perm]');
     if (sw) {
-      const on = !(data.settings.anunciosEmails || []).includes(sw.dataset.anPerm);
-      setAnunciosPerm(sw.dataset.anPerm, on);
+      const on = !(data.settings.anunciosEmails || []).includes(email);
+      setAnunciosPerm(email, on);
       saveData();
       renderAccessLists();
       showToast(on ? 'Ahora puede publicar anuncios' : 'Ya no puede publicar anuncios');
       return;
     }
-    const btn = e.target.closest('[data-remove-email]');
-    if (!btn) return;
-    const field = btn.dataset.field;
-    if (currentUser && btn.dataset.removeEmail === currentUser.email && field === 'editorEmails' && data.settings.editorEmails.length === 1) {
-      showToast('No podés sacarte a vos mismo si sos el único Super Admin');
-      return;
-    }
-    data.settings[field] = data.settings[field].filter(e2 => e2 !== btn.dataset.removeEmail);
-    setAnunciosPerm(btn.dataset.removeEmail, false);
-    saveData();
-    renderAccessLists();
-  });
-  $('accessRolesList').addEventListener('change', (e) => {
-    const sel = e.target.closest('.role-change-select');
-    if (!sel) return;
-    const email = sel.dataset.email;
-    const oldField = sel.dataset.currentField;
-    const newField = sel.value;
-    if (oldField === newField) return;
-    if (currentUser && email === currentUser.email && oldField === 'editorEmails' && data.settings.editorEmails.length === 1) {
-      showToast('No podés cambiar tu propio rol si sos el único Super Admin');
+    const pick = e.target.closest('[data-acc-pick]');
+    if (pick) {
+      const p = (data.publishers || []).find(x => x.id === pick.dataset.accPick);
+      if (!p) return;
+      (data.publishers || []).forEach(x => { if (x.email && String(x.email).toLowerCase() === email.toLowerCase()) x.email = null; });
+      p.email = email;
+      accState.picking = false;
+      saveData();
       renderAccessLists();
+      showToast(`Vinculado a ${p.name}`);
       return;
     }
-    data.settings[oldField] = data.settings[oldField].filter(e => e !== email);
-    data.settings[newField] = data.settings[newField] || [];
-    data.settings[newField].push(email);
-    if (!AN_PERM_FIELDS.includes(newField)) setAnunciosPerm(email, false); // el permiso solo se guarda para los roles de admin
-    saveData();
-    renderAccessLists();
+    const m = e.target.closest('[data-accm]');
+    if (!m) return;
+    const k = m.dataset.accm;
+    if (k === 'back') { accState.picking = false; renderAccMenu(); return; }
+    if (k === 'link') { accState.picking = true; renderAccMenu(); setTimeout(() => $('accPickSearch') && $('accPickSearch').focus(), 50); return; }
+    if (k === 'unlink') {
+      const pub = accPubOf(email);
+      if (pub) { pub.email = null; saveData(); renderAccessLists(); showToast(`Ya no está vinculado a ${pub.name}`); }
+      return;
+    }
+    if (k === 'remove') {
+      if (currentUser && email === currentUser.email && field === 'editorEmails' && accIsLastSuper(email)) { showToast('No podés sacarte a vos mismo si sos el único Super Admin'); return; }
+      const hadPerm = (data.settings.anunciosEmails || []).includes(email);
+      data.settings[field] = data.settings[field].filter(x => x !== email);
+      setAnunciosPerm(email, false);
+      closeAccMenu();
+      saveData();
+      renderAccessLists();
+      showToast(`Se quitó el acceso a ${email}`, () => {
+        if (accFieldOf(email)) return;
+        data.settings[field] = data.settings[field] || [];
+        data.settings[field].push(email);
+        if (hadPerm) setAnunciosPerm(email, true);
+        saveData();
+        renderAccessLists();
+      });
+    }
   });
   $('reminderSwitch').addEventListener('click', async () => {
     if (!data.settings.remindersEnabled) {
