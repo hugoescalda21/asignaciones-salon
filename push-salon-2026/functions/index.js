@@ -454,3 +454,48 @@ exports.devices = onRequest({ cors: ['https://hugoescalda21.github.io'], region:
     res.status(500).send({ error: 'Error interno' });
   }
 });
+
+// Prueba desde la vista de la congregación ("Probar en este celular"): cualquier persona
+// con acceso a la congregación puede mandarse una notificación de prueba a SU celular.
+// Espera unos segundos antes de enviarla, para que la persona alcance a salir de la app
+// (así se ve como un aviso normal del sistema y no como cartel dentro de la página).
+exports.testMyDevice = onRequest({ cors: ['https://hugoescalda21.github.io'], region: REGION, maxInstances: 5, timeoutSeconds: 60 }, async (req, res) => {
+  if (req.method !== 'POST') { res.status(405).send({ error: 'Método no permitido' }); return; }
+  try {
+    const m = String(req.get('Authorization') || '').match(/^Bearer (.+)$/);
+    if (!m) { res.status(401).send({ error: 'Falta iniciar sesión' }); return; }
+    let decoded;
+    try { decoded = await admin.auth().verifyIdToken(m[1]); } catch (e) { res.status(401).send({ error: 'Sesión vencida' }); return; }
+    const email = String(decoded.email || '').toLowerCase();
+    const body = req.body || {};
+    const code = String(body.code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const token = String(body.token || '');
+    if (!code || !token || !email) { res.status(400).send({ error: 'Datos no válidos' }); return; }
+    const cong = await db.collection('congregations').doc(code).get();
+    const s = ((cong.exists && cong.data().settings) || {});
+    const lists = ['editorEmails', 'tecnicoAdminEmails', 'acomodadoresAdminEmails', 'asignacionesAdminEmails', 'anunciosOnlyEmails', 'viewerEmails'];
+    if (!lists.some((k) => (s[k] || []).map((e) => String(e).toLowerCase()).includes(email))) { res.status(403).send({ error: 'Sin acceso a la congregación' }); return; }
+    const sub = await db.collection('pushSubscriptions').doc(token).get();
+    if (!sub.exists || sub.data().code !== code) { res.status(404).send({ error: 'Este celular no está registrado' }); return; }
+    const delay = Math.min(15, Math.max(0, Number(body.delaySec) || 0));
+    if (delay) await new Promise((r) => setTimeout(r, delay * 1000));
+    try {
+      await messaging.send({
+        token,
+        notification: { title: '🔔 Prueba 2 de 2', body: 'Si ves este aviso, las notificaciones de las asignaciones te llegan a este celular.' },
+        android: { priority: 'high' },
+        webpush: { headers: { Urgency: 'high', TTL: '600' }, fcmOptions: { link: verLink(code) }, notification: { badge: BADGE_URL, vibrate: [200, 100, 200], tag: 'prueba-' + Date.now() } }
+      });
+      await markSent(token, 'prueba');
+      res.status(200).send({ ok: true });
+    } catch (err) {
+      const stale = err && STALE_CODES.includes(err.code);
+      if (stale) await sub.ref.delete().catch(() => {});
+      else await markFailed(token, err, 'prueba');
+      res.status(200).send({ ok: false, error: (err && err.code) || String(err) });
+    }
+  } catch (err) {
+    console.error('[testMyDevice] error:', err && err.message);
+    res.status(500).send({ error: 'Error interno' });
+  }
+});

@@ -6,6 +6,12 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## "Probar en este celular" en la vista de la congregación — 23 sep 2026 (caché ver-salon-v26)
+
+- En la vista de la congregación → Recordatorios → "Cambiar", abajo: **🔔 Probar en este celular**. Manda dos avisos: uno sale del propio celular al instante (prueba que el teléfono muestra los avisos de la app) y otro desde la nube a los 10 segundos (prueba el camino completo, igual que una asignación). Según cuál llegue, explica qué ajustar: permiso de notificaciones de la app en Android/iPhone, ahorro de batería, o "Volver a registrar este celular".
+- Si las notificaciones están bloqueadas en la app instalada, el mensaje ahora indica dónde activarlas (Ajustes del teléfono → Aplicaciones → Ver Asignaciones), en lugar del ícono de la barra de direcciones que la app instalada no tiene.
+- Nueva función en la nube `testMyDevice` (cualquier persona con acceso a la congregación, solo para su propio celular). **Requiere `firebase deploy --only functions`.**
+
 ## Ver qué celulares reciben las notificaciones — 23 sep 2026 (cachés asignaciones-salon-v30, ver-salon-v25)
 
 - Ajustes → **Notificaciones de los hermanos** (Super Admin): lista de los celulares con los avisos activados, agrupados por hermano, con el tipo de celular, cuándo se activó, qué recordatorios eligió y cómo salió el último aviso (✓ enviado / ⚠ falló y por qué). Los que tienen problemas van primero.

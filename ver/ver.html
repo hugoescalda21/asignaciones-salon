@@ -188,6 +188,17 @@
   .ann-foot .ann-share { padding: 6px 12px; font-size: 12px; }
   .app-toast { position: fixed; left: 16px; right: 16px; bottom: calc(var(--tab-h, 62px) + 14px + env(safe-area-inset-bottom)); max-width: 480px; margin: 0 auto; background: #212C34; color: #fff; border-radius: 10px; padding: 11px 14px; font-size: 13px; line-height: 1.4; box-shadow: 0 6px 18px rgba(0,0,0,0.25); z-index: 350; opacity: 0; transform: translateY(8px); transition: opacity .2s, transform .2s; pointer-events: none; }
   .app-toast.show { opacity: 1; transform: none; }
+  .rem-test { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 13px; }
+  .rem-test p { margin: 3px 0 8px; color: var(--ink-soft); line-height: 1.4; }
+  .rem-test-btn { width: 100%; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 10px; font: inherit; font-size: 14px; font-weight: 700; color: var(--ink); cursor: pointer; }
+  .rem-test-btn:disabled { opacity: .6; }
+  #remTestOut { margin-top: 8px; line-height: 1.45; }
+  #remTestOut .rt-q { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  #remTestOut .rt-q button { flex: 1 1 auto; border: 1px solid var(--line); background: var(--surface); border-radius: 9px; padding: 8px 10px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--ink); }
+  #remTestOut .rt-help { background: var(--bg); border-radius: 10px; padding: 10px 12px; margin-top: 8px; }
+  #remTestOut .rt-help ol { margin: 6px 0 0; padding-left: 18px; }
+  #remTestOut .rt-help li { margin-bottom: 4px; }
+  #remTestOut .rt-ok { color: #4C7A5E; font-weight: 700; }
   .ann-event { display: flex; align-items: center; gap: 10px; background: #F2F6F9; border: 1px solid #D3E0EA; border-radius: 10px; padding: 8px 10px; margin: 2px 0 10px; }
   .ann-event .ae-cal { width: 40px; border-radius: 7px; overflow: hidden; text-align: center; background: #fff; border: 1px solid #D3E0EA; flex-shrink: 0; }
   .ann-event .ae-cal i { display: block; font-style: normal; background: var(--accent-blue); color: #fff; font-size: 9.5px; font-weight: 700; padding: 1px 0; text-transform: uppercase; }
@@ -510,6 +521,12 @@
     <div class="rem-opt" id="remHoursOpt"><div class="rem-ot">Unas horas antes<br><select id="remHoursSel" aria-label="Cuántas horas antes"><option value="1">1 hora antes</option><option value="2" selected>2 horas antes</option><option value="3">3 horas antes</option></select></div><button type="button" class="rem-sw" role="switch" aria-checked="false" data-pref="hours" aria-label="Avisar unas horas antes"></button></div>
     <p class="rem-foot">✓ Si te cambian o te sacan una asignación, el aviso se ajusta solo. Nunca te avisa de algo que ya no tenés.</p>
     <p class="rem-status" id="remStatus" role="status"></p>
+    <div class="rem-test">
+      <b>¿No te llegan los avisos?</b>
+      <p>Probá en este celular: te mandamos dos avisos de prueba, uno ya mismo y otro a los 10 segundos (para ese, salí de la app).</p>
+      <button type="button" class="rem-test-btn" id="remTestBtn">🔔 Probar en este celular</button>
+      <div id="remTestOut" role="status"></div>
+    </div>
   </div>
 </div>
 
@@ -1512,6 +1529,7 @@
       const messaging = firebase.messaging();
       const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: registration });
       if (token) {
+        window.__pushToken = token;
         // merge: no pisa lo que ya había; las preferencias de recordatorio viajan con el registro del celular.
         await firebase.firestore().collection('pushSubscriptions').doc(token).set(Object.assign({ code, pubId: pub.id, updatedAt: new Date().toISOString(), device: errDevice(), reminderPrefs: loadReminderPrefs(code, pub.id) }, localStorage.getItem('push-created-' + token.slice(0, 16)) ? {} : { createdAt: new Date().toISOString() }), { merge: true });
         try { localStorage.setItem('push-created-' + token.slice(0, 16), '1'); } catch (e) { /* nada */ }
@@ -1562,7 +1580,9 @@
       sub = reminderSummary(loadReminderPrefs(code, pub.id));
       action = '<button type="button" class="rem-link" id="reminderChangeBtn">Cambiar</button>';
     } else if (perm === 'denied') {
-      sub = 'Las notificaciones están bloqueadas en este navegador. Activalas desde el ícono junto a la dirección.';
+      sub = isInstalledApp()
+        ? 'Las notificaciones están bloqueadas para esta app. Activalas en Ajustes del teléfono → Aplicaciones → Ver Asignaciones → Notificaciones.'
+        : 'Las notificaciones están bloqueadas en este navegador. Activalas desde el ícono junto a la dirección.';
     } else {
       sub = 'Desactivados en este celular';
       action = '<button type="button" class="rem-link" id="reminderEnableBtn">Activar</button>';
@@ -1592,10 +1612,87 @@
   function openReminderSheet(pub, code) {
     remCtx = { pub, code };
     $('remStatus').textContent = '';
+    $('remTestOut').innerHTML = '';
     paintReminderSheet();
     $('reminderOverlay').classList.remove('hidden');
     $('reminderCloseBtn').focus();
   }
+  function isInstalledApp() { return !!((window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone); }
+  const TEST_URL = 'https://southamerica-east1-asignaciones-salon.cloudfunctions.net/testMyDevice';
+  function remTestHelp(kind) {
+    const inst = isInstalledApp();
+    const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+    const steps = [];
+    if (kind === 'none') {
+      if (ios) {
+        steps.push('En iPhone los avisos solo funcionan con la app <b>instalada</b> ("Compartir" → "Agregar a inicio") y abierta desde ese ícono, con iOS 16.4 o más nuevo.');
+        steps.push('Ajustes del iPhone → Notificaciones → <b>Ver Asignaciones</b> → Permitir notificaciones.');
+      } else {
+        steps.push(`Ajustes del teléfono → Aplicaciones → <b>${inst ? 'Ver Asignaciones' : 'Chrome'}</b> → Notificaciones → activá <b>Permitir notificaciones</b> (y que ninguna categoría esté apagada).`);
+        if (inst) steps.push('Si también la usás desde Chrome: Ajustes → Aplicaciones → <b>Chrome</b> → Notificaciones → activadas.');
+        steps.push('Que el teléfono no esté en <b>No molestar</b> ni en modo ahorro de batería extremo.');
+      }
+      steps.push('Después volvé acá y tocá <b>Probar en este celular</b> otra vez.');
+      return `<div class="rt-help"><b>El teléfono no está mostrando los avisos de esta app.</b><ol>${steps.map(s => `<li>${s}</li>`).join('')}</ol></div>`;
+    }
+    steps.push('Tocá <b>Volver a registrar este celular</b> (abajo) y probá otra vez.');
+    if (!ios) steps.push('En algunos teléfonos (Samsung, Xiaomi, Motorola) el ahorro de batería frena los avisos de apps que no están abiertas: Ajustes → Batería → Uso de batería de apps → <b>' + (inst ? 'Ver Asignaciones' : 'Chrome') + '</b> → Sin restricciones.');
+    return `<div class="rt-help"><b>El celular muestra avisos, pero no le llegan los que manda la congregación.</b><ol>${steps.map(s => `<li>${s}</li>`).join('')}</ol>
+      <button type="button" class="rem-test-btn" id="remReRegBtn" style="margin-top:8px;">↻ Volver a registrar este celular</button></div>`;
+  }
+  async function runRemTest() {
+    if (!remCtx) return;
+    const { pub, code } = remCtx;
+    const out = $('remTestOut'), btn = $('remTestBtn');
+    btn.disabled = true;
+    out.innerHTML = 'Preparando…';
+    if (Notification.permission !== 'granted') {
+      try { await Notification.requestPermission(); } catch (e) { /* nada */ }
+      if (Notification.permission !== 'granted') { out.innerHTML = remTestHelp('none'); btn.disabled = false; return; }
+    }
+    // 1) Aviso local, ya mismo: prueba que el teléfono muestra los avisos de esta app.
+    let localOk = false;
+    try {
+      const reg = await navigator.serviceWorker.register('service-worker.js');
+      await reg.showNotification('🔔 Prueba 1 de 2', { body: 'Si ves esto, este celular muestra los avisos de la app.', tag: 'prueba-local', badge: '../badge-icon.png', icon: 'icon-192-ver.png' });
+      localOk = true;
+    } catch (e) { console.warn('Prueba local', e); }
+    // 2) Aviso desde la nube, a los 10 segundos: prueba el camino completo (igual que una asignación).
+    let cloud = 'skip';
+    try {
+      const okSub = await completePushSubscription(pub, code, `push-decided-${code}-${pub.id}`);
+      if (okSub && window.__pushToken && currentUser) {
+        const idToken = await currentUser.getIdToken();
+        const res = await fetch(TEST_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + idToken }, body: JSON.stringify({ code, token: window.__pushToken, delaySec: 10 }) });
+        const r = await res.json().catch(() => ({}));
+        cloud = res.ok && r.ok ? 'sent' : 'fail:' + (r.error || res.status);
+      } else cloud = 'fail:no-token';
+    } catch (e) { cloud = 'fail:' + (e && e.message); }
+    btn.disabled = false;
+    const q = `<div class="rt-q"><button type="button" data-rt="both">Me llegaron las dos</button><button type="button" data-rt="first">Solo la primera</button><button type="button" data-rt="none">No me llegó ninguna</button></div>`;
+    if (cloud === 'sent') out.innerHTML = `${localOk ? 'Enviamos la prueba 1.' : ''} <b>Salí de la app ahora</b> (o bloqueá el teléfono): en unos 10 segundos te llega la prueba 2. Después volvé y contanos:${q}`;
+    else out.innerHTML = `${localOk ? 'Enviamos la prueba 1 (la que sale del propio celular).' : ''} La prueba 2 no se pudo mandar (${escapeHtml(cloud.replace(/^fail:/, ''))}). ¿Viste la prueba 1?<div class="rt-q"><button type="button" data-rt="first">Sí, la vi</button><button type="button" data-rt="none">No la vi</button></div>`;
+  }
+  $('remTestBtn').addEventListener('click', runRemTest);
+  $('remTestOut').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-rt]');
+    if (b) {
+      const k = b.dataset.rt;
+      $('remTestOut').innerHTML = k === 'both' ? '<span class="rt-ok">✓ Todo bien: las notificaciones funcionan en este celular.</span>' : remTestHelp(k === 'first' ? 'first' : 'none');
+      return;
+    }
+    if (e.target.id === 'remReRegBtn' && remCtx) {
+      const { pub, code } = remCtx;
+      e.target.disabled = true; e.target.textContent = 'Registrando…';
+      try {
+        const old = window.__pushToken;
+        try { await firebase.messaging().deleteToken(); } catch (err) { /* nada */ }
+        if (old) { try { await firebase.firestore().collection('pushSubscriptions').doc(old).delete(); } catch (err) { /* nada */ } }
+        const ok = await completePushSubscription(pub, code, `push-decided-${code}-${pub.id}`);
+        $('remTestOut').innerHTML = ok ? '<span class="rt-ok">✓ Celular registrado de nuevo.</span> Tocá <b>Probar en este celular</b> otra vez.' : 'No se pudo registrar. Revisá la conexión y probá de nuevo.';
+      } catch (err) { $('remTestOut').innerHTML = 'No se pudo registrar: ' + escapeHtml(err && err.message); }
+    }
+  });
   function closeReminderSheet() {
     $('reminderOverlay').classList.add('hidden');
     if (remCtx) renderReminderRow(remCtx.pub, remCtx.code);
