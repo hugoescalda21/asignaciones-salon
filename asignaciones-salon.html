@@ -1770,12 +1770,21 @@
 <script>
   /* ---------- Red de seguridad: errores inesperados ---------- */
   let fatalErrorShown = false;
-  function showFatalErrorBanner() {
+  function showFatalErrorBanner(ev) {
     if (fatalErrorShown) return;
     fatalErrorShown = true;
+    let det = '';
+    try {
+      const r = ev && (ev.error || ev.reason);
+      const msg = (r && r.message) || (ev && ev.message) || String(r || '');
+      const st = (r && r.stack) || '';
+      const m = st.match(/(?:at |@)(?:.*?\()?[^\s()]*?([\w.-]+\.html?):(\d+):(\d+)/) || [];
+      const fn = (st.split('\n').find(l => /at \w/.test(l) && !/showFatal/.test(l)) || '').trim().replace(/^at /, '').split(' ')[0];
+      det = `${msg}${m[2] ? ` (línea ${m[2]}${fn ? ', ' + fn : ''})` : ''}`.slice(0, 220);
+    } catch (e) { /* nada */ }
     const bar = document.createElement('div');
     bar.className = 'top-banner error';
-    bar.innerHTML = `<span>Ocurrió un error inesperado. Si algo se ve raro en la pantalla, recargá la página.</span>
+    bar.innerHTML = `<span>Ocurrió un error inesperado. Si algo se ve raro en la pantalla, recargá la página.${det ? `<small style="display:block;opacity:.8;font-size:11px;margin-top:3px;word-break:break-word;">Detalle: ${det.replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))}</small>` : ''}</span>
       <div class="tb-actions"><button type="button" id="fatalReloadBtn">Recargar</button><button type="button" id="fatalDismissBtn">Cerrar</button></div>`;
     document.body.insertBefore(bar, document.body.firstChild);
     document.getElementById('fatalReloadBtn').addEventListener('click', () => window.location.reload());
@@ -1806,7 +1815,10 @@
       if (!msg || errCount >= 10 || errSeen.has(kind + '|' + msg)) return;
       if (/ResizeObserver loop|^Script error\.?$/i.test(msg) || /-extension:\/\//.test(where || '')) return;
       errSeen.add(kind + '|' + msg); errCount++;
-      errQueue.push({ at: new Date().toISOString(), app: ERR_APP, kind, msg, where: String(where || '').slice(0, 1000), role: errRole(), device: errDevice(), online: navigator.onLine !== false });
+      const item = { at: new Date().toISOString(), app: ERR_APP, kind, msg, where: String(where || '').slice(0, 1000), role: errRole(), device: errDevice(), online: navigator.onLine !== false };
+      errQueue.push(item);
+      // Copia en este dispositivo (por si no hay conexión con la nube): las últimas 10.
+      try { const loc = JSON.parse(localStorage.getItem('kh-err-local') || '[]'); loc.unshift(item); localStorage.setItem('kh-err-local', JSON.stringify(loc.slice(0, 10))); } catch (e) { /* nada */ }
       flushCloudErrors();
     } catch (e) { /* el registro de errores nunca debe romper nada */ }
   }
@@ -6075,7 +6087,12 @@
   let errLogItems = [];
   async function loadErrLog() {
     const box = $('errLogList');
-    if (!fbDb || !accessCode || !currentUser) { box.innerHTML = '<p class="hint" style="margin:0;">Hace falta estar conectado a la nube para ver el registro.</p>'; return; }
+    if (!fbDb || !accessCode || !currentUser) {
+      let loc = []; try { loc = JSON.parse(localStorage.getItem('kh-err-local') || '[]'); } catch (e) { /* nada */ }
+      errLogItems = [];
+      box.innerHTML = '<p class="hint" style="margin:0 0 6px;">Sin conexión con la nube: se muestran solo los errores de este dispositivo.</p>' + (loc.length ? loc.map(x => `<details class="err-item" open><summary><span class="err-kind">${escapeHtml(ERR_KIND[x.kind] || 'Error')}</span> <span class="err-msg">${escapeHtml(x.msg || '')}</span><small>${escapeHtml(x.at ? new Date(x.at).toLocaleString('es-ES') : '')} · ${escapeHtml(x.device || '')}</small></summary>${x.where ? `<pre class="err-where">${escapeHtml(x.where)}</pre>` : ''}</details>`).join('') : '<p class="hint" style="margin:0;">No hay errores guardados en este dispositivo.</p>');
+      return;
+    }
     box.innerHTML = '<p class="hint" style="margin:0;">Cargando…</p>';
     try {
       // Limpieza: se borran los de más de 30 días.
