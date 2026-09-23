@@ -871,6 +871,27 @@
   .timer-pace.late { background: var(--danger-bg); color: var(--danger); }
   .timer-pace.early { background: #E4EFE6; color: var(--ok); }
   .timer-pace.even { background: var(--surface); border: 1px solid var(--line); color: var(--ink); }
+  .timer-pace.end { justify-content: flex-start; cursor: pointer; padding: 8px 12px; }
+  .timer-pace.end .tp-ic { font-size: 17px; }
+  .timer-pace.end .tp-tx { flex: 1; min-width: 0; line-height: 1.25; }
+  .timer-pace.end .tp-tx b { display: block; font-size: 14.5px; }
+  .timer-pace.end .tp-tx small { display: block; font-size: 11.5px; }
+  .timer-pace.end .tp-chev { color: var(--ink-soft); font-size: 16px; }
+  .timer-pace.ok { background: #E4EFE6; color: var(--ok); border: 1px solid #b9d3bf; }
+  .timer-pace.late { border: 1px solid #E7C3BE; }
+  .timer-pace-tip { background: var(--surface); border: 1px dashed #E7C3BE; border-radius: var(--radius-s); padding: 8px 12px; font-size: 13px; line-height: 1.4; margin: -4px 0 10px; }
+  .timer-pace-tip b { color: var(--danger); }
+  .pace-calc { font-size: 13.5px; border-top: 1px solid var(--line); }
+  .pace-calc > div { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); }
+  .pace-calc > div span:last-child { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .pace-calc > div small { color: var(--ink-soft); }
+  .pace-calc .tot { font-size: 14.5px; border-bottom: none; }
+  .pace-calc .tot.late span:last-child { color: var(--danger); }
+  .pace-calc .tot.ok span:last-child, .pace-calc .tot.early span:last-child { color: var(--ok); }
+  .pace-set { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: var(--bg); border-radius: 9px; padding: 8px 10px; margin-top: 8px; font-size: 13px; font-weight: 600; }
+  .pace-set select { border: 1px solid var(--line); border-radius: 7px; padding: 4px 6px; font: inherit; font-size: 13px; background: var(--surface); color: var(--ink); }
+  .timer-fs-end { margin-top: 12px; font-size: 15px; font-weight: 700; background: rgba(0,0,0,0.22); border-radius: 12px; padding: 5px 14px; }
+  .timer-fs-end:empty { display: none; }
   .timer-main { display: block; width: 100%; max-width: 360px; margin: 0 auto; border: none; border-radius: 14px; padding: 15px 12px; font: inherit; font-size: 17px; font-weight: 700; color: #fff; background: var(--ink); cursor: pointer; }
   .timer-main.go { background: var(--ok); }
   .timer-main small { display: block; font-size: 12px; font-weight: 600; opacity: 0.88; margin-top: 2px; }
@@ -1121,6 +1142,18 @@
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="paceSheetOverlay">
+  <div class="modal" style="max-width:420px;">
+    <h3 id="paceSheetTitle" style="margin-bottom:2px;">Termina</h3>
+    <p class="modal-sub" id="paceSheetSub" style="margin-bottom:10px;"></p>
+    <div class="pace-calc" id="paceSheetCalc"></div>
+    <label class="pace-set"><span id="paceDurLabel">Duración de la reunión</span><select id="paceDurSel"></select></label>
+    <label class="pace-set"><span>Cántico + oración (aprox.)</span><select id="paceSongSel"></select></label>
+    <p class="hint" style="margin-top:8px;">La hora de inicio de cada reunión se cambia en Ajustes → Congregación. La cuenta suma 20 s por cada cambio de parte.</p>
+    <div class="modal-footer"><button type="button" class="btn" id="paceSheetClose">Cerrar</button></div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="accMenuOverlay">
   <div class="modal" style="max-width:420px;">
     <h3 id="accMenuTitle" style="margin-bottom:2px; word-break:break-all;">Persona</h3>
@@ -1266,7 +1299,8 @@
       <p class="hint" id="timerTopicLabel"></p>
       <button type="button" class="btn timer-fs-btn" id="timerFsBtn" aria-label="Pantalla completa">⛶ Pantalla completa</button>
     </div>
-    <div class="timer-pace hidden" id="timerPace" role="status"></div>
+    <div class="timer-pace hidden" id="timerPace" role="status" aria-live="polite"></div>
+    <div class="timer-pace-tip hidden" id="timerPaceTip"></div>
     <div id="timerPanelHome">
     <div class="timer-panel">
       <div class="timer-now" id="timerNow"></div>
@@ -1317,6 +1351,7 @@
       <div class="timer-fs-who" id="timerFsWho"></div>
       <div class="timer-fs-time" id="timerFsTime">00:00</div>
       <div class="timer-fs-state" id="timerFsState"></div>
+      <div class="timer-fs-end" id="timerFsEnd"></div>
       <div class="timer-fs-hint">Tocá la pantalla para pausar o seguir · la pantalla no se apaga</div>
     </div>
   </section>
@@ -1891,7 +1926,7 @@
   }
 
   let data = { settings: {}, publishers: [], weeks: {} };
-  let currentMonday = mondayOf(new Date().toISOString().slice(0, 10));
+  let currentMonday = mondayOf(todayIsoLocal());
   let currentType = 'semana';
   let pubEditingId = null;
   let timerInterval = null, timerRemaining = 0, timerTotal = 0, timerEndAt = 0;
@@ -3824,7 +3859,7 @@
     const first = new Date(y, m, 1);
     const startOffset = (first.getDay() + 6) % 7; // Lunes = 0
     const daysInMonth = new Date(y, m + 1, 0).getDate();
-    const todayIso = new Date().toISOString().slice(0, 10);
+    const todayIso = todayIsoLocal();
     let cells = '';
     for (let i = 0; i < startOffset; i++) cells += '<div class="cal-day empty"></div>';
     for (let d = 1; d <= daysInMonth; d++) {
@@ -3902,7 +3937,7 @@
 
   $('prevWeekBtn').addEventListener('click', () => setWeek(shiftDate(currentMonday, -7)));
   $('nextWeekBtn').addEventListener('click', () => setWeek(shiftDate(currentMonday, 7)));
-  $('todayBtn').addEventListener('click', () => setWeek(mondayOf(new Date().toISOString().slice(0, 10))));
+  $('todayBtn').addEventListener('click', () => setWeek(mondayOf(todayIsoLocal())));
 
   function copyPreviousWeek() {
     hapticTap();
@@ -4386,16 +4421,16 @@
       const min = Number(e.min) || (e.num ? DEF[sec] : 0);
       if (!min) return;   // presidente, oraciones, lector: no se cronometran
       const label = /^Atalaya/.test(e.label) ? 'Estudio de La Atalaya' : e.label.trim();
-      parts.push({ label, who: e.name, min, num: e.num || '', noMin });
+      parts.push({ label, who: e.name, min, num: e.num || '', noMin, sec });
       // Consejo opcional (1 min) después de la Lectura de la Biblia y de cada parte de estudiante.
       if (withCounsel && (e.num === 3 || sec === 'SEAMOS MEJORES MAESTROS')) {
-        parts.push({ label: `Consejo (${label})`, shortLabel: 'Consejo', who: presName, min: 1, num: '', counsel: true });
+        parts.push({ label: `Consejo (${label})`, shortLabel: 'Consejo', who: presName, min: 1, num: '', counsel: true, sec });
       }
     });
     return parts;
   }
   function partDoneEntry(label) {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayIsoLocal();
     return (data.timerLog || []).find(x => x.date === today && x.type === currentType && x.label === label) || null;
   }
   function setTimerNow(label, who) {
@@ -4497,17 +4532,159 @@
     }));
   }
   // "Reunión: 1:40 atrasada": suma las diferencias de las partes ya tomadas hoy.
+  /* ---------- ¿A qué hora termina la reunión? ----------
+     Con el reloj real: ahora + lo que falta (parte en curso, partes pendientes, cánticos,
+     oraciones, palabras de conclusión y cambios de parte), comparado con el fin previsto
+     (hora de inicio de Ajustes + duración de la reunión). */
+  const TRANSITION_SEC = 20; // cambio de parte (el hermano que sube, etc.)
+  function meetingDurMin(type) { const v = Number(data.settings[type === 'finde' ? 'meetingDurFinde' : 'meetingDurSemana']); return v > 0 ? v : 105; }
+  function songPrayerMin() { const v = Number(data.settings.songPrayerMin); return v > 0 ? v : 5; }
+  function hhmm(ms) { const d = new Date(ms); return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`; }
+  // Segmentos que no se cronometran, en su lugar dentro de la reunión.
+  function meetingFixedSegments(type) {
+    const s = songPrayerMin() * 60;
+    if (type === 'finde') return [
+      { at: 'start', label: 'Canción y oración de apertura', sec: s }, { at: 'start', label: 'Presentación', sec: 60 },
+      { at: 'before:Estudio de La Atalaya', label: 'Canción intermedia', sec: Math.max(180, s - 120) },
+      { at: 'end', label: 'Canción final y oración', sec: s }];
+    return [
+      { at: 'start', label: 'Canción y oración de apertura', sec: s }, { at: 'start', label: 'Palabras de introducción', sec: 60 },
+      { at: 'before-sec:NUESTRA VIDA CRISTIANA', label: 'Canción intermedia', sec: Math.max(180, s - 120) },
+      { at: 'end', label: 'Palabras de conclusión', sec: 180 }, { at: 'end', label: 'Canción final y oración', sec: s }];
+  }
+  function meetingEndEstimate() {
+    const type = currentType;
+    const date = dateForType(currentMonday, type);
+    const startStr = data.settings[type === 'finde' ? 'meetingTimeFinde' : 'meetingTimeSemana'];
+    if (!/^\d{2}:\d{2}$/.test(startStr || '')) return null;
+    const schedStart = new Date(`${date}T${startStr}:00`).getTime();
+    const schedEnd = schedStart + meetingDurMin(type) * 60000;
+    const isToday = date === todayIsoLocal();
+    const parts = meetingParts;
+    const running = !!timerInterval;
+    const curIdx = partMode && selectedPartIdx >= 0 ? selectedPartIdx : -1;
+    const curElapsed = curIdx >= 0 ? Math.max(0, timerTotal - timerRemaining) : 0;
+    const doneCount = parts.filter(p => partDoneEntry(p.label)).length;
+    const started = isToday && (doneCount > 0 || (curIdx >= 0 && curElapsed > 0));
+    const out = { type, schedStart, schedEnd, started, items: [], doneCount };
+    if (!started) return out;
+    const now = Date.now();
+    // Posición actual: la parte en curso, o la primera que falta.
+    let pos = curIdx >= 0 && curElapsed > 0 ? curIdx : parts.findIndex(p => !partDoneEntry(p.label));
+    if (pos < 0) pos = parts.length;
+    const fixed = meetingFixedSegments(type);
+    const firstNvc = parts.findIndex(p => p.sec === 'NUESTRA VIDA CRISTIANA');
+    const idxOf = (seg) => {
+      if (seg.at === 'start') return -1;
+      if (seg.at === 'end') return parts.length;
+      if (seg.at.startsWith('before-sec:')) return firstNvc >= 0 ? firstNvc - 0.5 : parts.length - 0.5;
+      if (seg.at.startsWith('before:')) { const i = parts.findIndex(p => p.label === seg.at.slice(7)); return i >= 0 ? i - 0.5 : parts.length - 0.5; }
+      return parts.length;
+    };
+    let remaining = 0;
+    const pending = [];
+    if (pos < parts.length && pos === curIdx && curElapsed > 0) {
+      const left = Math.max(0, timerRemaining);
+      out.items.push({ label: `${parts[pos].shortLabel || parts[pos].label} (le quedan)`, sec: left });
+      remaining += left;
+    }
+    parts.forEach((p, i) => {
+      if (partDoneEntry(p.label)) return;
+      if (i === pos && pos === curIdx && curElapsed > 0) return;
+      if (i < pos) return; // salteada
+      pending.push(p);
+      remaining += p.min * 60 + TRANSITION_SEC;
+    });
+    if (pending.length) out.items.push({ label: pending.length === 1 ? (pending[0].shortLabel || pending[0].label) : `${pending.length} partes que faltan`, sec: pending.reduce((s, p) => s + p.min * 60 + TRANSITION_SEC, 0), hint: pending.length > 1 ? 'con cambios de parte' : '' });
+    fixed.forEach(seg => { if (idxOf(seg) >= pos) { out.items.push({ label: seg.label, sec: seg.sec, approx: true }); remaining += seg.sec; } });
+    out.now = now;
+    out.end = now + remaining * 1000;
+    out.diff = Math.round((out.end - schedEnd) / 1000); // + tarde, − antes
+    // ¿Cuándo empezó? (aprox.: comienzo de la primera parte tomada, menos la apertura)
+    const firstLog = (data.timerLog || []).filter(x => x.date === todayIsoLocal() && x.type === type && x.endedAt).map(x => new Date(x.endedAt).getTime() - x.actualSeconds * 1000);
+    if (curIdx >= 0 && curElapsed > 0) firstLog.push(now - curElapsed * 1000);
+    const opening = fixed.filter(s => s.at === 'start').reduce((s, x) => s + x.sec, 0);
+    if (firstLog.length && parts.length && (pos === 0 || doneCount > 0)) out.startedAt = Math.min(...firstLog) - opening * 1000;
+    // Ayuda para recuperar: cuánto deberían durar las partes que faltan.
+    if (out.diff >= 60) {
+      const adjustable = [];
+      if (pos < parts.length && pos === curIdx && curElapsed > 0 && timerRemaining > 0 && !parts[pos].counsel) adjustable.push({ p: parts[pos], left: timerRemaining });
+      pending.filter(p => !p.counsel).forEach(p => adjustable.push({ p, left: p.min * 60 }));
+      const room = adjustable.reduce((s, a) => s + a.left, 0);
+      if (!adjustable.length || out.diff > room * 0.4) out.tip = `Ya no se llega a las ${hhmm(schedEnd)} acortando las partes que faltan.`;
+      else if (adjustable.length === 1) {
+        const a = adjustable[0];
+        const newTotal = Math.max(0, a.p.min * 60 - out.diff);
+        out.tip = `Para terminar a las ${hhmm(schedEnd)}, la parte <b>${escapeHtml(a.p.shortLabel || a.p.label)}</b> debería durar <b>${fmtMinSec(newTotal)}</b> en vez de ${a.p.min} min.`;
+      } else {
+        const each = Math.ceil(out.diff / adjustable.length / 5) * 5;
+        out.tip = `Para terminar a las ${hhmm(schedEnd)}, las <b>${adjustable.length} partes que faltan</b> deberían durar <b>${fmtMinSec(each)} menos cada una</b>.`;
+      }
+    }
+    return out;
+  }
+  function endLabel(est) {
+    if (!est) return null;
+    if (!est.started) return { kind: 'even', main: `Empieza ${hhmm(est.schedStart)} · termina ${hhmm(est.schedEnd)}`, sub: `Duración prevista: ${Math.floor(meetingDurMin(est.type) / 60)} h ${meetingDurMin(est.type) % 60} min` };
+    const m = Math.round(Math.abs(est.diff) / 60);
+    const kind = est.diff >= 60 ? 'late' : est.diff <= -60 ? 'early' : 'ok';
+    const main = `Termina ~${hhmm(est.end)} · ${kind === 'late' ? `${m} min tarde` : kind === 'early' ? `${m} min antes` : 'a horario'}`;
+    const sub = `Fin previsto ${hhmm(est.schedEnd)}${est.startedAt ? ` · empezó ~${hhmm(est.startedAt)}` : ''}`;
+    return { kind, main, sub };
+  }
   function renderMeetingPace() {
     const box = $('timerPace');
     if (!box) return;
-    const done = meetingParts.map(p => partDoneEntry(p.label)).filter(Boolean);
-    if (!done.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
-    const diff = done.reduce((s, e) => s + (e.actualSeconds - e.plannedSeconds), 0);
-    const kind = diff >= 15 ? 'late' : diff <= -15 ? 'early' : 'even';
-    const txt = kind === 'late' ? `Reunión: ${fmtMinSec(diff)} atrasada` : kind === 'early' ? `Reunión: ${fmtMinSec(-diff)} adelantada` : 'Reunión: a tiempo';
-    box.className = 'timer-pace ' + kind;
-    box.innerHTML = `<span>${txt}</span><small>${done.length} de ${meetingParts.length} tomadas</small>`;
+    const est = meetingParts.length ? meetingEndEstimate() : null;
+    const lab = endLabel(est);
+    if (!lab) {
+      // Sin hora de inicio cargada: el cálculo viejo (suma de las partes tomadas).
+      const done = meetingParts.map(p => partDoneEntry(p.label)).filter(Boolean);
+      if (!done.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+      const diff = done.reduce((s, e) => s + (e.actualSeconds - e.plannedSeconds), 0);
+      const kind = diff >= 15 ? 'late' : diff <= -15 ? 'early' : 'even';
+      const txt = kind === 'late' ? `Reunión: ${fmtMinSec(diff)} atrasada` : kind === 'early' ? `Reunión: ${fmtMinSec(-diff)} adelantada` : 'Reunión: a tiempo';
+      box.className = 'timer-pace ' + kind;
+      box.innerHTML = `<span>${txt}</span><small>${done.length} de ${meetingParts.length} tomadas · cargá la hora de la reunión en Ajustes para ver a qué hora termina</small>`;
+      return;
+    }
+    box.className = 'timer-pace end ' + lab.kind;
+    box.setAttribute('role', 'button');
+    box.setAttribute('tabindex', '0');
+    box.innerHTML = `<span class="tp-ic" aria-hidden="true">🕘</span><span class="tp-tx"><b>${escapeHtml(lab.main)}</b><small>${escapeHtml(lab.sub)}</small></span><span class="tp-chev" aria-hidden="true">›</span>`;
+    const tip = $('timerPaceTip');
+    if (tip) { tip.innerHTML = est && est.tip ? est.tip : ''; tip.classList.toggle('hidden', !(est && est.tip)); }
+    const fe = $('timerFsEnd');
+    if (fe) { fe.textContent = est && est.started ? `Fin ~${hhmm(est.end)} · ${est.diff >= 60 ? '+' + Math.round(est.diff / 60) + ' min' : est.diff <= -60 ? '−' + Math.round(-est.diff / 60) + ' min' : 'a horario'}` : ''; }
+    if (!$('paceSheetOverlay').classList.contains('hidden')) renderPaceSheet();
   }
+  function renderPaceSheet() {
+    const est = meetingEndEstimate();
+    const lab = endLabel(est);
+    if (!est || !lab) return;
+    $('paceSheetTitle').textContent = est.started ? `Termina ~${hhmm(est.end)}` : `Termina ${hhmm(est.schedEnd)}`;
+    $('paceSheetSub').textContent = est.started
+      ? (Math.abs(est.diff) < 60 ? `A horario (fin previsto ${hhmm(est.schedEnd)})` : `${Math.round(Math.abs(est.diff) / 60)} min ${est.diff > 0 ? 'después' : 'antes'} del fin previsto (${hhmm(est.schedEnd)})`)
+      : `Empieza ${hhmm(est.schedStart)} + ${meetingDurMin(est.type)} min de reunión`;
+    const rows = est.started
+      ? [`<div><span>Ahora</span><span>${hhmm(est.now)}</span></div>`]
+        .concat(est.items.map(it => `<div><span>${escapeHtml(it.label)}${it.approx ? ' <small>(aprox.)</small>' : ''}${it.hint ? ` <small>(${escapeHtml(it.hint)})</small>` : ''}</span><span>${fmtMinSec(it.sec)}</span></div>`))
+        .concat([`<div class="tot ${lab.kind}"><span>Fin estimado</span><span>${hhmm(est.end)}</span></div>`])
+      : [`<div><span>Inicio</span><span>${hhmm(est.schedStart)}</span></div>`, `<div><span>Duración</span><span>${meetingDurMin(est.type)} min</span></div>`, `<div class="tot"><span>Fin previsto</span><span>${hhmm(est.schedEnd)}</span></div>`];
+    $('paceSheetCalc').innerHTML = rows.join('');
+    const durSel = $('paceDurSel'), songSel = $('paceSongSel');
+    $('paceDurLabel').textContent = `Duración de la reunión (${est.type === 'finde' ? 'fin de semana' : 'entre semana'})`;
+    durSel.innerHTML = [90, 95, 100, 105, 110, 115, 120].map(v => `<option value="${v}"${v === meetingDurMin(est.type) ? ' selected' : ''}>${Math.floor(v / 60)} h ${v % 60} min</option>`).join('');
+    songSel.innerHTML = [3, 4, 5, 6, 7].map(v => `<option value="${v}"${v === songPrayerMin() ? ' selected' : ''}>${v} min</option>`).join('');
+  }
+  $('timerPace').addEventListener('click', () => { if (!$('timerPace').classList.contains('end')) return; renderPaceSheet(); $('paceSheetOverlay').classList.remove('hidden'); });
+  $('timerPace').addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && $('timerPace').classList.contains('end')) { e.preventDefault(); $('timerPace').click(); } });
+  $('paceSheetClose').addEventListener('click', () => $('paceSheetOverlay').classList.add('hidden'));
+  $('paceSheetOverlay').addEventListener('click', (e) => { if (e.target.id === 'paceSheetOverlay') $('paceSheetOverlay').classList.add('hidden'); });
+  $('paceDurSel').addEventListener('change', (e) => { data.settings[currentType === 'finde' ? 'meetingDurFinde' : 'meetingDurSemana'] = Number(e.target.value); saveData(); renderMeetingPace(); renderPaceSheet(); });
+  $('paceSongSel').addEventListener('change', (e) => { data.settings.songPrayerMin = Number(e.target.value); saveData(); renderMeetingPace(); renderPaceSheet(); });
+  // La hora de fin se mueve con el reloj: se refresca cada 15 s con la pestaña a la vista.
+  setInterval(() => { if (!document.hidden && !$('panel-timer').classList.contains('hidden')) renderMeetingPace(); }, 15000);
   function nextPartLabel() {
     if (selectedPartIdx < 0) return '';
     const n = meetingParts.find((p, i) => i > selectedPartIdx && !partDoneEntry(p.label));
@@ -4647,6 +4824,7 @@
     // al volver salta directo al valor correcto en vez de quedar atrasado.
     timerRemaining = Math.round((timerEndAt - Date.now()) / 1000);
     updateTimerDisplay();
+    if (partMode && timerRemaining % 5 === 0) renderMeetingPace();
     if (timerRemaining <= 60 && timerRemaining > 0 && timerTotal > 60 && !oneMinuteWarned) {
       oneMinuteWarned = true;
       if (data.settings.timerVibrate !== false && navigator.vibrate) { try { navigator.vibrate([90, 70, 90]); } catch (e) { /* sin soporte */ } }
@@ -4707,7 +4885,7 @@
     const elapsed = Math.max(0, timerTotal - timerRemaining);
     data.timerLog = data.timerLog || [];
     data.timerLog.unshift({
-      id: uid(), date: new Date().toISOString().slice(0, 10), type: currentType,
+      id: uid(), date: todayIsoLocal(), type: currentType, endedAt: new Date().toISOString(),
       label: currentPresetLabel, plannedSeconds: timerTotal, actualSeconds: elapsed
     });
     if (data.timerLog.length > 50) data.timerLog = data.timerLog.slice(0, 50);
@@ -4765,7 +4943,7 @@
   }
 
   async function shareTimerHistory() {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayIsoLocal();
     const entries = (data.timerLog || []).filter(e => e.date === today && e.type === currentType);
     if (!entries.length) { showToast('No hay tiempos registrados hoy para esta reunión'); return; }
     const { dayName, day } = formatDate(today);
@@ -4933,7 +5111,7 @@
     ['atalayaConductor', 'Atalaya — Conductor'], ['atalayaLector', 'Atalaya — Lector'], ['oracionFinal', 'Oración final']
   ];
   function findAssignmentsFor(pubId) {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayIsoLocal();
     const results = [];
     Object.keys(data.weeks).sort().forEach(monday => {
       const w = data.weeks[monday];
@@ -5488,7 +5666,7 @@
     return counts;
   }
   function computeFreeMeetings(year) {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayIsoLocal();
     const result = {};
     data.publishers.forEach(p => { if (Object.values(p.roles).some(Boolean)) result[p.id] = { total: 0, ocupado: 0, noDisponible: 0, libre: 0 }; });
     let monday = mondayOf(`${year}-01-01`);
@@ -5951,7 +6129,7 @@
     if (!data.settings.remindersEnabled) return;
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
     const REM_KEY = 'kh-last-reminder-date';
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayIsoLocal();
     let lastNotified = null;
     try { lastNotified = localStorage.getItem(REM_KEY); } catch (e) { /* sin acceso */ }
     if (lastNotified === today) return;

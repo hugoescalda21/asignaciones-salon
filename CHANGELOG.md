@@ -6,6 +6,16 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Cronómetro: a qué hora termina la reunión — 23 sep 2026 (caché asignaciones-salon-v27)
+
+- La barra de arriba ya no suma solo las partes terminadas ("1:40 atrasada"): calcula con el reloj real **a qué hora termina la reunión** ("Termina ~21:19 · 4 min tarde"). Suma lo que le queda a la parte en curso (en vivo), las partes que faltan, 20 s por cada cambio de parte, los cánticos con oración, las palabras de conclusión, y lo compara con el fin previsto (hora de inicio de Ajustes + duración). Muestra también cuándo empezó (aprox.).
+- Antes de empezar dice "Empieza 19:30 · termina 21:15". Verde a horario (±1 min), rojo si va tarde.
+- Si va tarde, una ayuda para el conductor: cuánto debería durar la parte que falta, o cuánto menos cada una si faltan varias (o que ya no se llega).
+- Tocando la barra se ve la cuenta completa y se ajustan la duración de la reunión (entre semana y fin de semana por separado) y el tiempo de cada cántico con oración.
+- En pantalla completa, debajo del reloj: "Fin ~21:19 · +4 min".
+- Arreglo: después de las 21 h (ya otro día en hora UTC), las partes tomadas dejaban de verse como tomadas y el ritmo se reiniciaba. Ahora se usa la fecha local en el cronómetro y en el resto de la app.
+- Pruebas: `tests/editor/13-fin-estimado` (351 pruebas en total).
+
 ## Registro de errores, pruebas del editor y documentación al día — 23 sep 2026 (cachés asignaciones-salon-v26, ver-salon-v24)
 
 - **Registro de errores:** si algo falla en la app de asignaciones o en la vista de la congregación, queda anotado en la nube (sin datos personales: qué pasó, dónde, rol y tipo de teléfono; máximo 10 por sesión, sin repetir). El Super Admin lo ve en Ajustes → Registro de errores, y la app le avisa cuando hay errores nuevos. Se guardan 30 días. **Requiere publicar las reglas:** `firebase deploy --only firestore:rules` desde `push-salon-2026`.
