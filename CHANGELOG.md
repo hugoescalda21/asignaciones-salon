@@ -6,6 +6,17 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Mejoras en Inicio y Anuncios — 22 de septiembre de 2026 (caché `ver-salon-v20`)
+**Inicio**
+- "Próximas reuniones" usa el mismo formato que el Calendario: filas desplegables con técnico y programa juntos, la próxima abierta (o "HOY" si es hoy).
+- Arriba de todo aparece una tarjeta con el anuncio nuevo ("Anuncio nuevo" / "3 anuncios nuevos"), o el fijado si no hay nada sin leer. "Ver" lleva a la pestaña Anuncios.
+- Si alguien entra con un email que no está vinculado a ningún hermano, se le explica cómo pedir que lo vinculen (se puede cerrar).
+
+**Anuncios**
+- Fechas legibles: "Recién", "Hace 20 min", "Hace 3 h", "Ayer", "18 sept" (la fecha exacta queda al mantener el dedo o pasar el mouse). Si el anuncio vence, dice "Vence hoy / mañana / el sáb 26".
+- Cada anuncio es una tarjeta propia; los fijados, con borde dorado. Se sacó el título "Tablero de Anuncios" (repetía el nombre de la pestaña). "Compartir" pasó abajo a la derecha.
+- Si "Compartir" falla, aparece un aviso normal que se va solo ("No se pudo compartir este anuncio…") en vez del cartel con el detalle técnico, que queda solo en la consola.
+
 ## Calendario: Equipo técnico y Programa juntos — 22 de septiembre de 2026 (caché `ver-salon-v19`)
 - Se sacó el interruptor "Equipo técnico / Programa" de la pestaña Calendario, que obligaba a mirar dos vistas para saber quién hacía qué.
 - Ahora cada reunión es una fila que se despliega. La **próxima aparece abierta** (con la etiqueta "PRÓXIMA") y las demás cerradas, con una línea de resumen ("Presidente: …" o "Discurso: …"). Si tenés algo en esa reunión, la fila cerrada lo avisa ("Vos: Acomodador 1").

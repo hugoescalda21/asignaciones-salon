@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Inicio y Anuncios</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EDEFEF; --surface:#FFFFFF; --ink:#212C34; --ink-soft:#5C6B74; --ink-faint:#636C71;
+    --line:#DDE1E2; --accent-gold:#A9822F; --accent-gold-text:#876825; --accent-blue:#3E6B8A;
+    --role-mic:#B4633F; --role-plat:#4C7A5E; --role-sonido:#3E6B8A; --role-usher:#7A8C63; --role-program:#8C5A6E;
+    --sec-tesoros:#3B8178; --sec-maestros:#986F27; --sec-vida:#B85C3E;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#D9DDDE;font-family:'Public Sans',-apple-system,sans-serif;color:var(--ink);padding:24px 16px 48px}
+  h1.page{font-family:'Fraunces',serif;font-weight:500;font-size:22px;margin:0 0 4px;text-align:center}
+  p.lead{text-align:center;color:var(--ink-soft);font-size:13px;margin:0 auto 22px;max-width:660px;line-height:1.5}
+  h2.sec{font-family:'Fraunces',serif;font-weight:500;font-size:18px;text-align:center;margin:34px 0 14px}
+  .grid{display:flex;flex-wrap:wrap;gap:28px;justify-content:center;align-items:flex-start}
+  .col{display:flex;flex-direction:column;align-items:center;gap:10px;max-width:300px}
+  .label{font-size:13px;font-weight:700;text-align:center}
+  .label .tag{display:inline-block;background:var(--accent-gold);color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;margin-left:6px;vertical-align:middle}
+  .note{font-size:12px;color:var(--ink-soft);text-align:left;line-height:1.5;width:100%}
+  .note b{color:var(--ink)}
+  .note .n{display:inline-flex;width:17px;height:17px;border-radius:50%;background:#E5B94E;color:#212C34;font-size:10px;font-weight:700;align-items:center;justify-content:center;margin-right:4px}
+  .hl{outline:2.5px solid #E5B94E;outline-offset:2px;position:relative}
+  .pin{position:absolute;top:-9px;left:-9px;width:18px;height:18px;border-radius:50%;background:#E5B94E;color:#212C34;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;z-index:2}
+
+  .phone{width:290px;height:640px;background:var(--bg);border-radius:28px;border:8px solid #1a1f24;overflow:hidden;position:relative;box-shadow:0 10px 30px rgba(0,0,0,.18);display:flex;flex-direction:column}
+  .topbar{background:var(--ink);color:#fff;padding:12px 14px 9px;position:relative;flex:none}
+  .eyebrow{font-size:8.5px;letter-spacing:.05em;color:#D8BB82;font-weight:700;text-transform:uppercase;margin-bottom:3px}
+  .cong-title{font-family:'Fraunces',serif;font-weight:500;font-size:16px}
+  .help{position:absolute;top:11px;right:12px;width:24px;height:24px;border-radius:50%;border:1.5px solid rgba(255,255,255,.35);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px}
+  .gold-bar{height:3px;background:var(--accent-gold);flex:none}
+  .content{padding:10px 11px;flex:1;overflow:hidden}
+  .tabs{height:48px;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:center;font-size:9px;color:var(--ink-faint);flex:none}
+  .tabs span{position:relative}
+  .tabs span.on{color:var(--accent-gold-text);font-weight:700}
+  .badge{position:absolute;top:-10px;right:-10px;background:#C0392B;color:#fff;border-radius:8px;font-size:8px;font-weight:700;padding:1px 5px}
+  .stitle{font-family:'Fraunces',serif;font-weight:500;font-size:13px;margin:10px 2px 6px}
+
+  .hero{background:linear-gradient(135deg,#212C34,#33444F);color:#fff;border-radius:12px;padding:10px 12px;margin-bottom:8px;position:relative}
+  .hero small{font-size:8px;color:#D8BB82;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+  .hero .t{font-family:'Fraunces',serif;font-size:16px;margin-top:2px}
+  .hero .s{font-size:9.5px;opacity:.85;margin-top:1px}
+  .hero .cnt{position:absolute;top:10px;right:10px;font-size:8.5px;font-weight:700;background:rgba(255,255,255,.15);padding:2px 7px;border-radius:8px}
+  .remrow{display:flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:6px 8px;margin-bottom:8px;font-size:9.5px}
+  .remrow i{font-style:normal;width:20px;height:20px;border-radius:6px;background:var(--ink);display:flex;align-items:center;justify-content:center;font-size:10px}
+  .remrow b{display:block;font-size:10px}
+  .remrow span{color:var(--ink-soft)}
+  .remrow a{margin-left:auto;color:var(--accent-blue);font-weight:700}
+
+  /* viejo: agenda con globitos */
+  .card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:2px 10px}
+  .ag{display:flex;gap:9px;padding:8px 0;border-bottom:1px solid var(--line)}
+  .ag:last-child{border-bottom:none}
+  .ad{width:28px;text-align:center;flex:none}
+  .ad .d{font-size:7.5px;color:var(--ink-faint);font-weight:700;text-transform:uppercase}
+  .ad .n{font-family:'Fraunces',serif;font-size:16px;line-height:1.1}
+  .ab{flex:1;border-left:3px solid var(--accent-blue);padding-left:8px;min-width:0}
+  .ab.f{border-left-color:var(--accent-gold)}
+  .at{font-size:8px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px}
+  .sl{font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin:4px 0 2px}
+  .chips{display:flex;flex-wrap:wrap;gap:3px}
+  .chip{display:flex;align-items:center;gap:3px;background:var(--bg);border-radius:12px;padding:2px 6px 2px 3px;font-size:9px;font-weight:600}
+  .chip i{width:10px;height:10px;border-radius:50%;display:inline-block}
+
+  /* nuevo: filas desplegables (igual que Calendario) */
+  .cal{background:#fff;border:1px solid var(--line);border-radius:8px;padding:0 9px}
+  .cm{border-bottom:1px solid var(--line)}
+  .cm:last-child{border-bottom:none}
+  .ch{display:flex;align-items:center;gap:8px;padding:8px 0}
+  .bar{width:3px;align-self:stretch;border-radius:2px;background:var(--accent-blue);flex:none}
+  .bar.f{background:var(--accent-gold)}
+  .cs{flex:1;min-width:0}
+  .ct{font-size:8px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em}
+  .ct .nx{font-size:7px;color:#fff;background:var(--accent-blue);border-radius:5px;padding:1px 4px;margin-left:3px}
+  .csum{font-size:9.5px;margin-top:1px}
+  .cme{display:inline-block;font-size:8px;font-weight:700;color:var(--accent-gold-text);background:rgba(169,130,47,.13);border-radius:7px;padding:1px 5px;margin-top:2px}
+  .chev{color:var(--ink-faint);font-size:12px}
+  .chev.o{transform:rotate(90deg)}
+  .cb{padding:0 0 8px 11px}
+  .g{display:flex;align-items:center;gap:4px;font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin:5px 0 1px}
+  .g::after{content:'';flex:1;height:1px;background:var(--line)}
+  .two{display:grid;grid-template-columns:1fr 1fr;column-gap:8px}
+  .c2{padding:2px 0;line-height:1.2}
+  .c2 .k{display:block;font-size:7.5px;color:var(--ink-soft)}
+  .c2 .v{font-size:9px;font-weight:600}
+  .c2.mine{background:rgba(169,130,47,.13);margin:0 -3px;padding:2px 3px;border-radius:3px}
+  .c2.mine .v{color:var(--accent-gold-text)}
+  .li{display:flex;justify-content:space-between;gap:6px;font-size:9px;padding:2px 0}
+  .li span:first-child{color:var(--ink-soft)}
+  .li span:last-child{font-weight:600}
+  .more{display:block;text-align:center;font-size:9.5px;font-weight:700;color:var(--accent-gold-text);padding:7px}
+
+  /* teaser de anuncio */
+  .teaser{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--accent-gold);border-left:4px solid var(--accent-gold);border-radius:9px;padding:7px 9px;margin-bottom:8px}
+  .teaser .ic{width:22px;height:22px;border-radius:6px;background:rgba(169,130,47,.14);display:flex;align-items:center;justify-content:center;color:var(--accent-gold-text);flex:none}
+  .teaser .tx{flex:1;min-width:0;font-size:9.5px;line-height:1.3}
+  .teaser .tx small{display:block;font-size:7.5px;font-weight:700;color:var(--accent-gold-text);text-transform:uppercase;letter-spacing:.04em}
+  .teaser .tx b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .teaser a{font-size:9.5px;font-weight:700;color:var(--accent-blue)}
+
+  .unlinked{background:#fff;border:1px dashed var(--line);border-radius:9px;padding:8px 10px;margin-bottom:8px;font-size:9.5px;color:var(--ink-soft);line-height:1.4}
+  .unlinked b{color:var(--ink);display:block;font-size:10px;margin-bottom:1px}
+
+  /* Anuncios */
+  .board{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px}
+  .bh{display:flex;align-items:center;gap:6px;font-family:'Fraunces',serif;font-size:14px;margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid var(--line)}
+  .ann{border-bottom:1px solid var(--line);padding:8px 0}
+  .ann:last-child{border-bottom:none}
+  .ah{display:flex;justify-content:space-between;align-items:center;gap:6px}
+  .ad2{font-size:7.5px;font-weight:700;color:var(--ink-faint);letter-spacing:.02em}
+  .new{background:var(--accent-gold);color:#fff;border-radius:8px;padding:0 5px;font-size:7.5px;margin-left:4px}
+  .sh{border:1px solid var(--line);border-radius:10px;padding:2px 7px;font-size:8.5px;font-weight:600;color:var(--accent-blue);white-space:nowrap}
+  .atitle{font-family:Georgia,serif;font-weight:700;font-size:11.5px;margin:4px 0 2px}
+  .atext{font-size:9.5px;line-height:1.45;color:var(--ink);margin:0}
+  .img{height:70px;border-radius:6px;margin-top:6px;background:linear-gradient(135deg,#c9d6df,#8fa6b5);display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px}
+  .pdf{display:flex;gap:7px;align-items:center;border:1px solid var(--line);border-radius:7px;padding:6px 8px;margin-top:6px;font-size:9px}
+  .pdf b{display:block}
+  .pdf span{color:var(--ink-soft);font-size:8px}
+
+  /* nuevo */
+  .a2{background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 10px;margin-bottom:7px}
+  .a2.pinned{border:1.5px solid var(--accent-gold);background:linear-gradient(0deg,#fff,#fff) padding-box}
+  .a2 .meta{display:flex;align-items:center;gap:5px;font-size:8.5px;color:var(--ink-soft)}
+  .a2 .meta .pinlbl{font-weight:700;color:var(--accent-gold-text);display:flex;align-items:center;gap:2px}
+  .a2 .meta .dot{opacity:.5}
+  .a2 .meta .exp{margin-left:auto;font-size:8px;background:var(--bg);border-radius:6px;padding:1px 5px}
+  .a2 .foot{display:flex;justify-content:flex-end;margin-top:6px}
+
+  .toast{position:absolute;left:10px;right:10px;bottom:58px;background:#212C34;color:#fff;border-radius:9px;padding:8px 10px;font-size:9.5px;line-height:1.4;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+  .toast.old{background:#fff;color:#212C34;border:1px solid #ccc;font-family:monospace;font-size:8.5px}
+
+  .reco{max-width:820px;margin:34px auto 0;background:#fff;border-radius:12px;padding:18px 22px;border-left:4px solid var(--accent-gold)}
+  .reco h2{font-family:'Fraunces',serif;font-weight:500;font-size:17px;margin:0 0 8px}
+  .reco p{font-size:13px;line-height:1.6;color:var(--ink-soft);margin:0 0 8px}
+  .reco p strong{color:var(--ink)}
+</style>
+</head>
+<body>
+<h1 class="page">Mejoras para Inicio y Anuncios</h1>
+<p class="lead">Mockup de <code>ver.html</code>. Los números amarillos marcan cada cambio y coinciden con las notas de abajo de cada celular.</p>
+
+<h2 class="sec">Inicio</h2>
+<div class="grid">
+
+  <div class="col">
+    <div class="label">Hoy</div>
+    <div class="phone">
+      <div class="topbar"><div class="eyebrow">Salón del Reino</div><div class="cong-title">San Agustín</div><div class="help">?</div></div>
+      <div class="gold-bar"></div>
+      <div class="content">
+        <div class="hero"><small>Hola, Hugo · tu próxima asignación</small><div class="t">Micrófono de pasillo 1</div><div class="s">Jueves 24 de septiembre · 19:30 · Entre semana</div><span class="cnt">Mañana</span></div>
+        <div class="remrow"><i>🔔</i><div><b>Recordatorios</b><span>El día anterior</span></div><a>Cambiar</a></div>
+        <div class="stitle">Próximas reuniones</div>
+        <div class="card">
+          <div class="ag"><div class="ad"><div class="d">jue</div><div class="n">24</div></div><div class="ab">
+            <div class="at">Entre semana</div>
+            <div class="sl" style="color:var(--role-sonido)">Audio y Video</div>
+            <div class="chips"><span class="chip"><i style="background:var(--role-sonido)"></i>Martín R.</span><span class="chip"><i style="background:var(--role-sonido)"></i>Lucas G.</span></div>
+            <div class="sl" style="color:var(--role-mic)">Micrófonos</div>
+            <div class="chips"><span class="chip"><i style="background:var(--role-mic)"></i>Hugo E.</span><span class="chip"><i style="background:var(--role-mic)"></i>Tomás B.</span></div>
+            <div class="sl" style="color:var(--role-plat)">Plataforma</div>
+            <div class="chips"><span class="chip"><i style="background:var(--role-plat)"></i>Carlos V.</span></div>
+            <div class="sl" style="color:var(--role-usher)">Acomodadores</div>
+            <div class="chips"><span class="chip"><i style="background:var(--role-usher)"></i>Raúl M.</span><span class="chip"><i style="background:var(--role-usher)"></i>Pablo S.</span></div>
+          </div></div>
+          <div class="ag"><div class="ad"><div class="d">dom</div><div class="n">27</div></div><div class="ab f">
+            <div class="at">Fin de semana</div>
+            <div class="sl" style="color:var(--role-sonido)">Audio y Video</div>
+            <div class="chips"><span class="chip"><i style="background:var(--role-sonido)"></i>Lucas G.</span><span class="chip"><i style="background:var(--role-sonido)"></i>Ariel N.</span></div>
+          </div></div>
+        </div>
+      </div>
+      <div class="tabs"><span class="on">Inicio</span><span>Calendario</span><span>Anuncios<b class="badge">1</b></span></div>
+    </div>
+    <div class="note">Solo aparece el Equipo técnico, sin el Programa, y con los globitos que ya sacamos del Calendario. El anuncio nuevo apenas se nota por el numerito de abajo.</div>
+  </div>
+
+  <div class="col">
+    <div class="label">Propuesta<span class="tag">Recomendada</span></div>
+    <div class="phone">
+      <div class="topbar"><div class="eyebrow">Salón del Reino</div><div class="cong-title">San Agustín</div><div class="help">?</div></div>
+      <div class="gold-bar"></div>
+      <div class="content">
+        <div class="teaser hl"><span class="pin">2</span>
+          <div class="ic"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></div>
+          <div class="tx"><small>Anuncio nuevo</small><b>Limpieza del Salón este sábado</b></div><a>Ver</a>
+        </div>
+        <div class="hero"><small>Hola, Hugo · tu próxima asignación</small><div class="t">Micrófono de pasillo 1</div><div class="s">Jueves 24 de septiembre · 19:30 · Entre semana</div><span class="cnt">Mañana</span></div>
+        <div class="remrow"><i>🔔</i><div><b>Recordatorios</b><span>El día anterior</span></div><a>Cambiar</a></div>
+        <div class="stitle">Próximas reuniones</div>
+        <div class="cal hl"><span class="pin">1</span>
+          <div class="cm">
+            <div class="ch"><div class="bar"></div><div class="ad"><div class="d">jue</div><div class="n">24</div></div><div class="cs"><div class="ct">Entre semana · 19:30<span class="nx">PRÓXIMA</span></div><div class="csum">Presidente: Carlos V.</div></div><span class="chev o">›</span></div>
+            <div class="cb">
+              <div class="g" style="color:var(--role-sonido)">Equipo técnico</div>
+              <div class="two">
+                <div class="c2"><span class="k">Audio</span><span class="v">Martín R.</span></div>
+                <div class="c2"><span class="k">Video</span><span class="v">Lucas G.</span></div>
+                <div class="c2 mine"><span class="k">Micrófono 1</span><span class="v">Hugo E. ✓</span></div>
+                <div class="c2"><span class="k">Micrófono 2</span><span class="v">Tomás B.</span></div>
+              </div>
+              <div class="g" style="color:var(--role-program)">Programa</div>
+              <div class="li"><span>Presidente</span><span>Carlos V.</span></div>
+              <div class="li"><span>1. Tesoros de la Biblia</span><span>Martín R.</span></div>
+              <div class="li"><span>…</span><span></span></div>
+            </div>
+          </div>
+          <div class="cm"><div class="ch"><div class="bar f"></div><div class="ad"><div class="d">dom</div><div class="n">27</div></div><div class="cs"><div class="ct">Fin de semana · 10:00</div><div class="csum">Discurso: Ramiro Q.</div><span class="cme">Vos: Acomodador 1</span></div><span class="chev">›</span></div></div>
+        </div>
+        <span class="more">Ver el calendario completo ›</span>
+      </div>
+      <div class="tabs"><span class="on">Inicio</span><span>Calendario</span><span>Anuncios<b class="badge">1</b></span></div>
+    </div>
+    <div class="note"><span class="n">1</span><b>Mismo formato que el Calendario:</b> filas desplegables, con la próxima abierta y técnico y programa juntos. Se muestran dos reuniones, como ahora.<br><span class="n">2</span><b>Anuncio nuevo arriba de todo:</b> aparece solo si hay alguno sin leer, o uno fijado, y con "Ver" se va a la pestaña Anuncios. Si hay varios, dice "3 anuncios nuevos". Cuando ya los leíste, desaparece.</div>
+  </div>
+
+  <div class="col">
+    <div class="label">Propuesta — email no vinculado</div>
+    <div class="phone">
+      <div class="topbar"><div class="eyebrow">Salón del Reino</div><div class="cong-title">San Agustín</div><div class="help">?</div></div>
+      <div class="gold-bar"></div>
+      <div class="content">
+        <div class="unlinked hl"><span class="pin">3</span><b>¿Querés ver tus propias asignaciones?</b>Pedile a quien administra la app que vincule tu email (juan.perez@gmail.com) a tu nombre. Así te aparecen acá arriba y podés recibir recordatorios.</div>
+        <div class="stitle">Próximas reuniones</div>
+        <div class="cal">
+          <div class="cm">
+            <div class="ch"><div class="bar"></div><div class="ad"><div class="d">jue</div><div class="n">24</div></div><div class="cs"><div class="ct">Entre semana · 19:30<span class="nx">PRÓXIMA</span></div><div class="csum">Presidente: Carlos V.</div></div><span class="chev o">›</span></div>
+            <div class="cb">
+              <div class="g" style="color:var(--role-sonido)">Equipo técnico</div>
+              <div class="two">
+                <div class="c2"><span class="k">Audio</span><span class="v">Martín R.</span></div>
+                <div class="c2"><span class="k">Video</span><span class="v">Lucas G.</span></div>
+                <div class="c2"><span class="k">Micrófono 1</span><span class="v">Hugo E.</span></div>
+                <div class="c2"><span class="k">Micrófono 2</span><span class="v">Tomás B.</span></div>
+              </div>
+              <div class="g" style="color:var(--role-program)">Programa</div>
+              <div class="li"><span>Presidente</span><span>Carlos V.</span></div>
+              <div class="li"><span>…</span><span></span></div>
+            </div>
+          </div>
+          <div class="cm"><div class="ch"><div class="bar f"></div><div class="ad"><div class="d">dom</div><div class="n">27</div></div><div class="cs"><div class="ct">Fin de semana · 10:00</div><div class="csum">Discurso: Ramiro Q.</div></div><span class="chev">›</span></div></div>
+        </div>
+      </div>
+      <div class="tabs"><span class="on">Inicio</span><span>Calendario</span><span>Anuncios</span></div>
+    </div>
+    <div class="note"><span class="n">3</span><b>Cuando el email no está vinculado a ningún hermano:</b> hoy esa persona no ve su resumen ni sabe por qué. Este cartel se lo explica, con su email para que lo pueda pasar tal cual. Se puede cerrar y no vuelve a aparecer en ese celular.</div>
+  </div>
+</div>
+
+<h2 class="sec">Anuncios</h2>
+<div class="grid">
+
+  <div class="col">
+    <div class="label">Hoy</div>
+    <div class="phone">
+      <div class="topbar"><div class="eyebrow">Salón del Reino</div><div class="cong-title">San Agustín</div><div class="help">?</div></div>
+      <div class="gold-bar"></div>
+      <div class="content">
+        <div class="board">
+          <div class="bh"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>Tablero de Anuncios</div>
+          <div class="ann">
+            <div class="ah"><span class="ad2">📌 FIJADO · LUN, 15 SEPT, 9:10 A. M.</span><span class="sh">Compartir</span></div>
+            <div class="atitle">Horario de limpieza</div>
+            <p class="atext">Recordamos que cada grupo tiene asignado un sábado del mes para la limpieza del Salón…</p>
+          </div>
+          <div class="ann">
+            <div class="ah"><span class="ad2">MAR, 22 SEPT, 7:45 P. M.<span class="new">nuevo</span></span><span class="sh">Compartir</span></div>
+            <div class="atitle">Limpieza del Salón este sábado</div>
+            <p class="atext">Le toca al grupo 3. Nos encontramos a las 9:00.</p>
+            <div class="img">imagen adjunta</div>
+          </div>
+          <div class="ann">
+            <div class="ah"><span class="ad2">VIE, 18 SEPT, 6:02 P. M.</span><span class="sh">Compartir</span></div>
+            <p class="atext">Carta de la sucursal sobre la asamblea de circuito.</p>
+            <div class="pdf">📄<div><b>carta-asamblea.pdf</b><span>PDF · Toca para abrir</span></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="tabs"><span>Inicio</span><span>Calendario</span><span class="on">Anuncios</span></div>
+      <div class="toast old">No se pudo compartir. Detalle técnico (mandale esto a Hugo):<br>NotAllowedError: Permission denied</div>
+    </div>
+    <div class="note">Las fechas en mayúsculas con A. M./P. M. cuestan leerlas. El fijado solo se distingue por un iconito, el título "Tablero de Anuncios" repite el nombre de la pestaña, y si "Compartir" falla sale un mensaje técnico.</div>
+  </div>
+
+  <div class="col">
+    <div class="label">Propuesta</div>
+    <div class="phone">
+      <div class="topbar"><div class="eyebrow">Salón del Reino</div><div class="cong-title">San Agustín</div><div class="help">?</div></div>
+      <div class="gold-bar"></div>
+      <div class="content">
+        <div class="a2 pinned hl"><span class="pin">5</span>
+          <div class="meta"><span class="pinlbl">📌 Fijado</span><span class="dot">·</span><span>15 sept</span></div>
+          <div class="atitle">Horario de limpieza</div>
+          <p class="atext">Recordamos que cada grupo tiene asignado un sábado del mes para la limpieza del Salón…</p>
+          <div class="foot"><span class="sh">Compartir</span></div>
+        </div>
+        <div class="a2 hl"><span class="pin">4</span>
+          <div class="meta"><span>Hace 2 horas</span><span class="new" style="margin-left:0">nuevo</span><span class="exp">Vence el sáb 26</span></div>
+          <div class="atitle">Limpieza del Salón este sábado</div>
+          <p class="atext">Le toca al grupo 3. Nos encontramos a las 9:00.</p>
+          <div class="img">imagen adjunta</div>
+          <div class="foot"><span class="sh">Compartir</span></div>
+        </div>
+        <div class="a2">
+          <div class="meta"><span>18 sept</span><span class="dot">·</span><span>editado</span></div>
+          <p class="atext">Carta de la sucursal sobre la asamblea de circuito.</p>
+          <div class="pdf">📄<div><b>carta-asamblea.pdf</b><span>PDF · Toca para abrir</span></div></div>
+        </div>
+      </div>
+      <div class="tabs"><span>Inicio</span><span>Calendario</span><span class="on">Anuncios</span></div>
+      <div class="toast hl"><span class="pin">7</span>No se pudo compartir este anuncio. Probá de nuevo en unos segundos.</div>
+    </div>
+    <div class="note"><span class="n">4</span><b>Fechas legibles:</b> "Hace 2 horas", "Ayer", "18 sept". Con el dedo encima se ve la fecha y hora exactas. Si el anuncio vence, dice hasta cuándo.<br><span class="n">5</span><b>Fijados con borde dorado</b>, siempre arriba.<br><span class="n">6</span><b>Sin el título "Tablero de Anuncios"</b>, porque la pestaña ya lo dice. Cada anuncio pasa a ser una tarjeta propia y "Compartir" queda abajo a la derecha, donde se toca más fácil con el pulgar.<br><span class="n">7</span><b>Error de "Compartir" en lenguaje normal</b>, como un aviso que se va solo. El detalle técnico queda en la consola, para mí.</div>
+  </div>
+</div>
+
+<div class="reco">
+  <h2>Resumen</h2>
+  <p><strong>Inicio:</strong> las próximas reuniones con el mismo formato que el Calendario (1), el aviso de anuncio nuevo arriba (2) y un cartel para quien no tiene el email vinculado (3).</p>
+  <p><strong>Anuncios:</strong> fechas relativas con vencimiento (4), fijados con borde dorado (5), cada anuncio en su tarjeta sin el título repetido (6) y un mensaje de error normal en "Compartir" (7).</p>
+  <p><strong>Lo que no cambia:</strong> la foto ampliada, abrir el PDF, "Ver más" en textos largos, "Ver anteriores", la copia sin conexión y el numerito de la pestaña.</p>
+  <p>Son todos cambios de <code>ver.html</code>. No hace falta <code>firebase deploy</code>.</p>
+</div>
+</body>
+</html>
