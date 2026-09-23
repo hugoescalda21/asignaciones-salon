@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Tira de reuniones</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EDEFEF; --surface:#FFFFFF; --ink:#212C34; --ink-soft:#5C6B74; --ink-faint:#636C71;
+    --line:#DDE1E2; --accent-gold:#A9822F; --accent-gold-text:#876825; --accent-blue:#3E6B8A;
+    --role-mic:#B4633F; --role-plat:#4C7A5E; --role-sonido:#3E6B8A; --role-video:#3F8A80; --role-crono:#7A5C86; --role-usher:#7A8C63; --role-program:#8C5A6E;
+    --ok:#4C7A5E; --ok-bg:#EEF4EF; --bad:#A8433A; --bad-bg:#FBEAE8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#D9DDDE;font-family:'Public Sans',-apple-system,sans-serif;color:var(--ink);padding:24px 16px 48px}
+  h1.page{font-family:'Fraunces',serif;font-weight:500;font-size:22px;margin:0 0 4px;text-align:center}
+  p.lead{text-align:center;color:var(--ink-soft);font-size:13px;margin:0 auto 22px;max-width:700px;line-height:1.5}
+  .grid{display:flex;flex-wrap:wrap;gap:28px;justify-content:center;align-items:flex-start}
+  .col{display:flex;flex-direction:column;align-items:center;gap:10px;max-width:300px}
+  .label{font-size:13px;font-weight:700;text-align:center}
+  .label small{display:block;font-weight:600;color:var(--ink-soft);font-size:10.5px}
+  .note{font-size:12px;color:var(--ink-soft);line-height:1.5;width:100%}
+  .note b{color:var(--ink)}
+  .n{display:inline-flex;width:17px;height:17px;border-radius:50%;background:#E5B94E;color:#212C34;font-size:10px;font-weight:700;align-items:center;justify-content:center;margin-right:3px}
+  .hl{outline:2.5px solid #E5B94E;outline-offset:2px;position:relative}
+  .pin{position:absolute;top:-9px;left:-9px;width:18px;height:18px;border-radius:50%;background:#E5B94E;color:#212C34;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;z-index:3}
+  .mark{position:absolute;border:2.5px solid #E53935;border-radius:8px;z-index:2}
+  .mark span{position:absolute;top:-17px;left:-2px;background:#E53935;color:#fff;font-size:8.5px;font-weight:700;border-radius:4px;padding:1px 5px;white-space:nowrap}
+
+  .phone{width:290px;height:620px;background:var(--bg);border-radius:28px;border:8px solid #1a1f24;overflow:hidden;position:relative;box-shadow:0 10px 30px rgba(0,0,0,.18);display:flex;flex-direction:column}
+  .ehead{background:#fff;padding:9px 12px 7px;display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--line);flex:none}
+  .ehead .dot{width:7px;height:7px;border-radius:50%;background:var(--accent-gold)}
+  .ehead b{font-family:'Fraunces',serif;font-weight:500;font-size:14px}
+  .ehead .cb{font-size:8.5px;background:var(--bg);border-radius:9px;padding:2px 7px;color:var(--ink-soft)}
+  .content{padding:8px 10px;flex:1;overflow:hidden;position:relative}
+  .btabs{height:44px;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:center;font-size:8px;color:var(--ink-faint);flex:none}
+  .btabs span.on{color:var(--ink);font-weight:700}
+
+  /* hoy */
+  .wk{text-align:center;font-family:'Fraunces',serif;font-size:11.5px;margin-bottom:5px}
+  .wnav{display:flex;gap:5px;margin-bottom:6px}
+  .wnav span{border:1px solid var(--line);background:#fff;border-radius:6px;font-size:10px;font-weight:700;padding:5px 9px;text-align:center}
+  .wnav .d{flex:1;font-weight:500}
+  .seg{display:flex;gap:4px;margin-bottom:6px}
+  .seg span{flex:1;text-align:center;font-size:8.5px;font-weight:700;border-radius:14px;padding:5px;background:#fff;border:1px solid var(--line);color:var(--ink-soft)}
+  .seg span.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .seg span small{display:block;font-weight:500;font-size:7.5px;opacity:.85}
+  .sub{display:flex;gap:4px;margin-bottom:6px;background:#E3E6E7;border-radius:16px;padding:3px}
+  .sub span{flex:1;text-align:center;font-size:8.5px;font-weight:700;border-radius:13px;padding:5px;color:var(--ink-soft)}
+  .sub span.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+
+  /* tira */
+  .strip-head{display:flex;align-items:center;justify-content:space-between;margin:0 0 5px}
+  .strip-head b{font-family:'Fraunces',serif;font-weight:500;font-size:12px}
+  .strip-head .ar{border:1px solid var(--line);background:#fff;border-radius:6px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
+  .strip-head .cal{font-size:10px;margin-left:4px}
+  .strip{display:flex;gap:5px;overflow:hidden;margin:0 -10px 7px;padding:2px 10px 3px}
+  .mt{flex:none;width:64px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:5px 5px 6px;text-align:center;position:relative}
+  .mt .dw{font-size:7.5px;font-weight:700;color:var(--ink-faint);text-transform:uppercase}
+  .mt .dn{font-family:'Fraunces',serif;font-size:17px;line-height:1.05}
+  .mt .ty{font-size:7px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.02em}
+  .mt .st{display:block;margin-top:3px;font-size:7.5px;font-weight:700;border-radius:6px;padding:1px 0}
+  .mt .st.ok{background:var(--ok-bg);color:var(--ok)}
+  .mt .st.miss{background:#FBF3E2;color:var(--accent-gold-text)}
+  .mt .st.none{background:var(--bg);color:var(--ink-faint)}
+  .mt::before{content:'';position:absolute;left:8px;right:8px;top:0;height:3px;border-radius:0 0 3px 3px;background:var(--accent-blue)}
+  .mt.f::before{background:var(--accent-gold)}
+  .mt.on{border:2px solid var(--ink);box-shadow:0 3px 10px rgba(33,44,52,.18)}
+  .mt.past{opacity:.55}
+  .mt .nx{position:absolute;top:-7px;left:50%;transform:translateX(-50%);background:var(--accent-blue);color:#fff;font-size:6.5px;font-weight:700;border-radius:5px;padding:1px 4px;white-space:nowrap}
+
+  .mhead{display:flex;align-items:baseline;justify-content:space-between;margin:0 2px 6px}
+  .mhead b{font-family:'Fraunces',serif;font-weight:500;font-size:14px}
+  .mhead small{font-size:8.5px;color:var(--ink-soft)}
+  .topic{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:5px 8px;margin-bottom:6px;font-size:9px;color:var(--ink-faint);font-style:italic}
+  .topic b{font-style:normal;font-size:7.5px;color:var(--ink-soft);letter-spacing:.05em}
+  .acts{display:flex;gap:5px;margin-bottom:6px}
+  .btn{border:1px solid var(--line);background:#fff;border-radius:6px;font-size:9px;font-weight:700;padding:6px 7px;white-space:nowrap;text-align:center}
+  .btn.pri{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .btn.grow{flex:1}
+  .tl{background:#fff;border:1px solid var(--line);border-radius:10px;padding:2px 10px 4px}
+  .sec{display:flex;align-items:center;gap:5px;font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:7px 0 1px}
+  .sec::after{content:'';flex:1;height:1px;background:var(--line)}
+  .r{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--line);font-size:10px}
+  .r:last-child{border-bottom:none}
+  .r .ic{width:16px;height:16px;border-radius:50%;flex:none}
+  .r .k{color:var(--ink-soft);width:74px;flex:none;font-size:9.5px}
+  .r .v{flex:1;min-width:0;font-weight:700;font-size:10px;background:var(--ok-bg);border:1px solid #b9d3bf;border-radius:5px;padding:4px 6px}
+  .r .v.empty{background:var(--bg);border-color:var(--line);color:var(--ink-faint);font-weight:500}
+
+  /* calendario */
+  .sheet-ov{position:absolute;inset:0;background:rgba(33,44,52,.45);display:flex;align-items:flex-end;z-index:6}
+  .sheet{background:#fff;width:100%;border-radius:14px 14px 0 0;padding:9px 12px 14px}
+  .handle{width:34px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 9px}
+  .sheet h4{font-family:'Fraunces',serif;font-weight:500;font-size:14px;margin:0 0 6px;display:flex;justify-content:space-between}
+  .sheet h4 span{font-family:'Public Sans';font-size:10px;color:var(--ink-soft)}
+  .cg{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;font-size:8.5px;text-align:center}
+  .cg .h{font-weight:700;color:var(--ink-faint);font-size:7.5px}
+  .cg .c{border-radius:6px;padding:5px 0 4px;background:var(--bg);color:var(--ink-soft);position:relative}
+  .cg .c.m{background:#fff;border:1px solid var(--line);color:var(--ink);font-weight:700}
+  .cg .c.m i{display:block;width:5px;height:5px;border-radius:50%;margin:2px auto 0}
+  .cg .c.on{border:2px solid var(--ink)}
+  .cg .c.e{background:none}
+  .leg{display:flex;gap:10px;justify-content:center;font-size:8px;color:var(--ink-soft);margin-top:8px}
+  .leg i{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:3px;vertical-align:0}
+
+  .reco{max-width:840px;margin:32px auto 0;background:#fff;border-radius:12px;padding:18px 22px;border-left:4px solid var(--accent-gold)}
+  .reco h2{font-family:'Fraunces',serif;font-weight:500;font-size:17px;margin:0 0 8px}
+  .reco p{font-size:13px;line-height:1.6;color:var(--ink-soft);margin:0 0 8px}
+  .reco p strong{color:var(--ink)}
+</style>
+</head>
+<body>
+<h1 class="page">Elegir la reunión directamente</h1>
+<p class="lead">Mockup de la pestaña Programa del editor. Hoy se elige la semana y después el tipo de reunión. La propuesta reemplaza las dos cosas por una tira con las reuniones del mes. Los números amarillos marcan cada cambio.</p>
+
+<div class="grid">
+
+  <!-- HOY -->
+  <div class="col">
+    <div class="label">Hoy<small>semana + tipo de reunión, por separado</small></div>
+    <div class="phone">
+      <div class="ehead"><span class="dot"></span><b>Asignaciones</b><span class="cb">San Agustín</span></div>
+      <div class="content">
+        <div class="wk">Semana del 21 al 27 de septiembre de 2026</div>
+        <div class="wnav"><span>‹</span><span class="d">21/09/2026 📅</span><span>›</span><span>Hoy</span></div>
+        <div class="sub"><span class="on">Equipo técnico</span><span>Programa</span></div>
+        <div class="seg" style="position:relative"><span class="on">Entre semana<small>Jueves 24</small></span><span>Fin de semana<small>Domingo 27</small></span>
+          <div class="mark" style="left:-4px;right:-4px;top:-4px;bottom:-4px"><span>hay que elegir otra vez</span></div></div>
+        <div class="topic"><b>TEMA</b> Sin tema cargado</div>
+        <div class="acts"><span class="btn grow">Auto-asignar</span><span class="btn">Más ▾</span><span class="btn pri grow">Compartir ▾</span></div>
+        <div class="tl">
+          <div class="sec" style="color:var(--role-sonido)">Audio y video</div>
+          <div class="r"><span class="ic" style="background:var(--role-sonido)"></span><span class="k">Audio</span><span class="v">Jorge López</span></div>
+          <div class="r"><span class="ic" style="background:var(--role-video)"></span><span class="k">Video y Zoom</span><span class="v">Ariel Núñez</span></div>
+          <div class="sec" style="color:var(--role-mic)">Micrófonos</div>
+          <div class="r"><span class="ic" style="background:var(--role-mic)"></span><span class="k">Micrófono 1</span><span class="v">Nicolás Paz</span></div>
+          <div class="r"><span class="ic" style="background:var(--role-mic)"></span><span class="k">Micrófono 2</span><span class="v empty">— Sin asignar</span></div>
+        </div>
+      </div>
+      <div class="btabs"><span class="on">Programa</span><span>Cronómetro</span><span>Hermanos</span><span>Ajustes</span><span>Anuncios</span></div>
+    </div>
+    <div class="note">Para ir de "jueves 24" a "domingo 27" hay que tocar el otro botón. Para ir al jueves siguiente, primero cambiar de semana y después revisar cuál de los dos quedó elegido. No se ve qué reuniones del mes faltan cargar sin entrar a cada una.</div>
+  </div>
+
+  <!-- PROPUESTA -->
+  <div class="col">
+    <div class="label">Propuesta<small>la reunión se elige de la tira</small></div>
+    <div class="phone">
+      <div class="ehead"><span class="dot"></span><b>Asignaciones</b><span class="cb">San Agustín</span></div>
+      <div class="content">
+        <div class="strip-head hl"><span class="pin">3</span><span class="ar">‹</span><b>Septiembre 2026 <span class="cal">📅</span></b><span class="ar">›</span></div>
+        <div class="strip hl"><span class="pin">1</span>
+          <div class="mt past"><div class="dw">jue</div><div class="dn">10</div><div class="ty">Semana</div><span class="st ok">✓</span></div>
+          <div class="mt f past"><div class="dw">dom</div><div class="dn">13</div><div class="ty">Finde</div><span class="st ok">✓</span></div>
+          <div class="mt"><div class="dw">jue</div><div class="dn">17</div><div class="ty">Semana</div><span class="st ok">✓</span></div>
+          <div class="mt on"><span class="nx">PRÓXIMA</span><div class="dw">jue</div><div class="dn">24</div><div class="ty">Semana</div><span class="st miss">faltan 2</span></div>
+          <div class="mt f"><div class="dw">dom</div><div class="dn">27</div><div class="ty">Finde</div><span class="st miss">faltan 5</span></div>
+        </div>
+        <div class="mhead hl"><span class="pin">2</span><b>Jueves 24 · Entre semana</b><small>19:30</small></div>
+        <div class="sub hl"><span class="pin">4</span><span class="on">Equipo técnico · faltan 2</span><span>Programa · ✓</span></div>
+        <div class="topic"><b>TEMA</b> Sin tema cargado</div>
+        <div class="acts"><span class="btn grow">Auto-asignar</span><span class="btn">Más ▾</span><span class="btn pri grow">Compartir ▾</span></div>
+        <div class="tl">
+          <div class="sec" style="color:var(--role-sonido)">Audio y video</div>
+          <div class="r"><span class="ic" style="background:var(--role-sonido)"></span><span class="k">Audio</span><span class="v">Jorge López</span></div>
+          <div class="r"><span class="ic" style="background:var(--role-video)"></span><span class="k">Video y Zoom</span><span class="v">Ariel Núñez</span></div>
+          <div class="sec" style="color:var(--role-mic)">Micrófonos</div>
+          <div class="r"><span class="ic" style="background:var(--role-mic)"></span><span class="k">Micrófono 1</span><span class="v">Nicolás Paz</span></div>
+          <div class="r"><span class="ic" style="background:var(--role-mic)"></span><span class="k">Micrófono 2</span><span class="v empty">— Sin asignar</span></div>
+        </div>
+      </div>
+      <div class="btabs"><span class="on">Programa</span><span>Cronómetro</span><span>Hermanos</span><span>Ajustes</span><span>Anuncios</span></div>
+    </div>
+    <div class="note"><span class="n">1</span><b>Tira con las reuniones del mes</b>, en orden: entre semana (raya azul) y fin de semana (raya dorada). Cada una dice si está completa (✓) o cuánto falta. Se desliza con el dedo, las pasadas se ven más tenues y la próxima está marcada.<br><span class="n">2</span><b>Un título grande</b> dice en qué reunión estás, con la hora si está cargada.<br><span class="n">4</span>Equipo técnico / Programa <b>queda como único selector</b>, y cada uno dice cuánto le falta.</div>
+  </div>
+
+  <!-- CALENDARIO -->
+  <div class="col">
+    <div class="label">Saltar a otra fecha<small>‹ › cambian de mes · 📅 abre el calendario</small></div>
+    <div class="phone">
+      <div class="ehead"><span class="dot"></span><b>Asignaciones</b><span class="cb">San Agustín</span></div>
+      <div class="content">
+        <div class="strip-head"><span class="ar">‹</span><b>Octubre 2026 <span class="cal">📅</span></b><span class="ar">›</span></div>
+        <div class="strip">
+          <div class="mt on"><div class="dw">jue</div><div class="dn">1</div><div class="ty">Semana</div><span class="st none">vacía</span></div>
+          <div class="mt f"><div class="dw">dom</div><div class="dn">4</div><div class="ty">Finde</div><span class="st none">vacía</span></div>
+          <div class="mt"><div class="dw">jue</div><div class="dn">8</div><div class="ty">Semana</div><span class="st none">vacía</span></div>
+          <div class="mt f"><div class="dw">dom</div><div class="dn">11</div><div class="ty">Finde</div><span class="st none">vacía</span></div>
+        </div>
+      </div>
+      <div class="sheet-ov">
+        <div class="sheet hl"><span class="pin">3</span>
+          <div class="handle"></div>
+          <h4>Octubre 2026 <span>‹ ›</span></h4>
+          <div class="cg">
+            <span class="h">L</span><span class="h">M</span><span class="h">M</span><span class="h">J</span><span class="h">V</span><span class="h">S</span><span class="h">D</span>
+            <span class="c e"></span><span class="c e"></span><span class="c e"></span><span class="c m on">1<i style="background:#C9CFD1"></i></span><span class="c">2</span><span class="c">3</span><span class="c m">4<i style="background:#C9CFD1"></i></span>
+            <span class="c">5</span><span class="c">6</span><span class="c">7</span><span class="c m">8<i style="background:#C9CFD1"></i></span><span class="c">9</span><span class="c">10</span><span class="c m">11<i style="background:#C9CFD1"></i></span>
+            <span class="c">12</span><span class="c">13</span><span class="c">14</span><span class="c m">15<i style="background:#C9CFD1"></i></span><span class="c">16</span><span class="c">17</span><span class="c m">18<i style="background:#C9CFD1"></i></span>
+            <span class="c">19</span><span class="c">20</span><span class="c">21</span><span class="c m">22<i style="background:#C9CFD1"></i></span><span class="c">23</span><span class="c">24</span><span class="c m">25<i style="background:#C9CFD1"></i></span>
+            <span class="c">26</span><span class="c">27</span><span class="c">28</span><span class="c m">29<i style="background:#C9CFD1"></i></span><span class="c">30</span><span class="c">31</span><span class="c e"></span>
+          </div>
+          <div class="leg"><span><i style="background:var(--ok)"></i>Completa</span><span><i style="background:var(--accent-gold)"></i>Faltan</span><span><i style="background:#C9CFD1"></i>Vacía</span></div>
+        </div>
+      </div>
+      <div class="btabs"><span class="on">Programa</span><span>Cronómetro</span><span>Hermanos</span><span>Ajustes</span><span>Anuncios</span></div>
+    </div>
+    <div class="note"><span class="n">3</span><b>‹ ›</b> pasan al mes anterior o siguiente y se abre su primera reunión. <b>📅</b> muestra el mes con los días de reunión marcados según su estado. Tocás un día y vas a esa reunión. "Hoy" deja de hacer falta: la app abre siempre en la próxima reunión.</div>
+  </div>
+
+</div>
+
+<div class="reco">
+  <h2>Qué cambia y qué no</h2>
+  <p><strong>Cambia:</strong> la barra de semana (‹ fecha › Hoy) y los botones Entre semana / Fin de semana se reemplazan por la tira de reuniones del mes, un título con la reunión elegida y un calendario para saltar a otra fecha. La app abre en la próxima reunión. El Cronómetro sigue la reunión que elijas en la tira.</p>
+  <p><strong>Sigue igual:</strong> los datos (cada reunión se sigue guardando en su semana), Auto-asignar, Compartir, el tema, el Resumen del mes y lo que ve cada rol. No hace falta <code>firebase deploy</code>.</p>
+</div>
+</body>
+</html>
