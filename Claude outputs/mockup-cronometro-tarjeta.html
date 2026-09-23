@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Cronómetro en la tarjeta</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EDEFEF; --surface:#FFFFFF; --ink:#212C34; --ink-soft:#5C6B74; --ink-faint:#636C71;
+    --line:#DDE1E2; --accent-gold:#A9822F; --accent-gold-text:#876825; --accent-blue:#3E6B8A;
+    --ok:#4C7A5E; --ok-bg:#EEF4EF; --warn:#B7791F; --warn-bg:#FBF3E2; --bad:#B23B2E; --bad-bg:#FBE9E7;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#D9DDDE;font-family:'Public Sans',-apple-system,sans-serif;color:var(--ink);padding:24px 16px 48px}
+  h1.page{font-family:'Fraunces',serif;font-weight:500;font-size:22px;margin:0 0 4px;text-align:center}
+  p.lead{text-align:center;color:var(--ink-soft);font-size:13px;margin:0 auto 22px;max-width:680px;line-height:1.5}
+  .grid{display:flex;flex-wrap:wrap;gap:28px;justify-content:center;align-items:flex-start}
+  .col{display:flex;flex-direction:column;align-items:center;gap:10px;max-width:300px}
+  .label{font-size:13px;font-weight:700;text-align:center}
+  .label small{display:block;font-weight:600;color:var(--ink-soft);font-size:10.5px}
+  .note{font-size:12px;color:var(--ink-soft);line-height:1.5;width:100%}
+  .note b{color:var(--ink)}
+  .hl{outline:2.5px solid #E5B94E;outline-offset:2px}
+
+  .phone{width:290px;height:620px;background:var(--bg);border-radius:28px;border:8px solid #1a1f24;overflow:hidden;position:relative;box-shadow:0 10px 30px rgba(0,0,0,.18);display:flex;flex-direction:column}
+  .ehead{background:#fff;padding:10px 12px 8px;display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--line);flex:none}
+  .ehead .dot{width:7px;height:7px;border-radius:50%;background:var(--accent-gold)}
+  .ehead b{font-family:'Fraunces',serif;font-weight:500;font-size:15px}
+  .ehead .cb{font-size:9px;background:var(--bg);border-radius:9px;padding:2px 7px;color:var(--ink-soft)}
+  .top{display:flex;align-items:center;gap:6px;padding:7px 10px 0;flex:none}
+  .top .meet{flex:1;font-size:9.5px;color:var(--ink-soft)}
+  .top .fs{font-size:8.5px;font-weight:700;border:1px solid var(--line);background:#fff;border-radius:6px;padding:3px 6px;color:var(--ink-soft)}
+  .pace{margin:6px 10px 0;display:flex;align-items:center;justify-content:space-between;border-radius:9px;padding:6px 10px;font-size:10px;font-weight:700;flex:none}
+  .pace.late{background:var(--bad-bg);color:var(--bad)}
+  .pace.even{background:#fff;border:1px solid var(--line)}
+  .pace small{font-weight:600;color:var(--ink-soft)}
+  .content{padding:7px 10px;flex:1;overflow:hidden;position:relative}
+  .btabs{height:46px;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:center;font-size:8px;color:var(--ink-faint);flex:none}
+  .btabs span.on{color:var(--ink);font-weight:700}
+
+  .row{display:flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 9px;margin-bottom:4px;font-size:10px}
+  .row .c{width:16px;height:16px;border-radius:50%;background:var(--bg);font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+  .row.done{opacity:.8}
+  .row.done .c{background:var(--ok);color:#fff}
+  .row .l{flex:1;min-width:0;line-height:1.25}
+  .row .l small{display:block;color:var(--ink-soft);font-size:8.5px}
+  .row .m{font-weight:700;color:var(--ink-soft);font-size:9px;text-align:right}
+  .row .m small{display:block;font-size:8.5px}
+  .over{color:var(--bad)} .under{color:var(--ok)}
+  .row.cons{margin-left:16px;border-style:dashed;padding:4px 9px;font-size:9px}
+  .row.cons .c{width:13px;height:13px;font-size:7px}
+  .row.compact{padding:4px 9px}
+
+  .active{background:#fff;border:2px solid var(--ok);border-radius:12px;padding:8px 10px 10px;margin-bottom:4px;box-shadow:0 4px 14px rgba(76,122,94,.18)}
+  .active.warn{border-color:var(--warn);box-shadow:0 4px 14px rgba(183,121,31,.2)}
+  .active.bad{border-color:var(--bad);box-shadow:0 4px 14px rgba(178,59,46,.2)}
+  .active .ah{display:flex;align-items:center;gap:7px}
+  .active .ah .c{width:18px;height:18px;border-radius:50%;background:var(--ok);color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+  .active.warn .ah .c{background:var(--warn)} .active.bad .ah .c{background:var(--bad)}
+  .active .ah .l{flex:1;font-size:11px;font-weight:700;line-height:1.25}
+  .active .ah .l small{display:block;font-weight:500;color:var(--ink-soft);font-size:9px}
+  .active .ah .plan{font-size:9px;font-weight:700;color:var(--ink-soft)}
+  .active .t{font-family:'Fraunces',serif;font-size:52px;text-align:center;line-height:1.05;margin:4px 0 3px;font-variant-numeric:tabular-nums}
+  .active .t.ok{color:var(--ok)} .active .t.warn{color:var(--warn)} .active .t.bad{color:var(--bad)}
+  .active .bar{height:5px;border-radius:3px;background:var(--bg);overflow:hidden;margin:0 4px 8px}
+  .active .bar i{display:block;height:100%}
+  .big{width:100%;border:none;border-radius:10px;padding:10px;font-size:12px;font-weight:700;color:#fff;background:var(--ink);text-align:center}
+  .big.go{background:var(--ok)}
+  .big small{display:block;font-size:8.5px;font-weight:600;opacity:.85;margin-top:1px}
+  .smalls{display:flex;justify-content:center;gap:14px;margin-top:5px;font-size:9px;font-weight:700;color:var(--ink-soft)}
+  .fade{position:absolute;left:0;right:0;height:18px;pointer-events:none}
+  .fade.t{top:0;background:linear-gradient(var(--bg),rgba(237,239,239,0))}
+  .arrow{position:absolute;right:14px;font-size:9px;font-weight:700;color:var(--accent-blue);background:#fff;border:1px solid var(--line);border-radius:10px;padding:2px 7px}
+
+  .flow{display:flex;align-items:center;gap:6px;justify-content:center;flex-wrap:wrap;max-width:880px;margin:30px auto 0}
+  .flow .st{background:#fff;border-radius:10px;padding:8px 12px;font-size:12px;text-align:center;border:1px solid var(--line)}
+  .flow .st b{display:block;font-size:12.5px}
+  .flow .ar{color:var(--ink-faint)}
+
+  .reco{max-width:840px;margin:28px auto 0;background:#fff;border-radius:12px;padding:18px 22px;border-left:4px solid var(--accent-gold)}
+  .reco h2{font-family:'Fraunces',serif;font-weight:500;font-size:17px;margin:0 0 8px}
+  .reco p{font-size:13px;line-height:1.6;color:var(--ink-soft);margin:0 0 8px}
+  .reco p strong{color:var(--ink)}
+</style>
+</head>
+<body>
+<h1 class="page">Cronómetro dentro de la tarjeta de la parte</h1>
+<p class="lead">Mockup de la pestaña Cronómetro del editor. Ya no hay un panel de reloj aparte arriba: la tarjeta de la parte en curso se agranda y es el reloj. Las demás quedan como filas chicas. Hay una sola lista y un solo reloj grande.</p>
+
+<div class="grid">
+
+  <!-- 1. Al empezar -->
+  <div class="col">
+    <div class="label">Al abrir, antes de la reunión</div>
+    <div class="phone">
+      <div class="ehead"><span class="dot"></span><b>Asignaciones</b><span class="cb">San Agustín</span></div>
+      <div class="top"><span class="meet">Entre semana — Jueves 24 · 19:30</span><span class="fs">⛶ Pantalla completa</span></div>
+      <div class="content">
+        <div class="active hl">
+          <div class="ah"><span class="c">1</span><span class="l">Tesoros de la Biblia<small>Andrés Torres</small></span><span class="plan">10 min</span></div>
+          <div class="t ok">10:00</div>
+          <div class="bar"><i style="width:0"></i></div>
+          <div class="big go">▶ Iniciar</div>
+          <div class="smalls"><span>Ajustar tiempo</span></div>
+        </div>
+        <div class="row"><span class="c">2</span><span class="l">Perlas escondidas<small>Mario Díaz</small></span><span class="m">10 min</span></div>
+        <div class="row"><span class="c">3</span><span class="l">Lectura de la Biblia<small>Hugo Escalda</small></span><span class="m">4 min</span></div>
+        <div class="row cons"><span class="c">·</span><span class="l">Consejo<small>Carlos Vega</small></span><span class="m">1 min</span></div>
+        <div class="row"><span class="c">4</span><span class="l">Inicie conversaciones<small>Sofía Abad / Laura Paz</small></span><span class="m">3 min</span></div>
+        <div class="row cons"><span class="c">·</span><span class="l">Consejo<small>Carlos Vega</small></span><span class="m">1 min</span></div>
+        <div class="row"><span class="c">5</span><span class="l">Necesidades locales<small>Carlos Vega</small></span><span class="m">15 min</span></div>
+        <div class="row"><span class="c">6</span><span class="l">Estudio bíblico<small>Martín Ruiz / Lucas Gómez</small></span><span class="m">30 min</span></div>
+      </div>
+      <div class="btabs"><span>Programa</span><span class="on">Cronómetro</span><span>Hermanos</span><span>Ajustes</span><span>Anuncios</span></div>
+    </div>
+    <div class="note">La <b>primera parte ya viene abierta como reloj</b>, lista para tocar "Iniciar". Las demás, en orden, como filas chicas con su tiempo y quién la tiene. Tocar cualquier fila la abre como reloj (por si se cambió el orden o se quiere empezar por otra).</div>
+  </div>
+
+  <!-- 2. En curso, mitad de la reunión -->
+  <div class="col">
+    <div class="label">A mitad de la reunión, corriendo</div>
+    <div class="phone">
+      <div class="ehead"><span class="dot"></span><b>Asignaciones</b><span class="cb">San Agustín</span></div>
+      <div class="top"><span class="meet">Entre semana — Jueves 24 · 19:30</span><span class="fs">⛶ Pantalla completa</span></div>
+      <div class="pace late hl"><span>Reunión: 1:40 atrasada</span><small>4 de 8 tomadas</small></div>
+      <div class="content">
+        <div class="fade t"></div>
+        <div class="row done compact"><span class="c">✓</span><span class="l">Perlas escondidas</span><span class="m">10 min<small class="over">+0:30</small></span></div>
+        <div class="row done compact"><span class="c">✓</span><span class="l">Lectura de la Biblia</span><span class="m">4 min<small class="under">−0:10</small></span></div>
+        <div class="row cons done"><span class="c">✓</span><span class="l">Consejo</span><span class="m">1 min<small class="over">+0:30</small></span></div>
+        <div class="active warn hl">
+          <div class="ah"><span class="c">4</span><span class="l">Inicie conversaciones<small>Sofía Abad / Laura Paz</small></span><span class="plan">3 min</span></div>
+          <div class="t warn">00:42</div>
+          <div class="bar"><i style="width:77%;background:var(--warn)"></i></div>
+          <div class="big">■ Terminó<small>Guarda 2:18 y sigue con: Consejo</small></div>
+          <div class="smalls"><span>Pausar</span><span>Reiniciar</span></div>
+        </div>
+        <div class="row cons"><span class="c">·</span><span class="l">Consejo<small>Carlos Vega</small></span><span class="m">1 min</span></div>
+        <div class="row"><span class="c">5</span><span class="l">Necesidades locales<small>Carlos Vega</small></span><span class="m">15 min</span></div>
+        <div class="row"><span class="c">6</span><span class="l">Estudio bíblico<small>Martín Ruiz / Lucas Gómez</small></span><span class="m">30 min</span></div>
+      </div>
+      <div class="btabs"><span>Programa</span><span class="on">Cronómetro</span><span>Hermanos</span><span>Ajustes</span><span>Anuncios</span></div>
+    </div>
+    <div class="note">La <b>tarjeta activa cambia de color</b> con el tiempo: verde, ámbar en el último minuto, roja si se pasa, igual que los números. Las partes ya tomadas quedan <b>más chicas y sin el nombre</b>, con su diferencia. Arriba siempre el ritmo de la reunión.</div>
+  </div>
+
+  <!-- 3. Al tocar Terminó -->
+  <div class="col">
+    <div class="label">Justo después de tocar "Terminó"</div>
+    <div class="phone">
+      <div class="ehead"><span class="dot"></span><b>Asignaciones</b><span class="cb">San Agustín</span></div>
+      <div class="top"><span class="meet">Entre semana — Jueves 24 · 19:30</span><span class="fs">⛶ Pantalla completa</span></div>
+      <div class="pace late"><span>Reunión: 1:55 atrasada</span><small>5 de 8 tomadas</small></div>
+      <div class="content">
+        <div class="fade t"></div>
+        <div class="row done compact"><span class="c">✓</span><span class="l">Lectura de la Biblia</span><span class="m">4 min<small class="under">−0:10</small></span></div>
+        <div class="row cons done"><span class="c">✓</span><span class="l">Consejo</span><span class="m">1 min<small class="over">+0:30</small></span></div>
+        <div class="row done compact hl"><span class="c">✓</span><span class="l">Inicie conversaciones</span><span class="m">3 min<small class="over">+0:15</small></span></div>
+        <div class="active hl">
+          <div class="ah"><span class="c">·</span><span class="l">Consejo<small>Carlos Vega</small></span><span class="plan">1 min</span></div>
+          <div class="t ok">01:00</div>
+          <div class="bar"><i style="width:0"></i></div>
+          <div class="big go">▶ Iniciar</div>
+          <div class="smalls"><span>Ajustar tiempo</span></div>
+        </div>
+        <div class="row"><span class="c">5</span><span class="l">Necesidades locales<small>Carlos Vega</small></span><span class="m">15 min</span></div>
+        <div class="row"><span class="c">6</span><span class="l">Estudio bíblico<small>Martín Ruiz / Lucas Gómez</small></span><span class="m">30 min</span></div>
+      </div>
+      <div class="btabs"><span>Programa</span><span class="on">Cronómetro</span><span>Hermanos</span><span>Ajustes</span><span>Anuncios</span></div>
+    </div>
+    <div class="note">La parte que terminó <b>se achica a una fila con ✓</b>; la siguiente <b>se abre como reloj</b>, lista pero sin arrancar. La pantalla <b>se desliza sola</b> para dejar la tarjeta activa arriba, con una o dos partes anteriores a la vista para tener contexto.</div>
+  </div>
+
+</div>
+
+<div class="flow">
+  <div class="st"><b>Tocás "Iniciar"</b>corre en la tarjeta</div><span class="ar">→</span>
+  <div class="st"><b>Tocás "Terminó"</b>guarda el tiempo</div><span class="ar">→</span>
+  <div class="st"><b>La tarjeta se achica</b>queda con ✓ y +/−</div><span class="ar">→</span>
+  <div class="st"><b>Se abre la siguiente</b>y la pantalla la acomoda</div>
+</div>
+
+<div class="reco">
+  <h2>Qué cambia y qué no</h2>
+  <p><strong>Cambia:</strong> desaparece el panel del reloj de arriba. El reloj, el botón "Iniciar / Terminó", "Pausar", "Reiniciar" y "Ajustar tiempo" viven dentro de la tarjeta de la parte en curso. Las partes tomadas se compactan y la pantalla sigue sola a la parte activa.</p>
+  <p><strong>Sigue igual:</strong> el ritmo de la reunión arriba, la pantalla completa, el consejo opcional, la vibración, el aviso de minutos faltantes, "Otras partes (tiempos estándar)", las opciones y el historial, más abajo en la misma pestaña.</p>
+  <p><strong>Si no hay programa cargado</strong> para esa reunión: aparece una sola tarjeta-reloj con "Otras partes" abierto para elegir un tiempo estándar, como hoy.</p>
+</div>
+</body>
+</html>

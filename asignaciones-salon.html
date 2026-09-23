@@ -679,6 +679,23 @@
   .timer-fs-state:empty { display: none; }
   .timer-fs-hint { position: absolute; bottom: calc(16px + env(safe-area-inset-bottom)); left: 0; right: 0; font-size: 12.5px; opacity: 0.75; }
 
+  /* ---------- Cronómetro: el reloj vive en la tarjeta de la parte en curso ---------- */
+  .timer-pace { position: sticky; z-index: 5; box-shadow: 0 2px 8px rgba(33,44,52,0.06); }
+  #panel-timer .timer-panel.as-card { margin: 0; padding: 12px 14px 14px; border: 2px solid var(--ok); border-radius: 14px; box-shadow: 0 4px 14px rgba(76,122,94,0.16); scroll-margin-top: 130px; }
+  #panel-timer .timer-panel.as-card.st-warn { border-color: var(--warn); box-shadow: 0 4px 14px rgba(183,121,31,0.18); }
+  #panel-timer .timer-panel.as-card.st-bad { border-color: var(--danger); box-shadow: 0 4px 14px rgba(168,67,58,0.2); }
+  .timer-panel.as-card .timer-now { margin: 0 0 4px; text-transform: none; letter-spacing: 0; text-align: left; }
+  .timer-panel.as-card .timer-display { font-size: 56px; margin: 4px 0 8px; }
+  .tc-head { display: flex; align-items: center; gap: 10px; }
+  .tc-n { width: 24px; height: 24px; border-radius: 50%; background: var(--ok); color: #fff; font-size: 11.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .st-warn .tc-n { background: var(--warn); } .st-bad .tc-n { background: var(--danger); }
+  .tc-l { flex: 1; min-width: 0; font-size: 14.5px; font-weight: 700; color: var(--ink); line-height: 1.3; }
+  .tc-l small { display: block; font-size: 12px; font-weight: 500; color: var(--ink-soft); }
+  .tc-plan { font-size: 12.5px; font-weight: 700; color: var(--ink-soft); flex-shrink: 0; }
+  .mt-part.done { padding-top: 6px; padding-bottom: 6px; opacity: 0.85; }
+  .mt-part.done .mt-l small { display: none; }
+  .mt-part.done .mt-l { font-size: 12.5px; }
+
   /* ---------- Ajustes agrupados ---------- */
   .settings-group { font-size: 11px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.05em; margin: 22px 2px 8px; }
   .settings-group:first-child { margin-top: 0; }
@@ -994,6 +1011,7 @@
       <button type="button" class="btn timer-fs-btn" id="timerFsBtn" aria-label="Pantalla completa">⛶ Pantalla completa</button>
     </div>
     <div class="timer-pace hidden" id="timerPace" role="status"></div>
+    <div id="timerPanelHome">
     <div class="timer-panel">
       <div class="timer-now" id="timerNow"></div>
       <div class="timer-display normal" id="timerDisplay">10:00</div>
@@ -1010,9 +1028,10 @@
         <input type="number" id="secondsInput" min="0" max="59" value="0" aria-label="Segundos"><span>seg</span>
       </div>
       <button type="button" class="hidden" id="timerStartBtn">Iniciar</button>
-      <canvas id="pipCanvas" width="360" height="220" class="hidden"></canvas>
-      <video id="pipVideo" muted playsinline class="hidden"></video>
     </div>
+    </div>
+    <canvas id="pipCanvas" width="360" height="220" class="hidden"></canvas>
+    <video id="pipVideo" muted playsinline class="hidden"></video>
     <div id="weeklyPartsWrap"></div>
     <details class="other-presets" id="otherPresets">
       <summary>Otras partes (tiempos estándar)</summary>
@@ -1288,7 +1307,7 @@
       </details>
       <details class="guide-item">
         <summary><span class="gicon" data-icon="cronometrista"></span>Cronómetro<span class="chev">›</span></summary>
-        <p>Las partes de la reunión aparecen en orden, con su tiempo y quién las tiene (salen del Programa). Tocás una, "▶ Iniciar", y al terminar "■ Terminó": guarda el tiempo y deja lista la siguiente. Arriba se ve si la reunión va atrasada o adelantada. "⛶ Pantalla completa" muestra el reloj grande con colores. En "Opciones" podés activar el tiempo del consejo, la campanilla y la vibración del último minuto.</p>
+        <p>Las partes de la reunión aparecen en orden, con su tiempo y quién las tiene (salen del Programa). La parte en curso se abre como reloj dentro de la lista: "▶ Iniciar", y al terminar "■ Terminó", que guarda el tiempo, la deja con ✓ y abre la siguiente. Arriba se ve si la reunión va atrasada o adelantada. "⛶ Pantalla completa" muestra el reloj grande con colores. En "Opciones" podés activar el tiempo del consejo, la campanilla y la vibración del último minuto.</p>
       </details>
       <details class="guide-item">
         <summary><span class="gicon" data-icon="chart"></span>Reportes y copia de seguridad<span class="chev">›</span></summary>
@@ -3473,6 +3492,8 @@
   let currentPartWho = '';
   let meetingParts = [];
   let selectedPartIdx = -1;
+  let partMode = false;       // el reloj está cronometrando una parte del programa
+  let presetPicked = false;   // se eligió a mano un tiempo estándar o personalizado
   function meetingTimedParts() {
     const w = weekView(currentMonday)[currentType] || {};
     const DEF = { 'SEAMOS MEJORES MAESTROS': 5, 'NUESTRA VIDA CRISTIANA': 15 };
@@ -3500,50 +3521,101 @@
     return (data.timerLog || []).find(x => x.date === today && x.type === currentType && x.label === label) || null;
   }
   function setTimerNow(label, who) {
-    currentPartWho = who || '';
+    if (who !== undefined) currentPartWho = who || '';
     const el = $('timerNow');
     if (!el) return;
+    const panel = document.querySelector('#panel-timer .timer-panel');
+    const p = partMode && selectedPartIdx >= 0 ? meetingParts[selectedPartIdx] : null;
+    if (p && panel && panel.classList.contains('as-card')) {
+      el.innerHTML = `<div class="tc-head"><span class="tc-n">${escapeHtml(String(p.num || '·'))}</span><span class="tc-l">${escapeHtml(p.shortLabel || p.label)}${p.who ? `<small>${escapeHtml(p.who)}</small>` : ''}${p.noMin ? '<span class="mt-nomin">⚠ sin minutos cargados · usa ' + p.min + '</span>' : ''}</span><span class="tc-plan">${p.min} min</span></div>`;
+      return;
+    }
     const shown = label ? label.replace(/^Consejo \(.*\)$/, 'Consejo') : '';
-    el.innerHTML = shown && shown !== 'Personalizado' ? `${timerInterval ? 'Ahora' : 'Lista'}<b>${escapeHtml(shown)}${who ? ' — ' + escapeHtml(who) : ''}</b>` : '';
+    el.innerHTML = shown && shown !== 'Personalizado' ? `${timerInterval ? 'Ahora' : 'Lista'}<b>${escapeHtml(shown)}${currentPartWho ? ' — ' + escapeHtml(currentPartWho) : ''}</b>` : '';
   }
-  function selectMeetingPart(i) {
+  function loadMeetingPart(i) {
     const p = meetingParts[i];
     if (!p) return;
-    selectedPartIdx = i;
+    partMode = true; presetPicked = false; selectedPartIdx = i;
     $('minutesInput').value = p.min; $('secondsInput').value = 0;
     currentPresetLabel = p.label;
+    currentPartWho = p.who || '';
+    document.querySelectorAll('#presetGrid .preset-btn').forEach(b => b.classList.remove('selected'));
     resetTimer();
-    setTimerNow(p.label, p.who);
+  }
+  function selectMeetingPart(i) {
+    if (!meetingParts[i]) return;
+    loadMeetingPart(i);
     renderWeeklyPartsGrid();
+  }
+  // Deja la tarjeta activa arriba, con la parte anterior a la vista para ubicarse.
+  function scrollToActiveCard() {
+    requestAnimationFrame(() => {
+      const panel = document.querySelector('#panel-timer .timer-panel.as-card');
+      if (!panel || $('panel-timer').classList.contains('hidden')) return;
+      const prev = panel.previousElementSibling;
+      const anchor = prev && prev.classList.contains('mt-part') ? prev : panel;
+      const topbar = document.querySelector('.topbar');
+      const offset = (topbar ? topbar.offsetHeight : 0) + ($('timerPace').classList.contains('hidden') ? 0 : $('timerPace').offsetHeight) + 14;
+      window.scrollTo({ top: Math.max(0, anchor.getBoundingClientRect().top + window.scrollY - offset), behavior: 'smooth' });
+    });
   }
   function renderWeeklyPartsGrid() {
     const wrap = $('weeklyPartsWrap');
     if (!wrap) return;
+    const panel = document.querySelector('#panel-timer .timer-panel');
+    const home = $('timerPanelHome');
+    // Antes de redibujar la lista, el reloj vuelve a su lugar (si no, se borraría con la lista).
+    if (panel && home && panel.parentNode !== home) home.appendChild(panel);
     meetingParts = meetingTimedParts();
+    selectedPartIdx = partMode ? meetingParts.findIndex(p => p.label === currentPresetLabel) : -1;
+    if (partMode && selectedPartIdx < 0 && !timerInterval) partMode = false;
+    // Sin nada elegido y con el reloj quieto: se abre sola la primera parte que falta tomar.
+    const idle = !timerInterval && (timerTotal === 0 || timerRemaining === timerTotal);
+    if (!partMode && !presetPicked && idle && meetingParts.length) {
+      const first = meetingParts.findIndex(p => !partDoneEntry(p.label));
+      if (first >= 0) loadMeetingPart(first);
+    }
     const other = $('otherPresets');
+    renderMeetingPace();
+    const pace = $('timerPace');
+    const topbar = document.querySelector('.topbar');
+    if (pace && topbar) pace.style.top = topbar.offsetHeight + 'px';
     if (!meetingParts.length) {
       wrap.innerHTML = '';
-      renderMeetingPace();
       if (other && !other.dataset.touched) other.open = true;
+      if (panel) panel.classList.remove('as-card', 'st-warn', 'st-bad');
+      setTimerNow(currentPresetLabel);
       return;
     }
     if (other && !other.dataset.touched) other.open = false;
-    renderMeetingPace();
     wrap.innerHTML = '<div class="program-subhead" style="margin:0 0 8px;">Partes de esta reunión, en orden</div><div class="mt-parts" id="weeklyPartsGrid">' +
       meetingParts.map((p, i) => {
+        if (partMode && i === selectedPartIdx) return '<div id="timerSlot"></div>';
         const done = partDoneEntry(p.label);
-        const sel = i === selectedPartIdx && currentPresetLabel === p.label;
         const diff = done ? done.actualSeconds - done.plannedSeconds : 0;
         const diffHtml = done ? (diff > 0 ? `<small class="d-over">+${fmtMinSec(diff)}</small>` : diff < 0 ? `<small class="d-under">−${fmtMinSec(-diff)}</small>` : '<small class="d-under">a tiempo</small>') : '';
-        return `<button type="button" class="mt-part${sel ? ' selected' : ''}${done ? ' done' : ''}${p.counsel ? ' counsel' : ''}" data-mpart="${i}">
+        return `<button type="button" class="mt-part${done ? ' done' : ''}${p.counsel ? ' counsel' : ''}" data-mpart="${i}">
           <span class="mt-n">${done ? '✓' : escapeHtml(String(p.num || '•'))}</span>
-          <span class="mt-l">${escapeHtml(p.shortLabel || p.label)}${p.who ? `<small>${escapeHtml(p.who)}</small>` : ''}${p.noMin ? '<span class="mt-nomin">⚠ sin minutos cargados · usa ' + p.min + '</span>' : ''}</span>
+          <span class="mt-l">${escapeHtml(p.shortLabel || p.label)}${p.who ? `<small>${escapeHtml(p.who)}</small>` : ''}${p.noMin && !done ? '<span class="mt-nomin">⚠ sin minutos cargados · usa ' + p.min + '</span>' : ''}</span>
           <span class="mt-m">${p.min} min${diffHtml}</span>
         </button>`;
       }).join('') + '</div>';
+    const slot = $('timerSlot');
+    if (slot && panel) {
+      slot.replaceWith(panel);
+      panel.classList.add('as-card');
+      if (meetingParts[selectedPartIdx] && meetingParts[selectedPartIdx].counsel) panel.style.marginLeft = '22px'; else panel.style.marginLeft = '';
+    } else if (panel) {
+      panel.classList.remove('as-card', 'st-warn', 'st-bad');
+      panel.style.marginLeft = '';
+    }
+    setTimerNow(currentPresetLabel);
+    updateMainBtn();
     wrap.querySelectorAll('[data-mpart]').forEach(btn => btn.addEventListener('click', () => {
+      if (timerInterval) { showToast('Primero tocá "Terminó" o "Pausar" en la parte que está corriendo'); return; }
       selectMeetingPart(Number(btn.dataset.mpart));
-      markSelectedPresetBtn(null, true);
+      scrollToActiveCard();
     }));
   }
   // "Reunión: 1:40 atrasada": suma las diferencias de las partes ya tomadas hoy.
@@ -3583,6 +3655,11 @@
     }
     $('timerPauseBtn').classList.toggle('hidden', !running);
     $('timerFinishBtn').classList.toggle('hidden', !paused);
+    const panel = document.querySelector('#panel-timer .timer-panel');
+    if (panel) {
+      panel.classList.toggle('st-bad', timerTotal > 0 && timerRemaining < 0);
+      panel.classList.toggle('st-warn', timerTotal > 0 && timerRemaining >= 0 && timerRemaining <= 60 && (running || paused));
+    }
     updateTimerFs();
   }
   // Pantalla completa: números grandes y color según el tiempo.
@@ -3613,19 +3690,22 @@
   }
   // Después de "Marcar fin", deja lista la parte siguiente que todavía no se cronometró.
   function advanceToNextPart() {
-    renderWeeklyPartsGrid();
-    if (selectedPartIdx < 0) { setTimerNow(''); return ''; }
-    const next = meetingParts.findIndex((p, i) => i > selectedPartIdx && !partDoneEntry(p.label));
-    if (next === -1) { selectedPartIdx = -1; setTimerNow(''); renderWeeklyPartsGrid(); return ''; }
+    if (!partMode || selectedPartIdx < 0) { renderWeeklyPartsGrid(); return ''; }
+    const from = selectedPartIdx;
+    meetingParts = meetingTimedParts();
+    const next = meetingParts.findIndex((p, i) => i > from && !partDoneEntry(p.label));
+    if (next === -1) { partMode = false; selectedPartIdx = -1; presetPicked = true; setTimerNow(''); renderWeeklyPartsGrid(); return ''; }
     selectMeetingPart(next);
+    scrollToActiveCard();
     return meetingParts[next].label;
   }
   function markSelectedPresetBtn(btn, keepPart) {
     document.querySelectorAll('#presetGrid .preset-btn').forEach(b => b.classList.remove('selected'));
     if (btn) btn.classList.add('selected');
     if (!keepPart) {
-      selectedPartIdx = -1;
-      document.querySelectorAll('#weeklyPartsGrid .mt-part').forEach(b => b.classList.remove('selected'));
+      partMode = false; selectedPartIdx = -1; presetPicked = true;
+      currentPartWho = '';
+      renderWeeklyPartsGrid();
     }
   }
 
@@ -3638,6 +3718,7 @@
       resetTimer();
       markSelectedPresetBtn(btn);
       setTimerNow(p.label, '');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }));
     const other = $('otherPresets');
     if (other && !other.dataset.bound) { other.dataset.bound = '1'; other.addEventListener('toggle', () => { other.dataset.touched = '1'; }); }
@@ -3654,7 +3735,7 @@
     disp.textContent = (over ? '+' : '') + `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
     disp.classList.remove('warning', 'danger'); bar.classList.remove('warning', 'danger');
     if (over) { disp.classList.add('danger'); bar.classList.add('danger'); }
-    else if (timerRemaining <= 60 && timerTotal > 0) { disp.classList.add('warning'); bar.classList.add('warning'); }
+    else if (timerRemaining <= 60 && timerTotal > 0 && timerRemaining !== timerTotal) { disp.classList.add('warning'); bar.classList.add('warning'); }
     const pct = timerTotal > 0 ? Math.min(100, Math.max(0, (timerTotal - Math.max(timerRemaining, 0)) / timerTotal * 100)) : 0;
     bar.style.width = pct + '%';
     drawPipFrame();
@@ -3680,7 +3761,7 @@
     timerEndAt = Date.now() + timerRemaining * 1000;
     timerInterval = setInterval(tickTimer, 1000);
     tickTimer();
-    setTimerNow(currentPresetLabel, currentPartWho);
+    setTimerNow(currentPresetLabel);
   }
   function tickTimer() {
     // Recalcula siempre contra la hora de finalización, no restando de a
@@ -3867,8 +3948,8 @@
     data.timerLog = []; saveData(); renderTimerLog();
     showToast('Historial borrado', () => { data.timerLog = backupLog; saveData(); renderTimerLog(); });
   });
-  $('minutesInput').addEventListener('change', () => { currentPresetLabel = 'Personalizado'; markSelectedPresetBtn(null); setTimerNow(''); resetTimer(); });
-  $('secondsInput').addEventListener('change', () => { currentPresetLabel = 'Personalizado'; markSelectedPresetBtn(null); setTimerNow(''); resetTimer(); });
+  $('minutesInput').addEventListener('change', () => { if (partMode) { resetTimer(); return; } currentPresetLabel = 'Personalizado'; markSelectedPresetBtn(null); setTimerNow(''); resetTimer(); });
+  $('secondsInput').addEventListener('change', () => { if (partMode) { resetTimer(); return; } currentPresetLabel = 'Personalizado'; markSelectedPresetBtn(null); setTimerNow(''); resetTimer(); });
   $('muteBtn').addEventListener('click', () => { data.settings.timerMuted = !data.settings.timerMuted; saveData(); updateMuteBtn(); });
   $('testBellBtn').addEventListener('click', async () => { await ensureTone(); playBell(); });
 
@@ -4433,7 +4514,9 @@
     applyTheme();
     fillPresetGrid();
     renderWeeklyPartsGrid();
-    resetTimer();
+    // Solo se reinicia si el reloj está quieto: si llegan cambios de la nube en plena
+    // reunión (otro editor guarda algo), el cronómetro que está corriendo no se toca.
+    if (!timerInterval && (timerTotal === 0 || timerRemaining === timerTotal)) resetTimer();
     renderTimerLog();
     updateWeekLabel();
     updateTimerTopicLabel();

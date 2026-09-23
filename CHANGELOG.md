@@ -6,6 +6,14 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Cronómetro: el reloj vive en la tarjeta de la parte — 23 de septiembre de 2026 (caché `asignaciones-salon-v17`)
+- Ya no hay un panel de reloj aparte arriba: la parte en curso se abre como reloj **dentro de la lista** (número, parte, quién la tiene, tiempo planeado, reloj grande y botón "Iniciar / Terminó"). Las demás quedan como filas chicas; las ya tomadas, compactas con ✓ y su diferencia.
+- Al abrir la pestaña, la primera parte que falta tomar ya viene abierta. Al tocar "Terminó", se abre la siguiente y la pantalla se desplaza sola para dejarla a la vista. La línea "Reunión: … atrasada" queda fija arriba al desplazarse.
+- El borde de la tarjeta cambia de color con el tiempo (verde, ámbar en el último minuto, rojo pasado). Tocar otra fila con el reloj quieto la abre; si está corriendo, avisa que primero hay que terminar o pausar.
+- "Ajustar tiempo" cambia los minutos de la parte sin perderla. Elegir un tiempo estándar en "Otras partes" pone el reloj arriba, fuera de la lista.
+- **Arreglo:** si llegaba un cambio de la nube en plena reunión (otro editor guardando algo, o tocar una opción del cronómetro), el reloj que estaba corriendo se reiniciaba. Ahora solo se reinicia si está quieto.
+- El reloj ya no se pone ámbar antes de arrancar en las partes de 1 minuto (como el consejo).
+
 ## Cronómetro mejorado — 23 de septiembre de 2026 (caché `asignaciones-salon-v16`)
 - **Un solo botón grande:** "▶ Iniciar" → "■ Terminó" (dice qué guarda y cuál sigue). Guarda el tiempo y deja lista la parte siguiente, sin arrancarla. En pausa pasa a "▶ Seguir" y aparece "Terminó" chico. "Pausar", "Reiniciar" y "Ajustar tiempo" (minutos a mano) quedan como botones chicos.
 - **Cómo va la reunión:** arriba, "Reunión: 1:40 atrasada" / "adelantada" / "a tiempo", sumando las diferencias de las partes ya tomadas. Cada parte tomada muestra su diferencia (+0:50 / −0:10).
