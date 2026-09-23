@@ -274,6 +274,15 @@
     .bottom-tabs { box-shadow: 0 -2px 10px rgba(0,0,0,0.35); }
     .bt-btn.active .bt-ic { background: rgba(201,162,75,0.22); }
   }
+
+  /* ---------- Guía de uso (vista pública) ---------- */
+  .guide-item { border-bottom: 1px solid var(--line); padding: 10px 0; }
+  .guide-item:last-child { border-bottom: none; }
+  .guide-item summary { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; font-size: 12.5px; font-weight: 600; color: var(--ink); }
+  .guide-item summary::-webkit-details-marker { display: none; }
+  .guide-item summary .gchev { color: var(--ink-faint); transition: transform .15s; font-size: 13px; }
+  .guide-item[open] summary .gchev { transform: rotate(90deg); }
+  .guide-item p { font-size: 11.5px; color: var(--ink-soft); line-height: 1.6; margin: 8px 0 0; }
 </style>
 </head>
 <body>
@@ -388,7 +397,7 @@
     </section>
 
     <p class="footer-note"><span class="live-dot"></span>Se actualiza solo — generado con Asignaciones · Salón del Reino</p>
-    <p class="footer-note" style="padding-top:0;"><button type="button" id="privacyLinkBtn" style="border:none; background:none; color:var(--ink-faint); font-size:11px; text-decoration:underline; padding:0;">Política de privacidad</button></p>
+    <p class="footer-note" style="padding-top:0;"><button type="button" id="guideLinkBtn" style="border:none; background:none; color:var(--ink-faint); font-size:11px; text-decoration:underline; padding:0; margin-right:14px;">Cómo usar esta app</button><button type="button" id="privacyLinkBtn" style="border:none; background:none; color:var(--ink-faint); font-size:11px; text-decoration:underline; padding:0;">Política de privacidad</button></p>
   </div>
   <nav class="bottom-tabs" id="bottomTabs" aria-label="Secciones">
     <div class="bottom-tabs-inner">
@@ -397,6 +406,46 @@
       <button type="button" class="bt-btn" data-tab="avisos"><span class="bt-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 6a9 9 0 0 1 0 12"/></svg><span class="bt-badge hidden" id="annBadge">0</span></span>Anuncios</button>
     </div>
   </nav>
+</div>
+
+<div id="guideOverlay" class="hidden" style="position:fixed; inset:0; background:rgba(33,44,52,0.55); z-index:50; display:flex; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:var(--surface); border-radius:16px; padding:22px 20px; max-width:420px; width:100%; max-height:82vh; overflow-y:auto;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+      <h3 style="font-family:'Fraunces', serif; font-size:15px; margin:0;">Cómo usar esta app</h3>
+      <button type="button" id="guideCloseBtn" aria-label="Cerrar" style="border:none; background:none; color:var(--ink-faint); font-size:18px; flex-shrink:0;">✕</button>
+    </div>
+    <p style="font-size:10px; color:var(--ink-faint); margin:0 0 10px;">Vista de solo lectura — para hacer cambios, hablá con quien administra la app.</p>
+
+    <details class="guide-item" open>
+      <summary>🏠&nbsp;&nbsp;Inicio<span class="gchev">›</span></summary>
+      <p>Muestra las próximas reuniones. Si iniciaste sesión con el mismo email que tiene cargado la congregación, además aparece arriba de todo un resumen con tus propias asignaciones.</p>
+    </details>
+
+    <details class="guide-item">
+      <summary>🔍&nbsp;&nbsp;Calendario<span class="gchev">›</span></summary>
+      <p>Buscá por nombre, puesto o fecha con la lupa. El botón "Equipo técnico / Programa" cambia qué se muestra. Tocando cualquier día se abre la ficha completa, con un ícono para agregar cada asignación a Google Calendar.</p>
+    </details>
+
+    <details class="guide-item">
+      <summary>📢&nbsp;&nbsp;Anuncios<span class="gchev">›</span></summary>
+      <p>Las novedades de la congregación, con foto o PDF adjunto cuando corresponde. El botón "Compartir" de cada anuncio lo manda por WhatsApp u otra app.</p>
+    </details>
+
+    <details class="guide-item">
+      <summary>🔔&nbsp;&nbsp;Notificaciones<span class="gchev">›</span></summary>
+      <p>Si aceptás el cartelito que aparece, te avisa en el celular apenas te asignan algo nuevo — no hace falta abrir la app para enterarte.</p>
+    </details>
+
+    <details class="guide-item">
+      <summary>📲&nbsp;&nbsp;Instalar en el celular<span class="gchev">›</span></summary>
+      <p>El botón "Instalar" agrega un acceso directo a tu pantalla de inicio, como una app más — sin ocupar una tienda de aplicaciones ni pedir permisos de más.</p>
+    </details>
+
+    <details class="guide-item">
+      <summary>🔑&nbsp;&nbsp;Iniciar sesión<span class="gchev">›</span></summary>
+      <p>Con tu email (te llega un link, sin contraseña) o con tu cuenta de Google. Solo entran las personas que quien administra la app haya autorizado.</p>
+    </details>
+  </div>
 </div>
 
 <div id="privacyOverlay" class="hidden" style="position:fixed; inset:0; background:rgba(33,44,52,0.55); z-index:50; display:flex; align-items:center; justify-content:center; padding:20px;">
@@ -1142,6 +1191,9 @@
   $('privacyLinkBtn').addEventListener('click', () => $('privacyOverlay').classList.remove('hidden'));
   $('privacyCloseBtn').addEventListener('click', () => $('privacyOverlay').classList.add('hidden'));
   $('privacyOverlay').addEventListener('click', (e) => { if (e.target.id === 'privacyOverlay') $('privacyOverlay').classList.add('hidden'); });
+  $('guideLinkBtn').addEventListener('click', () => $('guideOverlay').classList.remove('hidden'));
+  $('guideCloseBtn').addEventListener('click', () => $('guideOverlay').classList.add('hidden'));
+  $('guideOverlay').addEventListener('click', (e) => { if (e.target.id === 'guideOverlay') $('guideOverlay').classList.add('hidden'); });
 
   const VAPID_KEY = 'BJvWkjT5GqydLl7oSKd-_yalNdWXoiC3XYK2a-W8_FCeatyDHv-dhwieo9DAEWO3Ndjl2jSNYkxu3qqKA1uOMLg';
   // Cartel dentro de la página para avisos que llegan con la app abierta.

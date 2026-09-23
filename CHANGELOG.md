@@ -6,6 +6,10 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Guía de uso corta en la vista pública — 22 de septiembre de 2026 (caché `ver-salon-v15`)
+- `ver.html` (lo que ve la congregación en general) no tenía ninguna explicación de cómo usarla. Se agregó un link "Cómo usar esta app" al pie, junto a "Política de privacidad", que abre una guía corta con secciones plegables: Inicio, Calendario, Anuncios, Notificaciones, Instalar en el celular, e Iniciar sesión.
+- El editor (`asignaciones-salon.html`) ya tenía su propia guía (botón "?" del header y "Ajustes → Guía de uso") desde antes — esto solo cubre el lado que le faltaba, la vista pública.
+
 ## Ícono del Tablero de Anuncios — 22 de septiembre de 2026 (caché `ver-salon-v14`)
 - El ícono junto a "Tablero de Anuncios" (una etiqueta/tag) se veía como un garabato poco reconocible. Se cambió por un megáfono, más claro para representar anuncios.
 - Requiere subir `ver/ver.html` y `ver/service-worker.js` a GitHub.

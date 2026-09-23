@@ -6,6 +6,8 @@ La versión anterior quedó desactualizada — proponía como "el salto
 grande" cosas que ya están hechas hace rato, y de hecho el proyecto
 llegó bastante más lejos de lo que esa versión imaginaba.
 
+_Actualizado el 22 de septiembre de 2026: se movió el punto "Guía de uso corta" a la sección de lo ya hecho, y se sumó la guía de la vista pública que faltaba._
+
 ---
 
 ## Lo que ya está hecho (para no repetirlo por error)
@@ -49,6 +51,16 @@ llegó bastante más lejos de lo que esa versión imaginaba.
 - Dos sets de pruebas automáticas (`app.test.js`, `ver.test.js`) que
   cubren todo lo anterior.
 
+**Guías de uso**
+- Guía de uso corta dentro del editor (`asignaciones-salon.html`):
+  botón "?" del header y "Ajustes → Guía de uso", con secciones
+  plegables (Hermanos, Equipo técnico, Programa, Sala auxiliar,
+  Compartir, Vista pública, Acceso, Cronómetro, Reportes/backup).
+- Guía de uso corta en la vista pública (`ver.html`), agregada el 22
+  de septiembre de 2026: link "Cómo usar esta app" al pie, junto a
+  "Política de privacidad" — cubre Inicio, Calendario, Anuncios,
+  Notificaciones, Instalar en el celular, e Iniciar sesión.
+
 En criollo: lo que en la versión vieja de este documento se llamaba
 "Fase A" y "Fase B" — ya está, y de forma más sólida de lo planteado
 ahí (seguridad real, no solo un código).
@@ -57,14 +69,7 @@ ahí (seguridad real, no solo un código).
 
 ## Lo que queda abierto, de menor a mayor esfuerzo
 
-### 1. Guía de uso corta dentro de la app
-Con todo lo que se sumó (Programa, sala auxiliar, login), alguien que
-usa la app por primera vez — un cronometrista nuevo, un operador que
-no la vio nunca — tiene bastante más para entender que al principio.
-Una guía cortita (aparte del onboarding que ya existe) ayudaría.
-*Esfuerzo: chico.*
-
-### 2. Notificación directa a cada hermano de su asignación
+### 1. Notificación directa a cada hermano de su asignación
 Lo hablamos hace un rato: hoy WhatsApp es el canal, pero un email
 automático a cada hermano cuando le asignan algo es posible. Necesita
 una función en la nube (Firebase Cloud Functions) más un servicio de
@@ -74,7 +79,7 @@ volumen de una congregación, el costo real es prácticamente nulo,
 pero deja de ser 100% gratis.
 *Esfuerzo: medio.*
 
-### 3. Multi-congregación con alta propia
+### 2. Multi-congregación con alta propia
 Hoy cada congregación ya tiene sus datos aislados por código — eso
 técnicamente ya funciona. Lo que falta, si en algún momento la
 compartís con otra congregación, es que se puedan dar de alta *solas*
@@ -83,14 +88,14 @@ tengas que configurarles todo a mano como hiciste con San Agustín.
 Solo tiene sentido si de verdad hay otra congregación interesada.
 *Esfuerzo: medio-alto.*
 
-### 4. Monitoreo de errores
+### 3. Monitoreo de errores
 *(Accesibilidad ya está hecha — Escape, foco atrapado, aria-labels,
 contraste de color corregido en los dos archivos, el 14 de
 septiembre.)* Queda pendiente una forma simple de enterarte si algo
 se rompe en producción sin depender de que alguien te escriba.
 *Esfuerzo: variable, sin apuro.*
 
-### 5. Roles por área, con restricción real del lado del servidor
+### 4. Roles por área, con restricción real del lado del servidor
 Ya armamos la versión de interfaz (cada rol ve solo lo suyo, pero
 técnicamente los datos completos igual llegan al dispositivo). Para
 que sea una restricción de verdad — que el servidor directamente no
@@ -109,7 +114,7 @@ cualquier cosa hecha hasta ahora — el login con Google, en
 comparación, fue chico al lado de esto.
 *Esfuerzo: alto.*
 
-### 6. Consentimiento de uso de datos, para el resumen personal
+### 5. Consentimiento de uso de datos, para el resumen personal
 Pendiente de una decisión de fondo primero: si el consentimiento de
 uso de datos que los publicadores ya firmaron en papel (el de la
 organización) alcanza para esta app externa, o si hace falta pedir
@@ -164,12 +169,12 @@ mockups armados (14 de septiembre de 2026):
 
 ## Recomendación
 
-Si tuviera que elegir un solo próximo paso: **la guía de uso corta**
-(punto 1) — es lo más rápido, y con todo lo que creció la app desde
-que arrancamos, es lo que más se nota que falta para alguien que no
-fue parte de armarla con vos.
+Con las dos guías de uso ya hechas (editor y vista pública), el punto
+que queda más a mano es el **monitoreo de errores** (punto 3) — algo
+chico y sin apuro, pero útil para enterarte si algo se rompe sin
+depender de que alguien te escriba.
 
-Las notificaciones por email (punto 2) son el siguiente salto real de
-funcionalidad, pero conviene decidirlo con calma porque toca la
-arquitectura (Cloud Functions, plan pago) — no es un cambio de una
-tarde como los que veníamos haciendo.
+Las notificaciones por email (punto 1) siguen siendo el siguiente
+salto real de funcionalidad, pero conviene decidirlo con calma porque
+toca la arquitectura (Cloud Functions, plan pago) — no es un cambio
+de una tarde como los que veníamos haciendo.
