@@ -6,6 +6,10 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## "Solo ver" va directo a la vista de la congregación — 23 sep 2026 (caché asignaciones-salon-v22)
+
+- Si alguien con rol "Solo ver" entraba a la app de asignaciones, veía todas las pantallas como Super Admin, aunque no podía guardar nada (Firebase lo bloqueaba y aparecía un error). Ahora ve un aviso breve ("Tu acceso es de solo lectura") y se lo lleva a la vista de la congregación con el código ya puesto.
+
 ## Anuncios: nueva gestión, fecha de evento y links — 23 sep 2026 (caché asignaciones-salon-v21, ver-salon-v23)
 
 **Para quien publica (app de asignaciones)**

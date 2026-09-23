@@ -1958,8 +1958,25 @@
     if ((s.viewerEmails || []).includes(email)) return 'viewer';
     return 'super'; // fallback defensivo: no debería llegar acá si el login ya validó acceso
   }
+  // Quien tiene "Solo ver" no puede guardar nada acá: se lo lleva a la vista de la congregación.
+  let redirectingToViewer = false;
+  function goToViewerPage() {
+    if (redirectingToViewer) return;
+    redirectingToViewer = true;
+    try { if (fbUnsubscribe) fbUnsubscribe(); } catch (e) { /* nada */ }
+    const url = new URL('ver/ver.html', location.href);
+    if (accessCode) url.searchParams.set('codigo', accessCode);
+    const box = document.createElement('div');
+    box.id = 'viewerRedirect';
+    box.setAttribute('role', 'status');
+    box.style.cssText = 'position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;';
+    box.innerHTML = `<div style="max-width:340px;"><p style="font-family:'Fraunces',serif;font-size:20px;margin:0 0 8px;">Tu acceso es de solo lectura</p><p style="font-size:14px;color:var(--ink-soft);margin:0 0 16px;line-height:1.5;">Te llevamos a la vista de la congregación, donde ves tus asignaciones, el calendario y los anuncios.</p><a class="btn btn-primary" style="text-decoration:none;" href="${escapeHtml(url.toString())}">Ir ahora</a></div>`;
+    document.body.appendChild(box);
+    setTimeout(() => location.replace(url.toString()), 1500);
+  }
   function applyRoleUI() {
     const role = currentUserRole;
+    if (role === 'viewer') { goToViewerPage(); return; }
     const narrow = role === 'tecnico' || role === 'acomodadores' || role === 'asignaciones';
     // Pestañas principales: Cronómetro, Hermanos y Ajustes quedan solo para Super Admin.
     document.querySelectorAll('.tab-btn[data-tab="timer"], .tab-btn[data-tab="hermanos"], .tab-btn[data-tab="ajustes"]')
