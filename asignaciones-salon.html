@@ -570,6 +570,9 @@
   .program-row input[type="number"] { flex: 0 0 72px; }
 
   .br-m { display: none; }
+  .br-chips { display: none; }
+  .br-chip { flex-shrink: 0; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); border-radius: 16px; padding: 6px 12px; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+  .br-chip.active { background: var(--ink); color: #fff; border-color: var(--ink); }
 
   /* ---------- Programa: menú "Más" (solo celular) ---------- */
   .more-wrap { display: none; }
@@ -707,7 +710,12 @@
     .br-table td.br-edit .btn::after { content: ' Editar'; font-weight: 700; }
     .br-table .br-m { display: inline; }
     .br-toolbar .br-add { position: fixed; right: 16px; bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 20; border-radius: 24px; box-shadow: 0 6px 16px rgba(0,0,0,0.25); padding: 12px 18px; }
-    .br-toolbar select { flex: 1; min-width: 0; }
+    .br-toolbar select { display: none; }
+    .br-toolbar input { min-width: 0; }
+    .br-toolbar #brPdfBtn { flex-shrink: 0; }
+    .br-pdf-long { display: none; }
+    .br-chips { display: flex; gap: 6px; overflow-x: auto; width: 100%; padding-bottom: 2px; scrollbar-width: none; }
+    .br-chips::-webkit-scrollbar { display: none; }
     #panel-hermanos { padding-bottom: 60px; }
   }
 
@@ -997,7 +1005,17 @@
         <option value="cronometrista">Cronometrista</option>
         <option value="sin-email">Sin email vinculado</option>
       </select>
-      <button class="btn" id="brPdfBtn">Descargar PDF</button>
+      <button class="btn" id="brPdfBtn"><span class="br-pdf-long">Descargar </span>PDF</button>
+      <div class="br-chips" id="brChips" role="group" aria-label="Filtrar hermanos">
+        <button type="button" class="br-chip active" data-br-filter="">Todos</button>
+        <button type="button" class="br-chip" data-br-filter="sonido">Audio</button>
+        <button type="button" class="br-chip" data-br-filter="video">Video</button>
+        <button type="button" class="br-chip" data-br-filter="microfono">Micrófonos</button>
+        <button type="button" class="br-chip" data-br-filter="plataforma">Plataforma</button>
+        <button type="button" class="br-chip" data-br-filter="acomodador">Acomodadores</button>
+        <button type="button" class="br-chip" data-br-filter="cronometrista">Cronometrista</button>
+        <button type="button" class="br-chip" data-br-filter="sin-email">Sin email</button>
+      </div>
       <button class="btn btn-primary br-add" id="addBrotherBtn">+ Agregar hermano</button>
     </div>
     <div class="br-table-wrap">
@@ -3707,6 +3725,7 @@
   function renderBrothersTable() {
     const q = $('brSearch').value.trim().toLowerCase();
     const filterRole = $('brFilter').value;
+    document.querySelectorAll('#brChips [data-br-filter]').forEach(c => c.classList.toggle('active', c.dataset.brFilter === filterRole));
     const monthCounts = computeMonthlyCounts();
     const rows = data.publishers.filter(p => {
       const matchesQ = !q || p.name.toLowerCase().includes(q) || (p.notes || '').toLowerCase().includes(q);
@@ -3741,6 +3760,13 @@
   }
   $('brSearch').addEventListener('input', renderBrothersTable);
   $('brFilter').addEventListener('change', renderBrothersTable);
+  $('brChips').addEventListener('click', (e) => {
+    const chip = e.target.closest('[data-br-filter]');
+    if (!chip) return;
+    $('brFilter').value = chip.dataset.brFilter;
+    renderBrothersTable();
+    chip.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  });
   $('addBrotherBtn').addEventListener('click', () => openPubModal(null));
 
   function getLastServedByCap(pubId) {

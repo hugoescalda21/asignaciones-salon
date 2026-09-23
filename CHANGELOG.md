@@ -6,6 +6,9 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Hermanos: filtros como botoncitos — 22 de septiembre de 2026 (caché `asignaciones-salon-v15`)
+- Completa lo que había quedado afuera del mockup: en el celular, el buscador y "PDF" van en un mismo renglón y los filtros son botoncitos deslizables (Todos, Audio, Video, Micrófonos, Plataforma, Acomodadores, Cronometrista, Sin email) en vez del desplegable. En la computadora sigue el desplegable.
+
 ## Mejoras del editor — 22 de septiembre de 2026 (caché `asignaciones-salon-v14`)
 **Errores arreglados**
 - Programa: los campos de cántico y de minutos se salían de la tarjeta en el celular y la pantalla se corría de costado. Ahora tienen el ancho justo.
