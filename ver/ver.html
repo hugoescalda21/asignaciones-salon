@@ -276,6 +276,46 @@
     .bt-btn.active .bt-ic { background: rgba(201,162,75,0.22); }
   }
 
+  /* ---------- Calendario: cada reunión se despliega (técnico + programa juntos) ---------- */
+  #agendaCard { padding: 4px 14px; }
+  .cal-m { border-bottom: 1px solid var(--line); }
+  .cal-m:last-child { border-bottom: none; }
+  .cal-h { display: flex; align-items: center; gap: 10px; width: 100%; border: none; background: none; padding: 12px 2px; text-align: left; font: inherit; color: inherit; }
+  .cal-h:focus-visible { outline: 2px solid var(--accent-gold); outline-offset: 2px; border-radius: 6px; }
+  .cal-bar { width: 3px; align-self: stretch; border-radius: 2px; background: var(--accent-blue); flex-shrink: 0; }
+  .cal-m.finde .cal-bar { background: var(--accent-gold); }
+  .cal-d { width: 34px; text-align: center; flex-shrink: 0; }
+  .cal-d .dow { font-size: 9.5px; color: var(--ink-faint); font-weight: 700; text-transform: uppercase; }
+  .cal-d .num { font-family: 'Fraunces', serif; font-size: 21px; line-height: 1.1; }
+  .cal-s { flex: 1; min-width: 0; }
+  .cal-t { font-size: 10.5px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.03em; }
+  .cal-next { display: inline-block; font-size: 9px; font-weight: 700; color: #fff; background: var(--accent-blue); border-radius: 6px; padding: 1px 6px; margin-left: 5px; vertical-align: 1px; letter-spacing: 0.02em; }
+  .cal-sum { font-size: 12.5px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cal-me { display: inline-block; font-size: 10.5px; font-weight: 700; color: var(--accent-gold-text); background: rgba(169, 130, 47, 0.13); border-radius: 8px; padding: 2px 7px; margin-top: 4px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cal-m.open .cal-me { display: none; }
+  .cal-chev { color: var(--ink-faint); font-size: 16px; flex-shrink: 0; transition: transform .15s; }
+  .cal-m.open .cal-chev { transform: rotate(90deg); }
+  .cal-b { display: none; padding: 0 2px 14px 15px; }
+  .cal-m.open .cal-b { display: block; }
+  .cal-topic { font-size: 12px; font-style: italic; color: var(--ink-soft); margin: 0 0 8px; }
+  .cal-g { display: flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; margin: 12px 0 3px; }
+  .cal-g:first-child { margin-top: 0; }
+  .cal-g::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+  .cal-two { display: grid; grid-template-columns: 1fr 1fr; column-gap: 14px; }
+  @media (max-width: 340px) { .cal-two { grid-template-columns: 1fr; } }
+  /* En dos columnas, el puesto va arriba (chico) y el nombre abajo: entra bien en celulares angostos. */
+  .cal-two .cal-li { flex-direction: column; align-items: flex-start; gap: 0; padding: 5px 0; }
+  .cal-two .cal-li .k { font-size: 11px; }
+  .cal-two .cal-li .v { text-align: left; max-width: 100%; }
+  .cal-two .cal-li.mine { padding: 5px 6px; }
+  .cal-li { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 12.5px; padding: 4px 0; line-height: 1.3; }
+  .cal-li .k { color: var(--ink-soft); min-width: 0; }
+  .cal-li .v { font-weight: 600; text-align: right; flex-shrink: 0; max-width: 60%; }
+  .cal-li .v.none { color: var(--ink-faint); font-weight: 400; }
+  .cal-li.mine { background: rgba(169, 130, 47, 0.13); margin: 0 -6px; padding: 4px 6px; border-radius: 5px; }
+  .cal-li.mine .v { color: var(--accent-gold-text); }
+  .cal-empty { font-size: 12px; font-style: italic; color: var(--ink-faint); padding: 2px 0; }
+
   /* ---------- Recordatorios ---------- */
   .rem-row { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 14px; }
   .rem-ic { width: 30px; height: 30px; border-radius: 8px; background: var(--ink); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 14px; }
@@ -408,10 +448,6 @@
         <input type="text" id="searchInput" class="search-input" placeholder="Buscar por nombre, puesto o fecha…">
         <button type="button" class="search-clear hidden" id="searchClearBtn" aria-label="Limpiar búsqueda">✕</button>
       </div>
-      <div class="view-toggle" id="viewToggle">
-        <button type="button" class="view-toggle-btn active" data-view="tecnico">Equipo técnico</button>
-        <button type="button" class="view-toggle-btn" data-view="programa">Programa</button>
-      </div>
       <div class="month-nav" id="monthNav">
         <button type="button" id="prevBtn" aria-label="Mes anterior" title="Mes anterior">‹</button>
         <h2 id="monthLabel">Mes</h2>
@@ -469,7 +505,7 @@
 
     <details class="guide-item">
       <summary>🔍&nbsp;&nbsp;Calendario<span class="gchev">›</span></summary>
-      <p>Buscá por nombre, puesto o fecha con la lupa. El botón "Equipo técnico / Programa" cambia qué se muestra. Tocando cualquier día se abre la ficha completa, con un ícono para agregar cada asignación a Google Calendar.</p>
+      <p>Buscá por nombre, puesto o fecha con la lupa. Cada reunión muestra el Equipo técnico y el Programa juntos: la próxima aparece abierta y las demás se abren tocándolas. Tus asignaciones aparecen resaltadas.</p>
     </details>
 
     <details class="guide-item">
@@ -781,7 +817,8 @@
     return programEntries(program, type).some(e => e.song || e.name);
   }
 
-  let agendaView = 'tecnico';
+  // Calendario: qué reuniones abrió o cerró la persona (se mantiene al actualizarse los datos).
+  const calOpenState = new Map();
 
   const LAST_CODE_KEY = 'ver-last-code';
   function getCode() {
@@ -965,21 +1002,68 @@
 
     if (!rows.length) { $('agendaCard').innerHTML = '<p class="empty-note">Sin asignaciones cargadas este mes.</p>'; return; }
 
-  function rowHTML(row) {
-      let chips;
-      if (agendaView === 'programa') {
-        const entries = programEntries(row.program, row.type);
-        chips = entries.length ? programEntriesToHTML(entries) : '<div class="chip-row"><div class="chip empty">Programa no cargado</div></div>';
-      } else {
-        const roles = getRoles(row.type, settings.micCount, settings.usherCount);
-        chips = technicalRowsToHTML(roles, row.roles);
-      }
-      return `<div class="agenda-item ${row.type === 'finde' ? 'finde' : ''}">
-        <div class="agenda-date"><div class="dow">${row.dayName.slice(0, 3)}</div><div class="num">${row.day}</div></div>
-        <div class="agenda-body">
-          <div class="agenda-type">${row.type === 'finde' ? 'Fin de semana' : 'Entre semana'}</div>
-          ${row.topic ? `<div class="agenda-topic">${escapeHtml(row.topic)}</div>` : ''}
-          ${chips}
+    const me = currentUser && currentUser.email ? (data.publishers || []).find(p => p.email === currentUser.email) : null;
+    const pubName = id => { const p = id && (data.publishers || []).find(pp => pp.id === id); return p ? p.name : ''; };
+    const isMineName = name => !!(me && me.name && name && name.split(' / ').includes(me.name));
+    const TEC_SHORT = k => k === 'sonido' ? 'Audio' : k === 'video' ? 'Video' : k === 'plataforma' ? 'Plataforma' : k === 'cronometrista' ? 'Cronometrista'
+      : /^mic(\d+)$/.test(k) ? 'Micrófono ' + k.slice(3) : /^usher(\d+)$/.test(k) ? 'Acomodador ' + k.slice(5) : k;
+    const li = (k, v, mine) => `<div class="cal-li${mine ? ' mine' : ''}"><span class="k">${escapeHtml(k)}</span><span class="v${v ? '' : ' none'}">${v ? escapeHtml(v) + (mine ? ' ✓' : '') : '—'}</span></div>`;
+
+    function rowHTML(row, openByDefault) {
+      const key = row.date + '|' + row.type;
+      const open = calOpenState.has(key) ? calOpenState.get(key) : !!openByDefault;
+      const mine = [];
+
+      // Equipo técnico, en dos columnas
+      const roles = getRoles(row.type, settings.micCount, settings.usherCount);
+      const anyTec = roles.some(r => row.roles[r.key]);
+      const tecHtml = anyTec ? `<div class="cal-two">${roles.map(r => {
+        const pid = row.roles[r.key];
+        const m = !!(me && pid === me.id);
+        if (m) mine.push(TEC_SHORT(r.key));
+        return li(TEC_SHORT(r.key), pubName(pid), m);
+      }).join('')}</div>` : '<div class="cal-empty">Equipo técnico no cargado</div>';
+
+      // Programa, en una columna, con sus secciones de colores
+      const entries = programEntries(row.program, row.type);
+      let progHtml = '';
+      entries.forEach(e => {
+        if (e.section) {
+          progHtml += `<div class="cal-g" style="color:var(${SECTION_COLOR[e.section] || '--ink-soft'})">${escapeHtml(e.section.charAt(0) + e.section.slice(1).toLowerCase())}</div>`;
+          return;
+        }
+        if (e.song) { progHtml += li(e.label, String(e.value), false); return; }
+        const label = (e.num ? e.num + '. ' : '') + e.label + (e.tema ? ' — ' + e.tema : '');
+        const m = isMineName(e.name);
+        if (m) mine.push(e.label);
+        progHtml += li(label, e.name, m);
+      });
+      if (!progHtml) progHtml = '<div class="cal-empty">Programa no cargado</div>';
+
+      // Resumen de la línea cerrada
+      const p = row.program || {};
+      let sum = '';
+      if (row.type === 'finde' && pubName(p.oradorPublico)) sum = 'Discurso: ' + pubName(p.oradorPublico);
+      else if (pubName(p.presidente)) sum = 'Presidente: ' + pubName(p.presidente);
+      else if (anyTec) sum = 'Audio: ' + (pubName(row.roles.sonido) || '—') + ' · Video: ' + (pubName(row.roles.video) || '—');
+      else sum = 'Sin asignaciones cargadas';
+      const meTag = mine.length ? `<span class="cal-me">Vos: ${escapeHtml(mine.slice(0, 2).join(' · ') + (mine.length > 2 ? ` y ${mine.length - 2} más` : ''))}</span>` : '';
+      const hora = meetingTimeOf(row.type);
+      const tipo = (row.type === 'finde' ? 'Fin de semana' : 'Entre semana') + (hora ? ' · ' + hora : '');
+
+      return `<div class="cal-m${row.type === 'finde' ? ' finde' : ''}${open ? ' open' : ''}" data-mkey="${key}">
+        <button type="button" class="cal-h" aria-expanded="${open}">
+          <span class="cal-bar"></span>
+          <span class="cal-d"><span class="dow" style="display:block">${row.dayName.slice(0, 3)}</span><span class="num" style="display:block">${row.day}</span></span>
+          <span class="cal-s"><span class="cal-t" style="display:block">${tipo}${row.isNext ? '<span class="cal-next">PRÓXIMA</span>' : ''}</span><span class="cal-sum" style="display:block">${escapeHtml(sum)}</span>${meTag}</span>
+          <span class="cal-chev" aria-hidden="true">›</span>
+        </button>
+        <div class="cal-b">
+          ${row.topic ? `<div class="cal-topic">${escapeHtml(row.topic)}</div>` : ''}
+          <div class="cal-g" style="color:var(--role-sonido)">Equipo técnico</div>
+          ${tecHtml}
+          <div class="cal-g" style="color:var(--role-program)">Programa</div>
+          ${progHtml}
         </div>
       </div>`;
     }
@@ -996,11 +1080,34 @@
           <span>${pastRows.length} reunión${pastRows.length > 1 ? 'es' : ''} ya pasada${pastRows.length > 1 ? 's' : ''} este mes</span>
           <span class="wtoggle" id="pastWeekToggleLabel">Ver ›</span>
         </button>
-        <div class="week-body hidden" id="pastWeekBody">${pastRows.map(rowHTML).join('')}</div>
+        <div class="week-body hidden" id="pastWeekBody">${pastRows.map(r => rowHTML(r, false)).join('')}</div>
       </div>`;
     }
-    html += currentRows.map(rowHTML).join('');
+    // La próxima reunión (de hoy en adelante) aparece abierta; las demás, cerradas.
+    let globalNext = null;
+    Object.keys(data.weeks || {}).forEach(monday => ['semana', 'finde'].forEach(t => {
+      const w = data.weeks[monday][t];
+      if (!w || !((w.roles && Object.values(w.roles).some(Boolean)) || isProgramFilled(w.program, t))) return;
+      const d = dateForType(monday, t, settings);
+      if (d >= today && (!globalNext || d < globalNext)) globalNext = d;
+    }));
+    currentRows.forEach(r => { if (r.date === globalNext) r.isNext = true; });
+    // Si en este mes no está la próxima (mes futuro), se abre la primera reunión del mes.
+    const openFirst = !currentRows.some(r => r.isNext) && prefix > today.slice(0, 7);
+    html += currentRows.map((r, i) => rowHTML(r, r.isNext || (openFirst && i === 0))).join('');
     $('agendaCard').innerHTML = html;
+    const card = $('agendaCard');
+    if (!card.dataset.accBound) {
+      card.dataset.accBound = '1';
+      card.addEventListener('click', (e) => {
+        const head = e.target.closest('.cal-h');
+        if (!head) return;
+        const item = head.closest('.cal-m');
+        const nowOpen = item.classList.toggle('open');
+        head.setAttribute('aria-expanded', String(nowOpen));
+        calOpenState.set(item.dataset.mkey, nowOpen);
+      });
+    }
 
     const pastToggle = $('pastWeekToggle');
     if (pastToggle) {
@@ -1250,13 +1357,6 @@
     const q = $('searchInput').value;
     if (q && q.trim()) renderSearchResults(q); else renderMonth();
   }
-  $('viewToggle').addEventListener('click', (e) => {
-    const btn = e.target.closest('.view-toggle-btn');
-    if (!btn || btn.classList.contains('active')) return;
-    agendaView = btn.dataset.view;
-    document.querySelectorAll('.view-toggle-btn').forEach(b => b.classList.toggle('active', b === btn));
-    renderMonth();
-  });
 
   window.addEventListener('scroll', () => {
     const threshold = $('mainView').querySelector('.topbar').offsetHeight;
@@ -1264,14 +1364,13 @@
   });
   $('searchClearBtn').addEventListener('click', () => {
     $('searchInput').value = ''; $('searchClearBtn').classList.add('hidden');
-    $('monthNav').classList.remove('hidden'); $('viewToggle').classList.remove('hidden'); renderMonth();
+    $('monthNav').classList.remove('hidden'); renderMonth();
   });
   $('searchInput').addEventListener('input', (e) => {
     const q = e.target.value;
     $('searchClearBtn').classList.toggle('hidden', !q.trim());
-    if (!q.trim()) { $('monthNav').classList.remove('hidden'); $('viewToggle').classList.remove('hidden'); renderMonth(); return; }
+    if (!q.trim()) { $('monthNav').classList.remove('hidden'); renderMonth(); return; }
     $('monthNav').classList.add('hidden');
-    $('viewToggle').classList.add('hidden');
     renderSearchResults(q);
   });
 

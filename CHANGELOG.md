@@ -6,6 +6,13 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Calendario: Equipo técnico y Programa juntos — 22 de septiembre de 2026 (caché `ver-salon-v19`)
+- Se sacó el interruptor "Equipo técnico / Programa" de la pestaña Calendario, que obligaba a mirar dos vistas para saber quién hacía qué.
+- Ahora cada reunión es una fila que se despliega. La **próxima aparece abierta** (con la etiqueta "PRÓXIMA") y las demás cerradas, con una línea de resumen ("Presidente: …" o "Discurso: …"). Si tenés algo en esa reunión, la fila cerrada lo avisa ("Vos: Acomodador 1").
+- Al abrir una reunión se ve todo junto, en formato puesto → nombre: el Equipo técnico en dos columnas y el Programa con sus secciones de colores. Tus asignaciones quedan resaltadas con ✓.
+- Si está cargado el horario de la reunión, aparece al lado del tipo ("Entre semana · 19:30").
+- El buscador, las reuniones pasadas plegadas y la ficha del día desde Inicio siguen igual. La guía de uso se actualizó.
+
 ## Google Calendar: se ve cuáles ya agregaste — 22 de septiembre de 2026 (caché `ver-salon-v18`)
 - En "Tus otras asignaciones", después de tocar el botón de calendario de una asignación, el ícono pasa a un ✓ verde y queda así la próxima vez que abras la app. Se puede volver a tocar para agregarla otra vez.
 - Límites: marca que se abrió Google Calendar, no que se guardó (Google no se lo avisa a la app), y queda guardado solo en ese celular. Las fechas pasadas se limpian solas.
