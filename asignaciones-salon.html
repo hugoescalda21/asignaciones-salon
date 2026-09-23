@@ -582,6 +582,16 @@
   .br-chip { flex-shrink: 0; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); border-radius: 16px; padding: 6px 12px; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
   .br-chip.active { background: var(--ink); color: #fff; border-color: var(--ink); }
 
+  /* ---------- Rol "Solo anuncios": la gestión de anuncios es la página ---------- */
+  body.an-only .tabs, body.an-only .bottom-tabs, body.an-only #backupBanner, body.an-only main.content > .tab-panel, body.an-only #closeAnunciosBtn { display: none !important; }
+  body.an-only #anunciosModalOverlay { position: static; background: none; padding: 0; display: block; z-index: auto; }
+  body.an-only #anunciosModalOverlay .modal { max-width: 640px; margin: 0 auto; max-height: none; overflow: visible; border-radius: var(--radius-m); box-shadow: none; border: 1px solid var(--line); padding: 18px 16px; }
+  body.an-only .an-fbar { bottom: 0; }
+  .an-perm { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 7px; background: var(--bg); border-radius: 8px; padding: 7px 9px; font-size: 12px; font-weight: 600; }
+  .an-perm small { display: block; font-weight: 400; color: var(--ink-soft); font-size: 11px; }
+  .an-perm.lock { color: var(--ink-soft); }
+  .an-perm .switch.lock { opacity: 0.45; cursor: default; }
+
   /* ---------- Gestión de anuncios ---------- */
   .an-modal { max-width: 520px; }
   .an-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
@@ -1331,7 +1341,7 @@
     <details class="settings-card">
       <summary><div><h3>Acceso</h3><span class="sc-sub">Quién puede editar o ver, y con qué rol</span></div><span class="chev">›</span></summary>
       <p class="hint">Cada persona inicia sesión con su email (le llega un link, sin contraseña). Solo entran los que agregues acá — sacar a alguien le corta el acceso al instante.</p>
-      <p class="hint" style="margin-top:4px;">⚠ Esto todavía es una restricción de la interfaz, no del servidor — cualquiera de estos roles técnicamente puede leer/escribir el documento completo. Los detalles están en el roadmap.</p>
+      <p class="hint" style="margin-top:4px;">🔒 Quién tiene acceso y quién publica anuncios lo controla también el servidor: solo un Super Admin puede cambiarlo. El resto de los permisos por rol todavía es una restricción de la interfaz (detalles en el roadmap).</p>
       <div id="accessRolesList" style="margin-top:10px;"></div>
       <div class="add-block" style="margin-top:10px; padding-top:12px; border-top:1px solid var(--line);">
         <input type="email" id="newRoleEmail" placeholder="email@ejemplo.com" style="width:100%; border:1px solid var(--line); border-radius:var(--radius-s); padding:9px 10px; font-family:inherit; font-size:13px; margin-bottom:8px;">
@@ -1341,10 +1351,12 @@
             <option value="tecnicoAdminEmails">Admin — Equipo técnico</option>
             <option value="acomodadoresAdminEmails">Admin — Acomodadores</option>
             <option value="asignacionesAdminEmails">Admin — Asignaciones</option>
+            <option value="anunciosOnlyEmails">Solo anuncios</option>
             <option value="viewerEmails">Solo ver</option>
           </select>
           <button class="btn" id="addRoleBtn" style="flex-shrink:0;">+ Agregar</button>
         </div>
+        <label id="newRoleAnWrap" class="hidden" style="display:flex; align-items:center; gap:8px; margin-top:9px; font-size:12.5px; font-weight:600;"><input type="checkbox" id="newRoleAnChk"> 📢 También puede publicar anuncios</label>
       </div>
     </details>
     <div class="settings-group">Avisos</div>
@@ -1499,7 +1511,7 @@
       </details>
       <details class="guide-item">
         <summary><span class="gicon" data-icon="lock"></span>Quién puede entrar<span class="chev">›</span></summary>
-        <p>Ajustes → Acceso. Cada persona inicia sesión con su email (link o Google, sin contraseña) — solo entran los que agregues ahí. "Pueden editar" ve y modifica todo; "Solo pueden ver" únicamente accede al link de lectura. Sacar a alguien de la lista le corta el acceso al instante.</p>
+        <p>Ajustes → Acceso. Cada persona inicia sesión con su email (link o Google, sin contraseña) — solo entran los que agregues ahí. Roles: Super Admin (todo), Admin de Equipo técnico, de Acomodadores o de Asignaciones (solo su parte), Solo anuncios (publica anuncios y nada más) y Solo ver (va a la vista de la congregación). Los anuncios los publican los Super Admin, los de "Solo anuncios" y los Admin a los que les prendas "📢 Puede publicar anuncios". Sacar a alguien de la lista le corta el acceso al instante.</p>
       </details>
       <details class="guide-item">
         <summary><span class="gicon" data-icon="cronometrista"></span>Cronómetro<span class="chev">›</span></summary>
@@ -1921,7 +1933,8 @@
     }
     if (fbDb && accessCode && !applyingRemoteUpdate) {
       try {
-        await fbDb.collection('congregations').doc(accessCode).set(data);
+        if (currentUser && currentUserRole === 'anuncios') await fbDb.collection('congregations').doc(accessCode).update({ anuncios: data.anuncios || [] });
+        else await fbDb.collection('congregations').doc(accessCode).set(data);
         setSyncStatus('ok');
       } catch (e) {
         console.error('No se pudo sincronizar con la nube', e);
@@ -1955,6 +1968,7 @@
     if ((s.tecnicoAdminEmails || []).includes(email)) return 'tecnico';
     if ((s.acomodadoresAdminEmails || []).includes(email)) return 'acomodadores';
     if ((s.asignacionesAdminEmails || []).includes(email)) return 'asignaciones';
+    if ((s.anunciosOnlyEmails || []).includes(email)) return 'anuncios';
     if ((s.viewerEmails || []).includes(email)) return 'viewer';
     return 'super'; // fallback defensivo: no debería llegar acá si el login ya validó acceso
   }
@@ -1974,9 +1988,28 @@
     document.body.appendChild(box);
     setTimeout(() => location.replace(url.toString()), 1500);
   }
+  // Quién puede crear, editar y borrar anuncios: Super Admin, "Solo anuncios", y los admins con el permiso.
+  function canManageAnuncios() {
+    if (!currentUser) return true;
+    const s = data.settings || {};
+    return currentUserRole === 'super' || currentUserRole === 'anuncios' || (s.anunciosEmails || []).includes(currentUser.email);
+  }
+  // "Solo anuncios": la gestión de anuncios pasa a ser la página (sin el resto de la app).
+  function setupAnunciosOnly() {
+    const ov = $('anunciosModalOverlay');
+    const main = document.querySelector('main.content');
+    if (ov.parentElement !== main) { main.appendChild(ov); resetAnuncioForm(); showAnView('list'); }
+    ov.classList.remove('hidden');
+    if (!$('anListView').classList.contains('hidden')) renderAnunciosList();
+  }
   function applyRoleUI() {
     const role = currentUserRole;
     if (role === 'viewer') { goToViewerPage(); return; }
+    document.body.classList.toggle('an-only', role === 'anuncios');
+    const canAn = canManageAnuncios();
+    ['navAnunciosBtn', 'navAnunciosBtnMobile'].forEach(id => $(id) && $(id).classList.toggle('hidden', !canAn));
+    if (!canAn) { $('anunciosModalOverlay').classList.add('hidden'); $('anMenuOverlay').classList.add('hidden'); }
+    if (role === 'anuncios') { $('narrowThemeBtn').classList.remove('hidden'); setupAnunciosOnly(); return; }
     const narrow = role === 'tecnico' || role === 'acomodadores' || role === 'asignaciones';
     // Pestañas principales: Cronómetro, Hermanos y Ajustes quedan solo para Super Admin.
     document.querySelectorAll('.tab-btn[data-tab="timer"], .tab-btn[data-tab="hermanos"], .tab-btn[data-tab="ajustes"]')
@@ -2159,7 +2192,7 @@
         const isTecnico = (remoteSettings.tecnicoAdminEmails || []).includes(currentUser.email);
         const isAcomodadores = (remoteSettings.acomodadoresAdminEmails || []).includes(currentUser.email);
         const isAsignaciones = (remoteSettings.asignacionesAdminEmails || []).includes(currentUser.email);
-        const isViewer = (remoteSettings.viewerEmails || []).includes(currentUser.email);
+        const isViewer = (remoteSettings.viewerEmails || []).includes(currentUser.email) || (remoteSettings.anunciosOnlyEmails || []).includes(currentUser.email);
         const orphaned = !(remoteSettings.editorEmails || []).length; // congregación de antes del login: nadie es editor todavía
         if (orphaned) {
           await docRef.update({ 'settings.editorEmails': firebase.firestore.FieldValue.arrayUnion(currentUser.email) });
@@ -5385,14 +5418,28 @@
     if (currentSubtab === 'programa') renderProgramSection();
   });
 
-  const ROLE_FIELDS = ['editorEmails', 'tecnicoAdminEmails', 'acomodadoresAdminEmails', 'asignacionesAdminEmails', 'viewerEmails'];
+  const ROLE_FIELDS = ['editorEmails', 'tecnicoAdminEmails', 'acomodadoresAdminEmails', 'asignacionesAdminEmails', 'anunciosOnlyEmails', 'viewerEmails'];
+  const AN_PERM_FIELDS = ['tecnicoAdminEmails', 'acomodadoresAdminEmails', 'asignacionesAdminEmails']; // roles a los que se les puede dar el permiso de anuncios
   const ROLE_LABELS = {
     editorEmails: 'Super Admin',
     tecnicoAdminEmails: 'Admin — Equipo técnico',
     acomodadoresAdminEmails: 'Admin — Acomodadores',
     asignacionesAdminEmails: 'Admin — Asignaciones',
+    anunciosOnlyEmails: 'Solo anuncios',
     viewerEmails: 'Solo ver'
   };
+  function anPermRowHTML(r) {
+    if (r.field === 'editorEmails') return '<div class="an-perm lock"><span>📢 Anuncios<small>El Super Admin siempre puede</small></span><span class="switch on lock" aria-hidden="true"></span></div>';
+    if (r.field === 'anunciosOnlyEmails') return '<div class="an-perm lock"><span>📢 Anuncios<small>Es lo único que puede hacer</small></span><span class="switch on lock" aria-hidden="true"></span></div>';
+    if (!AN_PERM_FIELDS.includes(r.field)) return '';
+    const on = (data.settings.anunciosEmails || []).includes(r.email);
+    return `<div class="an-perm"><span>📢 Puede publicar anuncios</span><button type="button" class="switch${on ? ' on' : ''}" data-an-perm="${escapeHtml(r.email)}" aria-pressed="${on}" aria-label="Puede publicar anuncios: ${escapeHtml(r.email)}"></button></div>`;
+  }
+  function setAnunciosPerm(email, on) {
+    const list = (data.settings.anunciosEmails || []).filter(e => e !== email);
+    if (on) list.push(email);
+    data.settings.anunciosEmails = list;
+  }
   function renderAccessLists() {
     const rows = [];
     ROLE_FIELDS.forEach(field => { (data.settings[field] || []).forEach(email => rows.push({ email, field })); });
@@ -5406,6 +5453,7 @@
             </select>
             <button type="button" class="rm-btn" data-remove-email="${escapeHtml(r.email)}" data-field="${r.field}" aria-label="Quitar a ${escapeHtml(r.email)}" style="border:none; background:none; color:var(--ink-faint); font-size:15px; flex-shrink:0; padding:4px 6px;">✕</button>
           </div>
+          ${anPermRowHTML(r)}
         </div>`).join('')
       : '<p class="hint" style="margin:0;">Todavía no agregaste a nadie.</p>';
   }
@@ -5416,13 +5464,27 @@
     if (ROLE_FIELDS.some(f => (data.settings[f] || []).includes(email))) { showToast('Ese email ya tiene un rol asignado — cambialo desde la lista'); return; }
     data.settings[field] = data.settings[field] || [];
     data.settings[field].push(email);
+    setAnunciosPerm(email, AN_PERM_FIELDS.includes(field) && $('newRoleAnChk').checked);
     $('newRoleEmail').value = '';
+    $('newRoleAnChk').checked = false;
     saveData();
     renderAccessLists();
     showToast('Agregado');
   }
   $('addRoleBtn').addEventListener('click', addRoleEmail);
+  const updateNewRoleAnWrap = () => $('newRoleAnWrap').classList.toggle('hidden', !AN_PERM_FIELDS.includes($('newRoleSelect').value));
+  $('newRoleSelect').addEventListener('change', updateNewRoleAnWrap);
+  updateNewRoleAnWrap();
   $('accessRolesList').addEventListener('click', (e) => {
+    const sw = e.target.closest('[data-an-perm]');
+    if (sw) {
+      const on = !(data.settings.anunciosEmails || []).includes(sw.dataset.anPerm);
+      setAnunciosPerm(sw.dataset.anPerm, on);
+      saveData();
+      renderAccessLists();
+      showToast(on ? 'Ahora puede publicar anuncios' : 'Ya no puede publicar anuncios');
+      return;
+    }
     const btn = e.target.closest('[data-remove-email]');
     if (!btn) return;
     const field = btn.dataset.field;
@@ -5431,6 +5493,7 @@
       return;
     }
     data.settings[field] = data.settings[field].filter(e2 => e2 !== btn.dataset.removeEmail);
+    setAnunciosPerm(btn.dataset.removeEmail, false);
     saveData();
     renderAccessLists();
   });
@@ -5449,6 +5512,7 @@
     data.settings[oldField] = data.settings[oldField].filter(e => e !== email);
     data.settings[newField] = data.settings[newField] || [];
     data.settings[newField].push(email);
+    if (!AN_PERM_FIELDS.includes(newField)) setAnunciosPerm(email, false); // el permiso solo se guarda para los roles de admin
     saveData();
     renderAccessLists();
   });
@@ -5665,7 +5729,7 @@
   let anOldOpen = false;
 
   function abrirAvisos() {
-    if (!accessCode) return;
+    if (!accessCode || !canManageAnuncios()) return;
     resetAnuncioForm();
     showAnView('list');
     $('anunciosModalOverlay').classList.remove('hidden');

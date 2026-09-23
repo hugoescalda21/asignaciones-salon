@@ -2,15 +2,17 @@ rules_version = '2';
 
 // Reglas de Storage — Asignaciones del Salón del Reino
 // -----------------------------------------------------------------
-// Cómo instalarlas: consola de Firebase → Storage → pestaña "Reglas",
+// Cómo instalarlas (desde la carpeta push-salon-2026):
+//   firebase deploy --only firestore:rules,storage
+// o a mano: consola de Firebase → Storage → pestaña "Reglas",
 // pegar este archivo y "Publicar". La primera vez la consola pide
 // aceptar un permiso para que Storage pueda leer Firestore ("Adjuntar
 // permisos") — hay que aceptarlo.
 //
 // Qué hacen: los archivos adjuntos de los avisos viven en
 // congregations/{código}/anuncios/. Solo pueden subir o borrar los
-// mismos emails que pueden editar en Firestore (editores y los tres
-// roles de Admin). Solo se aceptan imágenes y PDF de hasta 10 MB.
+// que pueden publicar anuncios: Super Admin, "Solo anuncios" y los
+// Admin con el permiso "Puede publicar anuncios". Solo se aceptan imágenes y PDF de hasta 10 MB.
 // Leer requiere sesión iniciada (los links de descarga que guarda la
 // app llevan su propio token, así que ver.html los abre igual).
 
@@ -22,9 +24,8 @@ service firebase.storage {
         let s = firestore.get(/databases/(default)/documents/congregations/$(code)).data.settings;
         return request.auth != null && (
           request.auth.token.email in s.get('editorEmails', []) ||
-          request.auth.token.email in s.get('tecnicoAdminEmails', []) ||
-          request.auth.token.email in s.get('acomodadoresAdminEmails', []) ||
-          request.auth.token.email in s.get('asignacionesAdminEmails', [])
+          request.auth.token.email in s.get('anunciosOnlyEmails', []) ||
+          request.auth.token.email in s.get('anunciosEmails', [])
         );
       }
 

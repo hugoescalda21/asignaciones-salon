@@ -6,6 +6,14 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Permiso para publicar anuncios — 23 sep 2026 (caché asignaciones-salon-v23)
+
+- Ajustes → Acceso: cada Admin (Equipo técnico, Acomodadores, Asignaciones) tiene un interruptor "📢 Puede publicar anuncios". Los Super Admin siempre pueden. Al agregar a alguien se puede marcar "También puede publicar anuncios".
+- Rol nuevo **Solo anuncios**: entra directo a la gestión de anuncios y no ve ni puede tocar nada más.
+- Quien no tiene el permiso no ve la pestaña Anuncios (los sigue viendo en la vista de la congregación).
+- Los Admin que ya existían arrancan **sin** el permiso: hay que prenderlo a los hermanos aprobados.
+- **Reglas del servidor** (`push-salon-2026/firestore.rules` y `storage.rules`, que se mudaron a esa carpeta para poder publicarlas con la terminal): Firebase rechaza cambios en los anuncios de quien no tiene el permiso; "Solo anuncios" solo puede cambiar los anuncios; y las listas de acceso (roles y permiso de anuncios) solo las cambia un Super Admin, así nadie se da permisos a sí mismo. Adjuntos: solo los que pueden publicar anuncios suben o borran archivos. Hay que publicarlas con `firebase deploy --only firestore:rules,storage` desde `push-salon-2026`.
+
 ## "Solo ver" va directo a la vista de la congregación — 23 sep 2026 (caché asignaciones-salon-v22)
 
 - Si alguien con rol "Solo ver" entraba a la app de asignaciones, veía todas las pantallas como Super Admin, aunque no podía guardar nada (Firebase lo bloqueaba y aparecía un error). Ahora ve un aviso breve ("Tu acceso es de solo lectura") y se lo lleva a la vista de la congregación con el código ya puesto.
