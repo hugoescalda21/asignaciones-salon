@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Equipo técnico</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EDEFEF; --surface:#FFFFFF; --ink:#212C34; --ink-soft:#5C6B74; --ink-faint:#636C71;
+    --line:#DDE1E2; --accent-gold:#A9822F; --accent-gold-text:#876825; --accent-blue:#3E6B8A;
+    --role-mic:#B4633F; --role-plat:#4C7A5E; --role-sonido:#3E6B8A; --role-video:#3F8A80; --role-crono:#7A5C86; --role-usher:#7A8C63;
+    --ok:#4C7A5E; --ok-bg:#EEF4EF; --bad:#A8433A; --bad-bg:#FBEAE8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#D9DDDE;font-family:'Public Sans',-apple-system,sans-serif;color:var(--ink);padding:24px 16px 48px}
+  h1.page{font-family:'Fraunces',serif;font-weight:500;font-size:22px;margin:0 0 4px;text-align:center}
+  p.lead{text-align:center;color:var(--ink-soft);font-size:13px;margin:0 auto 22px;max-width:700px;line-height:1.5}
+  .grid{display:flex;flex-wrap:wrap;gap:28px;justify-content:center;align-items:flex-start}
+  .col{display:flex;flex-direction:column;align-items:center;gap:10px;max-width:300px}
+  .label{font-size:13px;font-weight:700;text-align:center}
+  .label small{display:block;font-weight:600;color:var(--ink-soft);font-size:10.5px}
+  .note{font-size:12px;color:var(--ink-soft);line-height:1.5;width:100%}
+  .note b{color:var(--ink)}
+  .n{display:inline-flex;width:17px;height:17px;border-radius:50%;background:#E5B94E;color:#212C34;font-size:10px;font-weight:700;align-items:center;justify-content:center;margin-right:3px}
+  .hl{outline:2.5px solid #E5B94E;outline-offset:2px;position:relative}
+  .pin{position:absolute;top:-9px;left:-9px;width:18px;height:18px;border-radius:50%;background:#E5B94E;color:#212C34;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;z-index:3}
+
+  .phone{width:290px;height:620px;background:var(--bg);border-radius:28px;border:8px solid #1a1f24;overflow:hidden;position:relative;box-shadow:0 10px 30px rgba(0,0,0,.18);display:flex;flex-direction:column}
+  .ehead{background:#fff;padding:9px 12px 7px;display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--line);flex:none}
+  .ehead .dot{width:7px;height:7px;border-radius:50%;background:var(--accent-gold)}
+  .ehead b{font-family:'Fraunces',serif;font-weight:500;font-size:14px}
+  .ehead .cb{font-size:8.5px;background:var(--bg);border-radius:9px;padding:2px 7px;color:var(--ink-soft)}
+  .content{padding:7px 10px;flex:1;overflow:hidden;position:relative}
+  .btabs{height:44px;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:center;font-size:8px;color:var(--ink-faint);flex:none}
+  .btabs span.on{color:var(--ink);font-weight:700}
+
+  .wk{text-align:center;font-family:'Fraunces',serif;font-size:11.5px;margin-bottom:4px}
+  .topic{font-size:9px;color:var(--ink-soft);text-align:center;font-style:italic;margin:-2px 0 5px}
+  .seg{display:flex;gap:4px;margin-bottom:5px}
+  .seg span{flex:1;text-align:center;font-size:8.5px;font-weight:700;border-radius:14px;padding:5px;background:#fff;border:1px solid var(--line);color:var(--ink-soft)}
+  .seg span.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .acts{display:flex;gap:5px;margin-bottom:6px}
+  .btn{border:1px solid var(--line);background:#fff;border-radius:6px;font-size:9px;font-weight:700;padding:6px 7px;white-space:nowrap;text-align:center}
+  .btn.pri{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .btn.grow{flex:1}
+  .badge{display:inline-block;font-size:8.5px;font-weight:700;border-radius:8px;padding:2px 7px;background:#FBF3E2;color:var(--accent-gold-text);margin-bottom:5px}
+
+  .warn{display:flex;align-items:center;gap:7px;background:var(--bad-bg);border:1px solid rgba(168,67,58,.35);border-radius:8px;padding:6px 8px;margin-bottom:6px;font-size:9.5px;color:var(--bad);font-weight:700}
+  .warn span{flex:1}
+  .warn .fix{background:var(--bad);color:#fff;border-radius:6px;padding:4px 7px;font-size:8.5px;white-space:nowrap}
+  .warn .more{font-size:8.5px;color:var(--bad);text-decoration:underline;font-weight:600}
+
+  .tl{background:#fff;border:1px solid var(--line);border-radius:10px;padding:2px 10px 4px}
+  .sec{display:flex;align-items:center;gap:5px;font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:7px 0 1px}
+  .sec::after{content:'';flex:1;height:1px;background:var(--line)}
+  .r{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--line);font-size:10px}
+  .r:last-child{border-bottom:none}
+  .r .ic{width:17px;height:17px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-size:8px}
+  .r .k{color:var(--ink-soft);width:78px;flex:none;font-size:9.5px}
+  .r .v{flex:1;min-width:0;font-weight:700;font-size:10.5px;display:flex;align-items:center;justify-content:space-between;background:var(--ok-bg);border:1px solid #b9d3bf;border-radius:5px;padding:4px 6px}
+  .r .v small{font-weight:400;color:var(--ink-faint)}
+  .r .v.empty{background:var(--bg);border-color:var(--line);color:var(--ink-faint);font-weight:500}
+  .r.bad .v{background:var(--bad-bg);border-color:rgba(168,67,58,.45);color:var(--bad)}
+  .r .dots{width:16px;text-align:center;color:var(--ink-faint);font-weight:700;flex:none}
+  .r .tag{display:block;font-size:7.5px;font-weight:700;color:var(--bad);margin-top:1px}
+  .rsub{font-size:8.5px;color:var(--bad);padding:0 0 5px 101px;margin-top:-3px;border-bottom:1px solid var(--line)}
+  .rsub b{color:var(--ink)}
+  .rsub .u{margin-left:6px;border:1px solid var(--ok);color:var(--ok);border-radius:8px;padding:0 6px;font-weight:700}
+
+  .combo{position:absolute;left:18px;right:18px;top:224px;background:#fff;border:1px solid var(--line);border-radius:9px;box-shadow:0 10px 26px rgba(0,0,0,.2);z-index:5;overflow:hidden}
+  .cg{background:var(--bg);font-size:7.5px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;padding:4px 9px}
+  .ci{display:flex;justify-content:space-between;gap:8px;padding:6px 9px;border-bottom:1px solid var(--line);font-size:10px}
+  .ci small{font-size:8.5px;color:var(--ink-soft)}
+  .ci.busy{color:var(--ink-soft)} .ci.busy small{color:var(--bad)}
+  .ci.hi{background:var(--ok-bg)}
+
+  .menu{position:absolute;right:14px;top:300px;width:200px;background:#fff;border:1px solid var(--line);border-radius:9px;box-shadow:0 10px 26px rgba(0,0,0,.2);z-index:5;font-size:9.5px}
+  .menu .mh{padding:7px 10px 4px;font-size:8px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em}
+  .menu .mi{padding:7px 10px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+  .menu .mi b{font-size:10px}
+  .menu .u{border:1px solid var(--ok);color:var(--ok);border-radius:8px;padding:1px 7px;font-weight:700;font-size:8.5px}
+
+  .toast{position:absolute;left:10px;right:10px;bottom:52px;background:#212C34;color:#fff;border-radius:9px;padding:8px 10px;font-size:9.5px;display:flex;align-items:center;gap:8px;box-shadow:0 6px 16px rgba(0,0,0,.25);z-index:6}
+  .toast span{flex:1}
+  .toast b{color:#E5B94E}
+
+  .shot img{width:100%;display:block}
+  .shot-tag{position:absolute;top:8px;left:8px;background:rgba(33,44,52,.8);color:#fff;font-size:9px;font-weight:700;border-radius:6px;padding:2px 7px;z-index:3}
+
+  .reco{max-width:840px;margin:32px auto 0;background:#fff;border-radius:12px;padding:18px 22px;border-left:4px solid var(--accent-gold)}
+  .reco h2{font-family:'Fraunces',serif;font-weight:500;font-size:17px;margin:0 0 8px}
+  .reco p{font-size:13px;line-height:1.6;color:var(--ink-soft);margin:0 0 8px}
+  .reco p strong{color:var(--ink)}
+</style>
+</head>
+<body>
+<h1 class="page">Equipo técnico: más compacto y con ayuda para elegir</h1>
+<p class="lead">Mockup de la subpestaña "Equipo técnico" del editor. Los números amarillos marcan cada cambio y coinciden con las notas de abajo de cada celular.</p>
+
+<div class="grid">
+
+  <!-- 1. Vista general -->
+  <div class="col">
+    <div class="label">Vista general<small>todo el equipo en una pantalla</small></div>
+    <div class="phone">
+      <div class="ehead"><span class="dot"></span><b>Asignaciones</b><span class="cb">San Agustín</span></div>
+      <div class="content">
+        <div class="wk">Semana del 21 al 27 de septiembre</div>
+        <div class="topic hl"><span class="pin">6</span>Tema: "Sigamos siendo fieles" ✎</div>
+        <div class="seg"><span class="on">Equipo técnico</span><span>Programa</span></div>
+        <div class="seg"><span class="on">Entre semana · Jue 24</span><span>Fin de semana · Dom 27</span></div>
+        <div class="acts"><span class="btn grow">Auto-asignar</span><span class="btn">Más ▾</span><span class="btn pri grow">Compartir ▾</span></div>
+        <div class="warn hl"><span class="pin">3</span><span>⚠ 3 puestos a revisar</span><span class="more">Ver</span><span class="fix">Usar sugeridos</span></div>
+        <div class="tl hl"><span class="pin">1</span>
+          <div class="sec" style="color:var(--role-sonido)">Audio y video</div>
+          <div class="r bad"><span class="ic" style="background:var(--role-sonido)">🎧</span><span class="k">Audio<span class="tag">ya tiene Lectura</span></span><span class="v">Hugo Escalda <small>×</small></span><span class="dots">⋯</span></div>
+          <div class="r bad"><span class="ic" style="background:var(--role-video)">▶</span><span class="k">Video<span class="tag">ya tiene Estudio</span></span><span class="v">Martín Ruiz <small>×</small></span><span class="dots">⋯</span></div>
+          <div class="sec" style="color:var(--role-mic)">Micrófonos</div>
+          <div class="r bad"><span class="ic" style="background:var(--role-mic)">🎤</span><span class="k">Micrófono 1<span class="tag">ya tiene Estudio</span></span><span class="v">Lucas Gómez <small>×</small></span><span class="dots">⋯</span></div>
+          <div class="r"><span class="ic" style="background:var(--role-mic)">🎤</span><span class="k">Micrófono 2</span><span class="v empty">— Sin asignar</span><span class="dots">⋯</span></div>
+          <div class="sec" style="color:var(--role-plat)">Plataforma</div>
+          <div class="r"><span class="ic" style="background:var(--role-plat)">👤</span><span class="k">Plataforma</span><span class="v">Tomás Bravo <small>×</small></span><span class="dots">⋯</span></div>
+          <div class="sec" style="color:var(--role-usher)">Acomodadores</div>
+          <div class="r"><span class="ic" style="background:var(--role-usher)">🚪</span><span class="k">Acomodador 1</span><span class="v">Raúl Méndez <small>×</small></span><span class="dots">⋯</span></div>
+          <div class="r"><span class="ic" style="background:var(--role-usher)">🚪</span><span class="k">Acomodador 2</span><span class="v empty">— Sin asignar</span><span class="dots">⋯</span></div>
+          <div class="sec" style="color:var(--role-crono)">Cronometrista</div>
+          <div class="r"><span class="ic" style="background:var(--role-crono)">⏱</span><span class="k">Cronometrista</span><span class="v">Ramiro Quinteros <small>×</small></span><span class="dots">⋯</span></div>
+        </div>
+      </div>
+      <div class="btabs"><span class="on">Programa</span><span>Cronómetro</span><span>Hermanos</span><span>Ajustes</span><span>Anuncios</span></div>
+    </div>
+    <div class="note"><span class="n">1</span><b>Una fila por puesto</b>, agrupadas por sección y con sus colores: los 8 puestos entran en una pantalla (hoy ocupan casi 2000 px). Los que tienen conflicto quedan en rojo y dicen por qué.<br><span class="n">3</span><b>El aviso ocupa una sola línea.</b> "Usar sugeridos" pone los reemplazos en todos los puestos con conflicto; "Ver" despliega el detalle.<br><span class="n">6</span><b>El tema de la reunión</b> pasa al encabezado de la semana y se ve en las dos subpestañas.</div>
+  </div>
+
+  <!-- 2. Selector -->
+  <div class="col">
+    <div class="label">Al tocar un puesto<small>ejemplo: Micrófono 2</small></div>
+    <div class="phone">
+      <div class="ehead"><span class="dot"></span><b>Asignaciones</b><span class="cb">San Agustín</span></div>
+      <div class="content">
+        <div class="wk">Semana del 21 al 27 de septiembre</div>
+        <div class="seg"><span class="on">Equipo técnico</span><span>Programa</span></div>
+        <div class="acts"><span class="btn grow">Auto-asignar</span><span class="btn">Más ▾</span><span class="btn pri grow">Compartir ▾</span></div>
+        <div class="tl">
+          <div class="sec" style="color:var(--role-sonido)">Audio y video</div>
+          <div class="r"><span class="ic" style="background:var(--role-sonido)">🎧</span><span class="k">Audio</span><span class="v">Jorge López <small>×</small></span><span class="dots">⋯</span></div>
+          <div class="r"><span class="ic" style="background:var(--role-video)">▶</span><span class="k">Video</span><span class="v">Ariel Núñez <small>×</small></span><span class="dots">⋯</span></div>
+          <div class="sec" style="color:var(--role-mic)">Micrófonos</div>
+          <div class="r"><span class="ic" style="background:var(--role-mic)">🎤</span><span class="k">Micrófono 1</span><span class="v">Nicolás Paz <small>×</small></span><span class="dots">⋯</span></div>
+          <div class="r"><span class="ic" style="background:var(--role-mic)">🎤</span><span class="k">Micrófono 2</span><span class="v empty" style="border-color:var(--accent-gold);background:#fff">▏</span><span class="dots">⋯</span></div>
+        </div>
+        <div class="combo hl"><span class="pin">2</span>
+          <div class="cg">Disponibles</div>
+          <div class="ci hi"><span>Pablo Sosa</span><small>micrófonos: nunca</small></div>
+          <div class="ci"><span>Diego Fernández</span><small>micrófonos: hace 5 sem.</small></div>
+          <div class="ci"><span>Tomás Bravo</span><small>micrófonos: hace 2 sem.</small></div>
+          <div class="cg">Ya tienen algo en esta reunión</div>
+          <div class="ci busy"><span>Hugo Escalda</span><small>ya tiene: Lectura</small></div>
+          <div class="ci busy"><span>Nicolás Paz</span><small>ya tiene: Micrófono 1</small></div>
+          <div class="cg">No disponibles</div>
+          <div class="ci busy"><span>Carlos Vega</span><small>no disponible hoy</small></div>
+        </div>
+      </div>
+      <div class="btabs"><span class="on">Programa</span><span>Cronómetro</span><span>Hermanos</span><span>Ajustes</span><span>Anuncios</span></div>
+    </div>
+    <div class="note"><span class="n">2</span><b>El mismo selector del Programa</b>, pero pensado para cada puesto. Solo aparecen los habilitados para ese puesto, y arriba de todo los disponibles, empezando por quien hace más tiempo que no lo hace ("micrófonos: hace 5 sem."). Después vienen los que ya tienen algo en esa reunión (con lo que tienen) y al final los no disponibles. Se sigue pudiendo buscar escribiendo el nombre.</div>
+  </div>
+
+  <!-- 3. Menú ⋯ y deshacer -->
+  <div class="col">
+    <div class="label">Reemplazo y auto-asignar<small>menú ⋯ y "Deshacer"</small></div>
+    <div class="phone">
+      <div class="ehead"><span class="dot"></span><b>Asignaciones</b><span class="cb">San Agustín</span></div>
+      <div class="content">
+        <div class="wk">Semana del 21 al 27 de septiembre</div>
+        <div class="seg"><span class="on">Equipo técnico</span><span>Programa</span></div>
+        <div class="acts"><span class="btn grow">Auto-asignar</span><span class="btn">Más ▾</span><span class="btn pri grow">Compartir ▾</span></div>
+        <div class="tl">
+          <div class="sec" style="color:var(--role-sonido)">Audio y video</div>
+          <div class="r"><span class="ic" style="background:var(--role-sonido)">🎧</span><span class="k">Audio</span><span class="v">Jorge López <small>×</small></span><span class="dots">⋯</span></div>
+          <div class="r"><span class="ic" style="background:var(--role-video)">▶</span><span class="k">Video</span><span class="v">Ariel Núñez <small>×</small></span><span class="dots">⋯</span></div>
+          <div class="sec" style="color:var(--role-mic)">Micrófonos</div>
+          <div class="r"><span class="ic" style="background:var(--role-mic)">🎤</span><span class="k">Micrófono 1</span><span class="v">Nicolás Paz <small>×</small></span><span class="dots">⋯</span></div>
+          <div class="r"><span class="ic" style="background:var(--role-mic)">🎤</span><span class="k">Micrófono 2</span><span class="v">Pablo Sosa <small>×</small></span><span class="dots">⋯</span></div>
+          <div class="sec" style="color:var(--role-plat)">Plataforma</div>
+          <div class="r"><span class="ic" style="background:var(--role-plat)">👤</span><span class="k">Plataforma</span><span class="v">Tomás Bravo <small>×</small></span><span class="dots hl"><span class="pin">4</span>⋯</span></div>
+        </div>
+        <div class="menu">
+          <div class="mh">Acomodador de plataforma</div>
+          <div class="mi"><span>Si no llega:<br><b>Jorge López</b></span><span class="u">Usar</span></div>
+          <div class="mi"><span>Quitar asignación</span></div>
+        </div>
+      </div>
+      <div class="toast hl"><span class="pin">5</span><span>Auto-asignación: se completaron 2 puestos</span><b>Deshacer</b></div>
+      <div class="btabs"><span class="on">Programa</span><span>Cronómetro</span><span>Hermanos</span><span>Ajustes</span><span>Anuncios</span></div>
+    </div>
+    <div class="note"><span class="n">4</span><b>"Si no llega" pasa al menú ⋯</b> de cada fila, con el reemplazo sugerido, "Usar" y "Quitar asignación". En los puestos con conflicto sigue a la vista.<br><span class="n">5</span><b>Auto-asignar más justo:</b> además de cuántas veces hizo cada uno el puesto, mira cuándo fue la última y evita repetir a la misma persona en el mismo puesto dos semanas seguidas. El aviso dice cuántos puestos completó y tiene <b>Deshacer</b>.</div>
+  </div>
+
+</div>
+
+<div class="reco">
+  <h2>Qué cambia y qué no</h2>
+  <p><strong>Cambia:</strong> las tarjetas altas pasan a filas compactas; el selector se agrupa; el aviso de conflictos ocupa una línea y se resuelve con un toque; "Si no llega" pasa a un menú; Auto-asignar tiene en cuenta cuándo fue la última vez y se puede deshacer; el tema va al encabezado de la semana.</p>
+  <p><strong>Sigue igual:</strong> quién está habilitado para cada puesto (se marca en Hermanos), "No disponibles hoy", Compartir, el Resumen del mes, y la vista para los administradores de un área, que siguen viendo solo sus puestos.</p>
+  <p><strong>En computadora</strong> se ve igual que en el celular, pero con más aire. No cambia nada de los datos: no hace falta <code>firebase deploy</code>.</p>
+</div>
+</body>
+</html>

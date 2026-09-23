@@ -582,6 +582,50 @@
   .br-chip { flex-shrink: 0; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); border-radius: 16px; padding: 6px 12px; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
   .br-chip.active { background: var(--ink); color: #fff; border-color: var(--ink); }
 
+  /* ---------- Equipo técnico compacto: una fila por puesto ---------- */
+  .tec-list { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 2px 14px 6px; margin-bottom: 16px; box-shadow: var(--shadow-sm); }
+  .tec-list .tec-section-label { display: flex; align-items: center; gap: 6px; font-family: 'Public Sans', sans-serif; font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; margin: 12px 0 2px; }
+  .tec-list .tec-section-label::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+  .tec-list .role-cards { display: block; margin: 0; }
+  .tec-list .role-card { display: flex; flex-wrap: wrap; align-items: center; column-gap: 8px; background: none; border: none; border-top: 1px solid var(--line); border-radius: 0; padding: 7px 0; box-shadow: none; }
+  .tec-list .role-cards .role-card:first-child { border-top: none; }
+  .tec-list .role-card.rc-complete, .tec-list .role-card.conflict-card { box-shadow: none; background: none; }
+  .tec-list .role-card-head { flex: 0 0 132px; margin: 0; font-size: 12.5px; gap: 8px; align-items: center; min-width: 0; }
+  .tec-list .role-card-head .role-icon { width: 24px; height: 24px; border-radius: 50%; background: var(--rc); color: #fff !important; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .tec-list .rr-lab { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+  .tec-list .role-tag-row { margin: 1px 0 0; }
+  .tec-list .reason-tag { padding: 0; background: none; font-size: 10.5px; }
+  .tec-list .rc-check, .tec-list .role-count { display: none; }
+  .tec-list .pub-combo { flex: 1; min-width: 0; }
+  .tec-list .rr-more { flex: 0 0 30px; height: 32px; border: none; background: none; color: var(--ink-faint); font-size: 18px; font-weight: 700; border-radius: 6px; cursor: pointer; line-height: 1; }
+  .tec-list .rr-more:hover { background: var(--bg); }
+  .tec-list .rc-backup { display: none; flex-basis: 100%; margin: 4px 0 0 140px; padding: 0; border: none; }
+  .tec-list .role-card.conflict-card .rc-backup { display: flex; }
+  .tec-list .role-card.auto-new .pub-combo-input { background: #FFF6DA; border-color: #E5B94E; }
+  .tec-list .rr-why { flex-basis: 100%; margin: 3px 0 0 140px; font-size: 11px; font-weight: 600; color: var(--accent-gold-text); }
+  @media (max-width: 760px) {
+    .tec-list { padding: 2px 10px 6px; }
+    .tec-list .role-card-head { flex-basis: 112px; font-size: 12px; }
+    .tec-list .rc-backup, .tec-list .rr-why { margin-left: 0; }
+  }
+  .cb-bar { display: flex; align-items: center; gap: 10px; }
+  .cb-bar .cb-summary { flex: 1; margin: 0; }
+  .cb-toggle { border: none; background: none; color: var(--danger); font: inherit; font-size: 12px; font-weight: 600; text-decoration: underline; padding: 4px 2px; cursor: pointer; }
+  .cb-fix-all { border: none; background: var(--danger); color: #fff; font: inherit; font-size: 12px; font-weight: 700; padding: 6px 11px; border-radius: 8px; cursor: pointer; flex-shrink: 0; }
+  .cb-rows.hidden { display: none; }
+  .role-menu-item { display: flex; align-items: center; gap: 12px; width: 100%; border: none; border-top: 1px solid var(--line); background: none; padding: 12px 2px; text-align: left; font: inherit; color: var(--ink); cursor: pointer; }
+  .role-menu-item .rmi-ic { width: 30px; height: 30px; border-radius: 50%; background: var(--bg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 14px; }
+  .role-menu-item b { display: block; font-size: 14px; }
+  .role-menu-item small { display: block; font-size: 12px; color: var(--ink-soft); }
+  .role-menu-item .rmi-use { margin-left: auto; border: 1px solid var(--ok); color: var(--ok); background: var(--ok-bg); border-radius: 14px; padding: 4px 12px; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+  .role-menu-item.danger { color: var(--danger); }
+  .role-menu-item:disabled { opacity: 0.5; cursor: default; }
+  .topic-bar { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 4px 4px 4px 12px; margin-bottom: 12px; }
+  .topic-bar:focus-within { border-color: var(--accent-gold); }
+  .topic-bar .tb-lb { font-size: 10.5px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.05em; flex-shrink: 0; }
+  .topic-bar .topic-input { border: none; margin: 0; padding: 7px 4px; background: none; flex: 1; min-width: 0; }
+  .topic-bar .topic-input:focus { outline: none; }
+
   /* ---------- Programa: orador visitante, minutos y cánticos ---------- */
   .visitor-link { border: none; background: none; font: inherit; font-size: 12.5px; font-weight: 700; color: var(--accent-blue); padding: 6px 0 2px; cursor: pointer; }
   .visitor-block { border: 1px solid var(--line); border-left: 3px solid var(--accent-gold); border-radius: var(--radius-s); padding: 6px 12px 8px; margin: 6px 0 4px; background: rgba(169,130,47,0.05); }
@@ -971,10 +1015,10 @@
       <button class="pill active" data-type="semana" id="pillSemana">Entre semana<span class="pill-date" id="pillSemanaDate"></span></button>
       <button class="pill" data-type="finde" id="pillFinde">Fin de semana<span class="pill-date" id="pillFindeDate"></span></button>
     </div>
+    <div class="topic-bar"><span class="tb-lb">Tema</span><input type="text" id="topicInput" class="topic-input" placeholder="Sin tema cargado — tocá para escribirlo" aria-label="Tema de esta reunión"></div>
     <div class="completeness-badge" id="completenessBadge"></div>
 
     <div id="technicalSection">
-      <input type="text" id="topicInput" class="topic-input" placeholder="Tema de esta reunión (opcional)…">
 
       <div class="action-row">
         <button class="btn" id="autoAssignBtn">Auto-asignar</button>
@@ -1283,7 +1327,7 @@
       </details>
       <details class="guide-item">
         <summary><span class="gicon" data-icon="sonido"></span>Equipo técnico<span class="chev">›</span></summary>
-        <p>Pestaña Programa → subpestaña "Equipo técnico". Elegís cada puesto con el buscador (escribís el nombre y filtra), o tocás "Auto-asignar" para que lo reparta solo, por equidad. El campo se pone verde apenas queda cubierto.</p>
+        <p>Pestaña Programa → subpestaña "Equipo técnico": una fila por puesto. Al tocar un puesto aparecen primero los disponibles, empezando por quien hace más tiempo que no lo hace; después los que ya tienen algo en esa reunión. "Auto-asignar" completa los vacíos por equidad, sin repetir el puesto de la semana anterior, y se puede deshacer. Si hay conflictos, "Usar sugeridos" los resuelve de un toque. El menú ⋯ de cada puesto tiene el reemplazo "si no llega" y "Quitar asignación". El tema de la reunión se escribe arriba, en la barra "Tema".</p>
       </details>
       <details class="guide-item">
         <summary><span class="gicon" data-icon="book"></span>Programa de la reunión<span class="chev">›</span></summary>
@@ -1329,6 +1373,15 @@
         <p>Ajustes → Reporte anual de equidad (quién cubrió qué a lo largo del año) y Copia de seguridad (exportar/importar todo en un archivo, por si necesitás restaurar algo).</p>
       </details>
     </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="roleMenuOverlay">
+  <div class="modal" style="max-width:400px;">
+    <h3 id="roleMenuTitle" style="margin-bottom:2px;">Puesto</h3>
+    <p class="modal-sub" id="roleMenuSub" style="margin-bottom:10px;"></p>
+    <div id="roleMenuItems"></div>
+    <div class="modal-footer"><button type="button" class="btn" id="roleMenuCloseBtn">Cerrar</button></div>
   </div>
 </div>
 
@@ -2616,22 +2669,71 @@
     { match: k => k.startsWith('usher'), label: 'Acomodadores', color: 'var(--role-usher)' },
     { match: k => k === 'cronometrista', label: 'Cronometrista', color: 'var(--role-crono)' }
   ];
-  function renderRoleCards() {
+  // Nombre corto del puesto para la fila compacta.
+  function shortRoleLabel(r) {
+    if (r.key === 'sonido') return 'Audio';
+    if (r.key === 'video') return 'Video y Zoom';
+    if (r.key === 'plataforma') return 'Plataforma';
+    if (r.key.startsWith('mic')) return 'Micrófono ' + r.key.slice(3);
+    return r.label;
+  }
+  const CAP_WORD = { sonido: 'audio', video: 'video', microfono: 'micrófonos', plataforma: 'plataforma', acomodador: 'acomodador', cronometrista: 'cronómetro' };
+  // Última vez que cada hermano cubrió un tipo de puesto, antes de esta reunión.
+  function lastServedByCap(cap) {
+    const meetingDate = dateForType(currentMonday, currentType);
+    const last = {};
+    Object.keys(data.weeks).forEach(monday => ['semana', 'finde'].forEach(t => {
+      const w = data.weeks[monday][t];
+      if (!w || !w.roles) return;
+      const d = dateForType(monday, t);
+      if (d >= meetingDate) return;
+      getRoles(t).forEach(r => { if (r.cap !== cap) return; const id = w.roles[r.key]; if (id && (!last[id] || last[id] < d)) last[id] = d; });
+    }));
+    return { last, meetingDate };
+  }
+  function weeksAgoText(d, meetingDate) {
+    if (!d) return 'nunca';
+    const w = Math.round((new Date(meetingDate + 'T00:00:00') - new Date(d + 'T00:00:00')) / (7 * 86400000));
+    return w <= 0 ? 'esta semana' : `hace ${w} sem.`;
+  }
+  // Opciones del selector de un puesto, agrupadas: disponibles (primero quien hace más que
+  // no lo hace), ya tienen algo en esta reunión, no disponibles.
+  function roleOptionsHTML(r, typeObj) {
+    const capable = data.publishers.filter(p => p.roles[r.cap]);
+    const { last, meetingDate } = lastServedByCap(r.cap);
+    const busy = {};
+    getRoles(currentType).forEach(x => { const id = typeObj.roles[x.key]; if (id && x.key !== r.key) (busy[id] = busy[id] || []).push(shortRoleLabel(x)); });
+    programAssignedIds(typeObj.program, currentType).forEach(id => {
+      const l = programOccupationLabel(typeObj.program, currentType, id);
+      (busy[id] = busy[id] || []).push(l || 'Programa');
+    });
+    const ORDER = { libre: 0, ocupado: 1, nodisp: 2 };
+    const rows = capable.map(p => {
+      let group, note;
+      if (p.status === 'no_disponible') { group = 'nodisp'; note = 'no disponible'; }
+      else if ((typeObj.excluded || []).includes(p.id)) { group = 'nodisp'; note = 'no disponible hoy'; }
+      else if (busy[p.id]) { group = 'ocupado'; note = 'ya tiene: ' + busy[p.id].join(', '); }
+      else { group = 'libre'; note = `${CAP_WORD[r.cap] || r.cap}: ${weeksAgoText(last[p.id], meetingDate)}`; }
+      return { p, group, note, last: last[p.id] || '' };
+    }).sort((a, b) => ORDER[a.group] - ORDER[b.group] || (a.group === 'libre' ? a.last.localeCompare(b.last) : 0) || a.p.name.localeCompare(b.p.name, 'es'));
+    return '<option value="">— Sin asignar —</option>' + rows.map(x =>
+      `<option value="${x.p.id}" data-group="${x.group}" data-note="${escapeHtml(x.note)}" ${typeObj.roles[r.key] === x.p.id ? 'selected' : ''}>${escapeHtml(x.p.name)}</option>`).join('');
+  }
+  // Lo que completó "Auto-asignar" en esta reunión (se resalta hasta cambiar de semana).
+  let autoFilled = null;
+  function renderRoleCards(noAnim) {
     const roles = rolesForCurrentUser(currentType);
     const week = weekView(currentMonday);
     const typeObj = week[currentType];
     $('topicInput').value = typeObj.topic || '';
     const usedIds = new Set(Object.values(typeObj.roles).filter(Boolean));
     programAssignedIds(typeObj.program, currentType).forEach(id => usedIds.add(id));
-    $('roleCardsContainer').innerHTML = TEC_SECTIONS.map(sec => {
+    const af = autoFilled && autoFilled.monday === currentMonday && autoFilled.type === currentType ? autoFilled.keys : {};
+    $('roleCardsContainer').innerHTML = '<div class="tec-list">' + TEC_SECTIONS.map(sec => {
       const secRoles = roles.filter(r => sec.match(r.key));
       if (!secRoles.length) return '';
       const cards = secRoles.map(r => {
-        const capable = data.publishers.filter(p => p.roles[r.cap]).sort((a, b) => a.name.localeCompare(b.name, 'es'));
-        const opts = capable.map(p => {
-          const tag = typeObj.excluded.includes(p.id) ? ' (no disponible hoy)' : (p.status === 'no_disponible' ? ' (no disponible)' : '');
-          return `<option value="${p.id}" ${typeObj.roles[r.key] === p.id ? 'selected' : ''}>${escapeHtml(p.name)}${tag}</option>`;
-        }).join('');
+        const capable = data.publishers.filter(p => p.roles[r.cap]);
         const heldBy = typeObj.roles[r.key];
         let backupHtml = '';
         if (heldBy) {
@@ -2644,19 +2746,20 @@
             </div>`;
           }
         }
-        return `<div class="role-card" style="--rc:${r.color}">
-          <div class="role-card-head"><span class="role-icon" style="color:${r.color}">${svgIcon(r.icon, 15)}</span>${r.label}</div>
-          <div class="role-tag-row hidden"></div>
-          <select data-role="${r.key}" aria-label="${r.label}"><option value="">— Sin asignar —</option>${opts}</select>
+        const why = af[r.key] && typeObj.roles[r.key] === af[r.key].pub ? `<div class="rr-why">${escapeHtml(af[r.key].why)}</div>` : '';
+        return `<div class="role-card${why ? ' auto-new' : ''}" style="--rc:${r.color}" data-rkey="${r.key}">
+          <div class="role-card-head"><span class="role-icon" style="color:${r.color}">${svgIcon(r.icon, 13)}</span><span class="rr-lab">${escapeHtml(shortRoleLabel(r))}<span class="role-tag-row hidden"></span></span></div>
+          <select data-role="${r.key}" aria-label="${r.label}">${roleOptionsHTML(r, typeObj)}</select>
+          <button type="button" class="rr-more" data-role-menu="${r.key}" aria-label="Más opciones: ${r.label}">⋯</button>
           <div class="role-count">${capable.length} hermano${capable.length === 1 ? '' : 's'} habilitado${capable.length === 1 ? '' : 's'}</div>
-          ${backupHtml}
+          ${backupHtml}${why}
         </div>`;
       }).join('');
       return `<div class="tec-section-label" style="color:${sec.color}">${sec.label}</div><div class="role-cards">${cards}</div>`;
-    }).join('');
+    }).join('') + '</div>';
     $('roleCardsContainer').querySelectorAll('select[data-role]').forEach(sel => sel.addEventListener('change', onRoleChange));
     enhanceCombos($('roleCardsContainer'));
-    $('roleCardsContainer').classList.remove('fade-in'); void $('roleCardsContainer').offsetWidth; $('roleCardsContainer').classList.add('fade-in');
+    if (!noAnim) { $('roleCardsContainer').classList.remove('fade-in'); void $('roleCardsContainer').offsetWidth; $('roleCardsContainer').classList.add('fade-in'); }
     updateCompletenessBadge(roles, typeObj);
     updateCardCompleteness();
     checkConflicts();
@@ -2680,6 +2783,8 @@
     renderMonthTable();
     renderMonthCalendar();
     showToast('Asignación actualizada');
+    // Los demás selectores se recalculan ("ya tiene…"), sin animación.
+    setTimeout(() => renderRoleCards(true), 0);
   }
 
   function computeRoleCounts() {
@@ -2738,6 +2843,7 @@
     const curCount = (counts[curId] && counts[curId][r.cap]) || 0;
     return `${pick.name} cubrió este puesto ${pickCount} ${pickCount === 1 ? 'vez' : 'veces'} — ${curName}, ${curCount}`;
   }
+  let conflictDetailsOpen = false;
   function checkConflicts() {
     const week = weekView(currentMonday);
     const rolesObj = week[currentType].roles;
@@ -2779,8 +2885,12 @@
         </div>`);
         if (pick) usedIds.add(pick.id);
       });
-      const total = conflictIds.size;
-      html = `<div class="cb-summary">⚠ ${total} persona${total > 1 ? 's' : ''} necesita${total > 1 ? 'n' : ''} revisión en esta reunión</div>` + rows.join('');
+      const total = rows.length || conflictIds.size;
+      const fixable = rows.filter(x => !/disabled>Usar/.test(x)).length;
+      html = `<div class="cb-bar"><div class="cb-summary">⚠ ${total} puesto${total > 1 ? 's' : ''} a revisar</div>
+        <button type="button" class="cb-toggle" id="cbToggleBtn">${conflictDetailsOpen ? 'Ocultar' : 'Ver'}</button>
+        ${fixable ? `<button type="button" class="cb-fix-all" id="cbFixAllBtn">Usar sugeridos</button>` : ''}</div>
+        <div class="cb-rows${conflictDetailsOpen ? '' : ' hidden'}">${rows.join('')}</div>`;
     }
     if (html) { banner.innerHTML = html; banner.classList.remove('hidden'); }
     else banner.classList.add('hidden');
@@ -2806,6 +2916,24 @@
     });
   }
   $('conflictBanner').addEventListener('click', (e) => {
+    if (e.target.id === 'cbToggleBtn') {
+      conflictDetailsOpen = !conflictDetailsOpen;
+      e.target.textContent = conflictDetailsOpen ? 'Ocultar' : 'Ver';
+      $('conflictBanner').querySelector('.cb-rows').classList.toggle('hidden', !conflictDetailsOpen);
+      return;
+    }
+    if (e.target.id === 'cbFixAllBtn') {
+      const week = ensureWeek(currentMonday);
+      const before = Object.assign({}, week[currentType].roles);
+      let n = 0;
+      $('conflictBanner').querySelectorAll('.cb-use-btn[data-use-pub]').forEach(b => { if (b.dataset.usePub) { week[currentType].roles[b.dataset.useRole] = b.dataset.usePub; n++; } });
+      saveData(); renderRoleCards(true); renderMonthTable(); renderMonthCalendar();
+      showToast(`Se aplicaron ${n} reemplazo${n === 1 ? '' : 's'}`, () => {
+        ensureWeek(currentMonday)[currentType].roles = before;
+        saveData(); renderRoleCards(true); renderMonthTable(); renderMonthCalendar();
+      });
+      return;
+    }
     const btn = e.target.closest('[data-use-role]');
     if (!btn || !btn.dataset.usePub) return;
     const week = ensureWeek(currentMonday);
@@ -2816,7 +2944,56 @@
     renderMonthCalendar();
     showToast('Reemplazo aplicado');
   });
+  function openRoleMenu(key) {
+    const r = getRoles(currentType).find(x => x.key === key);
+    if (!r) return;
+    const typeObj = weekView(currentMonday)[currentType];
+    const heldBy = typeObj.roles[key];
+    const cur = heldBy && data.publishers.find(p => p.id === heldBy);
+    const usedIds = new Set(Object.values(typeObj.roles).filter(Boolean));
+    programAssignedIds(typeObj.program, currentType).forEach(id => usedIds.add(id));
+    const { pick } = suggestReplacementFor(key, usedIds, heldBy);
+    const { dayName, day } = formatDate(dateForType(currentMonday, currentType));
+    $('roleMenuTitle').textContent = r.label;
+    $('roleMenuSub').textContent = `${cur ? 'Ahora: ' + cur.name : 'Sin asignar'} · ${dayName.toLowerCase()} ${day}`;
+    $('roleMenuItems').innerHTML = `
+      ${pick ? `<button type="button" class="role-menu-item" data-rm="use" data-pub="${pick.id}"><span class="rmi-ic">⇄</span><span><b>${cur ? 'Si no llega' : 'Sugerido'}: ${escapeHtml(pick.name)}</b><small>Está libre en esta reunión y es quien hace más que no lo hace</small></span><span class="rmi-use">Usar</span></button>`
+        : '<button type="button" class="role-menu-item" disabled><span class="rmi-ic">⇄</span><span><b>Sin reemplazo libre</b><small>Todos los habilitados ya tienen algo en esta reunión</small></span></button>'}
+      <button type="button" class="role-menu-item" data-rm="pick"><span class="rmi-ic">☰</span><span><b>Elegir otro…</b><small>Abre la lista del puesto</small></span></button>
+      ${cur ? `<button type="button" class="role-menu-item" data-rm="assign" data-pub="${cur.id}"><span class="rmi-ic">🗓</span><span><b>Ver sus próximas asignaciones</b><small>${escapeHtml(cur.name)}</small></span></button>
+      <button type="button" class="role-menu-item danger" data-rm="clear"><span class="rmi-ic">✕</span><span><b>Quitar asignación</b><small>El puesto queda vacío</small></span></button>` : ''}`;
+    $('roleMenuItems').dataset.key = key;
+    $('roleMenuOverlay').classList.remove('hidden');
+  }
+  function closeRoleMenu() { $('roleMenuOverlay').classList.add('hidden'); }
+  $('roleMenuCloseBtn').addEventListener('click', closeRoleMenu);
+  $('roleMenuOverlay').addEventListener('click', (e) => { if (e.target.id === 'roleMenuOverlay') closeRoleMenu(); });
+  $('roleMenuItems').addEventListener('click', (e) => {
+    const it = e.target.closest('[data-rm]');
+    if (!it) return;
+    const key = $('roleMenuItems').dataset.key;
+    closeRoleMenu();
+    const act = it.dataset.rm;
+    if (act === 'use' || act === 'clear') {
+      const week = ensureWeek(currentMonday);
+      const prev = week[currentType].roles[key] || null;
+      week[currentType].roles[key] = act === 'use' ? it.dataset.pub : null;
+      saveData(); renderRoleCards(true); renderMonthTable(); renderMonthCalendar();
+      showToast(act === 'use' ? 'Reemplazo aplicado' : 'Asignación quitada', () => {
+        ensureWeek(currentMonday)[currentType].roles[key] = prev;
+        saveData(); renderRoleCards(true); renderMonthTable(); renderMonthCalendar();
+      });
+    } else if (act === 'pick') {
+      const sel = document.querySelector(`#roleCardsContainer select[data-role="${key}"]`);
+      const inp = sel && sel.closest('.pub-combo') && sel.closest('.pub-combo').querySelector('.pub-combo-input');
+      if (inp) { inp.scrollIntoView({ block: 'center' }); setTimeout(() => inp.focus(), 150); }
+    } else if (act === 'assign') {
+      openAssignOnlyModal(it.dataset.pub);
+    }
+  });
   $('roleCardsContainer').addEventListener('click', (e) => {
+    const more = e.target.closest('[data-role-menu]');
+    if (more) { openRoleMenu(more.dataset.roleMenu); return; }
     const btn = e.target.closest('.rc-backup-btn');
     if (!btn) return;
     const week = ensureWeek(currentMonday);
@@ -2833,34 +3010,56 @@
     const roles = rolesForCurrentUser(currentType);
     const week = ensureWeek(currentMonday);
     const typeObj = week[currentType];
+    const before = Object.assign({}, typeObj.roles);
     const counts = {};
-    data.publishers.forEach(p => counts[p.id] = { sonido: 0, video: 0, microfono: 0, plataforma: 0, cronometrista: 0, total: 0 });
+    data.publishers.forEach(p => counts[p.id] = { sonido: 0, video: 0, microfono: 0, plataforma: 0, acomodador: 0, cronometrista: 0, total: 0 });
     Object.entries(data.weeks).forEach(([monday, w]) => {
       ['semana', 'finde'].forEach(t => {
         if (monday === currentMonday && t === currentType) return;
-        getRoles(t).forEach(r => { const id = w[t] && w[t].roles[r.key]; if (id && counts[id]) { counts[id][r.cap]++; counts[id].total++; } });
+        getRoles(t).forEach(r => { const id = w[t] && w[t].roles[r.key]; if (id && counts[id]) { counts[id][r.cap] = (counts[id][r.cap] || 0) + 1; counts[id].total++; } });
       });
     });
+    // Quién cubrió cada tipo de puesto en la misma reunión de la semana anterior: se evita repetirlo.
+    const prevWeek = data.weeks[shiftDate(currentMonday, -7)];
+    const prevRoles = (prevWeek && prevWeek[currentType] && prevWeek[currentType].roles) || {};
+    const servedPrev = (id, cap) => getRoles(currentType).some(r => r.cap === cap && prevRoles[r.key] === id);
     const excludedToday = new Set(typeObj.excluded || []);
     const activePubs = data.publishers.filter(p => p.status !== 'no_disponible' && !excludedToday.has(p.id));
     const anyCaps = activePubs.some(p => Object.values(p.roles).some(Boolean));
     const used = new Set(Object.values(typeObj.roles).filter(Boolean));
     programAssignedIds(typeObj.program, currentType).forEach(id => used.add(id));
+    const filled = {};
     roles.forEach(r => {
       if (typeObj.roles[r.key]) return;
       let cands = activePubs.filter(p => !used.has(p.id));
       if (anyCaps) cands = cands.filter(p => p.roles[r.cap]);
       if (!cands.length) return;
-      // Primero por equidad dentro del puesto; si hay empate, gana quien tenga menos carga total
-      cands.sort((a, b) => (counts[a.id][r.cap] - counts[b.id][r.cap]) || (counts[a.id].total - counts[b.id].total));
-      typeObj.roles[r.key] = cands[0].id;
-      used.add(cands[0].id);
+      const { last, meetingDate } = lastServedByCap(r.cap);
+      // 1) no repetir el puesto de la semana anterior, 2) menos veces en ese puesto,
+      // 3) hace más tiempo que no lo hace, 4) menos carga total.
+      cands.sort((a, b) => (servedPrev(a.id, r.cap) - servedPrev(b.id, r.cap))
+        || ((counts[a.id][r.cap] || 0) - (counts[b.id][r.cap] || 0))
+        || (last[a.id] || '').localeCompare(last[b.id] || '')
+        || (counts[a.id].total - counts[b.id].total));
+      const pick = cands[0];
+      typeObj.roles[r.key] = pick.id;
+      used.add(pick.id);
+      const word = CAP_WORD[r.cap] || r.cap;
+      const whyLast = last[pick.id] ? `${word}: ${weeksAgoText(last[pick.id], meetingDate)}` : `Nunca hizo ${word}`;
+      filled[r.key] = { pub: pick.id, why: whyLast + (Object.keys(prevRoles).length && !servedPrev(pick.id, r.cap) ? ' · no lo hizo la semana pasada' : '') };
     });
+    const n = Object.keys(filled).length;
+    if (!n) { showToast('No quedaban puestos vacíos para completar'); return; }
+    autoFilled = { monday: currentMonday, type: currentType, keys: filled };
     saveData();
     renderRoleCards();
     renderMonthTable();
     renderMonthCalendar();
-    showToast('Auto-asignación completada');
+    showToast(`Auto-asignar: se completaron ${n} puesto${n === 1 ? '' : 's'}`, () => {
+      ensureWeek(currentMonday)[currentType].roles = before;
+      autoFilled = null;
+      saveData(); renderRoleCards(true); renderMonthTable(); renderMonthCalendar();
+    });
   }
 
   function getMonthRows() {
@@ -3131,7 +3330,7 @@
     updateTimerTopicLabel();
   });
 
-  function setWeek(monday) { currentMonday = monday; updateWeekLabel(); renderRoleCards(); renderMonthTable(); renderMonthCalendar(); updateTimerTopicLabel(); if (currentSubtab === 'programa') renderProgramSection(); }
+  function setWeek(monday) { currentMonday = monday; autoFilled = null; updateWeekLabel(); renderRoleCards(); renderMonthTable(); renderMonthCalendar(); updateTimerTopicLabel(); if (currentSubtab === 'programa') renderProgramSection(); }
 
   /* ---------- Deslizar para cambiar de semana ---------- */
   (function setupWeekSwipe() {

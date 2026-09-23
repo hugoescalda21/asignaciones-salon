@@ -6,6 +6,14 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Equipo técnico: compacto, selector con ayuda, conflictos de un toque — 23 de septiembre de 2026 (caché `asignaciones-salon-v19`)
+- **Una fila por puesto** dentro de una sola lista, agrupada por sección y con sus colores (antes, tarjetas altas en dos columnas). El equipo completo entra en una pantalla del celular. Los puestos con conflicto quedan en rojo y dicen por qué.
+- **Selector con ayuda:** solo los habilitados para ese puesto, agrupados en *Disponibles* (primero quien hace más tiempo que no lo hace: "micrófonos: hace 5 sem." / "nunca"), *Ya tienen algo en esta reunión* (con qué) y *No disponibles*. Al elegir, los demás selectores se actualizan.
+- **Aviso de conflictos en una línea** ("⚠ 3 puestos a revisar") con **"Usar sugeridos"** (aplica todos los reemplazos, con Deshacer) y "Ver" para el detalle.
+- **Menú ⋯ en cada puesto:** reemplazo sugerido ("Si no llega") con "Usar", "Elegir otro", "Ver sus próximas asignaciones" y "Quitar asignación" (con Deshacer). "Si no llega" queda a la vista solo en los puestos con conflicto.
+- **Auto-asignar más justo:** evita repetir a quien hizo ese mismo puesto la semana anterior; después elige por menos veces en el puesto, hace más tiempo que no lo hace y menos carga total. Lo que completó queda resaltado con el motivo hasta cambiar de semana, y el aviso tiene **Deshacer**.
+- **Tema de la reunión** en una barra "Tema" debajo de Entre semana / Fin de semana, visible en Equipo técnico y en Programa.
+
 ## Programa: orador visitante, selector que ayuda a elegir y privilegios — 23 de septiembre de 2026 (cachés `asignaciones-salon-v18` y `ver-salon-v21`)
 - **Orador de otra congregación** (fin de semana): "+ Viene de otra congregación" abre dos campos, nombre y congregación. Se guarda en `program.oradorVisitante` y aparece como "Nombre (Congregación)" en la vista pública, WhatsApp, PDF, el resumen del mes y el cronómetro. "← Es de esta congregación" vuelve al selector.
 - **Selector de hermanos con ayuda:** al elegir quién tiene una parte, la lista viene agrupada: *Disponibles* (primero quien hace más tiempo que no tiene una parte del programa, con "nunca tuvo parte" / "última: hace 3 sem."), *Ya tienen algo en esta reunión* (con qué), *Sin este privilegio marcado* y *No disponibles*. Al cambiar una asignación, los demás selectores se actualizan. Buscar por nombre sigue funcionando igual.
