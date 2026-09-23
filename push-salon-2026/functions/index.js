@@ -24,6 +24,21 @@ function verLink(code, tab) {
 }
 const BADGE_URL = APP_BASE + 'badge-icon.png';
 
+// Deja anotado en el registro del celular cómo salió el último envío, para que el
+// Super Admin pueda ver en la app qué dispositivos reciben bien los avisos.
+const STALE_CODES = ['messaging/registration-token-not-registered', 'messaging/invalid-registration-token'];
+function markSent(token, kind) {
+  return db.collection('pushSubscriptions').doc(token)
+    .update({ lastOkAt: new Date().toISOString(), lastKind: kind || '', lastErr: admin.firestore.FieldValue.delete(), lastErrAt: admin.firestore.FieldValue.delete() })
+    .catch(() => { /* el registro ya no existe */ });
+}
+function markFailed(token, err, kind) {
+  if (err && STALE_CODES.includes(err.code)) return Promise.resolve();   // ese registro se borra aparte
+  return db.collection('pushSubscriptions').doc(token)
+    .update({ lastErrAt: new Date().toISOString(), lastKind: kind || '', lastErr: String((err && (err.code || err.message)) || err).slice(0, 200) })
+    .catch(() => { /* el registro ya no existe */ });
+}
+
 // Avisos nuevos (tablero de anuncios): llegan a TODOS los dispositivos suscriptos
 // de la congregación, solo si quien lo publicó dejó marcado "Avisar por notificación".
 async function notifyNewAvisos(code, before, after) {
@@ -54,8 +69,10 @@ async function notifyNewAvisos(code, before, after) {
     }
   }).then(() => {
     console.log('[push] aviso enviado OK al celular', String(doc.id).slice(0, 12) + '…');
+    return markSent(doc.id, 'anuncio');
   }).catch((err) => {
     console.error('ERROR ENVIANDO PUSH DE AVISO:', err && err.code, err && err.message);
+    markFailed(doc.id, err, 'anuncio');
     if (err && (err.code === 'messaging/registration-token-not-registered' || err.code === 'messaging/invalid-registration-token')) {
       staleTokens.push(doc.id);
     }
@@ -182,9 +199,10 @@ exports.onCongregationWrite = onDocumentUpdated({ document: 'congregations/{code
         }
       }).then((resp) => {
         if (resp) console.log('[push] enviado OK al celular', String(token).slice(0, 12) + '…', 'a', pubId);
-        return resp;
+        return markSent(token, 'asignacion');
       }).catch((err) => {
         console.error('ERROR ENVIANDO PUSH:', err && err.code, err && err.message);
+        markFailed(token, err, 'asignacion');
         if (err && (err.code === 'messaging/registration-token-not-registered' || err.code === 'messaging/invalid-registration-token')) {
           staleTokens.push(token);
         }
@@ -342,8 +360,9 @@ exports.sendScheduledReminders = onSchedule({ schedule: '0,30 * * * *', timeZone
           fcmOptions: { link: verLink(sub.code) },
           notification: { badge: BADGE_URL, vibrate: [200, 100, 200], tag: `recordatorio-${due.dateIso}-${due.kind}` }
         }
-      }).then(() => { enviados++; }).catch((err) => {
+      }).then(() => { enviados++; return markSent(token, 'recordatorio'); }).catch((err) => {
         console.error('[recordatorio] error enviando:', err && err.code, err && err.message);
+        markFailed(token, err, 'recordatorio');
         if (err && (err.code === 'messaging/registration-token-not-registered' || err.code === 'messaging/invalid-registration-token')) {
           staleTokens.push(token);
         }
@@ -361,5 +380,77 @@ exports.sendScheduledReminders = onSchedule({ schedule: '0,30 * * * *', timeZone
   if (minutes === 3 * 60) {
     const old = await db.collection('sentReminders').where('dateIso', '<', addDaysIso(today, -3)).limit(400).get();
     await Promise.allSettled(old.docs.map((d) => d.ref.delete()));
+  }
+});
+
+
+// ---------------------------------------------------------------------------
+// Dispositivos con notificaciones (Ajustes → Notificaciones de los hermanos).
+// Solo para Super Admin de la congregación. Acciones:
+//   list   → los celulares registrados, de quién son y cómo salió el último aviso
+//   test   → manda una notificación de prueba a un celular
+//   remove → borra el registro de un celular (por ejemplo, uno viejo o repetido)
+// La app manda el token de sesión de Firebase (Authorization: Bearer ...).
+exports.devices = onRequest({ cors: ['https://hugoescalda21.github.io'], region: REGION, maxInstances: 5 }, async (req, res) => {
+  if (req.method !== 'POST') { res.status(405).send({ error: 'Método no permitido' }); return; }
+  try {
+    const m = String(req.get('Authorization') || '').match(/^Bearer (.+)$/);
+    if (!m) { res.status(401).send({ error: 'Falta iniciar sesión' }); return; }
+    let decoded;
+    try { decoded = await admin.auth().verifyIdToken(m[1]); } catch (e) { res.status(401).send({ error: 'Sesión vencida' }); return; }
+    const email = String(decoded.email || '').toLowerCase();
+    const body = req.body || {};
+    const code = String(body.code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (!code || !email) { res.status(400).send({ error: 'Datos no válidos' }); return; }
+    const cong = await db.collection('congregations').doc(code).get();
+    const editors = ((cong.exists && cong.data().settings) || {}).editorEmails || [];
+    if (!editors.map((e) => String(e).toLowerCase()).includes(email)) { res.status(403).send({ error: 'Solo para Super Admin' }); return; }
+
+    if (body.action === 'list') {
+      const snap = await db.collection('pushSubscriptions').where('code', '==', code).get();
+      const devices = snap.docs.map((d) => {
+        const x = d.data();
+        return { id: d.id, pubId: x.pubId || '', createdAt: x.createdAt || '', updatedAt: x.updatedAt || '', device: x.device || '',
+          lastOkAt: x.lastOkAt || '', lastErrAt: x.lastErrAt || '', lastErr: x.lastErr || '', lastKind: x.lastKind || '', reminderPrefs: x.reminderPrefs || null };
+      });
+      res.status(200).send({ devices });
+      return;
+    }
+
+    const token = String(body.token || '');
+    if (!token) { res.status(400).send({ error: 'Falta el dispositivo' }); return; }
+    const sub = await db.collection('pushSubscriptions').doc(token).get();
+    if (!sub.exists || sub.data().code !== code) { res.status(404).send({ error: 'Ese dispositivo ya no está registrado' }); return; }
+
+    if (body.action === 'remove') {
+      await sub.ref.delete();
+      res.status(200).send({ ok: true });
+      return;
+    }
+    if (body.action === 'test') {
+      const pubs = ((cong.data() || {}).publishers) || [];
+      const pub = pubs.find((p) => p.id === sub.data().pubId);
+      const first = pub && pub.name ? pub.name.split(' ')[0] : '';
+      try {
+        await messaging.send({
+          token,
+          notification: { title: '🔔 Prueba de notificación', body: `${first ? first + ', si' : 'Si'} ves este aviso, las notificaciones de Asignaciones funcionan en este celular.` },
+          android: { priority: 'high' },
+          webpush: { headers: { Urgency: 'high', TTL: '600' }, fcmOptions: { link: verLink(code) }, notification: { badge: BADGE_URL, vibrate: [200, 100, 200], tag: 'prueba-' + Date.now() } }
+        });
+        await markSent(token, 'prueba');
+        res.status(200).send({ ok: true });
+      } catch (err) {
+        const stale = err && STALE_CODES.includes(err.code);
+        if (stale) await sub.ref.delete().catch(() => {});
+        else await markFailed(token, err, 'prueba');
+        res.status(200).send({ ok: false, error: (err && err.code) || String(err), removed: !!stale });
+      }
+      return;
+    }
+    res.status(400).send({ error: 'Acción desconocida' });
+  } catch (err) {
+    console.error('[devices] error:', err && err.message);
+    res.status(500).send({ error: 'Error interno' });
   }
 });

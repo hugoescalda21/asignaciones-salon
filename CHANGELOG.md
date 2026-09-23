@@ -6,6 +6,15 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Ver qué celulares reciben las notificaciones — 23 sep 2026 (cachés asignaciones-salon-v30, ver-salon-v25)
+
+- Ajustes → **Notificaciones de los hermanos** (Super Admin): lista de los celulares con los avisos activados, agrupados por hermano, con el tipo de celular, cuándo se activó, qué recordatorios eligió y cómo salió el último aviso (✓ enviado / ⚠ falló y por qué). Los que tienen problemas van primero.
+- Botón **Enviar prueba** por celular (manda "🔔 Prueba de notificación") y ✕ para quitar un celular viejo o repetido.
+- Lista aparte: hermanos con email vinculado que **todavía no activaron** las notificaciones.
+- Funciones en la nube: nueva función `devices` (solo Super Admin, con la sesión de Firebase), y cada envío (asignación, anuncio, recordatorio, prueba) deja anotado su resultado en el registro del celular. **Requiere `firebase deploy --only functions`.**
+- Vista de la congregación: al activar los avisos se guarda también el tipo de celular (por ejemplo "Android · Chrome · instalada").
+- Pruebas: `15-notificaciones` (371 en total).
+
 ## Arreglo urgente: la app no se conectaba a la nube — 23 sep 2026 (caché asignaciones-salon-v29)
 
 - **Qué pasaba:** con el guardado por partes, al cargar algo en una semana nueva solo en el Programa, la semana llegaba a la nube sin la parte de Equipo técnico ("roles"). Al abrir la app, un cálculo que recorre todas las semanas fallaba con ese dato incompleto ("Cannot read properties of undefined (reading 'sonido')"), y como eso pasaba antes de conectarse, la app quedaba sin sincronizar.

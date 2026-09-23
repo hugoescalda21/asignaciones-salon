@@ -592,6 +592,20 @@
   .an-perm.lock { color: var(--ink-soft); }
   .an-perm .switch.lock { opacity: 0.45; cursor: default; }
 
+  /* ---------- Notificaciones de los hermanos ---------- */
+  .dev-pub { border-bottom: 1px solid var(--line); padding: 9px 0; font-size: 13.5px; }
+  .dev-pub small { color: var(--ink-soft); font-weight: 400; }
+  .dev-row { display: flex; gap: 8px; align-items: flex-start; margin-top: 6px; }
+  .dev-info { flex: 1; min-width: 0; font-size: 12.5px; line-height: 1.35; }
+  .dev-info small { display: block; font-size: 11.5px; color: var(--ink-soft); }
+  .dev-st.ok { color: var(--ok) !important; font-weight: 600; }
+  .dev-st.bad { color: var(--danger) !important; font-weight: 600; }
+  .dev-acts { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
+  .dev-test { padding: 6px 10px; font-size: 12px; }
+  .dev-rm { border: none; background: none; color: var(--ink-faint); font-size: 15px; width: 30px; height: 30px; cursor: pointer; }
+  .dev-none { margin-top: 10px; font-size: 13px; }
+  .dev-none summary { cursor: pointer; display: block !important; padding: 0 !important; }
+
   /* ---------- Registro de errores ---------- */
   .err-item { border-bottom: 1px solid var(--line); padding: 8px 0; }
   .err-item summary { display: block !important; cursor: pointer; list-style: none; font-size: 13px; line-height: 1.4; padding: 0 !important; }
@@ -1458,6 +1472,13 @@
         </div>
         <button type="button" class="switch" id="reminderSwitch" aria-label="Activar recordatorio"></button>
       </div>
+    </details>
+    <details class="settings-card" id="devCard">
+      <summary><div><h3>Notificaciones de los hermanos</h3><span class="sc-sub" id="devSub">Qué celulares tienen los avisos activados y si les llegan</span></div><span class="chev">›</span></summary>
+      <p class="hint">Cada celular donde alguien activó los avisos en la vista de la congregación, con cómo salió el último aviso. "Enviar prueba" le manda una notificación a ese celular para confirmar que funciona.</p>
+      <input type="search" id="devSearch" class="acc-search" placeholder="🔍 Buscar hermano" autocomplete="off">
+      <div id="devList" style="margin-top:8px;"></div>
+      <div class="settings-actions" style="margin-top:12px;"><button class="btn" id="devRefreshBtn">Actualizar</button></div>
     </details>
     <div class="settings-group">Reportes y datos</div>
     <details class="settings-card">
@@ -6076,6 +6097,83 @@
         saveData();
         renderAccessLists();
       });
+    }
+  });
+  /* ---- Ajustes → Notificaciones de los hermanos (qué celulares las tienen activadas) ---- */
+  const DEVICES_URL = 'https://southamerica-east1-asignaciones-salon.cloudfunctions.net/devices';
+  let devItems = null;
+  async function devicesCall(action, extra) {
+    if (!currentUser || !accessCode) throw new Error('Hace falta estar conectado a la nube.');
+    const idToken = await currentUser.getIdToken();
+    let res;
+    try {
+      res = await fetch(DEVICES_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + idToken }, body: JSON.stringify(Object.assign({ action, code: accessCode }, extra || {})) });
+    } catch (e) { throw new Error('No se pudo consultar. Si recién se agregó esta función, falta publicarla: firebase deploy --only functions (desde push-salon-2026).'); }
+    let out = {}; try { out = await res.json(); } catch (e) { /* nada */ }
+    if (!res.ok) throw new Error(out.error || (res.status === 404 ? 'Falta publicar la función nueva: firebase deploy --only functions (desde push-salon-2026).' : 'Error ' + res.status));
+    return out;
+  }
+  function devAgo(iso) { if (!iso) return ''; const d = new Date(iso); return isNaN(d) ? '' : anRelDate(d).replace(/^Hace/, 'hace').replace(/^Ayer/, 'ayer').replace(/^Recién/, 'recién'); }
+  const DEV_KIND = { asignacion: 'asignación', anuncio: 'anuncio', recordatorio: 'recordatorio', prueba: 'prueba' };
+  function devStatus(d) {
+    const ok = d.lastOkAt ? new Date(d.lastOkAt).getTime() : 0, err = d.lastErrAt ? new Date(d.lastErrAt).getTime() : 0;
+    if (err && err >= ok) return { kind: 'bad', txt: `⚠ El último aviso (${DEV_KIND[d.lastKind] || 'aviso'}) falló ${devAgo(d.lastErrAt)}: ${d.lastErr}` };
+    if (ok) return { kind: 'ok', txt: `✓ Último aviso (${DEV_KIND[d.lastKind] || 'aviso'}) enviado ${devAgo(d.lastOkAt)}` };
+    return { kind: 'none', txt: 'Todavía no se le mandó ningún aviso desde que se registró el resultado' };
+  }
+  async function loadDevices() {
+    const box = $('devList');
+    box.innerHTML = '<p class="hint" style="margin:0;">Consultando…</p>';
+    try { devItems = (await devicesCall('list')).devices || []; renderDevices(); }
+    catch (e) { devItems = null; box.innerHTML = `<p class="hint" style="margin:0; color:var(--danger);">${escapeHtml(e.message)}</p>`; }
+  }
+  function renderDevices() {
+    const box = $('devList');
+    if (!devItems) return;
+    const pubName = (id) => { const p = data.publishers.find(x => x.id === id); return p ? p.name : ''; };
+    const q = accNorm(($('devSearch').value || '').trim());
+    const byPub = {};
+    devItems.forEach(d => { (byPub[d.pubId] = byPub[d.pubId] || []).push(d); });
+    const withDev = new Set(Object.keys(byPub));
+    const linkedNoDev = data.publishers.filter(p => p.email && !withDev.has(p.id) && p.status !== 'inactivo');
+    const problems = devItems.filter(d => devStatus(d).kind === 'bad').length;
+    $('devSub').textContent = `${devItems.length} ${devItems.length === 1 ? 'celular' : 'celulares'} de ${withDev.size} ${withDev.size === 1 ? 'hermano' : 'hermanos'}${problems ? ` · ${problems} con problemas` : ''}`;
+    const rows = Object.keys(byPub).map(pid => ({ pid, name: pubName(pid) || 'Hermano que ya no está en la lista', devs: byPub[pid] }))
+      .filter(r => !q || accNorm(r.name).includes(q))
+      .sort((a, b) => (b.devs.some(d => devStatus(d).kind === 'bad') - a.devs.some(d => devStatus(d).kind === 'bad')) || a.name.localeCompare(b.name, 'es'));
+    let html = `<p class="hint" style="margin:0 0 8px;">"Enviado" quiere decir que Firebase lo aceptó; para confirmar que al celular le llega, usá <b>Enviar prueba</b> y preguntale a la persona si lo vio.</p>`;
+    html += rows.length ? rows.map(r => `<div class="dev-pub"><b>${escapeHtml(r.name)}</b>${r.devs.length > 1 ? ` <small>· ${r.devs.length} celulares</small>` : ''}
+      ${r.devs.map(d => { const st = devStatus(d); return `<div class="dev-row">
+        <div class="dev-info"><span>${escapeHtml(d.device || 'Celular sin identificar (se registró antes de esta versión)')}</span>
+          <small>Activado ${escapeHtml(devAgo(d.updatedAt || d.createdAt) || '—')}${d.reminderPrefs ? ' · recordatorios: ' + escapeHtml([d.reminderPrefs.dayBefore ? 'día anterior' : '', d.reminderPrefs.morning ? 'a la mañana' : '', d.reminderPrefs.hoursBefore ? d.reminderPrefs.hoursBefore + ' h antes' : ''].filter(Boolean).join(', ') || 'ninguno') : ''}</small>
+          <small class="dev-st ${st.kind}">${escapeHtml(st.txt)}</small></div>
+        <div class="dev-acts"><button type="button" class="btn dev-test" data-dev-test="${escapeHtml(d.id)}">Enviar prueba</button><button type="button" class="dev-rm" data-dev-rm="${escapeHtml(d.id)}" aria-label="Quitar este celular">✕</button></div>
+      </div>`; }).join('')}</div>`).join('') : `<p class="hint" style="margin:6px 0;">${q ? 'Nadie coincide.' : 'Ningún celular tiene las notificaciones activadas todavía.'}</p>`;
+    if (linkedNoDev.length && !q) {
+      html += `<details class="dev-none"><summary>Con email vinculado pero <b>sin notificaciones activadas</b>: ${linkedNoDev.length}</summary><p class="hint" style="margin:6px 0 0;">${linkedNoDev.map(p => escapeHtml(p.name)).sort((a, b) => a.localeCompare(b, 'es')).join(' · ')}</p><p class="hint" style="margin:6px 0 0;">Tienen que abrir la vista de la congregación en su celular y tocar "Sí, avisame" (o activar las notificaciones desde el candado junto a la dirección).</p></details>`;
+    }
+    box.innerHTML = html;
+  }
+  $('devCard').addEventListener('toggle', () => { if ($('devCard').open && !devItems) loadDevices(); });
+  $('devRefreshBtn').addEventListener('click', loadDevices);
+  $('devSearch').addEventListener('input', renderDevices);
+  $('devList').addEventListener('click', async (e) => {
+    const t = e.target.closest('[data-dev-test]');
+    if (t) {
+      t.disabled = true; const prev = t.textContent; t.textContent = 'Enviando…';
+      try {
+        const r = await devicesCall('test', { token: t.dataset.devTest });
+        if (r.ok) showToast('Prueba enviada: preguntale si le llegó');
+        else showToast(r.removed ? 'Ese celular ya no está registrado (se quitó de la lista)' : 'No se pudo enviar: ' + r.error);
+        await loadDevices();
+      } catch (err) { showToast(err.message); t.disabled = false; t.textContent = prev; }
+      return;
+    }
+    const rm = e.target.closest('[data-dev-rm]');
+    if (rm) {
+      if (!confirm('¿Quitar este celular de la lista? Deja de recibir avisos hasta que vuelva a activarlos desde la vista de la congregación.')) return;
+      try { await devicesCall('remove', { token: rm.dataset.devRm }); showToast('Celular quitado'); await loadDevices(); }
+      catch (err) { showToast(err.message); }
     }
   });
   /* ---- Ajustes → Registro de errores (solo Super Admin) ---- */

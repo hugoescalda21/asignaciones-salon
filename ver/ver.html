@@ -1513,7 +1513,8 @@
       const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: registration });
       if (token) {
         // merge: no pisa lo que ya había; las preferencias de recordatorio viajan con el registro del celular.
-        await firebase.firestore().collection('pushSubscriptions').doc(token).set({ code, pubId: pub.id, createdAt: new Date().toISOString(), reminderPrefs: loadReminderPrefs(code, pub.id) }, { merge: true });
+        await firebase.firestore().collection('pushSubscriptions').doc(token).set(Object.assign({ code, pubId: pub.id, updatedAt: new Date().toISOString(), device: errDevice(), reminderPrefs: loadReminderPrefs(code, pub.id) }, localStorage.getItem('push-created-' + token.slice(0, 16)) ? {} : { createdAt: new Date().toISOString() }), { merge: true });
+        try { localStorage.setItem('push-created-' + token.slice(0, 16), '1'); } catch (e) { /* nada */ }
         localStorage.setItem(storageKey, 'accepted');
         setupForegroundMessaging();
         return true;

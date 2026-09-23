@@ -59,7 +59,7 @@ node tests/editor/run.js anuncios   (solo las que tengan "anuncios" en el nombre
 ```
 
 Al final muestra una línea por archivo y el total, por ejemplo
-`359 de 359 pruebas OK.` Si algo falla, muestra qué.
+`371 de 371 pruebas OK.` Si algo falla, muestra qué.
 
 | Archivo | Qué prueba |
 |---|---|
@@ -76,6 +76,7 @@ Al final muestra una línea por archivo y el total, por ejemplo
 | `12-registro-errores` | Registro de errores en la nube y su tarjeta en Ajustes |
 | `13-fin-estimado` | Cronómetro: a qué hora termina la reunión, ayuda para recuperar tiempo |
 | `14-datos-incompletos` | Que la app abra y se conecte aunque haya semanas con datos incompletos |
+| `15-notificaciones` | Ajustes → Notificaciones de los hermanos: lista, enviar prueba, quitar |
 
 Las capturas de pantalla que sacan quedan en `tests/editor/capturas/`
 (no se suben a git), por si querés mirarlas.
