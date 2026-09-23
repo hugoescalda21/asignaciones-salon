@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Cronómetro mejorado</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EDEFEF; --surface:#FFFFFF; --ink:#212C34; --ink-soft:#5C6B74; --ink-faint:#636C71;
+    --line:#DDE1E2; --accent-gold:#A9822F; --accent-gold-text:#876825; --accent-blue:#3E6B8A;
+    --ok:#4C7A5E; --ok-bg:#EEF4EF; --warn:#B7791F; --warn-bg:#FBF3E2; --bad:#B23B2E; --bad-bg:#FBE9E7;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#D9DDDE;font-family:'Public Sans',-apple-system,sans-serif;color:var(--ink);padding:24px 16px 48px}
+  h1.page{font-family:'Fraunces',serif;font-weight:500;font-size:22px;margin:0 0 4px;text-align:center}
+  p.lead{text-align:center;color:var(--ink-soft);font-size:13px;margin:0 auto 22px;max-width:680px;line-height:1.5}
+  .grid{display:flex;flex-wrap:wrap;gap:28px;justify-content:center;align-items:flex-start}
+  .col{display:flex;flex-direction:column;align-items:center;gap:10px;max-width:300px}
+  .label{font-size:13px;font-weight:700;text-align:center}
+  .label small{display:block;font-weight:600;color:var(--ink-soft);font-size:10.5px}
+  .note{font-size:12px;color:var(--ink-soft);line-height:1.5;width:100%}
+  .note b{color:var(--ink)}
+  .n{display:inline-flex;width:17px;height:17px;border-radius:50%;background:#E5B94E;color:#212C34;font-size:10px;font-weight:700;align-items:center;justify-content:center;margin-right:3px}
+  .hl{outline:2.5px solid #E5B94E;outline-offset:2px;position:relative}
+  .pin{position:absolute;top:-9px;left:-9px;width:18px;height:18px;border-radius:50%;background:#E5B94E;color:#212C34;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;z-index:3}
+
+  .phone{width:290px;height:620px;background:var(--bg);border-radius:28px;border:8px solid #1a1f24;overflow:hidden;position:relative;box-shadow:0 10px 30px rgba(0,0,0,.18);display:flex;flex-direction:column}
+  .ehead{background:#fff;padding:10px 12px 8px;display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--line);flex:none}
+  .ehead .dot{width:7px;height:7px;border-radius:50%;background:var(--accent-gold)}
+  .ehead b{font-family:'Fraunces',serif;font-weight:500;font-size:15px}
+  .ehead .cb{font-size:9px;background:var(--bg);border-radius:9px;padding:2px 7px;color:var(--ink-soft)}
+  .ehead .fs{margin-left:auto;font-size:9px;font-weight:700;border:1px solid var(--line);border-radius:6px;padding:3px 6px;color:var(--ink-soft)}
+  .content{padding:8px 10px;flex:1;overflow:hidden}
+  .btabs{height:46px;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:center;font-size:8px;color:var(--ink-faint);flex:none}
+  .btabs span.on{color:var(--ink);font-weight:700}
+
+  .pace{display:flex;align-items:center;justify-content:space-between;border-radius:9px;padding:6px 10px;font-size:10px;font-weight:700;margin-bottom:6px}
+  .pace.late{background:var(--bad-bg);color:var(--bad)}
+  .pace.early{background:var(--ok-bg);color:var(--ok)}
+  .pace small{font-weight:600;color:var(--ink-soft)}
+
+  .clock{background:#fff;border:1px solid var(--line);border-radius:12px;padding:9px 10px 10px;text-align:center;margin-bottom:7px}
+  .clock .now{font-size:8.5px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em}
+  .clock .now b{display:block;color:var(--ink);text-transform:none;letter-spacing:0;font-size:11px;margin-top:1px}
+  .clock .t{font-family:'Fraunces',serif;font-size:48px;line-height:1.05;margin:3px 0 4px;font-variant-numeric:tabular-nums}
+  .clock .t.ok{color:var(--ok)} .clock .t.warn{color:var(--warn)} .clock .t.bad{color:var(--bad)}
+  .bar{height:5px;border-radius:3px;background:var(--bg);overflow:hidden;margin:0 6px 8px}
+  .bar i{display:block;height:100%}
+  .big{width:100%;border:none;border-radius:11px;padding:12px;font-size:13px;font-weight:700;color:#fff;background:var(--ink)}
+  .big.go{background:var(--ok)}
+  .big small{display:block;font-size:9px;font-weight:600;opacity:.85;margin-top:1px}
+  .smalls{display:flex;justify-content:center;gap:14px;margin-top:6px;font-size:9.5px;font-weight:700;color:var(--ink-soft)}
+
+  .sub2{font-size:8px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;margin:6px 2px 4px}
+  .pr{display:flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--line);border-radius:7px;padding:5px 8px;margin-bottom:3px;font-size:9.5px}
+  .pr.sel{border:1.5px solid var(--ok);background:var(--ok-bg)}
+  .pr .c{width:15px;height:15px;border-radius:50%;background:var(--bg);font-size:7.5px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+  .pr.done .c{background:var(--ok);color:#fff}
+  .pr .l{flex:1;min-width:0;line-height:1.25}
+  .pr .l small{display:block;color:var(--ink-soft);font-size:8px}
+  .pr .m{font-weight:700;color:var(--ink-soft);font-size:8.5px;text-align:right}
+  .pr .m small{display:block;font-size:8px}
+  .m .over{color:var(--bad)} .m .under{color:var(--ok)}
+  .pr.cons{margin-left:16px;background:#FAFBFB;border-style:dashed;padding:3px 8px;font-size:8.5px}
+  .pr.cons .c{width:12px;height:12px;font-size:7px}
+  .nomin{display:inline-block;font-size:7.5px;font-weight:700;color:var(--warn);background:var(--warn-bg);border-radius:6px;padding:0 5px;margin-top:1px}
+
+  .opts{background:#fff;border:1px solid var(--line);border-radius:10px;padding:4px 10px}
+  .opt{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:10px}
+  .opt:last-child{border-bottom:none}
+  .opt .ot{flex:1;font-weight:600;line-height:1.3}
+  .opt .ot span{display:block;font-size:8.5px;color:var(--ink-soft);font-weight:400}
+  .sw{width:30px;height:18px;border-radius:9px;background:#C9CFD1;position:relative;flex:none}
+  .sw::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff}
+  .sw.on{background:var(--ok)} .sw.on::after{left:14px}
+  .optsum{display:flex;justify-content:space-between;align-items:center;font-size:9px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;margin:8px 2px 4px}
+
+  /* pantalla completa */
+  .fsv{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:16px}
+  .fsv.bad{background:#9E2B20}
+  .fsv .p{font-size:11px;font-weight:700;opacity:.9;text-transform:uppercase;letter-spacing:.05em}
+  .fsv .w{font-size:12px;opacity:.85;margin-top:2px}
+  .fsv .t{font-family:'Fraunces',serif;font-size:96px;line-height:1;margin:18px 0 8px;font-variant-numeric:tabular-nums}
+  .fsv .s{font-size:11px;font-weight:700;background:rgba(255,255,255,.18);border-radius:10px;padding:4px 10px}
+  .fsv .hint{position:absolute;bottom:14px;left:0;right:0;font-size:9px;opacity:.75}
+  .fsv .x{position:absolute;top:12px;right:14px;font-size:14px;opacity:.8}
+  .strip{display:flex;height:10px}
+  .strip i{flex:1}
+
+  .reco{max-width:820px;margin:36px auto 0;background:#fff;border-radius:12px;padding:18px 22px;border-left:4px solid var(--accent-gold)}
+  .reco h2{font-family:'Fraunces',serif;font-weight:500;font-size:17px;margin:0 0 8px}
+  .reco p{font-size:13px;line-height:1.6;color:var(--ink-soft);margin:0 0 8px}
+  .reco p strong{color:var(--ink)}
+</style>
+</head>
+<body>
+<h1 class="page">Cronómetro mejorado</h1>
+<p class="lead">Mockup de la pestaña Cronómetro del editor, con el consejo activado. Los números amarillos marcan cada cambio y coinciden con las notas de abajo.</p>
+
+<div class="grid">
+
+  <!-- 1. Antes de empezar -->
+  <div class="col">
+    <div class="label">Antes de empezar una parte</div>
+    <div class="phone">
+      <div class="ehead"><span class="dot"></span><b>Asignaciones</b><span class="cb">San Agustín</span><span class="fs">⛶ Pantalla completa</span></div>
+      <div class="content">
+        <div class="pace late hl"><span class="pin">2</span><span>Reunión: 1:40 atrasada</span><small>4 partes tomadas</small></div>
+        <div class="clock">
+          <div class="now">Siguiente<b>4. Inicie conversaciones — Sofía A. / Laura P.</b></div>
+          <div class="t ok">03:00</div>
+          <div class="bar"><i style="width:0"></i></div>
+          <button class="big go hl"><span class="pin">1</span>▶ Iniciar</button>
+          <div class="smalls"><span>Reiniciar</span><span>Ajustar tiempo</span></div>
+        </div>
+        <div class="sub2">Partes de esta reunión</div>
+        <div class="pr done"><span class="c">✓</span><span class="l">1. Tesoros de la Biblia<small>Andrés Torres</small></span><span class="m">10 min<small class="over">+0:50</small></span></div>
+        <div class="pr done"><span class="c">✓</span><span class="l">2. Perlas escondidas<small>Mario Díaz</small></span><span class="m">10 min<small class="over">+0:30</small></span></div>
+        <div class="pr done"><span class="c">✓</span><span class="l">3. Lectura de la Biblia<small>Hugo Escalda</small></span><span class="m">4 min<small class="under">−0:10</small></span></div>
+        <div class="pr cons done hl"><span class="pin">6</span><span class="c">✓</span><span class="l">Consejo</span><span class="m">1 min<small class="over">+0:30</small></span></div>
+        <div class="pr sel"><span class="c">4</span><span class="l">Inicie conversaciones<small>Sofía Abad / Laura Paz</small></span><span class="m">3 min</span></div>
+        <div class="pr cons"><span class="c">·</span><span class="l">Consejo</span><span class="m">1 min</span></div>
+        <div class="pr hl"><span class="pin">5</span><span class="c">5</span><span class="l">Haga revisitas<small>Laura Paz / Ana Ruiz</small><span class="nomin">⚠ sin minutos cargados · usa 5</span></span><span class="m">5 min</span></div>
+      </div>
+      <div class="btabs"><span>Programa</span><span class="on">Cronómetro</span><span>Hermanos</span><span>Ajustes</span><span>Anuncios</span></div>
+    </div>
+    <div class="note"><span class="n">1</span><b>Un solo botón grande</b>, abajo y a mano del pulgar. "Reiniciar" y "Ajustar tiempo" (los minutos a mano) quedan chicos.<br><span class="n">2</span><b>Cómo va la reunión</b>, sumando las diferencias de cada parte: rojo si va atrasada, verde si va adelantada.<br><span class="n">5</span>Si a una parte le faltan los minutos en el Programa, <b>lo avisa</b> en vez de poner 5 minutos sin decir nada.<br><span class="n">6</span>Con la opción activada, <b>después de cada parte de estudiante aparece "Consejo · 1 min"</b>, y queda registrado igual que las demás.</div>
+  </div>
+
+  <!-- 2. Corriendo -->
+  <div class="col">
+    <div class="label">Mientras corre (último minuto)</div>
+    <div class="phone">
+      <div class="ehead"><span class="dot"></span><b>Asignaciones</b><span class="cb">San Agustín</span><span class="fs">⛶ Pantalla completa</span></div>
+      <div class="content">
+        <div class="pace late"><span>Reunión: 1:40 atrasada</span><small>4 partes tomadas</small></div>
+        <div class="clock">
+          <div class="now">Ahora<b>4. Inicie conversaciones — Sofía A. / Laura P.</b></div>
+          <div class="t warn">00:42</div>
+          <div class="bar"><i style="width:77%;background:var(--warn)"></i></div>
+          <button class="big hl"><span class="pin">1</span>■ Terminó<small>Guarda 2:18 y sigue con: Consejo</small></button>
+          <div class="smalls"><span>Pausar</span><span>Reiniciar</span></div>
+        </div>
+        <div class="sub2">Partes de esta reunión</div>
+        <div class="pr done"><span class="c">✓</span><span class="l">3. Lectura de la Biblia<small>Hugo Escalda</small></span><span class="m">4 min<small class="under">−0:10</small></span></div>
+        <div class="pr cons done"><span class="c">✓</span><span class="l">Consejo</span><span class="m">1 min<small class="over">+0:30</small></span></div>
+        <div class="pr sel"><span class="c">4</span><span class="l">Inicie conversaciones<small>Sofía Abad / Laura Paz</small></span><span class="m">3 min</span></div>
+        <div class="pr cons"><span class="c">·</span><span class="l">Consejo</span><span class="m">1 min</span></div>
+      </div>
+      <div class="btabs"><span>Programa</span><span class="on">Cronómetro</span><span>Hermanos</span><span>Ajustes</span><span>Anuncios</span></div>
+    </div>
+    <div class="note"><span class="n">1</span>Cuando está corriendo, el mismo botón pasa a <b>"Terminó"</b> y dice qué va a guardar y cuál sigue. Un toque guarda y deja lista la siguiente; no arranca sola, así tenés tiempo de respirar.<br><span class="n">4</span><b>Vibración corta al quedar 1 minuto</b> (el reloj se pone ámbar), además de la campanilla al llegar a cero.</div>
+  </div>
+
+  <!-- 3. Pantalla completa -->
+  <div class="col">
+    <div class="label">Pantalla completa (pasado de tiempo)</div>
+    <div class="phone">
+      <div class="fsv bad hl" style="position:relative"><span class="pin">3</span>
+        <span class="x">✕</span>
+        <div class="p">Inicie conversaciones</div>
+        <div class="w">Sofía Abad / Laura Paz</div>
+        <div class="t">+0:25</div>
+        <div class="s">Pasado de tiempo</div>
+        <div class="hint">Tocá la pantalla para pausar · la pantalla no se apaga</div>
+      </div>
+      <div class="strip"><i style="background:#4C7A5E"></i><i style="background:#B7791F"></i><i style="background:#9E2B20"></i></div>
+    </div>
+    <div class="note"><span class="n">3</span><b>Números enormes</b> y fondo que cambia de color: <span style="color:#4C7A5E;font-weight:700">verde</span> con tiempo, <span style="color:#B7791F;font-weight:700">ámbar</span> en el último minuto, <span style="color:#9E2B20;font-weight:700">rojo</span> pasado. Se abre con "⛶ Pantalla completa". Un toque pausa o reanuda, ✕ vuelve. Se puede girar el celular.</div>
+  </div>
+
+  <!-- 4. Opciones -->
+  <div class="col">
+    <div class="label">Opciones del cronómetro<small>al final de la misma pestaña</small></div>
+    <div class="phone">
+      <div class="ehead"><span class="dot"></span><b>Asignaciones</b><span class="cb">San Agustín</span><span class="fs">⛶ Pantalla completa</span></div>
+      <div class="content">
+        <div class="optsum"><span>Opciones</span></div>
+        <div class="opts">
+          <div class="opt hl"><span class="pin">6</span><div class="ot">Tomar tiempo del consejo<span>Agrega 1 minuto de consejo después de la Lectura de la Biblia y de cada parte de "Seamos mejores maestros"</span></div><span class="sw on"></span></div>
+          <div class="opt"><div class="ot">Campanilla al llegar a cero</div><span class="sw on"></span></div>
+          <div class="opt hl"><span class="pin">4</span><div class="ot">Vibrar faltando 1 minuto<span>Aviso silencioso, sin sonido en el salón</span></div><span class="sw on"></span></div>
+          <div class="opt"><div class="ot">Probar campanilla</div><span style="font-size:9.5px;font-weight:700;color:var(--accent-blue)">Probar</span></div>
+          <div class="opt"><div class="ot">Modo flotante<span>El reloj chiquito encima de otras apps</span></div><span style="font-size:9.5px;font-weight:700;color:var(--accent-blue)">Abrir</span></div>
+        </div>
+        <div class="optsum" style="margin-top:12px"><span>Historial de tiempos</span><span style="color:var(--accent-blue)">Compartir</span></div>
+        <div class="opts">
+          <div class="opt"><div class="ot">Lectura de la Biblia<span>Hoy · Entre semana</span></div><span style="font-size:9px">4:00 → 3:50 <b style="color:var(--ok)">−0:10</b></span></div>
+          <div class="opt"><div class="ot">Consejo<span>Hoy · Entre semana</span></div><span style="font-size:9px">1:00 → 1:30 <b style="color:var(--bad)">+0:30</b></span></div>
+        </div>
+      </div>
+      <div class="btabs"><span>Programa</span><span class="on">Cronómetro</span><span>Hermanos</span><span>Ajustes</span><span>Anuncios</span></div>
+    </div>
+    <div class="note"><span class="n">6</span><b>El consejo es una opción que se activa</b> y viene apagada. Se guarda para la congregación, así cualquier cronometrista la encuentra igual. Los botones de sonido y modo flotante, que hoy están sueltos debajo del reloj, pasan acá abajo para no estorbar.</div>
+  </div>
+
+</div>
+
+<div class="reco">
+  <h2>Resumen</h2>
+  <p><strong>1. Botón único</strong> Iniciar → Terminó (guarda y deja lista la siguiente). <strong>2. Cómo va la reunión</strong>, adelantada o atrasada. <strong>3. Pantalla completa</strong> con colores. <strong>4. Vibración</strong> faltando 1 minuto. <strong>5. Aviso</strong> si falta cargar los minutos de una parte. <strong>6. Consejo opcional</strong> de 1 minuto después de cada parte de estudiante.</p>
+  <p><strong>Lo que no cambia:</strong> el historial, compartirlo, los tiempos estándar en "Otras partes", el modo flotante y que la pantalla no se apague mientras corre.</p>
+  <p>Todo es del editor, así que no hace falta <code>firebase deploy</code>.</p>
+</div>
+</body>
+</html>

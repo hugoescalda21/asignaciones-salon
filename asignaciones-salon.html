@@ -640,6 +640,45 @@
   .other-presets .preset-grid { margin-top: 8px; margin-bottom: 0; }
   #panel-timer .timer-panel { margin-bottom: 18px; }
 
+  /* ---------- Cronómetro v2: botón único, ritmo, pantalla completa, opciones ---------- */
+  .timer-toprow { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin: -6px 0 10px; }
+  .timer-toprow .hint { margin: 4px 0 0; }
+  .timer-fs-btn { flex-shrink: 0; padding: 6px 10px; font-size: 12px; }
+  .timer-pace { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-radius: var(--radius-m); padding: 9px 14px; font-size: 13.5px; font-weight: 700; margin-bottom: 10px; }
+  .timer-pace small { font-size: 12px; font-weight: 600; color: var(--ink-soft); }
+  .timer-pace.late { background: var(--danger-bg); color: var(--danger); }
+  .timer-pace.early { background: #E4EFE6; color: var(--ok); }
+  .timer-pace.even { background: var(--surface); border: 1px solid var(--line); color: var(--ink); }
+  .timer-main { display: block; width: 100%; max-width: 360px; margin: 0 auto; border: none; border-radius: 14px; padding: 15px 12px; font: inherit; font-size: 17px; font-weight: 700; color: #fff; background: var(--ink); cursor: pointer; }
+  .timer-main.go { background: var(--ok); }
+  .timer-main small { display: block; font-size: 12px; font-weight: 600; opacity: 0.88; margin-top: 2px; }
+  .timer-main:active { transform: scale(0.98); }
+  .timer-smalls { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 18px; margin-top: 10px; }
+  .timer-smalls button { border: none; background: none; font: inherit; font-size: 13px; font-weight: 700; color: var(--ink-soft); padding: 6px 2px; cursor: pointer; }
+  .timer-smalls button#timerFinishBtn { color: var(--ink); }
+  #timerInputsWrap { margin: 10px 0 0; }
+  .mt-part .mt-m .d-over { display: block; color: var(--danger); }
+  .mt-part .mt-m .d-under { display: block; color: var(--ok); }
+  .mt-part.counsel { margin-left: 22px; width: calc(100% - 22px); padding: 6px 12px; border-style: dashed; }
+  .mt-part.counsel .mt-l { font-size: 12.5px; }
+  .mt-part.counsel .mt-n { width: 18px; height: 18px; font-size: 10px; }
+  .mt-nomin { display: inline-block; font-size: 11px; font-weight: 700; color: var(--accent-gold-text); background: rgba(169,130,47,0.13); border-radius: 8px; padding: 1px 7px; margin-top: 3px; }
+  .timer-opts { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 4px 16px; }
+  .timer-opts .toggle-row { padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .timer-opts .toggle-row:last-of-type { border-bottom: none; }
+  .timer-opts .toggle-row .btn { flex-shrink: 0; padding: 7px 14px; }
+  .timer-fs { position: fixed; inset: 0; z-index: 400; background: #3F6B50; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; cursor: pointer; user-select: none; }
+  .timer-fs.warning { background: #A2691A; }
+  .timer-fs.danger { background: #9E2B20; }
+  .timer-fs.paused .timer-fs-time { opacity: 0.55; }
+  .timer-fs-x { position: absolute; top: calc(12px + env(safe-area-inset-top)); right: 14px; border: none; background: rgba(255,255,255,0.18); color: #fff; width: 42px; height: 42px; border-radius: 50%; font-size: 18px; cursor: pointer; }
+  .timer-fs-part { font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.95; }
+  .timer-fs-who { font-size: 16px; opacity: 0.85; margin-top: 4px; }
+  .timer-fs-time { font-family: 'Fraunces', serif; font-variant-numeric: tabular-nums; font-size: min(25vw, 46vh); line-height: 1; margin: 18px 0 12px; }
+  .timer-fs-state { font-size: 15px; font-weight: 700; background: rgba(255,255,255,0.18); border-radius: 12px; padding: 5px 14px; }
+  .timer-fs-state:empty { display: none; }
+  .timer-fs-hint { position: absolute; bottom: calc(16px + env(safe-area-inset-bottom)); left: 0; right: 0; font-size: 12.5px; opacity: 0.75; }
+
   /* ---------- Ajustes agrupados ---------- */
   .settings-group { font-size: 11px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.05em; margin: 22px 2px 8px; }
   .settings-group:first-child { margin-top: 0; }
@@ -950,30 +989,27 @@
 
   <!-- ---------------- Cronómetro ---------------- -->
   <section class="tab-panel hidden" id="panel-timer">
-    <p class="hint" id="timerTopicLabel" style="margin:-6px 0 14px;"></p>
+    <div class="timer-toprow">
+      <p class="hint" id="timerTopicLabel"></p>
+      <button type="button" class="btn timer-fs-btn" id="timerFsBtn" aria-label="Pantalla completa">⛶ Pantalla completa</button>
+    </div>
+    <div class="timer-pace hidden" id="timerPace" role="status"></div>
     <div class="timer-panel">
       <div class="timer-now" id="timerNow"></div>
       <div class="timer-display normal" id="timerDisplay">10:00</div>
       <div class="timer-progress-track"><div class="timer-progress-bar" id="timerProgressBar"></div></div>
-      <div class="timer-inputs">
-        <input type="number" id="minutesInput" min="0" value="10"><span>min</span>
-        <input type="number" id="secondsInput" min="0" max="59" value="0"><span>seg</span>
+      <button type="button" class="timer-main go" id="timerMainBtn">▶ Iniciar</button>
+      <div class="timer-smalls">
+        <button type="button" id="timerPauseBtn">Pausar</button>
+        <button type="button" class="hidden" id="timerFinishBtn">Terminó</button>
+        <button type="button" id="timerResetBtn">Reiniciar</button>
+        <button type="button" id="timerAdjustBtn" aria-expanded="false">Ajustar tiempo</button>
       </div>
-      <div class="timer-controls">
-        <button class="btn" id="timerResetBtn">Reiniciar</button>
-        <button class="btn" id="timerPauseBtn">Pausar</button>
-        <button class="btn btn-primary" id="timerStartBtn">Iniciar</button>
+      <div class="timer-inputs hidden" id="timerInputsWrap">
+        <input type="number" id="minutesInput" min="0" value="10" aria-label="Minutos"><span>min</span>
+        <input type="number" id="secondsInput" min="0" max="59" value="0" aria-label="Segundos"><span>seg</span>
       </div>
-      <div class="timer-extra">
-        <button class="btn btn-primary" id="timerFinishBtn">Marcar fin y guardar</button>
-      </div>
-      <div class="timer-extra">
-        <button class="btn" id="muteBtn">🔔 Sonido activado</button>
-        <button class="btn" id="testBellBtn">Probar campanilla</button>
-      </div>
-      <div class="timer-extra">
-        <button class="btn hidden" id="pipBtn">📌 Modo flotante</button>
-      </div>
+      <button type="button" class="hidden" id="timerStartBtn">Iniciar</button>
       <canvas id="pipCanvas" width="360" height="220" class="hidden"></canvas>
       <video id="pipVideo" muted playsinline class="hidden"></video>
     </div>
@@ -983,11 +1019,30 @@
       <div class="preset-grid" id="presetGrid"></div>
     </details>
 
+    <h3 class="section-title">Opciones</h3>
+    <div class="timer-opts">
+      <div class="toggle-row"><div><p>Tomar tiempo del consejo</p><p class="hint">Agrega 1 minuto de consejo después de la Lectura de la Biblia y de cada parte de "Seamos mejores maestros". Vale para toda la congregación.</p></div><button type="button" class="switch" id="timerCounselSwitch" aria-label="Tomar tiempo del consejo"></button></div>
+      <div class="toggle-row"><div><p>Campanilla al llegar a cero</p></div><button type="button" class="switch" id="timerBellSwitch" aria-label="Campanilla al llegar a cero"></button></div>
+      <div class="toggle-row"><div><p>Vibrar faltando 1 minuto</p><p class="hint">Aviso silencioso, sin sonido en el salón.</p></div><button type="button" class="switch" id="timerVibrateSwitch" aria-label="Vibrar faltando 1 minuto"></button></div>
+      <div class="toggle-row"><div><p>Probar campanilla</p></div><button type="button" class="btn" id="testBellBtn">Probar</button></div>
+      <div class="toggle-row hidden" id="pipRow"><div><p>Modo flotante</p><p class="hint">El reloj chiquito encima de otras apps.</p></div><button type="button" class="btn" id="pipBtn">Abrir</button></div>
+      <button type="button" class="hidden" id="muteBtn"></button>
+    </div>
+
     <h3 class="section-title">Historial de tiempos</h3>
     <div id="timerLogWrap"></div>
     <div class="action-row" style="margin-top:10px;">
       <button class="btn" id="shareLogBtn">Compartir historial</button>
       <button class="btn btn-danger" id="clearLogBtn">Borrar historial</button>
+    </div>
+
+    <div class="timer-fs hidden" id="timerFs" role="dialog" aria-label="Cronómetro en pantalla completa">
+      <button type="button" class="timer-fs-x" id="timerFsClose" aria-label="Salir de pantalla completa">✕</button>
+      <div class="timer-fs-part" id="timerFsPart"></div>
+      <div class="timer-fs-who" id="timerFsWho"></div>
+      <div class="timer-fs-time" id="timerFsTime">00:00</div>
+      <div class="timer-fs-state" id="timerFsState"></div>
+      <div class="timer-fs-hint">Tocá la pantalla para pausar o seguir · la pantalla no se apaga</div>
     </div>
   </section>
 
@@ -1233,7 +1288,7 @@
       </details>
       <details class="guide-item">
         <summary><span class="gicon" data-icon="cronometrista"></span>Cronómetro<span class="chev">›</span></summary>
-        <p>Presets fijos para las partes estándar (Tesoros, Perlas, Estudio bíblico, etc.), y una sección "Partes de esta semana" que trae automáticamente el tiempo de las partes de estudiante que cargaste con minutos en el Programa.</p>
+        <p>Las partes de la reunión aparecen en orden, con su tiempo y quién las tiene (salen del Programa). Tocás una, "▶ Iniciar", y al terminar "■ Terminó": guarda el tiempo y deja lista la siguiente. Arriba se ve si la reunión va atrasada o adelantada. "⛶ Pantalla completa" muestra el reloj grande con colores. En "Opciones" podés activar el tiempo del consejo, la campanilla y la vibración del último minuto.</p>
       </details>
       <details class="guide-item">
         <summary><span class="gicon" data-icon="chart"></span>Reportes y copia de seguridad<span class="chev">›</span></summary>
@@ -1512,7 +1567,7 @@
   function monthKey(iso) { const d = new Date(iso + 'T00:00:00'); return d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }); }
 
   /* ---------- Carga / normalización / migración ---------- */
-  function defaultSettings() { return { congregationName: 'Mi Congregación', micCount: 2, usherCount: 2, weekdaySemana: 4, weekdayFinde: 0, timerMuted: false, themeMode: 'auto', remindersEnabled: false, useAuxRoom: false, editorEmails: [], viewerEmails: [], tecnicoAdminEmails: [], acomodadoresAdminEmails: [], asignacionesAdminEmails: [] }; }
+  function defaultSettings() { return { congregationName: 'Mi Congregación', micCount: 2, usherCount: 2, weekdaySemana: 4, weekdayFinde: 0, timerMuted: false, themeMode: 'auto', remindersEnabled: false, useAuxRoom: false, timerCounsel: false, timerVibrate: true, editorEmails: [], viewerEmails: [], tecnicoAdminEmails: [], acomodadoresAdminEmails: [], asignacionesAdminEmails: [] }; }
 
   function cleanOrphanedIds(dataObj) {
     const validIds = new Set((dataObj.publishers || []).map(p => p.id));
@@ -3341,6 +3396,7 @@
   /* ---------- Cronómetro ---------- */
   let currentPresetLabel = 'Personalizado';
   let overtimeBellPlayed = false;
+  let oneMinuteWarned = false;
   let wakeLock = null;
   async function acquireWakeLock() {
     if (!('wakeLock' in navigator)) return;
@@ -3389,7 +3445,7 @@
   function pipSupported() {
     return 'pictureInPictureEnabled' in document && document.pictureInPictureEnabled && $('pipVideo') && 'requestPictureInPicture' in $('pipVideo');
   }
-  if (pipSupported()) $('pipBtn').classList.remove('hidden');
+  if (pipSupported()) $('pipRow').classList.remove('hidden');
   $('pipBtn').addEventListener('click', async () => {
     initPipElements();
     try {
@@ -3422,13 +3478,20 @@
     const DEF = { 'SEAMOS MEJORES MAESTROS': 5, 'NUESTRA VIDA CRISTIANA': 15 };
     let sec = '';
     const parts = [];
+    const withCounsel = !!(data.settings && data.settings.timerCounsel) && currentType === 'semana';
+    const presName = (() => { const pr = data.publishers.find(pp => pp.id === (w.program || {}).presidente); return pr ? pr.name : ''; })();
     programEntries(w.program || {}, currentType).forEach(e => {
       if (e.section) { sec = e.section; return; }
       if (e.song || !e.name || /sala auxiliar/i.test(e.label)) return;
+      const noMin = !Number(e.min) && !!e.num && !!DEF[sec];
       const min = Number(e.min) || (e.num ? DEF[sec] : 0);
       if (!min) return;   // presidente, oraciones, lector: no se cronometran
       const label = /^Atalaya/.test(e.label) ? 'Estudio de La Atalaya' : e.label.trim();
-      parts.push({ label, who: e.name, min, num: e.num || '' });
+      parts.push({ label, who: e.name, min, num: e.num || '', noMin });
+      // Consejo opcional (1 min) después de la Lectura de la Biblia y de cada parte de estudiante.
+      if (withCounsel && (e.num === 3 || sec === 'SEAMOS MEJORES MAESTROS')) {
+        parts.push({ label: `Consejo (${label})`, shortLabel: 'Consejo', who: presName, min: 1, num: '', counsel: true });
+      }
     });
     return parts;
   }
@@ -3440,7 +3503,8 @@
     currentPartWho = who || '';
     const el = $('timerNow');
     if (!el) return;
-    el.innerHTML = label && label !== 'Personalizado' ? `Ahora<b>${escapeHtml(label)}${who ? ' — ' + escapeHtml(who) : ''}</b>` : '';
+    const shown = label ? label.replace(/^Consejo \(.*\)$/, 'Consejo') : '';
+    el.innerHTML = shown && shown !== 'Personalizado' ? `${timerInterval ? 'Ahora' : 'Lista'}<b>${escapeHtml(shown)}${who ? ' — ' + escapeHtml(who) : ''}</b>` : '';
   }
   function selectMeetingPart(i) {
     const p = meetingParts[i];
@@ -3459,24 +3523,93 @@
     const other = $('otherPresets');
     if (!meetingParts.length) {
       wrap.innerHTML = '';
+      renderMeetingPace();
       if (other && !other.dataset.touched) other.open = true;
       return;
     }
     if (other && !other.dataset.touched) other.open = false;
+    renderMeetingPace();
     wrap.innerHTML = '<div class="program-subhead" style="margin:0 0 8px;">Partes de esta reunión, en orden</div><div class="mt-parts" id="weeklyPartsGrid">' +
       meetingParts.map((p, i) => {
         const done = partDoneEntry(p.label);
         const sel = i === selectedPartIdx && currentPresetLabel === p.label;
-        return `<button type="button" class="mt-part${sel ? ' selected' : ''}${done ? ' done' : ''}" data-mpart="${i}">
+        const diff = done ? done.actualSeconds - done.plannedSeconds : 0;
+        const diffHtml = done ? (diff > 0 ? `<small class="d-over">+${fmtMinSec(diff)}</small>` : diff < 0 ? `<small class="d-under">−${fmtMinSec(-diff)}</small>` : '<small class="d-under">a tiempo</small>') : '';
+        return `<button type="button" class="mt-part${sel ? ' selected' : ''}${done ? ' done' : ''}${p.counsel ? ' counsel' : ''}" data-mpart="${i}">
           <span class="mt-n">${done ? '✓' : escapeHtml(String(p.num || '•'))}</span>
-          <span class="mt-l">${escapeHtml(p.label)}<small>${escapeHtml(p.who)}</small></span>
-          <span class="mt-m">${p.min} min${done ? `<small>${fmtMinSec(done.actualSeconds)}</small>` : ''}</span>
+          <span class="mt-l">${escapeHtml(p.shortLabel || p.label)}${p.who ? `<small>${escapeHtml(p.who)}</small>` : ''}${p.noMin ? '<span class="mt-nomin">⚠ sin minutos cargados · usa ' + p.min + '</span>' : ''}</span>
+          <span class="mt-m">${p.min} min${diffHtml}</span>
         </button>`;
       }).join('') + '</div>';
     wrap.querySelectorAll('[data-mpart]').forEach(btn => btn.addEventListener('click', () => {
       selectMeetingPart(Number(btn.dataset.mpart));
       markSelectedPresetBtn(null, true);
     }));
+  }
+  // "Reunión: 1:40 atrasada": suma las diferencias de las partes ya tomadas hoy.
+  function renderMeetingPace() {
+    const box = $('timerPace');
+    if (!box) return;
+    const done = meetingParts.map(p => partDoneEntry(p.label)).filter(Boolean);
+    if (!done.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+    const diff = done.reduce((s, e) => s + (e.actualSeconds - e.plannedSeconds), 0);
+    const kind = diff >= 15 ? 'late' : diff <= -15 ? 'early' : 'even';
+    const txt = kind === 'late' ? `Reunión: ${fmtMinSec(diff)} atrasada` : kind === 'early' ? `Reunión: ${fmtMinSec(-diff)} adelantada` : 'Reunión: a tiempo';
+    box.className = 'timer-pace ' + kind;
+    box.innerHTML = `<span>${txt}</span><small>${done.length} de ${meetingParts.length} tomadas</small>`;
+  }
+  function nextPartLabel() {
+    if (selectedPartIdx < 0) return '';
+    const n = meetingParts.find((p, i) => i > selectedPartIdx && !partDoneEntry(p.label));
+    return n ? (n.shortLabel || n.label) : '';
+  }
+  // Botón único: Iniciar → Terminó (guarda y deja lista la siguiente) → …
+  function updateMainBtn() {
+    const btn = $('timerMainBtn');
+    if (!btn) return;
+    const running = !!timerInterval;
+    const paused = !running && timerTotal > 0 && timerRemaining !== timerTotal;
+    const elapsed = Math.max(0, timerTotal - timerRemaining);
+    if (running) {
+      const nx = nextPartLabel();
+      btn.className = 'timer-main';
+      btn.innerHTML = `■ Terminó<small>Guarda ${fmtMinSec(elapsed)}${nx ? ' y sigue con: ' + escapeHtml(nx) : ''}</small>`;
+    } else if (paused) {
+      btn.className = 'timer-main go';
+      btn.innerHTML = `▶ Seguir<small>En pausa · lleva ${fmtMinSec(elapsed)}</small>`;
+    } else {
+      btn.className = 'timer-main go';
+      btn.innerHTML = '▶ Iniciar';
+    }
+    $('timerPauseBtn').classList.toggle('hidden', !running);
+    $('timerFinishBtn').classList.toggle('hidden', !paused);
+    updateTimerFs();
+  }
+  // Pantalla completa: números grandes y color según el tiempo.
+  function updateTimerFs() {
+    const fs = $('timerFs');
+    if (!fs || fs.classList.contains('hidden')) return;
+    const over = timerRemaining < 0;
+    fs.classList.toggle('danger', over);
+    fs.classList.toggle('warning', !over && timerRemaining <= 60 && timerTotal > 0);
+    fs.classList.toggle('paused', !timerInterval);
+    $('timerFsTime').textContent = $('timerDisplay').textContent;
+    const lbl = currentPresetLabel && currentPresetLabel !== 'Personalizado' ? currentPresetLabel.replace(/^Consejo \(.*\)$/, 'Consejo') : '';
+    $('timerFsPart').textContent = lbl;
+    $('timerFsWho').textContent = currentPartWho || '';
+    const paused = !timerInterval && timerTotal > 0 && timerRemaining !== timerTotal;
+    $('timerFsState').textContent = paused ? 'En pausa' + (over ? ' · pasado de tiempo' : '') : !timerInterval ? 'Tocá para empezar' : over ? 'Pasado de tiempo' : '';
+  }
+  function openTimerFs() {
+    $('timerFs').classList.remove('hidden');
+    try { if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {}); } catch (e) { /* sin soporte */ }
+    acquireWakeLock();
+    updateTimerFs();
+  }
+  function closeTimerFs() {
+    $('timerFs').classList.add('hidden');
+    try { if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {}); } catch (e) { /* sin soporte */ }
+    if (!timerInterval) releaseWakeLock();
   }
   // Después de "Marcar fin", deja lista la parte siguiente que todavía no se cronometró.
   function advanceToNextPart() {
@@ -3525,6 +3658,7 @@
     const pct = timerTotal > 0 ? Math.min(100, Math.max(0, (timerTotal - Math.max(timerRemaining, 0)) / timerTotal * 100)) : 0;
     bar.style.width = pct + '%';
     drawPipFrame();
+    updateMainBtn();
   }
   let toneFailNotified = false;
   async function ensureTone() {
@@ -3541,11 +3675,12 @@
     acquireWakeLock();
     if (timerTotal <= 0) {
       const mins = parseInt($('minutesInput').value) || 0, secs = parseInt($('secondsInput').value) || 0;
-      timerRemaining = mins * 60 + secs; timerTotal = timerRemaining; overtimeBellPlayed = false;
+      timerRemaining = mins * 60 + secs; timerTotal = timerRemaining; overtimeBellPlayed = false; oneMinuteWarned = false;
     }
     timerEndAt = Date.now() + timerRemaining * 1000;
     timerInterval = setInterval(tickTimer, 1000);
     tickTimer();
+    setTimerNow(currentPresetLabel, currentPartWho);
   }
   function tickTimer() {
     // Recalcula siempre contra la hora de finalización, no restando de a
@@ -3553,6 +3688,10 @@
     // al volver salta directo al valor correcto en vez de quedar atrasado.
     timerRemaining = Math.round((timerEndAt - Date.now()) / 1000);
     updateTimerDisplay();
+    if (timerRemaining <= 60 && timerRemaining > 0 && timerTotal > 60 && !oneMinuteWarned) {
+      oneMinuteWarned = true;
+      if (data.settings.timerVibrate !== false && navigator.vibrate) { try { navigator.vibrate([90, 70, 90]); } catch (e) { /* sin soporte */ } }
+    }
     if (timerRemaining <= 0 && !overtimeBellPlayed) {
       overtimeBellPlayed = true;
       if (!data.settings.timerMuted) playBell();
@@ -3569,11 +3708,12 @@
   function resetTimer() {
     pauseTimer();
     const mins = parseInt($('minutesInput').value) || 0, secs = parseInt($('secondsInput').value) || 0;
-    timerRemaining = mins * 60 + secs; timerTotal = timerRemaining; overtimeBellPlayed = false; timerEndAt = 0;
+    timerRemaining = mins * 60 + secs; timerTotal = timerRemaining; overtimeBellPlayed = false; oneMinuteWarned = false; timerEndAt = 0;
     updateTimerDisplay();
   }
   function updateMuteBtn() {
     $('muteBtn').innerHTML = svgIcon(data.settings.timerMuted ? 'bellOff' : 'bell', 15) + ' ' + (data.settings.timerMuted ? 'Sonido apagado' : 'Sonido activado');
+    if (typeof updateTimerOptionSwitches === 'function' && $('timerCounselSwitch')) updateTimerOptionSwitches();
   }
 
   /* ---------- Tema (claro / oscuro / automático) ---------- */
@@ -3614,14 +3754,15 @@
     if (data.timerLog.length > 50) data.timerLog = data.timerLog.slice(0, 50);
     saveData();
     renderTimerLog();
-    timerRemaining = 0; timerTotal = 0; overtimeBellPlayed = false;
+    timerRemaining = 0; timerTotal = 0; overtimeBellPlayed = false; oneMinuteWarned = false;
     markSelectedPresetBtn(null, true);
     $('timerDisplay').textContent = '00:00';
     $('timerDisplay').classList.remove('warning', 'danger');
     $('timerProgressBar').style.width = '0%';
     $('timerProgressBar').classList.remove('warning', 'danger');
     const next = advanceToNextPart();
-    showToast(next ? 'Tiempo registrado · lista la siguiente: ' + next : 'Tiempo registrado');
+    updateMainBtn();
+    showToast(next ? 'Tiempo registrado · lista la siguiente: ' + next.replace(/^Consejo \(.*\)$/, 'Consejo') : 'Tiempo registrado');
   }
 
   function renderTimerLog() {
@@ -3692,6 +3833,29 @@
   }
 
   $('timerStartBtn').addEventListener('click', startTimer);
+  $('timerMainBtn').addEventListener('click', () => { hapticTap(); if (timerInterval) finishAndLog(); else startTimer(); });
+  $('timerAdjustBtn').addEventListener('click', () => {
+    const w = $('timerInputsWrap');
+    const show = w.classList.toggle('hidden') === false;
+    $('timerAdjustBtn').setAttribute('aria-expanded', String(show));
+  });
+  $('timerFsBtn').addEventListener('click', openTimerFs);
+  $('timerFsClose').addEventListener('click', (e) => { e.stopPropagation(); closeTimerFs(); });
+  $('timerFs').addEventListener('click', () => { hapticTap(); if (timerInterval) pauseTimer(); else startTimer(); updateTimerFs(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('timerFs').classList.contains('hidden')) closeTimerFs(); });
+  document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && !$('timerFs').classList.contains('hidden')) closeTimerFs(); });
+  function updateTimerOptionSwitches() {
+    $('timerCounselSwitch').classList.toggle('on', !!data.settings.timerCounsel);
+    $('timerBellSwitch').classList.toggle('on', !data.settings.timerMuted);
+    $('timerVibrateSwitch').classList.toggle('on', data.settings.timerVibrate !== false);
+  }
+  $('timerCounselSwitch').addEventListener('click', () => {
+    data.settings.timerCounsel = !data.settings.timerCounsel;
+    saveData(); updateTimerOptionSwitches(); renderWeeklyPartsGrid();
+    showToast(data.settings.timerCounsel ? 'Consejo activado' : 'Consejo desactivado');
+  });
+  $('timerBellSwitch').addEventListener('click', () => { data.settings.timerMuted = !data.settings.timerMuted; saveData(); updateMuteBtn(); updateTimerOptionSwitches(); });
+  $('timerVibrateSwitch').addEventListener('click', () => { data.settings.timerVibrate = data.settings.timerVibrate === false; saveData(); updateTimerOptionSwitches(); });
   $('timerPauseBtn').addEventListener('click', pauseTimer);
   $('timerResetBtn').addEventListener('click', resetTimer);
   $('timerFinishBtn').addEventListener('click', finishAndLog);

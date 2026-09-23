@@ -6,6 +6,15 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Cronómetro mejorado — 23 de septiembre de 2026 (caché `asignaciones-salon-v16`)
+- **Un solo botón grande:** "▶ Iniciar" → "■ Terminó" (dice qué guarda y cuál sigue). Guarda el tiempo y deja lista la parte siguiente, sin arrancarla. En pausa pasa a "▶ Seguir" y aparece "Terminó" chico. "Pausar", "Reiniciar" y "Ajustar tiempo" (minutos a mano) quedan como botones chicos.
+- **Cómo va la reunión:** arriba, "Reunión: 1:40 atrasada" / "adelantada" / "a tiempo", sumando las diferencias de las partes ya tomadas. Cada parte tomada muestra su diferencia (+0:50 / −0:10).
+- **Pantalla completa:** reloj enorme con fondo verde, ámbar (último minuto) o rojo (pasado). Un toque pausa o sigue; ✕ o Escape sale. La pantalla no se apaga.
+- **Vibración faltando 1 minuto** (se puede apagar).
+- **Aviso de minutos faltantes:** si a una parte le faltan los minutos en el Programa, lo dice ("sin minutos cargados · usa 5") en vez de ponerlos en silencio.
+- **Consejo opcional** (apagado por defecto, vale para toda la congregación): agrega "Consejo · 1 min" después de la Lectura de la Biblia y de cada parte de "Seamos mejores maestros", con el nombre del presidente. Se guarda en el historial como "Consejo (nombre de la parte)".
+- Los botones de sonido, probar campanilla y modo flotante pasaron a una sección "Opciones" al final de la pestaña. Se actualizó la guía de uso.
+
 ## Hermanos: filtros como botoncitos — 22 de septiembre de 2026 (caché `asignaciones-salon-v15`)
 - Completa lo que había quedado afuera del mockup: en el celular, el buscador y "PDF" van en un mismo renglón y los filtros son botoncitos deslizables (Todos, Audio, Video, Micrófonos, Plataforma, Acomodadores, Cronometrista, Sin email) en vez del desplegable. En la computadora sigue el desplegable.
 
