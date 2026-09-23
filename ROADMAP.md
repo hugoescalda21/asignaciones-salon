@@ -48,8 +48,9 @@ _Actualizado el 22 de septiembre de 2026: se movió el punto "Guía de uso corta
 - Recordatorio local del día anterior.
 - Reparación automática de datos huérfanos (hermanos borrados que
   dejaban asignaciones fantasma).
-- Dos sets de pruebas automáticas (`app.test.js`, `ver.test.js`) que
-  cubren todo lo anterior.
+- Pruebas automáticas en `tests/` (`ver.test.js` para la vista pública,
+  `app.test.js` para el editor, esta última desactualizada desde que se
+  agregó el login) y `npm test` en las funciones en la nube.
 
 **Guías de uso**
 - Guía de uso corta dentro del editor (`asignaciones-salon.html`):

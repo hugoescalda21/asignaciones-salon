@@ -6,6 +6,11 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Pruebas de la vista pública guardadas en el proyecto — 22 de septiembre de 2026 (sin cambio de caché)
+- Nuevo `tests/ver.test.js` (51 pruebas, sin dependencias): Google Calendar, recordatorios, calendario desplegable, Inicio, anuncios y estructura del HTML. Se corre con `node tests/ver.test.js`.
+- `app.test.js` y su README pasaron a la carpeta `tests/`, donde el propio README decía que estaban (el script buscaba la app una carpeta más arriba). Se aclara que `app.test.js` quedó desactualizado desde que el editor pide login.
+- Nuevo `README.md` en la raíz, con una descripción corta del proyecto (es lo que se ve al abrir el repositorio en GitHub).
+
 ## Mejoras en Inicio y Anuncios — 22 de septiembre de 2026 (caché `ver-salon-v20`)
 **Inicio**
 - "Próximas reuniones" usa el mismo formato que el Calendario: filas desplegables con técnico y programa juntos, la próxima abierta (o "HOY" si es hoy).
