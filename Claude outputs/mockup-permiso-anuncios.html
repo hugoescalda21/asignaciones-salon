@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Permiso de anuncios</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EDEFEF; --surface:#FFFFFF; --ink:#212C34; --ink-soft:#5C6B74; --ink-faint:#636C71;
+    --line:#DDE1E2; --accent-gold:#A9822F; --accent-gold-text:#876825; --accent-blue:#3E6B8A;
+    --ok:#4C7A5E; --ok-bg:#EEF4EF; --bad:#A8433A; --bad-bg:#FBEAE8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#D9DDDE;font-family:'Public Sans',-apple-system,sans-serif;color:var(--ink);padding:24px 16px 48px}
+  h1.page{font-family:'Fraunces',serif;font-weight:500;font-size:22px;margin:0 0 4px;text-align:center}
+  p.lead{text-align:center;color:var(--ink-soft);font-size:13px;margin:0 auto 22px;max-width:720px;line-height:1.5}
+  .grid{display:flex;flex-wrap:wrap;gap:28px;justify-content:center;align-items:flex-start}
+  .col{display:flex;flex-direction:column;align-items:center;gap:10px;max-width:300px}
+  .label{font-size:13px;font-weight:700;text-align:center}
+  .label small{display:block;font-weight:600;color:var(--ink-soft);font-size:10.5px}
+  .note{font-size:12px;color:var(--ink-soft);line-height:1.5;width:100%}
+  .note b{color:var(--ink)}
+  .n{display:inline-flex;width:17px;height:17px;border-radius:50%;background:#E5B94E;color:#212C34;font-size:10px;font-weight:700;align-items:center;justify-content:center;margin-right:3px}
+  .hl{outline:2.5px solid #E5B94E;outline-offset:2px;position:relative}
+  .pin{position:absolute;top:-9px;left:-9px;width:18px;height:18px;border-radius:50%;background:#E5B94E;color:#212C34;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;z-index:3}
+
+  .phone{width:290px;height:620px;background:var(--bg);border-radius:28px;border:8px solid #1a1f24;overflow:hidden;position:relative;box-shadow:0 10px 30px rgba(0,0,0,.18);display:flex;flex-direction:column}
+  .ehead{background:#fff;padding:9px 12px 7px;display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--line);flex:none}
+  .ehead .dot{width:7px;height:7px;border-radius:50%;background:var(--accent-gold)}
+  .ehead b{font-family:'Fraunces',serif;font-weight:500;font-size:14px}
+  .ehead .cb{font-size:8.5px;background:var(--bg);border-radius:9px;padding:2px 7px;color:var(--ink-soft)}
+  .content{padding:10px;flex:1;overflow:hidden;position:relative}
+  .btabs{height:44px;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:center;font-size:8px;color:var(--ink-faint);flex:none}
+  .btabs span.on{color:var(--ink);font-weight:700}
+  .btabs span.gone{text-decoration:line-through;color:#C0C6C8}
+
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 11px}
+  .card h3{font-family:'Fraunces',serif;font-weight:500;font-size:14px;margin:0}
+  .card .sub{font-size:8.5px;color:var(--ink-soft);margin:1px 0 8px}
+  .hint{font-size:8.5px;color:var(--ink-soft);line-height:1.4;margin:0 0 6px}
+  .row{padding:7px 0;border-bottom:1px solid var(--line)}
+  .row:last-of-type{border-bottom:none}
+  .em{font-size:10px;font-weight:600;margin-bottom:5px;word-break:break-all}
+  .em small{font-weight:400;color:var(--ink-faint)}
+  .ctl{display:flex;align-items:center;gap:6px}
+  .sel{flex:1;border:1px solid var(--line);border-radius:6px;padding:5px 6px;font-size:9px;background:var(--bg);display:flex;justify-content:space-between}
+  .x{color:var(--ink-faint);font-size:11px}
+  .perm{display:flex;align-items:center;justify-content:space-between;margin-top:6px;font-size:9px;font-weight:600;background:var(--bg);border-radius:7px;padding:5px 7px}
+  .perm small{display:block;font-weight:500;color:var(--ink-soft);font-size:7.8px}
+  .perm.lock{color:var(--ink-soft)}
+  .tg{width:26px;height:15px;border-radius:8px;background:#C9CFD1;position:relative;flex:none}
+  .tg::after{content:'';position:absolute;top:2px;left:2px;width:11px;height:11px;border-radius:50%;background:#fff}
+  .tg.on{background:var(--ok)}
+  .tg.on::after{left:13px}
+  .tg.dis{opacity:.45}
+  .add{border-top:1px solid var(--line);margin-top:6px;padding-top:8px}
+  .in{border:1px solid var(--line);border-radius:6px;padding:6px 7px;font-size:9px;color:var(--ink-faint);margin-bottom:6px;background:#fff}
+  .btn{border:1px solid var(--line);background:#fff;border-radius:6px;font-size:9px;font-weight:700;padding:5px 8px;white-space:nowrap}
+  .btn.pri{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .chk{display:flex;align-items:center;gap:6px;font-size:9px;font-weight:600;margin-bottom:6px}
+  .chk i{width:12px;height:12px;border-radius:3px;background:var(--ok);color:#fff;font-style:normal;font-size:8px;display:flex;align-items:center;justify-content:center}
+  .badge{display:inline-block;font-size:7.5px;font-weight:700;border-radius:5px;padding:1px 5px;background:#E7EEF3;color:var(--accent-blue);margin-left:4px;vertical-align:1px}
+
+  .newbtn{background:var(--ink);color:#fff;border-radius:9px;font-size:10.5px;font-weight:700;padding:9px;margin-bottom:9px;text-align:center}
+  .sec{display:flex;align-items:center;gap:5px;font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:8px 0 5px;color:var(--ink-soft)}
+  .sec::after{content:'';flex:1;height:1px;background:var(--line)}
+  .ac{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 9px;margin-bottom:6px;position:relative}
+  .ac.pinned{border:1.5px solid var(--accent-gold)}
+  .ac .meta{font-size:7.8px;color:var(--ink-soft);margin-bottom:3px}
+  .ac .t{font-size:10.5px;font-weight:700;margin-bottom:2px}
+  .ac .xx{font-size:9px;line-height:1.4}
+  .ac .more{position:absolute;top:5px;right:6px;font-size:13px;color:var(--ink-soft)}
+  .strip{display:flex;gap:5px;margin:0 -10px 7px;padding:4px 10px}
+  .mt{flex:none;width:58px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:5px;text-align:center;font-size:8px}
+  .mt b{display:block;font-family:'Fraunces',serif;font-size:15px;font-weight:500}
+  .mt.on{border:2px solid var(--ink)}
+  .r{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--line);font-size:9.5px}
+  .r .k{color:var(--ink-soft);width:70px}
+  .r .v{flex:1;font-weight:700;background:var(--ok-bg);border:1px solid #b9d3bf;border-radius:5px;padding:4px 6px}
+  .deny{background:var(--bad-bg);border:1px solid #E7C3BE;color:var(--bad);border-radius:9px;padding:8px 9px;font-size:9px;line-height:1.45;margin-top:8px}
+
+  .srv{max-width:900px;margin:32px auto 0;display:flex;flex-wrap:wrap;gap:14px;justify-content:center}
+  .srv .box{flex:1 1 260px;background:#fff;border-radius:12px;padding:14px 16px;border-top:4px solid var(--accent-blue)}
+  .srv h4{font-family:'Fraunces',serif;font-weight:500;font-size:15px;margin:0 0 6px}
+  .srv p{font-size:12.5px;color:var(--ink-soft);line-height:1.55;margin:0}
+  .reco{max-width:900px;margin:18px auto 0;background:#fff;border-radius:12px;padding:18px 22px;border-left:4px solid var(--accent-gold)}
+  .reco h2{font-family:'Fraunces',serif;font-weight:500;font-size:17px;margin:0 0 8px}
+  .reco p{font-size:13px;line-height:1.6;color:var(--ink-soft);margin:0 0 8px}
+  .reco p strong{color:var(--ink)}
+  table.t{border-collapse:collapse;width:100%;font-size:12px;margin:6px 0 10px}
+  table.t th,table.t td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left}
+  table.t th{font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em}
+  table.t td.y{color:var(--ok);font-weight:700}
+  table.t td.no{color:var(--ink-faint)}
+</style>
+</head>
+<body>
+<h1 class="page">Permiso para publicar anuncios — mockup</h1>
+<p class="lead">Cada persona mantiene su rol y suma un interruptor aparte para anuncios. Se muestra cómo lo configura el Super Admin y qué ve cada uno después.</p>
+
+<div class="grid">
+
+  <!-- 1. Acceso -->
+  <div class="col">
+    <div class="label">1 · Ajustes → Acceso<small>lo ve solo el Super Admin</small></div>
+    <div class="phone">
+      <div class="ehead"><span class="dot"></span><b>Asignaciones</b><span class="cb">San Agustín</span></div>
+      <div class="content">
+        <div class="card">
+          <h3>Acceso</h3>
+          <div class="sub">Quién puede editar o ver, y con qué rol</div>
+
+          <div class="row">
+            <div class="em">hugo@gmail.com <small>(vos)</small></div>
+            <div class="ctl"><div class="sel">Super Admin <span>▾</span></div><span class="x">✕</span></div>
+            <div class="perm lock hl"><span class="pin">2</span><span>📢 Anuncios<small>El Super Admin siempre puede</small></span><div class="tg on dis"></div></div>
+          </div>
+
+          <div class="row">
+            <div class="em">martin.ruiz@gmail.com</div>
+            <div class="ctl"><div class="sel">Admin — Equipo técnico <span>▾</span></div><span class="x">✕</span></div>
+            <div class="perm hl"><span class="pin">1</span><span>📢 Puede publicar anuncios</span><div class="tg"></div></div>
+          </div>
+
+          <div class="row">
+            <div class="em">lucas.gomez@gmail.com</div>
+            <div class="ctl"><div class="sel">Admin — Asignaciones <span>▾</span></div><span class="x">✕</span></div>
+            <div class="perm"><span>📢 Puede publicar anuncios</span><div class="tg on"></div></div>
+          </div>
+
+          <div class="row">
+            <div class="em">carlos.vega@gmail.com</div>
+            <div class="ctl hl"><span class="pin">3</span><div class="sel">Solo anuncios <span>▾</span></div><span class="x">✕</span></div>
+            <div class="perm lock"><span>📢 Anuncios<small>Es lo único que puede hacer</small></span><div class="tg on dis"></div></div>
+          </div>
+
+          <div class="add">
+            <div class="in">email@ejemplo.com</div>
+            <div class="ctl" style="margin-bottom:6px"><div class="sel">Admin — Acomodadores <span>▾</span></div></div>
+            <div class="chk"><i>✓</i>También puede publicar anuncios</div>
+            <div style="text-align:right"><span class="btn pri">+ Agregar</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="btabs"><span>Programa</span><span>Cronómetro</span><span>Hermanos</span><span class="on">Ajustes</span><span>Anuncios</span></div>
+    </div>
+    <div class="note"><span class="n">1</span><b>Un interruptor por persona</b>, debajo de su rol. Sirve para cualquier rol de admin.<br><span class="n">2</span><b>El Super Admin siempre puede</b>: el interruptor aparece prendido y bloqueado, para que se entienda.<br><span class="n">3</span><b>Nuevo rol "Solo anuncios"</b>, para un hermano que publica anuncios y nada más.</div>
+  </div>
+
+  <!-- 2. Admin sin permiso -->
+  <div class="col">
+    <div class="label">2 · Admin técnico SIN permiso<small>martin.ruiz@gmail.com</small></div>
+    <div class="phone">
+      <div class="ehead"><span class="dot"></span><b>Asignaciones</b><span class="cb">San Agustín</span></div>
+      <div class="content">
+        <div style="font-family:'Fraunces',serif;font-size:12px;text-align:center;margin-bottom:4px">‹ &nbsp; Septiembre 2026 📅 &nbsp; ›</div>
+        <div class="strip"><div class="mt">JUE<b>17</b></div><div class="mt">DOM<b>20</b></div><div class="mt on">JUE<b>24</b></div><div class="mt">DOM<b>27</b></div></div>
+        <div style="font-family:'Fraunces',serif;font-size:13px;margin-bottom:6px">Jueves 24 · Entre semana</div>
+        <div class="card" style="padding:4px 10px">
+          <div class="r"><span class="k">Audio</span><span class="v">Hugo Escalda</span></div>
+          <div class="r"><span class="k">Video y Zoom</span><span class="v">Martín Ruiz</span></div>
+          <div class="r"><span class="k">Micrófono 1</span><span class="v">Lucas Gómez</span></div>
+          <div class="r"><span class="k">Micrófono 2</span><span class="v">Pablo Sosa</span></div>
+          <div class="r" style="border:none"><span class="k">Plataforma</span><span class="v">Tomás Bravo</span></div>
+        </div>
+        <div class="deny hl"><span class="pin">5</span>🔒 Aunque alguien intente cambiar los anuncios por fuera de la app, <b>Firebase lo rechaza</b>: la regla del servidor revisa que su email tenga el permiso.</div>
+      </div>
+      <div class="btabs hl" style="outline-offset:-3px"><span class="pin" style="top:-10px;left:auto;right:8px">4</span><span class="on">Programa</span><span class="gone">Anuncios</span></div>
+    </div>
+    <div class="note"><span class="n">4</span><b>No le aparece la pestaña Anuncios.</b> Sigue viendo los anuncios en la vista de la congregación, como todos.<br><span class="n">5</span><b>La protección real está en el servidor</b>, no solo en ocultar el botón.</div>
+  </div>
+
+  <!-- 3. Solo anuncios -->
+  <div class="col">
+    <div class="label">3 · Rol "Solo anuncios"<small>carlos.vega@gmail.com</small></div>
+    <div class="phone">
+      <div class="ehead"><span class="dot"></span><b>Asignaciones</b><span class="cb">San Agustín</span></div>
+      <div class="content">
+        <div class="newbtn">+ Nuevo anuncio</div>
+        <div class="sec">📌 Fijados · 1</div>
+        <div class="ac pinned"><div class="meta">Hace 2 días · hasta el evento</div><div class="more">⋯</div><div class="t">Visita del superintendente</div><div class="xx">Esta semana nos visita el superintendente de circuito.</div></div>
+        <div class="sec">Activos · 2</div>
+        <div class="ac"><div class="meta">Ayer · hasta el 22 oct</div><div class="more">⋯</div><div class="t">Limpieza del Salón</div><div class="xx">Le toca al grupo 3 el sábado.</div></div>
+        <div class="ac"><div class="meta">18 sept · hasta el 18 oct</div><div class="more">⋯</div><div class="xx">Programa de la asamblea en el adjunto.</div></div>
+        <div class="deny hl" style="background:#EEF4EF;border-color:#b9d3bf;color:var(--ok)"><span class="pin">6</span>Entra directo a Anuncios. No ve ni puede tocar asignaciones, hermanos ni ajustes, ni desde la app ni por fuera de ella.</div>
+      </div>
+      <div class="btabs"><span class="on">Anuncios</span></div>
+    </div>
+    <div class="note"><span class="n">6</span><b>Solo la pestaña Anuncios</b>, con todo lo que ya tiene (nuevo, editar, duplicar, borrar). Para ver sus propias asignaciones usa la vista de la congregación, como cualquiera.</div>
+  </div>
+
+</div>
+
+<div class="srv">
+  <div class="box"><h4>🔒 Regla en Firebase (datos)</h4><p>Si alguien sin permiso guarda y los anuncios cambiaron, se rechaza. Quien tiene "Solo anuncios" solo puede cambiar los anuncios. Y solo un Super Admin puede cambiar quién tiene el permiso: nadie se lo puede dar a sí mismo.</p></div>
+  <div class="box"><h4>📎 Regla de archivos (fotos y PDF)</h4><p>Solo los que pueden publicar anuncios suben o borran adjuntos. Leerlos sigue igual.</p></div>
+  <div class="box"><h4>▶ Para activarlo</h4><p>Una vez, en la terminal: <b>firebase deploy --only firestore:rules,storage</b>. Te aviso cuando esté listo y lo probamos con un email de prueba.</p></div>
+</div>
+
+<div class="reco">
+  <h2>Quién puede qué</h2>
+  <table class="t">
+    <tr><th>Rol</th><th>Anuncios</th></tr>
+    <tr><td>Super Admin</td><td class="y">Siempre</td></tr>
+    <tr><td>Admin — Equipo técnico / Acomodadores / Asignaciones</td><td>Solo si tiene el interruptor prendido</td></tr>
+    <tr><td>Solo anuncios (nuevo)</td><td class="y">Sí, y nada más</td></tr>
+    <tr><td>Solo ver</td><td class="no">No (va a la vista de la congregación)</td></tr>
+  </table>
+  <p><strong>Al activarlo:</strong> los admins que ya existen arrancan <strong>sin</strong> el permiso, así desde el primer momento solo publican los Super Admin. Después prendés el interruptor a los hermanos aprobados. Si preferís que arranquen todos con permiso y se lo vayas sacando, también se puede.</p>
+  <p><strong>Quién publicó cada anuncio</strong> sigue apareciendo solo en la lista de gestión (para los que pueden publicar), nunca en la vista de la congregación.</p>
+</div>
+</body>
+</html>
