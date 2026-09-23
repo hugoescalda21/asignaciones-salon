@@ -582,6 +582,42 @@
   .br-chip { flex-shrink: 0; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); border-radius: 16px; padding: 6px 12px; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
   .br-chip.active { background: var(--ink); color: #fff; border-color: var(--ink); }
 
+  /* ---------- Tira de reuniones del mes ---------- */
+  .mstrip-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+  .mstrip-head .ms-arrow { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius-s); width: 36px; height: 36px; font-size: 16px; font-weight: 700; color: var(--ink); cursor: pointer; flex-shrink: 0; }
+  .mstrip-month { border: none; background: none; font-family: 'Fraunces', serif; font-size: 17px; color: var(--ink); cursor: pointer; padding: 6px 10px; border-radius: 8px; text-transform: capitalize; }
+  .mstrip-month:hover { background: var(--surface); }
+  .mstrip { display: flex; gap: 8px; overflow-x: auto; padding: 9px 2px 6px; margin: 0 -2px 10px; scrollbar-width: none; scroll-snap-type: x proximity; }
+  .mstrip::-webkit-scrollbar { display: none; }
+  .ms-item { position: relative; flex: 0 0 76px; scroll-snap-align: center; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px 6px 7px; text-align: center; font: inherit; color: var(--ink); cursor: pointer; overflow: visible; }
+  .ms-item::before { content: ''; position: absolute; left: 10px; right: 10px; top: 0; height: 3px; border-radius: 0 0 3px 3px; background: var(--accent-blue); }
+  .ms-item.finde::before { background: var(--accent-gold); }
+  .ms-item .ms-dw { display: block; font-size: 10px; font-weight: 700; color: var(--ink-faint); text-transform: uppercase; }
+  .ms-item .ms-dn { display: block; font-family: 'Fraunces', serif; font-size: 22px; line-height: 1.05; }
+  .ms-item .ms-ty { display: block; font-size: 9.5px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.02em; }
+  .ms-item .ms-st { display: block; margin-top: 4px; font-size: 10px; font-weight: 700; border-radius: 7px; padding: 2px 0; }
+  .ms-st.ok { background: #E4EFE6; color: var(--ok); }
+  .ms-st.miss { background: var(--warn-bg); color: #7A5A0E; }
+  .ms-st.none { background: var(--bg); color: var(--ink-faint); }
+  .ms-item.past { opacity: 0.55; }
+  .ms-item.active { border: 2px solid var(--emphasis); box-shadow: 0 4px 12px rgba(33,44,52,0.16); opacity: 1; }
+  .ms-next { position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: var(--accent-blue); color: #fff; font-size: 8.5px; font-weight: 700; border-radius: 6px; padding: 1px 6px; white-space: nowrap; }
+  .meeting-title { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 0 2px 12px; }
+  .meeting-title b { font-family: 'Fraunces', serif; font-weight: 500; font-size: 19px; }
+  .meeting-title small { font-size: 13px; color: var(--ink-soft); font-weight: 600; }
+  .subtab { white-space: nowrap; }
+  .subtab .st-count { font-weight: 500; opacity: 0.8; margin-left: -3px; font-size: 11.5px; }
+  .mcal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; font-size: 13px; }
+  .mcal-grid .mc-h { font-size: 11px; font-weight: 700; color: var(--ink-faint); padding-bottom: 2px; }
+  .mcal-grid .mc { border-radius: 8px; padding: 8px 0 6px; background: var(--bg); color: var(--ink-soft); border: 1px solid transparent; font: inherit; }
+  .mcal-grid .mc.e { background: none; }
+  .mcal-grid .mc.m { background: var(--surface); border-color: var(--line); color: var(--ink); font-weight: 700; cursor: pointer; }
+  .mcal-grid .mc.m i { display: block; width: 7px; height: 7px; border-radius: 50%; margin: 3px auto 0; }
+  .mcal-grid .mc.active { border: 2px solid var(--emphasis); }
+  .mcal-grid .mc.today { outline: 2px solid var(--accent-gold); outline-offset: -2px; }
+  .mcal-legend { display: flex; justify-content: center; gap: 14px; font-size: 11.5px; color: var(--ink-soft); margin-top: 10px; }
+  .mcal-legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+
   /* ---------- Equipo técnico compacto: una fila por puesto ---------- */
   .tec-list { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 2px 14px 6px; margin-bottom: 16px; box-shadow: var(--shadow-sm); }
   .tec-list .tec-section-label { display: flex; align-items: center; gap: 6px; font-family: 'Public Sans', sans-serif; font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; margin: 12px 0 2px; }
@@ -994,7 +1030,16 @@
 
   <!-- ---------------- Programa ---------------- -->
   <section class="tab-panel" id="panel-programa">
-    <div class="week-bar">
+    <div class="mstrip-wrap">
+      <div class="mstrip-head">
+        <button type="button" class="ms-arrow" id="msPrevMonth" aria-label="Mes anterior" title="Mes anterior">‹</button>
+        <button type="button" class="mstrip-month" id="msMonthBtn" aria-label="Elegir fecha en el calendario"><span id="msMonthLabel"></span> 📅</button>
+        <button type="button" class="ms-arrow" id="msNextMonth" aria-label="Mes siguiente" title="Mes siguiente">›</button>
+      </div>
+      <div class="mstrip" id="meetingStrip" role="tablist" aria-label="Reuniones del mes"></div>
+      <div class="meeting-title"><b id="meetingTitle"></b><small id="meetingTime"></small></div>
+    </div>
+    <div class="week-bar hidden">
       <div class="week-label-row">
         <div class="week-label" id="weekLabel"></div>
       </div>
@@ -1007,15 +1052,14 @@
     </div>
 
     <div class="subtabs" id="subtabsBar">
-      <button type="button" class="subtab active" data-subtab="tecnico" id="subtabTecnico"><span class="subtab-dot" id="dotTecnico"></span>Equipo técnico</button>
-      <button type="button" class="subtab" data-subtab="programa" id="subtabPrograma"><span class="subtab-dot" id="dotPrograma"></span>Programa</button>
+      <button type="button" class="subtab active" data-subtab="tecnico" id="subtabTecnico"><span class="subtab-dot" id="dotTecnico"></span>Equipo técnico<span class="st-count" id="countTecnico"></span></button>
+      <button type="button" class="subtab" data-subtab="programa" id="subtabPrograma"><span class="subtab-dot" id="dotPrograma"></span>Programa<span class="st-count" id="countPrograma"></span></button>
     </div>
 
-    <div class="type-pills">
+    <div class="type-pills hidden">
       <button class="pill active" data-type="semana" id="pillSemana">Entre semana<span class="pill-date" id="pillSemanaDate"></span></button>
       <button class="pill" data-type="finde" id="pillFinde">Fin de semana<span class="pill-date" id="pillFindeDate"></span></button>
     </div>
-    <div class="topic-bar"><span class="tb-lb">Tema</span><input type="text" id="topicInput" class="topic-input" placeholder="Sin tema cargado — tocá para escribirlo" aria-label="Tema de esta reunión"></div>
     <div class="completeness-badge" id="completenessBadge"></div>
 
     <div id="technicalSection">
@@ -1327,11 +1371,11 @@
       </details>
       <details class="guide-item">
         <summary><span class="gicon" data-icon="sonido"></span>Equipo técnico<span class="chev">›</span></summary>
-        <p>Pestaña Programa → subpestaña "Equipo técnico": una fila por puesto. Al tocar un puesto aparecen primero los disponibles, empezando por quien hace más tiempo que no lo hace; después los que ya tienen algo en esa reunión. "Auto-asignar" completa los vacíos por equidad, sin repetir el puesto de la semana anterior, y se puede deshacer. Si hay conflictos, "Usar sugeridos" los resuelve de un toque. El menú ⋯ de cada puesto tiene el reemplazo "si no llega" y "Quitar asignación". El tema de la reunión se escribe arriba, en la barra "Tema".</p>
+        <p>Pestaña Programa → subpestaña "Equipo técnico": una fila por puesto. Al tocar un puesto aparecen primero los disponibles, empezando por quien hace más tiempo que no lo hace; después los que ya tienen algo en esa reunión. "Auto-asignar" completa los vacíos por equidad, sin repetir el puesto de la semana anterior, y se puede deshacer. Si hay conflictos, "Usar sugeridos" los resuelve de un toque. El menú ⋯ de cada puesto tiene el reemplazo "si no llega" y "Quitar asignación". </p>
       </details>
       <details class="guide-item">
         <summary><span class="gicon" data-icon="book"></span>Programa de la reunión<span class="chev">›</span></summary>
-        <p>Subpestaña "Programa": Presidente, oraciones, cánticos, Tesoros de la Biblia, Seamos mejores maestros y Nuestra Vida Cristiana. Los números de cada parte (1, 2, 3...) se acomodan solos según cuántas partes cargues. Al elegir quién tiene cada parte, arriba aparecen los disponibles, empezando por quien hace más tiempo que no tiene una; más abajo, los que ya tienen algo en esa reunión y los no disponibles. En el fin de semana, "+ Viene de otra congregación" permite cargar un orador visitante. En Hermanos se puede marcar qué partes del programa puede tener cada uno (opcional). "Auto-asignar" del equipo técnico evita poner ahí a alguien que ya tiene una parte acá.</p>
+        <p>Arriba está la tira con las reuniones del mes: cada una dice si está completa (✓) o cuánto le falta; tocás una y cargás esa reunión. ‹ › cambian de mes y 📅 abre un calendario. Subpestaña "Programa": Presidente, oraciones, cánticos, Tesoros de la Biblia, Seamos mejores maestros y Nuestra Vida Cristiana. Los números de cada parte (1, 2, 3...) se acomodan solos según cuántas partes cargues. Al elegir quién tiene cada parte, arriba aparecen los disponibles, empezando por quien hace más tiempo que no tiene una; más abajo, los que ya tienen algo en esa reunión y los no disponibles. En el fin de semana, "+ Viene de otra congregación" permite cargar un orador visitante. En Hermanos se puede marcar qué partes del programa puede tener cada uno (opcional). "Auto-asignar" del equipo técnico evita poner ahí a alguien que ya tiene una parte acá.</p>
       </details>
       <details class="guide-item">
         <summary><span class="gicon" data-icon="usher"></span>Sala auxiliar<span class="chev">›</span></summary>
@@ -1373,6 +1417,19 @@
         <p>Ajustes → Reporte anual de equidad (quién cubrió qué a lo largo del año) y Copia de seguridad (exportar/importar todo en un archivo, por si necesitás restaurar algo).</p>
       </details>
     </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="meetingCalOverlay">
+  <div class="modal" style="max-width:400px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px;">
+      <button type="button" class="btn icon-only" id="mcalPrev" aria-label="Mes anterior">‹</button>
+      <h3 id="mcalTitle" style="margin:0; text-transform:capitalize;">Mes</h3>
+      <button type="button" class="btn icon-only" id="mcalNext" aria-label="Mes siguiente">›</button>
+    </div>
+    <div id="mcalGrid" class="mcal-grid"></div>
+    <div class="mcal-legend"><span><i style="background:var(--ok)"></i>Completa</span><span><i style="background:var(--accent-gold)"></i>Faltan</span><span><i style="background:#C9CFD1"></i>Vacía</span></div>
+    <div class="modal-footer"><button type="button" class="btn" id="mcalCloseBtn">Cerrar</button></div>
   </div>
 </div>
 
@@ -1746,6 +1803,13 @@
     data = migrate(raw || {});
     window.data = data;
     saveData();
+    // La app abre en la próxima reunión (la de hoy, si hay).
+    const nx = nextMeetingFromToday();
+    if (nx) {
+      currentType = nx.type; currentMonday = nx.monday;
+      $('pillSemana').classList.toggle('active', nx.type === 'semana');
+      $('pillFinde').classList.toggle('active', nx.type === 'finde');
+    }
     initUiFromData();
     renderAll();
     checkBackupReminder();
@@ -2259,12 +2323,159 @@
   }));
 
   /* ---------- Programa ---------- */
+  /* ---------- Tira de reuniones: se elige la reunión directamente ---------- */
+  // Reuniones de un mes ("AAAA-MM"): días de reunión entre semana y fin de semana, en orden.
+  function meetingsOfMonth(ym) {
+    const [y, m] = ym.split('-').map(Number);
+    const days = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    const out = [];
+    for (let d = 1; d <= days; d++) {
+      const dt = new Date(Date.UTC(y, m - 1, d));
+      const dow = dt.getUTCDay();
+      const date = dt.toISOString().slice(0, 10);
+      if (dow === data.settings.weekdaySemana) out.push({ date, type: 'semana', monday: mondayOf(date) });
+      else if (dow === data.settings.weekdayFinde) out.push({ date, type: 'finde', monday: mondayOf(date) });
+    }
+    return out;
+  }
+  function todayIsoLocal() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+  // Próxima reunión desde hoy (incluye la de hoy).
+  function nextMeetingFromToday() {
+    const today = todayIsoLocal();
+    let ym = today.slice(0, 7);
+    for (let i = 0; i < 3; i++) {
+      const n = meetingsOfMonth(ym).find(x => x.date >= today);
+      if (n) return n;
+      const [y, m] = ym.split('-').map(Number);
+      ym = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`;
+    }
+    return null;
+  }
+  // Cuánto le falta a una reunión, según lo que ve cada rol.
+  function meetingStatus(monday, type) {
+    const w = data.weeks[monday] && data.weeks[monday][type];
+    const roles = rolesForCurrentUser(type);
+    const pr = (w && w.program) || {};
+    const core = type === 'finde'
+      ? [pr.presidente, pr.oracionInicial, pr.oradorPublico || (pr.oradorVisitante && pr.oradorVisitante.nombre), pr.atalayaConductor, pr.atalayaLector, pr.oracionFinal]
+      : [pr.presidente, pr.oracionInicial, pr.tesoros, pr.perlas, pr.lectura, pr.oracionFinal];
+    const showTec = currentUserRole !== 'asignaciones';
+    const showProg = currentUserRole !== 'tecnico' && currentUserRole !== 'acomodadores';
+    const tecMissing = showTec ? roles.filter(r => !(w && w.roles && w.roles[r.key])).length : 0;
+    const progMissing = showProg ? core.filter(x => !x).length : 0;
+    const tecFilled = showTec ? roles.length - tecMissing : 0;
+    const progFilled = showProg ? core.length - progMissing : 0;
+    const missing = tecMissing + progMissing;
+    const kind = missing === 0 ? 'ok' : (tecFilled + progFilled === 0 ? 'none' : 'miss');
+    return { tecMissing, progMissing, missing, kind };
+  }
+  function statusText(s) { return s.kind === 'ok' ? '✓' : s.kind === 'none' ? 'vacía' : `faltan ${s.missing}`; }
+  let stripMonth = null;       // mes que muestra la tira ("AAAA-MM")
+  let stripNeedsScroll = true;
+  function renderMeetingStrip() {
+    const strip = $('meetingStrip');
+    if (!strip || !data || !data.settings) return;
+    const curDate = dateForType(currentMonday, currentType);
+    if (!stripMonth) stripMonth = curDate.slice(0, 7);
+    const list = meetingsOfMonth(stripMonth);
+    const today = todayIsoLocal();
+    const next = nextMeetingFromToday();
+    const [yy, mm] = stripMonth.split('-').map(Number);
+    $('msMonthLabel').textContent = `${new Date(yy, mm - 1, 1).toLocaleDateString('es-ES', { month: 'long' })} ${yy}`;
+    const keep = strip.scrollLeft;
+    strip.innerHTML = list.map(x => {
+      const s = meetingStatus(x.monday, x.type);
+      const { dayName, day } = formatDate(x.date);
+      const active = x.date === curDate && x.type === currentType;
+      const isNext = next && next.date === x.date;
+      return `<button type="button" role="tab" aria-selected="${active}" class="ms-item${x.type === 'finde' ? ' finde' : ''}${active ? ' active' : ''}${x.date < today ? ' past' : ''}" data-ms-date="${x.date}" data-ms-type="${x.type}" aria-label="${dayName} ${day}, ${x.type === 'finde' ? 'fin de semana' : 'entre semana'}: ${statusText(s)}">
+        ${isNext ? '<span class="ms-next">PRÓXIMA</span>' : ''}
+        <span class="ms-dw">${dayName.slice(0, 3)}</span><span class="ms-dn">${day}</span><span class="ms-ty">${x.type === 'finde' ? 'Finde' : 'Semana'}</span>
+        <span class="ms-st ${s.kind}">${statusText(s)}</span>
+      </button>`;
+    }).join('');
+    strip.scrollLeft = keep;
+    if (stripNeedsScroll) {
+      stripNeedsScroll = false;
+      const act = strip.querySelector('.ms-item.active') || strip.querySelector('.ms-item:not(.past)');
+      if (act) strip.scrollLeft = Math.max(0, act.offsetLeft - strip.clientWidth / 2 + act.offsetWidth / 2);
+    }
+    const { dayName, day } = formatDate(curDate);
+    $('meetingTitle').textContent = `${dayName} ${day} · ${currentType === 'finde' ? 'Fin de semana' : 'Entre semana'}`;
+    const hora = currentType === 'finde' ? data.settings.meetingTimeFinde : data.settings.meetingTimeSemana;
+    $('meetingTime').textContent = hora || '';
+  }
+  function goToMeeting(date, type) {
+    currentType = type;
+    $('pillSemana').classList.toggle('active', type === 'semana');
+    $('pillFinde').classList.toggle('active', type === 'finde');
+    stripMonth = date.slice(0, 7);
+    stripNeedsScroll = true;
+    setWeek(mondayOf(date));
+  }
+  $('meetingStrip').addEventListener('click', (e) => {
+    const it = e.target.closest('[data-ms-date]');
+    if (!it) return;
+    hapticTap();
+    goToMeeting(it.dataset.msDate, it.dataset.msType);
+  });
+  function shiftMonth(ym, n) { const [y, m] = ym.split('-').map(Number); const d = new Date(Date.UTC(y, m - 1 + n, 1)); return d.toISOString().slice(0, 7); }
+  function goToMonth(ym) {
+    const list = meetingsOfMonth(ym);
+    if (!list.length) return;
+    const today = todayIsoLocal();
+    const pick = ym === today.slice(0, 7) ? (list.find(x => x.date >= today) || list[list.length - 1]) : list[0];
+    goToMeeting(pick.date, pick.type);
+  }
+  $('msPrevMonth').addEventListener('click', () => goToMonth(shiftMonth(stripMonth || currentMonday.slice(0, 7), -1)));
+  $('msNextMonth').addEventListener('click', () => goToMonth(shiftMonth(stripMonth || currentMonday.slice(0, 7), 1)));
+  // Calendario para saltar a otra fecha, con los días de reunión marcados según su estado.
+  let mcalMonth = null;
+  function renderMeetingCal() {
+    const [y, m] = mcalMonth.split('-').map(Number);
+    $('mcalTitle').textContent = `${new Date(y, m - 1, 1).toLocaleDateString('es-ES', { month: 'long' })} ${y}`;
+    const meetings = {};
+    meetingsOfMonth(mcalMonth).forEach(x => { meetings[x.date] = x; });
+    const first = new Date(Date.UTC(y, m - 1, 1)).getUTCDay();
+    const offset = (first + 6) % 7;
+    const days = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    const curDate = dateForType(currentMonday, currentType);
+    const today = todayIsoLocal();
+    const COLOR = { ok: 'var(--ok)', miss: 'var(--accent-gold)', none: '#C9CFD1' };
+    let html = ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map(d => `<span class="mc-h">${d}</span>`).join('');
+    for (let i = 0; i < offset; i++) html += '<span class="mc e"></span>';
+    for (let d = 1; d <= days; d++) {
+      const date = `${mcalMonth}-${String(d).padStart(2, '0')}`;
+      const x = meetings[date];
+      const cls = `mc${x ? ' m' : ''}${date === curDate ? ' active' : ''}${date === today ? ' today' : ''}`;
+      if (x) {
+        const s = meetingStatus(x.monday, x.type);
+        html += `<button type="button" class="${cls}" data-mc-date="${date}" data-mc-type="${x.type}" aria-label="${d}: ${statusText(s)}">${d}<i style="background:${COLOR[s.kind]}"></i></button>`;
+      } else html += `<span class="${cls}">${d}</span>`;
+    }
+    $('mcalGrid').innerHTML = html;
+  }
+  $('msMonthBtn').addEventListener('click', () => { mcalMonth = stripMonth || currentMonday.slice(0, 7); renderMeetingCal(); $('meetingCalOverlay').classList.remove('hidden'); });
+  $('mcalPrev').addEventListener('click', () => { mcalMonth = shiftMonth(mcalMonth, -1); renderMeetingCal(); });
+  $('mcalNext').addEventListener('click', () => { mcalMonth = shiftMonth(mcalMonth, 1); renderMeetingCal(); });
+  $('mcalCloseBtn').addEventListener('click', () => $('meetingCalOverlay').classList.add('hidden'));
+  $('meetingCalOverlay').addEventListener('click', (e) => { if (e.target.id === 'meetingCalOverlay') $('meetingCalOverlay').classList.add('hidden'); });
+  $('mcalGrid').addEventListener('click', (e) => {
+    const c = e.target.closest('[data-mc-date]');
+    if (!c) return;
+    $('meetingCalOverlay').classList.add('hidden');
+    goToMeeting(c.dataset.mcDate, c.dataset.mcType);
+  });
+
   function updateWeekLabel() {
     const start = new Date(currentMonday + 'T00:00:00');
     const end = new Date(start); end.setDate(end.getDate() + 6);
     $('weekLabel').textContent = `Semana del ${start.getDate()} al ${end.getDate()} de ${monthKey(currentMonday)}`;
     $('weekDateInput').value = currentMonday;
     updatePillDates();
+    const cd = dateForType(currentMonday, currentType).slice(0, 7);
+    if (stripMonth !== cd) { stripMonth = cd; stripNeedsScroll = true; }
+    renderMeetingStrip();
   }
   function updatePillDates() {
     const sd = formatDate(dateForType(currentMonday, 'semana'));
@@ -2725,7 +2936,6 @@
     const roles = rolesForCurrentUser(currentType);
     const week = weekView(currentMonday);
     const typeObj = week[currentType];
-    $('topicInput').value = typeObj.topic || '';
     const usedIds = new Set(Object.values(typeObj.roles).filter(Boolean));
     programAssignedIds(typeObj.program, currentType).forEach(id => usedIds.add(id));
     const af = autoFilled && autoFilled.monday === currentMonday && autoFilled.type === currentType ? autoFilled.keys : {};
@@ -3093,7 +3303,6 @@
         <div class="agenda-date"><div class="dow">${row.dayName.slice(0, 3)}</div><div class="num">${row.day}</div></div>
         <div class="agenda-body">
           <div class="agenda-type">${row.type === 'finde' ? 'Fin de semana' : 'Entre semana'}</div>
-          ${row.topic ? `<div class="agenda-topic">${escapeHtml(row.topic)}</div>` : ''}
           <div class="chip-row">${chips}</div>
         </div>
       </div>`;
@@ -3158,7 +3367,6 @@
           <span class="cal-chev" aria-hidden="true">›</span>
         </button>
         <div class="cal-b">
-          ${row.w.topic ? `<div class="agenda-topic">${escapeHtml(row.w.topic)}</div>` : ''}
           <div class="cal-g" style="color:var(--role-sonido)">Equipo técnico</div>${tec}
           <div class="cal-g" style="color:var(--role-program, #8C5A6E)">Programa</div>${prog}
         </div>
@@ -3262,6 +3470,11 @@
     const dotP = $('dotPrograma');
     dotP.classList.toggle('ok', progState === 'complete');
     dotP.classList.toggle('warn', progState !== 'complete');
+    const st = meetingStatus(currentMonday, currentType);
+    const ct = $('countTecnico'), cp = $('countPrograma');
+    if (ct) ct.textContent = st.tecMissing ? ` · faltan ${st.tecMissing}` : ' · ✓';
+    if (cp) cp.textContent = st.progMissing ? ` · faltan ${st.progMissing}` : ' · ✓';
+    renderMeetingStrip();
   }
 
   function renderMonthCalendar() {
@@ -3323,12 +3536,6 @@
     }));
   }
 
-  $('topicInput').addEventListener('change', (e) => {
-    const week = ensureWeek(currentMonday);
-    week[currentType].topic = e.target.value.trim();
-    saveData();
-    updateTimerTopicLabel();
-  });
 
   function setWeek(monday) { currentMonday = monday; autoFilled = null; updateWeekLabel(); renderRoleCards(); renderMonthTable(); renderMonthCalendar(); updateTimerTopicLabel(); if (currentSubtab === 'programa') renderProgramSection(); }
 
@@ -3378,8 +3585,8 @@
   }
   $('copyPrevBtn').addEventListener('click', copyPreviousWeek);
   $('weekDateInput').addEventListener('change', (e) => setWeek(mondayOf(e.target.value)));
-  $('pillSemana').addEventListener('click', () => { currentType = 'semana'; $('pillSemana').classList.add('active'); $('pillFinde').classList.remove('active'); renderRoleCards(); updateTimerTopicLabel(); if (currentSubtab === 'programa') renderProgramSection(); });
-  $('pillFinde').addEventListener('click', () => { currentType = 'finde'; $('pillFinde').classList.add('active'); $('pillSemana').classList.remove('active'); renderRoleCards(); updateTimerTopicLabel(); if (currentSubtab === 'programa') renderProgramSection(); });
+  $('pillSemana').addEventListener('click', () => { currentType = 'semana'; stripNeedsScroll = true; $('pillSemana').classList.add('active'); $('pillFinde').classList.remove('active'); renderRoleCards(); updateTimerTopicLabel(); if (currentSubtab === 'programa') renderProgramSection(); });
+  $('pillFinde').addEventListener('click', () => { currentType = 'finde'; stripNeedsScroll = true; $('pillFinde').classList.add('active'); $('pillSemana').classList.remove('active'); renderRoleCards(); updateTimerTopicLabel(); if (currentSubtab === 'programa') renderProgramSection(); });
   $('autoAssignBtn').addEventListener('click', autoAssign);
 
   /* ---------- No disponibles solo esta reunión ---------- */
@@ -3496,11 +3703,6 @@
       doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
       doc.text(`${t === 'finde' ? 'Fin de semana' : 'Entre semana'} — ${dayName} ${day} de ${MESES[new Date(date + 'T00:00:00').getMonth()]}`, 40, y);
       let tableStartY = y + 12;
-      if (week.topic) {
-        doc.setFont('helvetica', 'italic'); doc.setFontSize(10.5); doc.setTextColor(90, 100, 108);
-        doc.text(week.topic, 40, y + 16);
-        tableStartY = y + 26;
-      }
       if (currentUserRole !== 'asignaciones') {
         const body = roles.filter(r => t !== 'finde' || r.key !== 'cronometrista').map(r => {
           const p = data.publishers.find(pp => pp.id === week.roles[r.key]);
@@ -3716,7 +3918,6 @@
     const typeObj = weekView(currentMonday)[currentType];
     const week = typeObj.roles;
     const lines = [`🏛️ *${congName}*`, `*Asignaciones — ${dayName} ${day} de ${monthKey(date)}*`];
-    if (typeObj.topic) lines.push(`_Tema: ${typeObj.topic}_`);
     lines.push('');
     if (currentUserRole !== 'asignaciones') {
       rolesForCurrentUser(currentType).forEach(r => { const p = data.publishers.find(pp => pp.id === week[r.key]); lines.push(`${r.emoji} *${r.label}:* ${p ? p.name : '—'}`); });
@@ -3819,11 +4020,8 @@
   });
 
   function updateTimerTopicLabel() {
-    const topic = weekView(currentMonday)[currentType].topic;
     const { dayName, day } = formatDate(dateForType(currentMonday, currentType));
-    $('timerTopicLabel').textContent = topic
-      ? `${currentType === 'finde' ? 'Fin de semana' : 'Entre semana'} — ${dayName} ${day}: ${topic}`
-      : `${currentType === 'finde' ? 'Fin de semana' : 'Entre semana'} — ${dayName} ${day} (sin tema cargado)`;
+    $('timerTopicLabel').textContent = `${currentType === 'finde' ? 'Fin de semana' : 'Entre semana'} — ${dayName} ${day}`;
   }
 
   // Partes de la reunión seleccionada, en orden y con quién las tiene (salen del Programa).

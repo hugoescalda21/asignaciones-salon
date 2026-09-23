@@ -6,6 +6,13 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Tira de reuniones y sin "tema" — 23 sep 2026 (caché asignaciones-salon-v20, ver-salon-v22)
+
+- Programa: en lugar de elegir semana y después "Entre semana / Fin de semana", arriba hay una tira con todas las reuniones del mes. Cada una muestra si está completa (✓), cuánto le falta o si está vacía; las pasadas se ven atenuadas y la próxima dice "PRÓXIMA".
+- ‹ › cambian de mes; tocando el mes (📅) se abre un calendario con los días de reunión coloreados según su estado.
+- La app abre directamente en la próxima reunión. Las subpestañas dicen cuánto falta en cada una ("Equipo técnico · faltan 2", "Programa · ✓").
+- Se quitó el "tema de la reunión": ya no se carga ni aparece en listas, PDF, WhatsApp, cronómetro ni en la vista pública.
+
 ## Equipo técnico: compacto, selector con ayuda, conflictos de un toque — 23 de septiembre de 2026 (caché `asignaciones-salon-v19`)
 - **Una fila por puesto** dentro de una sola lista, agrupada por sección y con sus colores (antes, tarjetas altas en dos columnas). El equipo completo entra en una pantalla del celular. Los puestos con conflicto quedan en rojo y dicen por qué.
 - **Selector con ayuda:** solo los habilitados para ese puesto, agrupados en *Disponibles* (primero quien hace más tiempo que no lo hace: "micrófonos: hace 5 sem." / "nunca"), *Ya tienen algo en esta reunión* (con qué) y *No disponibles*. Al elegir, los demás selectores se actualizan.

@@ -1057,7 +1057,6 @@
         <span class="cal-chev" aria-hidden="true">›</span>
       </button>
       <div class="cal-b">
-        ${row.topic ? `<div class="cal-topic">${escapeHtml(row.topic)}</div>` : ''}
         <div class="cal-g" style="color:var(--role-sonido)">Equipo técnico</div>
         ${tecHtml}
         <div class="cal-g" style="color:var(--role-program)">Programa</div>
@@ -1309,7 +1308,6 @@
         <div class="agenda-date"><div class="dow">${row.dayName.slice(0, 3)}</div><div class="num">${row.day}</div></div>
         <div class="agenda-body">
           <div class="agenda-type">${row.type === 'finde' ? 'Fin de semana' : 'Entre semana'}</div>
-          ${row.topic ? `<div class="agenda-topic">${escapeHtml(row.topic)}</div>` : ''}
           <div class="chip-row">${chips}</div>
         </div>
       </div>`;
@@ -1343,7 +1341,6 @@
         <div class="day-modal-type">${meetingType === 'finde' ? 'Fin de semana' : 'Entre semana'}</div>
       </div>
       <p class="day-modal-sub">${escapeHtml(monthKey(dateStr))}</p>
-      ${w.topic ? `<div class="agenda-topic">${escapeHtml(w.topic)}</div>` : ''}
       ${techHtml || '<div class="chip-row"><div class="chip empty">Equipo técnico no cargado</div></div>'}
       ${progHtml ? `<div class="tec-section-label" style="margin-top:14px; color:var(--role-program)">Programa</div>${progHtml}` : ''}
       <button type="button" class="day-modal-close" id="dayModalCloseBtn">Cerrar</button>
