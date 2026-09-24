@@ -1,7 +1,7 @@
 /**
  * Función en la nube — Avisos push y recordatorios
  */
-const { onDocumentUpdated, onDocumentDeleted, onDocumentUpdatedWithAuthContext, onDocumentCreated } = require('firebase-functions/v2/firestore');
+const { onDocumentUpdated, onDocumentDeleted, onDocumentUpdatedWithAuthContext, onDocumentCreated, onDocumentWritten } = require('firebase-functions/v2/firestore');
 const { onRequest } = require('firebase-functions/v2/https');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const admin = require('firebase-admin');
@@ -12,7 +12,8 @@ const messaging = admin.messaging();
 
 const REGION = 'southamerica-east1';
 const { roleLabel, collectNewlyAssignedIds, avisoPreview, selectNewAvisos, notificationForNewAvisos, validateReminder, reminderDocId, ROLES_MAP,
-  arParts, addDaysIso, remindersDue, reminderMessage, sentReminderId, roleAreasFor, disallowedWeekChanges, guardSummary, accessRequestMessage } = require('./lib');
+  arParts, addDaysIso, remindersDue, reminderMessage, sentReminderId, roleAreasFor, disallowedWeekChanges, guardSummary, accessRequestMessage,
+  conductorAssignments, newConductors, conductorMessage, newTerritoryAssignments } = require('./lib');
 
 // La app vive en GitHub Pages bajo /asignaciones-salon/, no en la raíz del
 // dominio: un link o ícono con "/" apunta a hugoescalda21.github.io/ y no a la app.
@@ -300,6 +301,87 @@ exports.onAccessRequest = onDocumentCreated({ document: 'congregations/{code}/so
   return null;
 });
 
+/* ---------- Avisos de salidas y territorios ---------- */
+// Manda un aviso a todos los celulares de esos hermanos.
+async function sendToPubs(code, pubIds, msg, link, kind, tag) {
+  const ids = [...new Set(pubIds.filter(Boolean))];
+  if (!ids.length) return 0;
+  const snap = await db.collection('pushSubscriptions').where('code', '==', code).get();
+  const tokens = snap.docs.filter((d) => ids.includes(d.data().pubId)).map((d) => d.id);
+  await Promise.allSettled(tokens.map((token) => messaging.send({
+    token, notification: msg, android: { priority: 'high' },
+    webpush: { headers: { Urgency: 'high', TTL: '86400' }, fcmOptions: { link }, notification: { badge: BADGE_URL, vibrate: [200, 100, 200], tag } }
+  }).then(() => markSent(token, kind)).catch((err) => {
+    console.error('[' + kind + '] error enviando:', err && err.code, err && err.message);
+    markFailed(token, err, kind);
+    if (err && STALE_CODES.includes(err.code)) return db.collection('pushSubscriptions').doc(token).delete().catch(() => {});
+  })));
+  return tokens.length;
+}
+const firstName = (cong, pubId) => { const p = ((cong && cong.publishers) || []).find((x) => x.id === pubId); return p && p.name ? p.name.split(' ')[0] : ''; };
+
+// Conductor nuevo en una salida → le avisa ("Hola Martín, conducís la salida del martes 7").
+exports.onSalidasWrite = onDocumentWritten({ document: 'congregations/{code}/salidas/{gid}', region: REGION }, async (event) => {
+  const code = event.params.code;
+  const before = event.data.before.exists ? event.data.before.data() : {};
+  const after = event.data.after.exists ? event.data.after.data() : null;
+  if (!after) return null;
+  const { dateIso: hoyIso } = arParts(new Date());
+  const nuevos = newConductors(before, after, hoyIso, 56);
+  if (!nuevos.length) return null;
+  const ref = db.collection('congregations').doc(code);
+  const [congSnap, lugSnap] = await Promise.all([ref.get(), ref.collection('terr').doc('lugares').get()]);
+  const cong = congSnap.data() || {};
+  const lugares = (lugSnap.exists && lugSnap.data().lista) || {};
+  for (const a of nuevos) {
+    const msg = conductorMessage(a, firstName(cong, a.pubId), lugares[a.lugar] ? lugares[a.lugar].nombre : '');
+    const n = await sendToPubs(code, [a.pubId], msg, verLink(code), 'asignacion', `salida-${a.id}-${a.dateIso}`);
+    console.log('[salidas] conductor nuevo', a.pubId, a.dateIso, '· celulares:', n);
+  }
+  return null;
+});
+
+// Territorio asignado → aviso al hermano (o al encargado y auxiliar del grupo).
+exports.onTerritoriosWrite = onDocumentWritten({ document: 'congregations/{code}/terr/{docId}', region: REGION }, async (event) => {
+  if (event.params.docId !== 'territorios') return null;
+  const code = event.params.code;
+  const before = event.data.before.exists ? (event.data.before.data().lista || {}) : {};
+  const after = event.data.after.exists ? (event.data.after.data().lista || {}) : {};
+  const nuevos = newTerritoryAssignments(before, after);
+  if (!nuevos.length) return null;
+  const ref = db.collection('congregations').doc(code);
+  const [congSnap, grSnap] = await Promise.all([ref.get(), ref.collection('terr').doc('grupos').get()]);
+  const cong = congSnap.data() || {};
+  const grupos = (grSnap.exists && grSnap.data().lista) || {};
+  for (const t of nuevos) {
+    const nombre = `${t.num}${t.nombre ? ' · ' + t.nombre : ''}`;
+    if (t.tipo === 'grupo') {
+      const g = grupos[t.to] || {};
+      await sendToPubs(code, [g.encargado, g.auxiliar], { title: `${g.nombre || 'Tu grupo'} tiene un territorio nuevo`, body: `Territorio ${nombre}` }, verLink(code, 'territorios'), 'asignacion', `territorio-${t.id}`);
+    } else {
+      const fn = firstName(cong, t.to);
+      await sendToPubs(code, [t.to], { title: `${fn ? 'Hola ' + fn + ', te' : 'Te'} asignaron un territorio`, body: `Territorio ${nombre}` }, verLink(code, 'territorios'), 'asignacion', `territorio-${t.id}`);
+    }
+  }
+  return null;
+});
+
+// "Lo terminé" desde la vista → aviso al Super Admin y a los Admin de Territorios.
+exports.onTerminado = onDocumentCreated({ document: 'congregations/{code}/terminados/{tid}', region: REGION }, async (event) => {
+  const code = event.params.code;
+  const r = event.data && event.data.data();
+  if (!r) return null;
+  const ref = db.collection('congregations').doc(code);
+  const [congSnap, terSnap] = await Promise.all([ref.get(), ref.collection('terr').doc('territorios').get()]);
+  const cong = congSnap.data() || {};
+  const s = cong.settings || {};
+  const gestores = [...(s.editorEmails || []), ...(s.territoriosAdminEmails || [])].map((e) => String(e).toLowerCase());
+  const pubIds = (cong.publishers || []).filter((p) => p.email && gestores.includes(String(p.email).toLowerCase())).map((p) => p.id);
+  const t = ((terSnap.exists && terSnap.data().lista) || {})[event.params.tid] || {};
+  await sendToPubs(code, pubIds, { title: `${r.nombre || 'Un hermano'} terminó el territorio ${t.num || ''}`.trim(), body: 'Tocá para confirmarlo en Territorios.' }, APP_BASE + 'asignaciones-salon.html', 'aviso', `terminado-${event.params.tid}`);
+  return null;
+});
+
 exports.onPushSubscriptionDeleted = onDocumentDeleted({ document: 'pushSubscriptions/{token}', region: REGION }, (event) => {
   const d = (event.data && event.data.data()) || {};
   console.log('[push] SUSCRIPCIÓN BORRADA:', String(event.params.token).slice(0, 12) + '…',
@@ -408,6 +490,18 @@ exports.sendScheduledReminders = onSchedule({ schedule: '0,30 * * * *', timeZone
     if (!(code in congCache)) {
       const snap = await db.collection('congregations').doc(code).get();
       congCache[code] = snap.exists ? snap.data() : null;
+      if (congCache[code]) {
+        // Las salidas que conduce cada hermano (hoy y mañana) también tienen recordatorio.
+        try {
+          const ref = db.collection('congregations').doc(code);
+          const [sal, lug] = await Promise.all([ref.collection('salidas').get(), ref.collection('terr').doc('lugares').get()]);
+          const docs = {}; sal.forEach((d) => { docs[d.id] = d.data(); });
+          const lugares = (lug.exists && lug.data().lista) || {};
+          const { dateIso: hoyIso } = arParts(new Date());
+          congCache[code].__salidas = conductorAssignments(docs, hoyIso, addDaysIso(hoyIso, 2))
+            .map((a) => Object.assign(a, { lugarName: lugares[a.lugar] ? lugares[a.lugar].nombre : '' }));
+        } catch (e) { console.warn('[recordatorio] salidas', code, e && e.message); }
+      }
     }
     return congCache[code];
   };

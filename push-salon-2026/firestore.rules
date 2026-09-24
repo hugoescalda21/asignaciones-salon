@@ -110,9 +110,9 @@ service cloud.firestore {
     }
 
     // Territorios, grupos de predicación y lugares de encuentro (documentos "grupos",
-    // "lugares" y "territorios"). Los lee cualquiera con acceso (el de territorios,
-    // solo quien los maneja y los encargados de grupo). Los cambian el Super Admin y el
-    // Admin de Territorios; los lugares, también los encargados y auxiliares de grupo.
+    // "lugares" y "territorios"). Los lee cualquiera con acceso (cada hermano ve en la
+    // vista sus territorios y las salidas). Los cambian el Super Admin y el Admin de
+    // Territorios; los lugares, también los encargados y auxiliares de grupo.
     match /congregations/{code}/terr/{docId} {
       function ajT() { return get(/databases/$(database)/documents/congregations/$(code)).data.settings; }
       function enT(c) { return request.auth.token.email in ajT().get(c, []); }
@@ -125,7 +125,7 @@ service cloud.firestore {
         let g = /databases/$(database)/documents/congregations/$(code)/terr/grupos;
         return exists(g) && request.auth.token.email in get(g).data.get('editoresTodos', []);
       }
-      allow read: if request.auth != null && (docId == 'territorios' ? (gestorT() || encargadoDeGrupo()) : conAccesoT());
+      allow read: if request.auth != null && conAccesoT();
       allow write: if request.auth != null && (gestorT() || (docId == 'lugares' && encargadoDeGrupo()));
     }
 
@@ -146,6 +146,29 @@ service cloud.firestore {
       }
       allow read: if request.auth != null && conAccesoS();
       allow write: if request.auth != null && (enS('editorEmails') || enS('territoriosAdminEmails') || editaGrupo());
+    }
+
+    // "Lo terminé": el hermano avisa desde la vista que terminó un territorio (un aviso por
+    // territorio, con su propio email). Lo ven él y quien maneja territorios, que lo confirma
+    // (y lo borra) desde la app de asignaciones.
+    match /congregations/{code}/terminados/{tid} {
+      function ajX() { return get(/databases/$(database)/documents/congregations/$(code)).data.settings; }
+      function enX(c) { return request.auth.token.email in ajX().get(c, []); }
+      function gestorX() { return enX('editorEmails') || enX('territoriosAdminEmails'); }
+      function conAccesoX() {
+        return gestorX() || enX('tecnicoAdminEmails') || enX('acomodadoresAdminEmails') ||
+               enX('asignacionesAdminEmails') || enX('anunciosOnlyEmails') || enX('viewerEmails');
+      }
+      function avisoValido() {
+        let d = request.resource.data;
+        return d.keys().hasOnly(['tid', 'pubId', 'nombre', 'email', 'fecha', 'at']) &&
+               d.email == request.auth.token.email && d.tid == tid &&
+               d.fecha is string && d.fecha.size() == 10 && d.nombre is string && d.nombre.size() <= 80;
+      }
+      allow create: if request.auth != null && conAccesoX() && avisoValido();
+      allow update: if request.auth != null && resource.data.email == request.auth.token.email && avisoValido();
+      allow read: if request.auth != null && (gestorX() || resource.data.email == request.auth.token.email);
+      allow delete: if request.auth != null && gestorX();
     }
 
     // Solicitudes de acceso — quien entra a la vista sin estar autorizado pide acceso con

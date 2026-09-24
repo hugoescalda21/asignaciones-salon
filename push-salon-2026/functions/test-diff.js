@@ -8,7 +8,8 @@ const {
   selectNewAvisos, notificationForNewAvisos, validateReminder, reminderDocId,
   arParts, parseHHMM, meetingDateFor, assignmentsOnDate, normalizeReminderPrefs,
   remindersDue, reminderMessage, sentReminderId,
-  roleAreasFor, disallowedWeekChanges, guardSummary, accessRequestMessage
+  roleAreasFor, disallowedWeekChanges, guardSummary, accessRequestMessage,
+  salidaInstances, conductorAssignments, newConductors, conductorMessage, newTerritoryAssignments
 } = require('./lib');
 
 let passed = 0;
@@ -279,6 +280,52 @@ t('solicitud: varias pendientes se agrupan', () => {
   assert.strictEqual(accessRequestMessage('Lucas', 2).body, 'Lucas y otra persona esperan tu aprobación.');
   assert.strictEqual(accessRequestMessage('Lucas', 4).title, '4 solicitudes de acceso');
   assert.strictEqual(accessRequestMessage('Lucas', 4).body, 'Lucas y 3 personas más esperan tu aprobación.');
+});
+
+// ---- salidas y territorios ----
+const SAL = { plantilla: { s1: { id: 's1', dia: 2, hora: '09:30', lugar: 'L1', conductor: null, desde: '2026-09-21' }, s2: { id: 's2', dia: 6, hora: '18:00', lugar: 'L2', conductor: 'p4' } },
+  semanas: { '2026-09-21': { cambios: { s1: { conductor: 'p1' } } }, '2026-09-28': { cambios: { s2: { cancelada: true } }, extra: { x1: { id: 'x1', dia: 4, hora: '17:00', lugar: 'L1', conductor: 'p9' } } } } };
+t('salidas: la semana con sus cambios', () => {
+  const w = salidaInstances(SAL, '2026-09-21');
+  assert.deepStrictEqual(w.map(s => [s.id, s.dateIso, s.conductor]), [['s1', '2026-09-22', 'p1'], ['s2', '2026-09-26', 'p4']]);
+  const w2 = salidaInstances(SAL, '2026-09-28');
+  assert.ok(w2.find(s => s.id === 's2').cancelada);
+  assert.strictEqual(w2.find(s => s.id === 'x1').dateIso, '2026-10-01');
+  assert.strictEqual(w2.find(s => s.id === 's1').conductor, null);
+});
+t('salidas: no aparecen antes de "desde"', () => {
+  assert.ok(!salidaInstances(SAL, '2026-09-14').some(s => s.id === 's1'));
+});
+t('conductores entre fechas (sin las suspendidas)', () => {
+  const a = conductorAssignments({ g: SAL }, '2026-09-22', '2026-10-04');
+  assert.deepStrictEqual(a.map(x => [x.pubId, x.dateIso]).sort(), [['p1', '2026-09-22'], ['p4', '2026-09-26'], ['p9', '2026-10-01']]);
+  assert.strictEqual(a.find(x => x.pubId === 'p1').timeMin, 9 * 60 + 30);
+});
+t('conductor nuevo: avisa solo al que cambió, uno por hermano', () => {
+  const after = JSON.parse(JSON.stringify(SAL)); after.semanas['2026-09-28'].cambios.s1 = { conductor: 'p7' };
+  const n = newConductors(SAL, after, '2026-09-23', 56);
+  assert.deepStrictEqual(n.map(x => [x.pubId, x.dateIso]), [['p7', '2026-09-29']]);
+  assert.deepStrictEqual(newConductors(SAL, SAL, '2026-09-23', 56), []);
+  const fijo = JSON.parse(JSON.stringify(SAL)); fijo.plantilla.s2.conductor = 'p5';
+  assert.strictEqual(newConductors(SAL, fijo, '2026-09-23', 56).filter(x => x.pubId === 'p5').length, 1);
+});
+t('mensaje del conductor', () => {
+  const m = conductorMessage({ dateIso: '2026-09-29', timeMin: 570 }, 'Martín', 'Casa de la familia Gómez');
+  assert.strictEqual(m.title, 'Hola Martín, conducís la salida del martes 29');
+  assert.strictEqual(m.body, 'Casa de la familia Gómez · 09:30');
+});
+t('recordatorio de salida: entra en los recordatorios del día', () => {
+  const cong = { settings: {}, weeks: {}, __salidas: [{ pubId: 'p1', dateIso: '2026-09-24', timeMin: 570, lugarName: 'Salón' }] };
+  const due = remindersDue(cong, { pubId: 'p1', reminderPrefs: { dayBefore: true } }, new Date('2026-09-23T23:00:00Z'));
+  assert.strictEqual(due.length, 1);
+  const msg = reminderMessage(due[0]);
+  assert.match(msg.title, /Mañana: Conducir la salida \(Salón\)/);
+  assert.match(msg.body, /Salida al servicio · jueves 24 a las 09:30/);
+});
+t('territorio asignado: detecta hermano y grupo nuevos', () => {
+  const before = { a: { num: '12', asignado: null }, b: { num: '4', asignado: { tipo: 'grupo', id: 'g1', desde: '2026-09-01' } } };
+  const after = { a: { num: '12', nombre: 'Centro', asignado: { tipo: 'hermano', id: 'p6', desde: '2026-09-23' } }, b: before.b };
+  assert.deepStrictEqual(newTerritoryAssignments(before, after), [{ id: 'a', num: '12', nombre: 'Centro', tipo: 'hermano', to: 'p6' }]);
 });
 
 console.log('\n' + passed + ' pruebas OK' + (process.exitCode ? ' — HAY FALLAS' : ''));

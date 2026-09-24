@@ -689,6 +689,11 @@
     </details>
 
     <details class="guide-item">
+      <summary>🗺&nbsp;&nbsp;Salidas y territorios<span class="gchev">›</span></summary>
+      <p>En Inicio, "Salidas al servicio" muestra las de los próximos días: las de tu grupo y las de toda la congregación (con "Todas" ves también las de los otros grupos), dónde se juntan y quién conduce, con "Cómo llegar". Si te toca conducir, aparece como una asignación tuya. Si tenés un territorio asignado, aparece la pestaña "Territorios" con la tarjeta; cuando lo termines, tocá "Lo terminé" para avisarle al encargado.</p>
+    </details>
+
+    <details class="guide-item">
       <summary>🔑&nbsp;&nbsp;Iniciar sesión<span class="gchev">›</span></summary>
       <p>Con tu email (te llega un link, sin contraseña) o con tu cuenta de Google. Si todavía no tenés acceso, escribís tu nombre y tocás "Pedir acceso": apenas lo aprueben, la app se abre sola.</p>
     </details>
@@ -1659,6 +1664,7 @@
       if (e.target.closest('.gcal-btn')) return;
       const el = e.target.closest('[data-date]');
       if (!el) return;
+      if (el.dataset.meeting === 'salida') { if (window.terrVer) window.terrVer.goToSalida(el.dataset.date); return; }
       openDayModal(el.dataset.date, el.dataset.meeting);
     });
   }
@@ -2323,6 +2329,8 @@
         programMatches(w.program, t, new Set([pub.id])).forEach(pm => rows.push({ dayLabel, month, type: 'programa', label: pm.label, date, meetingType: t }));
       });
     });
+    // Las salidas que conduce (las arma el encargado en Territorios) también son asignaciones suyas.
+    if (window.terrVer) { try { rows.push(...window.terrVer.myConductorRows(pub, today)); } catch (e) { console.error(e); } }
     if (!rows.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
     rows.sort((a, b) => a.date.localeCompare(b.date));
     renderNextHero(rows[0], pub);
@@ -2341,8 +2349,8 @@
     const gcalStore = `gcal-added-${code}-${pub.id}`;
     const gcalAdded = loadGcalAdded(gcalStore, today);
     const flatRowHTML = (r) => {
-      const meetingLabel = r.meetingType === 'finde' ? 'Fin de semana' : 'Entre semana';
-      const gcalHref = gcalUrl(r.label, r.date, `${meetingLabel} — ${congName}`, meetingTimeOf(r.meetingType));
+      const meetingLabel = r.where || (r.meetingType === 'finde' ? 'Fin de semana' : 'Entre semana');
+      const gcalHref = gcalUrl(r.label, r.date, `${meetingLabel} — ${congName}`, r.time || meetingTimeOf(r.meetingType));
       const gkey = gcalKey(r);
       const added = gcalAdded.has(gkey);
       return `<div class="prow" data-date="${r.date}" data-meeting="${r.meetingType}"><div class="pdate">${r.dayLabel}</div><div class="prow-label">${escapeHtml(r.label)}</div><a class="gcal-btn${added ? ' added' : ''}" href="${gcalHref}" target="_blank" rel="noopener" data-gkey="${escapeHtml(gkey)}" data-gstore="${escapeHtml(gcalStore)}" ${gcalBtnAttrs(added)}>${added ? GCAL_ICON_ADDED : GCAL_ICON_ADD}</a></div>`;
@@ -2350,13 +2358,13 @@
     function groupedHTML() {
       const monthOrder = []; const byMonth = {};
       rows.forEach(r => {
-        if (!byMonth[r.month]) { byMonth[r.month] = { tecnico: [], programa: [] }; monthOrder.push(r.month); }
+        if (!byMonth[r.month]) { byMonth[r.month] = { tecnico: [], programa: [], salida: [] }; monthOrder.push(r.month); }
         byMonth[r.month][r.type].push(r);
       });
       let html = '';
       monthOrder.forEach((month, mi) => {
         html += `<div class="pmonth-divider"${mi === 0 ? ' style="margin-top:0; padding-top:0; border-top:none;"' : ''}>${escapeHtml(month.split(' de ')[0])}</div>`;
-        [['tecnico', 'Equipo técnico'], ['programa', 'Programa']].forEach(([key, label]) => {
+        [['tecnico', 'Equipo técnico'], ['programa', 'Programa'], ['salida', 'Salidas al servicio']].forEach(([key, label]) => {
           const items = byMonth[month][key];
           if (!items.length) return;
           html += `<div class="ptype-label">${label}</div>` + items.map(flatRowHTML).join('');
@@ -2398,8 +2406,8 @@
     const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
     const diff = Math.round((d - hoy) / 86400000);
     const count = diff <= 0 ? 'Hoy' : diff === 1 ? 'Mañana' : `En ${diff} días`;
-    const meeting = r.meetingType === 'finde' ? 'Fin de semana' : 'Entre semana';
-    const hora = meetingTimeOf(r.meetingType);
+    const meeting = r.where || (r.meetingType === 'finde' ? 'Fin de semana' : 'Entre semana');
+    const hora = r.time || meetingTimeOf(r.meetingType);
     const first = ((pub && pub.name) || '').split(' ')[0];
     box.classList.remove('hidden');
     box.innerHTML = `<div class="next-hero" data-date="${r.date}" data-meeting="${r.meetingType}" role="button" tabindex="0" aria-label="Ver el detalle de esa reunión">
@@ -2533,6 +2541,7 @@
       renderPersonalSummary(code);
       renderAnuncios();
       renderUpcoming();
+      if (window.terrVer) { try { window.terrVer.onData(code); } catch (e) { console.error(e); } }
       if (!window.__tabInit) {
         window.__tabInit = true;
         const wanted = new URLSearchParams(location.search).get('tab') || (location.hash || '').replace('#', '');
@@ -2892,5 +2901,6 @@
   }
 </script>
 
+<script src="territorios-ver.js"></script>
 </body>
 </html>

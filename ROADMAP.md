@@ -97,9 +97,9 @@ _Actualizado el 23 de septiembre de 2026: se sumaron a "lo ya hecho" las notific
 **Territorios**
 - Etapa A: programa de salidas por grupo o de congregación, territorios
   con foto y semáforo, grupos de predicación y lugares de encuentro.
-  Pendiente: etapa B (lo que ve el hermano en la vista: salidas, "Mis
-  territorios", avisos, "Lo terminé") y etapa C (mapa dibujado,
-  campañas, registro en PDF).
+- Etapa B: en la vista, salidas en Inicio, la salida que conduce como
+  asignación (con avisos y recordatorios), "Mis territorios" y "Lo terminé".
+  Pendiente: etapa C (mapa dibujado, campañas, registro en PDF).
 
 **Datos y mantenimiento**
 - Guardado por partes: se sube solo lo que cambió, así dos personas

@@ -20,7 +20,7 @@
   'use strict';
 
   const T = {
-    grupos: {}, gruposMeta: {}, lugares: {}, territorios: {}, salidas: {},
+    grupos: {}, gruposMeta: {}, lugares: {}, territorios: {}, salidas: {}, terminados: {},
     loaded: { grupos: false, lugares: false, territorios: false, salidas: false },
     unsub: [], code: null, started: false,
     week: null, view: 'salidas', sFilter: 'todas', tFilter: 'todos', tSearch: '',
@@ -208,6 +208,8 @@
     if (!a.all && !a.groups.length) return;
     territoriosListening = true;
     T.unsub.push(listenDoc('territorios', () => { territoriosListening = false; }));
+    // Avisos de "Lo terminé" que mandan los hermanos desde la vista (los confirma quien maneja territorios).
+    if (a.all) T.unsub.push(congRef().collection('terminados').onSnapshot((qs) => { const o = {}; qs.forEach(d => { o[d.id] = d.data() || {}; }); T.terminados = o; onData('terminados'); }, () => {}));
   }
   let renderQueued = false;
   function onData(name) {
@@ -575,6 +577,8 @@
     const kpi = (k, cls, n, l) => `<button type="button" class="tkpi ${cls}${f === k ? ' on' : ''}" data-t="t-filter" data-k="${k}"><b>${n}</b><span>${l}</span></button>`;
     const chips = [['todos', `Todos · ${all.length}`], ['primero', 'Para dar primero'], ['asignados', 'Asignados'], ['grupos', 'A grupos']];
     let html = `<div class="thead"><h3>Territorios</h3>${access().all ? '<button type="button" class="btn btn-primary" data-t="t-new">+ Territorio</button>' : ''}</div>`;
+    const pend = pendingTerminados();
+    if (pend.length) html += `<div class="tcard" style="border:1.5px solid var(--accent-gold);"><h4>Avisaron que lo terminaron <span class="tpill o">${pend.length}</span></h4>` + pend.map(r => { const t = T.territorios[r.id]; return `<div class="tkv" style="align-items:center;border-top:1px solid var(--line);padding-top:8px;margin-top:4px;"><span style="color:var(--ink);"><b>${esc(t.num)} · ${esc(t.nombre || '')}</b><br><small style="color:var(--ink-soft);">${esc(r.nombre || '')} · el ${fmtShort(r.fecha)}</small></span><span style="display:flex;gap:6px;flex-shrink:0;"><button type="button" class="btn" data-t="tt-no" data-id="${esc(r.id)}">Descartar</button><button type="button" class="btn btn-primary" data-t="tt-ok" data-id="${esc(r.id)}">Confirmar</button></span></div>`; }).join('') + '</div>';
     if (!all.length) {
       root.innerHTML = html + `<div class="tempty">Todavía no hay territorios cargados.<br>Tocá <b>+ Territorio</b> y cargá cada uno con su número, la zona, <b>una foto de la tarjeta</b> y la última fecha en que se terminó (sale del registro en papel). Con eso el semáforo funciona desde el primer día.</div>`;
       return;
@@ -620,13 +624,22 @@
       <div class="tf"><label for="tDoneDate">Fecha en que se terminó</label><input type="date" id="tDoneDate" value="${hoy()}"></div>
       <div class="tfoot"><button type="button" class="btn" data-tclose>Cancelar</button><button type="button" class="btn btn-primary" id="tDoneOk">Guardar</button></div>`);
     m.q('#tDoneOk').addEventListener('click', async () => {
-      const f = m.q('#tDoneDate').value || hoy();
-      const hist = (t.historial || []).slice();
-      if (hist[0] && !hist[0].hasta && hist[0].id === t.asignado.id) hist[0] = Object.assign({}, hist[0], { hasta: f });
-      else hist.unshift({ tipo: t.asignado.tipo, id: t.asignado.id, nombre: asignadoName(t.asignado), desde: t.asignado.desde, hasta: f });
-      const nt = Object.assign({}, t, { asignado: null, ultimoTerminado: f, historial: hist.slice(0, 40) });
-      if (await safe(() => tWrite(tRef('territorios'), [[['lista', id], nt]]), `Territorio ${t.num} terminado`)) m.close();
+      if (await finishTerritory(id, m.q('#tDoneDate').value || hoy())) m.close();
     });
+  }
+  async function finishTerritory(id, f) {
+    const t = T.territorios[id]; if (!t || !t.asignado) return false;
+    const hist = (t.historial || []).slice();
+    if (hist[0] && !hist[0].hasta && hist[0].id === t.asignado.id) hist[0] = Object.assign({}, hist[0], { hasta: f });
+    else hist.unshift({ tipo: t.asignado.tipo, id: t.asignado.id, nombre: asignadoName(t.asignado), desde: t.asignado.desde, hasta: f });
+    const nt = Object.assign({}, t, { asignado: null, ultimoTerminado: f, historial: hist.slice(0, 40) });
+    const ok = await safe(() => tWrite(tRef('territorios'), [[['lista', id], nt]]), `Territorio ${t.num} terminado`);
+    if (ok && T.terminados[id]) { try { await congRef().collection('terminados').doc(id).delete(); } catch (e) { /* nada */ } }
+    return ok;
+  }
+  function pendingTerminados() {
+    return Object.keys(T.terminados).map(id => Object.assign({ id }, T.terminados[id])).filter(r => T.territorios[r.id] && T.territorios[r.id].asignado)
+      .sort((a, b) => String(a.at || '').localeCompare(String(b.at || '')));
   }
 
   function territoryHolders() {
@@ -874,7 +887,8 @@
     if (!fbDb || !accessCode || !currentUser) { root.innerHTML = '<div class="tempty">Territorios y salidas se guardan en la nube: conectá la app con el código de la congregación e iniciá sesión.</div>'; return; }
     start(); ensureTerritorios();
     const a = access();
-    const views = a.all ? [['salidas', 'Salidas'], ['territorios', 'Territorios'], ['grupos', 'Grupos'], ['lugares', 'Lugares']] : [['salidas', 'Salidas'], ['lugares', 'Lugares']];
+    const np = a.all ? pendingTerminados().length : 0;
+    const views = a.all ? [['salidas', 'Salidas'], ['territorios', 'Territorios' + (np ? ` · ${np}` : '')], ['grupos', 'Grupos'], ['lugares', 'Lugares']] : [['salidas', 'Salidas'], ['lugares', 'Lugares']];
     if (!views.some(v => v[0] === T.view)) T.view = 'salidas';
     const seg = `<div class="tseg" role="tablist">${views.map(([k, l]) => `<button type="button" role="tab" class="${k === T.view ? 'on' : ''}" aria-selected="${k === T.view}" data-t="view" data-k="${k}">${l}</button>`).join('')}</div>`;
     root.innerHTML = seg + '<div id="terrView"></div>';
@@ -902,6 +916,8 @@
     else if (k === 't-filter') { T.tFilter = T.tFilter === b.dataset.k && b.classList.contains('tkpi') ? 'todos' : b.dataset.k; render(); }
     else if (k === 't-new') openTerritorioForm(null);
     else if (k === 't-open') openTerritorio(b.dataset.id);
+    else if (k === 'tt-ok') { const r = T.terminados[b.dataset.id]; if (r) finishTerritory(b.dataset.id, r.fecha || hoy()); }
+    else if (k === 'tt-no') { if (confirm('¿Descartar este aviso? El territorio sigue asignado.')) safe(() => congRef().collection('terminados').doc(b.dataset.id).delete(), 'Aviso descartado'); }
     else if (k === 'g-new') openGrupo(null);
     else if (k === 'g-edit') openGrupo(b.dataset.id);
     else if (k === 'g-cong') openPubsPicker('Pueden conducir las salidas de congregación', T.gruposMeta.conductoresCongregacion || [], (ids) => { safe(() => tWrite(tRef('grupos'), [[['conductoresCongregacion'], ids]]), 'Guardado'); });

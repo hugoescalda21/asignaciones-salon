@@ -243,6 +243,9 @@ function assignmentsOnDate(cong, pubId, dateIso) {
   const settings = (cong && cong.settings) || {};
   const weeks = (cong && cong.weeks) || {};
   const out = [];
+  ((cong && cong.__salidas) || []).forEach((s) => {
+    if (s.pubId === pubId && s.dateIso === dateIso) out.push({ type: 'salida', labels: ['Conducir la salida' + (s.lugarName ? ' (' + s.lugarName + ')' : '')], timeMin: s.timeMin });
+  });
   Object.keys(weeks).forEach((monday) => {
     ['semana', 'finde'].forEach((type) => {
       const week = weeks[monday] && weeks[monday][type];
@@ -302,7 +305,7 @@ function reminderMessage(due) {
   const time = first && first.timeMin != null ? fmtHHMM(first.timeMin) : '';
   const d = new Date(due.dateIso + 'T00:00:00Z');
   const dia = DIAS[d.getUTCDay()] + ' ' + d.getUTCDate();
-  const reunion = first && first.type === 'finde' ? 'Reunión del fin de semana' : 'Reunión entre semana';
+  const reunion = first && first.type === 'salida' ? 'Salida al servicio' : first && first.type === 'finde' ? 'Reunión del fin de semana' : 'Reunión entre semana';
   const aLas = time ? ' a las ' + time : '';
   const n = labels.length;
 
@@ -402,7 +405,69 @@ function accessRequestMessage(name, pending) {
   return { title: `${n} solicitudes de acceso`, body: `${who} y ${n - 1 === 1 ? 'otra persona esperan' : (n - 1) + ' personas más esperan'} tu aprobación.` };
 }
 
+/* ---------- Salidas al servicio (congregations/{código}/salidas/{grupo}) ---------- */
+function mondayOfIsoLib(iso) { const d = new Date(iso + 'T12:00:00Z'); const w = d.getUTCDay(); return addDaysIso(iso, w === 0 ? -6 : 1 - w); }
+// Las salidas de una semana de un documento de grupo, con los cambios de esa semana.
+function salidaInstances(doc, monday) {
+  const out = [];
+  const sem = ((doc && doc.semanas) || {})[monday] || {};
+  const cambios = sem.cambios || {};
+  Object.values((doc && doc.plantilla) || {}).forEach((p) => {
+    if (!p || !p.id || (p.desde && p.desde > monday)) return;
+    const c = cambios[p.id] || {};
+    out.push({ id: p.id, dateIso: addDaysIso(monday, (p.dia || 1) - 1), hora: p.hora || '', lugar: p.lugar || '',
+      conductor: c.conductor !== undefined ? c.conductor : (p.conductor || null), cancelada: !!c.cancelada });
+  });
+  Object.values(sem.extra || {}).forEach((x) => {
+    if (x && x.id) out.push({ id: x.id, dateIso: addDaysIso(monday, (x.dia || 1) - 1), hora: x.hora || '', lugar: x.lugar || '', conductor: x.conductor || null, cancelada: false });
+  });
+  return out;
+}
+// Salidas que conduce cada hermano entre dos fechas: [{ pubId, dateIso, timeMin, lugar }].
+function conductorAssignments(salidasDocs, fromIso, toIso) {
+  const out = [];
+  Object.keys(salidasDocs || {}).forEach((gid) => {
+    for (let m = mondayOfIsoLib(fromIso); m <= toIso; m = addDaysIso(m, 7)) {
+      salidaInstances(salidasDocs[gid], m).forEach((s) => {
+        if (s.conductor && !s.cancelada && s.dateIso >= fromIso && s.dateIso <= toIso) out.push({ pubId: s.conductor, dateIso: s.dateIso, timeMin: parseHHMM(s.hora), lugar: s.lugar, gid, id: s.id });
+      });
+    }
+  });
+  return out;
+}
+// Conductores nuevos en un guardado de salidas (para avisarles): los que antes no estaban en esa salida y fecha.
+function newConductors(beforeDoc, afterDoc, todayIso, days) {
+  const to = addDaysIso(todayIso, days || 56);
+  const key = (a) => `${a.id}|${a.dateIso}|${a.pubId}`;
+  const before = new Set(conductorAssignments({ g: beforeDoc || {} }, todayIso, to).map(key));
+  const seen = new Set();
+  return conductorAssignments({ g: afterDoc || {} }, todayIso, to).filter((a) => {
+    if (before.has(key(a))) return false;
+    if (seen.has(a.pubId)) return false;   // uno por hermano (el primero que viene)
+    seen.add(a.pubId); return true;
+  }).sort((a, b) => a.dateIso.localeCompare(b.dateIso));
+}
+function conductorMessage(first, pubFirstName, lugarName) {
+  const d = new Date(first.dateIso + 'T00:00:00Z');
+  const dia = DIAS[d.getUTCDay()] + ' ' + d.getUTCDate();
+  const hora = first.timeMin != null ? ' · ' + fmtHHMM(first.timeMin) : '';
+  return { title: `${pubFirstName ? 'Hola ' + pubFirstName + ', conducís' : 'Conducís'} la salida del ${dia}`, body: `${lugarName || 'Salida al servicio'}${hora}` };
+}
+// Territorios recién asignados (a un hermano o a un grupo) en un guardado de terr/territorios.
+function newTerritoryAssignments(beforeList, afterList) {
+  const out = [];
+  Object.keys(afterList || {}).forEach((id) => {
+    const a = afterList[id] && afterList[id].asignado;
+    const b = beforeList && beforeList[id] && beforeList[id].asignado;
+    if (!a || !a.id) return;
+    if (b && b.id === a.id && b.tipo === a.tipo && b.desde === a.desde) return;
+    out.push({ id, num: afterList[id].num, nombre: afterList[id].nombre || '', tipo: a.tipo, to: a.id });
+  });
+  return out;
+}
+
 module.exports = {
+  salidaInstances, conductorAssignments, newConductors, conductorMessage, newTerritoryAssignments, mondayOfIsoLib,
   accessRequestMessage,
   roleAreasFor, isEmptyDeep, leaves, weekLeafArea, disallowedWeekChanges, guardSummary,
   PROGRAM_SIMPLE_FIELDS, ROLES_MAP, roleLabel, collectNewlyAssignedIds,

@@ -189,6 +189,15 @@ function installMock(store, email) {
   const wa = await p.evaluate(() => decodeURIComponent((window.__opened.pop() || '').split('text=')[1] || ''));
   check('Compartir arma el mensaje con lugar, dirección y conductor', /\*Salidas al servicio\*/.test(wa) && /Martes 22 · 09:30\* — Grupo 1/.test(wa) && /Belgrano 450/.test(wa) && /Conduce: Tomás Bravo/.test(wa), wa);
   check('filtro por grupo', await p.evaluate(() => { document.querySelector('#terrRoot [data-t="s-filter"][data-k="congregacion"]').click(); return true; }) && await p.evaluate(() => new Promise(r => setTimeout(() => r(document.querySelectorAll('#terrRoot .trow').length === 1), 50))));
+  // Un hermano avisó desde la vista que terminó el 22
+  await p.evaluate((id) => { window.__store.docs['congregations/C/terminados/' + id] = { tid: id, pubId: 'p1', nombre: 'Martín Ruiz', email: 'martin@x.com', fecha: '2026-09-20', at: '2026-09-21T10:00:00Z' }; window.__terr.started = true; }, T2id);
+  await p.evaluate(() => fbDb.collection('congregations').doc('C').collection('terr').doc('grupos').update(new firebase.firestore.FieldPath('x'), 1));
+  await p.waitForTimeout(200);
+  await clickT(p, '#terrRoot [data-t="view"][data-k="territorios"]');
+  check('aviso "Lo terminé" para confirmar (y contador en la sección)', await p.evaluate(() => /Avisaron que lo terminaron/.test($('terrRoot').innerText) && /Martín Ruiz · el 20 sept/.test($('terrRoot').innerText) && /Territorios · 1/.test(document.querySelector('#terrRoot .tseg').innerText)));
+  await clickT(p, '#terrRoot [data-t="tt-ok"]'); await p.waitForTimeout(200);
+  const T2b = await p.evaluate((id) => ({ t: window.__terr.territorios[id], aviso: window.__store.docs['congregations/C/terminados/' + id] }), T2id);
+  check('Confirmar lo marca terminado en esa fecha y borra el aviso', !T2b.t.asignado && T2b.t.ultimoTerminado === '2026-09-20' && !T2b.aviso, T2b);
   check('sin errores (Super Admin)', p.errs.length === 0, p.errs);
 
   console.log('\nEncargado de grupo con "Solo ver"');

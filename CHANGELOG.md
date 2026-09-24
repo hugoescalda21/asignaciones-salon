@@ -6,6 +6,16 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Territorios etapa B: lo que ve cada hermano — 24 sep 2026 (cachés asignaciones-salon-v36, ver-salon-v30)
+
+- **Vista, Inicio → "Salidas al servicio":** las de los próximos 7 días de su grupo y de toda la congregación ("Todas" muestra también las de los otros grupos), con lugar, dirección, quién conduce, territorios y **"Cómo llegar"** (Google Maps). Si no tiene grupo, ve todas.
+- **La salida que conduce es una asignación suya:** aparece en "Tu próxima asignación" y en sus asignaciones, con Google Calendar; tocándola va a la tarjeta de esa salida. Le llega un **aviso** cuando se la asignan y **recordatorios** como los de la reunión (según lo que eligió en Recordatorios).
+- **Pestaña "Territorios" en la vista** (solo si tiene alguno): sus territorios y los de su grupo, con la foto de la tarjeta, notas y hasta cuándo tiene para terminarlo. **"Lo terminé"** le avisa al encargado (lo pueden tocar quien lo tiene y el encargado o auxiliar del grupo).
+- **App de asignaciones → Territorios:** arriba aparecen los avisos "Lo terminé" para **Confirmar** (lo marca terminado en esa fecha) o **Descartar**; contador en la sección.
+- **Avisos push nuevos:** conductor de una salida, territorio asignado (al hermano, o al encargado y auxiliar si es de un grupo) y "Lo terminé" (al Super Admin y los Admin de Territorios).
+- Servidor: los territorios los puede leer cualquiera con acceso (para ver los suyos); nueva colección `terminados`; funciones `onSalidasWrite`, `onTerritoriosWrite`, `onTerminado` y recordatorios de salidas. **Requiere `firebase deploy --only firestore:rules,functions`.**
+- Pruebas: `21-vista-territorios` y una más en `20-territorios` (502 en total), 7 nuevas en las funciones (61).
+
 ## Territorios y programa de salidas (etapa A) — 24 sep 2026 (caché asignaciones-salon-v35)
 
 - **Pestaña nueva "Territorios"** en la app de asignaciones, con cuatro secciones:
