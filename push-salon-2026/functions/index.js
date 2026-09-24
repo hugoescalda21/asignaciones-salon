@@ -1,7 +1,7 @@
 /**
  * Función en la nube — Avisos push y recordatorios
  */
-const { onDocumentUpdated, onDocumentDeleted, onDocumentUpdatedWithAuthContext } = require('firebase-functions/v2/firestore');
+const { onDocumentUpdated, onDocumentDeleted, onDocumentUpdatedWithAuthContext, onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { onRequest } = require('firebase-functions/v2/https');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const admin = require('firebase-admin');
@@ -12,7 +12,7 @@ const messaging = admin.messaging();
 
 const REGION = 'southamerica-east1';
 const { roleLabel, collectNewlyAssignedIds, avisoPreview, selectNewAvisos, notificationForNewAvisos, validateReminder, reminderDocId, ROLES_MAP,
-  arParts, addDaysIso, remindersDue, reminderMessage, sentReminderId, roleAreasFor, disallowedWeekChanges, guardSummary } = require('./lib');
+  arParts, addDaysIso, remindersDue, reminderMessage, sentReminderId, roleAreasFor, disallowedWeekChanges, guardSummary, accessRequestMessage } = require('./lib');
 
 // La app vive en GitHub Pages bajo /asignaciones-salon/, no en la raíz del
 // dominio: un link o ícono con "/" apunta a hugoescalda21.github.io/ y no a la app.
@@ -262,6 +262,41 @@ exports.guardRoles = onDocumentUpdatedWithAuthContext({ document: 'congregations
       role: (areas || []).join(', ') || 'sin rol de admin', device: '', online: true
     });
   } catch (e) { console.error('[permisos] no se pudo anotar en el registro:', e && e.message); }
+  return null;
+});
+
+/* ---------- Aviso al Super Admin: alguien pidió acceso ----------
+   Les llega a los celulares con avisos activados de los hermanos cuyo email está en
+   editorEmails. Tocándolo se abre la app de asignaciones en Ajustes → Acceso. */
+exports.onAccessRequest = onDocumentCreated({ document: 'congregations/{code}/solicitudes/{uid}', region: REGION }, async (event) => {
+  const code = event.params.code;
+  const req = event.data && event.data.data();
+  if (!req) return null;
+  const cong = (await db.collection('congregations').doc(code).get()).data() || {};
+  const supers = ((cong.settings || {}).editorEmails || []).map(e => String(e).toLowerCase());
+  const pubIds = (cong.publishers || []).filter(p => p.email && supers.includes(String(p.email).toLowerCase())).map(p => p.id);
+  if (!pubIds.length) { console.log('[solicitud] ningún Super Admin vinculado a un hermano: no se avisa'); return null; }
+  let pending = 1;
+  try { pending = (await db.collection('congregations').doc(code).collection('solicitudes').where('status', '==', 'pendiente').get()).size || 1; } catch (e) { /* nada */ }
+  const tokensSnap = await db.collection('pushSubscriptions').where('code', '==', code).get();
+  const tokens = tokensSnap.docs.filter(d => pubIds.includes(d.data().pubId)).map(d => d.id);
+  console.log('[solicitud] nueva de', req.name, '· pendientes:', pending, '· celulares de Super Admin:', tokens.length);
+  if (!tokens.length) return null;
+  const { title, body } = accessRequestMessage(req.name, pending);
+  await Promise.allSettled(tokens.map((token) => messaging.send({
+    token,
+    notification: { title, body },
+    android: { priority: 'high' },
+    webpush: {
+      headers: { Urgency: 'high', TTL: '86400' },
+      fcmOptions: { link: APP_BASE + 'asignaciones-salon.html#solicitudes' },
+      notification: { badge: BADGE_URL, tag: 'solicitudes-' + code, renotify: true }
+    }
+  }).then(() => markSent(token, 'solicitud')).catch((err) => {
+    console.error('[solicitud] error enviando:', err && err.code, err && err.message);
+    markFailed(token, err, 'solicitud');
+    if (err && STALE_CODES.includes(err.code)) return db.collection('pushSubscriptions').doc(token).delete().catch(() => {});
+  })));
   return null;
 });
 

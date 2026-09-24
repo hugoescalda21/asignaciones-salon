@@ -106,6 +106,32 @@ service cloud.firestore {
       allow update: if false;
     }
 
+    // Solicitudes de acceso — quien entra a la vista sin estar autorizado pide acceso con
+    // su nombre. Un pedido por cuenta (el id es su uid), siempre con SU email (el del inicio
+    // de sesión) y en estado "pendiente". Mientras está pendiente puede corregir el nombre.
+    // El Super Admin los ve, los rechaza (status "rechazado") o los aprueba (lo agrega a
+    // Acceso y borra el pedido).
+    match /congregations/{code}/solicitudes/{uid} {
+      function ajustesSol() { return get(/databases/$(database)/documents/congregations/$(code)).data.settings; }
+      function esSuperSol() { return request.auth.token.email in ajustesSol().get('editorEmails', []); }
+      function pedidoValido() {
+        let d = request.resource.data;
+        return d.keys().hasOnly(['email', 'name', 'createdAt', 'updatedAt', 'status']) &&
+               d.email == request.auth.token.email &&
+               d.name is string && d.name.size() >= 3 && d.name.size() <= 80 &&
+               d.status == 'pendiente' &&
+               d.createdAt is string && d.updatedAt is string;
+      }
+      allow create: if request.auth != null && request.auth.uid == uid && pedidoValido();
+      allow update: if request.auth != null && (
+                    esSuperSol() ||
+                    (request.auth.uid == uid && resource.data.status == 'pendiente' && pedidoValido() &&
+                     request.resource.data.createdAt == resource.data.createdAt)
+                  );
+      allow read: if request.auth != null && (request.auth.uid == uid || esSuperSol());
+      allow delete: if request.auth != null && esSuperSol();
+    }
+
     // Notificaciones push — un documento por celular/token, para
     // avisar por asignación nueva. Separado del documento principal
     // a propósito: así no hace falta tocar las reglas de arriba, y

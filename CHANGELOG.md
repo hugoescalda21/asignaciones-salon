@@ -6,6 +6,16 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Página para pedir acceso — 24 sep 2026 (cachés asignaciones-salon-v33, ver-salon-v29)
+
+- **Un solo link para toda la congregación.** La vista explica qué es la app antes de iniciar sesión. Quien entra sin estar autorizado ya no ve "Sin acceso todavía, copiá tu email": escribe su nombre y toca **Pedir acceso** (el email lo pone el inicio de sesión, ya comprobado).
+- **Mientras espera:** "¡Pedido enviado!", con la opción de instalar la app y de corregir el nombre. Si vuelve más tarde (por el link o por la app instalada), ve el estado de su pedido; si lo rechazaron, lo dice. Cuando lo aprobás, si tiene la página abierta entra sola; si no, al volver ya está adentro, con la bienvenida y los avisos.
+- **Super Admin:** arriba de Ajustes → Acceso aparecen las **Solicitudes de acceso**, con numerito en la pestaña Ajustes. Cada pedido trae **sugerido el hermano** que coincide por nombre (sin importar tildes ni mayúsculas); si hay dos parecidos se elige, y si no coincide con nadie hay que elegirlo antes de aprobar. **Aprobar** le da "Solo ver" y lo vincula a ese hermano; **Rechazar** lo deja en "Rechazados" (Borrar le permite volver a pedir).
+- **Aviso al celular** de los Super Admin cuando alguien pide acceso (si hay varios, se agrupan). Tocándolo abre la app en Acceso.
+- La vista guarda el código de la congregación apenas se abre el link, así la app instalada funciona aunque la persona todavía esté esperando.
+- Servidor: reglas nuevas para `congregations/{código}/solicitudes` (un pedido por cuenta, con su propio email) y función `onAccessRequest`. **Requiere `firebase deploy --only firestore:rules,functions`.**
+- Pruebas: `18-solicitudes` (436 en total), 6 nuevas en la vista (78) y 2 en las funciones (54).
+
 ## Permisos por rol controlados por el servidor — 24 sep 2026 (caché asignaciones-salon-v32)
 
 - **Reglas de Firestore:** un Admin (Equipo técnico, Acomodadores, Asignaciones) ahora solo puede guardar cambios en las reuniones (`weeks`), y en los anuncios si tiene el permiso. Ajustes, accesos, hermanos y el historial del cronómetro quedan solo para el Super Admin. Antes, un Admin podía cambiar cualquier cosa menos los accesos si lo intentaba por fuera de la app.

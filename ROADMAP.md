@@ -91,6 +91,8 @@ _Actualizado el 23 de septiembre de 2026: se sumaron a "lo ya hecho" las notific
 - Permisos por área controlados por el servidor: cada Admin solo puede
   guardar en su parte de cada reunión (reglas de Firestore + función
   guardRoles, que deshace lo que no corresponde y lo anota).
+- Página para pedir acceso: un solo link para todos; el Super Admin
+  aprueba cada pedido con el hermano ya sugerido y vinculado.
 
 **Datos y mantenimiento**
 - Guardado por partes: se sube solo lo que cambió, así dos personas

@@ -636,6 +636,37 @@
 
   /* ---------- Ajustes → Acceso (lista larga) ---------- */
   .acc-top { display: flex; justify-content: flex-end; margin: 6px 0 -2px; }
+  /* Solicitudes de acceso */
+  .tab-btn { position: relative; }
+  .req-badge { position: absolute; top: 3px; right: 6px; min-width: 16px; height: 16px; border-radius: 8px; background: #C0392B; color: #fff; font-size: 10px; font-weight: 700; line-height: 16px; padding: 0 4px; box-sizing: border-box; text-align: center; }
+  .bottom-tabs .req-badge { right: calc(50% - 20px); }
+  .req-box { border: 1.5px solid var(--accent-gold); border-radius: 12px; padding: 12px 12px 4px; margin: 10px 0 12px; background: var(--surface); }
+  .req-h { display: flex; justify-content: space-between; align-items: center; font-family: 'Fraunces', serif; font-size: 15px; }
+  .req-h .n { font-family: inherit; font-size: 11px; font-weight: 700; background: #C0392B; color: #fff; border-radius: 9px; padding: 1px 8px; font-family: 'Public Sans', sans-serif; }
+  .req-row { border-top: 1px solid var(--line); padding: 10px 0; }
+  .req-who { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .req-who b { font-size: 13.5px; }
+  .req-who small { font-size: 11px; color: var(--ink-faint); flex-shrink: 0; }
+  .req-em { font-size: 12px; color: var(--ink-soft); margin: 1px 0 7px; word-break: break-all; }
+  .req-match { font-size: 12px; border-radius: 8px; padding: 7px 9px; display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 7px; }
+  .req-match.ok { background: color-mix(in srgb, #4C7A5E 14%, transparent); }
+  .req-match.no { background: color-mix(in srgb, #C0392B 12%, transparent); }
+  .req-match.warn { background: color-mix(in srgb, var(--accent-gold) 18%, transparent); }
+  .req-match button, .req-lnk { border: none; background: none; font: inherit; font-weight: 700; color: var(--accent-blue); padding: 0; cursor: pointer; flex-shrink: 0; }
+  .req-opts { display: flex; flex-direction: column; gap: 5px; margin-bottom: 7px; }
+  .req-opts button { text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 7px 9px; font: inherit; font-size: 12.5px; color: var(--ink); cursor: pointer; }
+  .req-opts button.sel { border-color: var(--accent-blue); background: color-mix(in srgb, var(--accent-blue) 12%, transparent); font-weight: 700; }
+  .req-opts small { color: var(--ink-soft); font-weight: 400; }
+  .req-sel { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px; font: inherit; font-size: 13px; background: var(--bg); color: var(--ink); margin-bottom: 7px; }
+  .req-acts { display: flex; gap: 7px; }
+  .req-acts button { flex: 1; border-radius: 9px; padding: 9px 8px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .req-acts .ap { border: none; background: #4C7A5E; color: #fff; }
+  .req-acts .ap:disabled { background: var(--line); color: var(--ink-soft); cursor: default; }
+  .req-acts .re { flex: 0 0 96px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); }
+  .req-rej { border-top: 1px solid var(--line); padding: 8px 0; font-size: 12.5px; }
+  .req-rej summary { cursor: pointer; color: var(--ink-soft); }
+  .req-rej .rr { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; align-items: center; }
+  .req-rej .rr span { overflow: hidden; text-overflow: ellipsis; }
   .acc-count { font-size: 12px; color: var(--ink-soft); }
   .acc-add-btn { width: 100%; justify-content: center; margin-top: 8px; }
   .acc-add { margin-top: 10px; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-s); background: var(--bg); }
@@ -1464,6 +1495,7 @@
       <summary><div><h3>Acceso</h3><span class="sc-sub">Quién puede editar o ver, y con qué rol</span></div><span class="chev">›</span></summary>
       <p class="hint">Cada persona inicia sesión con su email (le llega un link, sin contraseña). Solo entran los que agregues acá — sacar a alguien le corta el acceso al instante.</p>
       <p class="hint" style="margin-top:4px;">🔒 Los permisos los controla también el servidor: solo un Super Admin cambia accesos, ajustes y hermanos; cada Admin puede cambiar únicamente su área de cada reunión, y los anuncios si tiene el permiso. Si alguien lo intentara por fuera de la app, el cambio se deshace solo y queda anotado en Registro de errores.</p>
+      <div id="accReqBox" class="hidden"></div>
       <div class="acc-top"><span id="accCount" class="acc-count"></span></div>
       <button type="button" class="btn btn-primary acc-add-btn" id="accAddToggle">+ Agregar persona</button>
       <div class="add-block acc-add hidden" id="accAddBlock">
@@ -1659,7 +1691,7 @@
       </details>
       <details class="guide-item">
         <summary><span class="gicon" data-icon="lock"></span>Quién puede entrar<span class="chev">›</span></summary>
-        <p>Ajustes → Acceso. Cada persona inicia sesión con su email (link o Google, sin contraseña) — solo entran los que agregues ahí. Roles: Super Admin (todo), Admin de Equipo técnico, de Acomodadores o de Asignaciones (solo su parte), Solo anuncios (publica anuncios y nada más) y Solo ver (va a la vista de la congregación). Los anuncios los publican los Super Admin, los de "Solo anuncios" y los Admin a los que les prendas "📢 Puede publicar anuncios". Sacar a alguien de la lista le corta el acceso al instante. Todo esto lo controla también el servidor, no solo la app.</p>
+        <p>Ajustes → Acceso. Cada persona inicia sesión con su email (link o Google, sin contraseña) — solo entran los que agregues ahí. Roles: Super Admin (todo), Admin de Equipo técnico, de Acomodadores o de Asignaciones (solo su parte), Solo anuncios (publica anuncios y nada más) y Solo ver (va a la vista de la congregación). Los anuncios los publican los Super Admin, los de "Solo anuncios" y los Admin a los que les prendas "📢 Puede publicar anuncios". Sacar a alguien de la lista le corta el acceso al instante. Todo esto lo controla también el servidor, no solo la app. Los hermanos también pueden <b>pedir acceso</b> solos desde el link de la vista: el pedido aparece arriba de Acceso (y en la pestaña Ajustes con un numerito) con el hermano sugerido por nombre; "Aprobar" les da "Solo ver" y los vincula.</p>
       </details>
       <details class="guide-item">
         <summary><span class="gicon" data-icon="cronometrista"></span>Cronómetro<span class="chev">›</span></summary>
@@ -2332,7 +2364,7 @@
     // equipo — no tienen sentido para un rol acotado a su propia parte.
     document.querySelectorAll('[data-share="pdfmes"], [data-share="viewlink"]')
       .forEach(b => b.classList.toggle('hidden', narrow));
-    if (role === 'super') renderSetupChecklist($('setupList'), false);
+    if (role === 'super') { renderSetupChecklist($('setupList'), false); startAccessRequests(); openRequestsFromLink(); }
   }
   let applyingRemoteUpdate = false; // evita que un cambio recibido de la nube dispare otro guardado
 
@@ -6193,7 +6225,7 @@
     return out;
   }
   function devAgo(iso) { if (!iso) return ''; const d = new Date(iso); return isNaN(d) ? '' : anRelDate(d).replace(/^Hace/, 'hace').replace(/^Ayer/, 'ayer').replace(/^Recién/, 'recién'); }
-  const DEV_KIND = { asignacion: 'asignación', anuncio: 'anuncio', recordatorio: 'recordatorio', prueba: 'prueba' };
+  const DEV_KIND = { asignacion: 'asignación', anuncio: 'anuncio', recordatorio: 'recordatorio', prueba: 'prueba', solicitud: 'solicitud de acceso' };
   function devStatus(d) {
     const ok = d.lastOkAt ? new Date(d.lastOkAt).getTime() : 0, err = d.lastErrAt ? new Date(d.lastErrAt).getTime() : 0;
     if (err && err >= ok) return { kind: 'bad', txt: `⚠ El último aviso (${DEV_KIND[d.lastKind] || 'aviso'}) falló ${devAgo(d.lastErrAt)}: ${d.lastErr}` };
@@ -6234,6 +6266,156 @@
     box.innerHTML = html;
   }
   $('devCard').addEventListener('toggle', () => { if ($('devCard').open && !devItems) loadDevices(); });
+
+  /* ---------- Solicitudes de acceso ----------
+     Quien entra a la vista sin estar autorizado pide acceso con su nombre; el pedido queda en
+     congregations/{código}/solicitudes/{uid} (email comprobado por el inicio de sesión).
+     Acá el Super Admin lo ve con el hermano sugerido por nombre y lo aprueba de un toque:
+     queda con "Solo ver", vinculado a ese hermano, y el pedido se borra (la persona entra sola). */
+  let accReqs = [], accReqUnsub = null;
+  const accReqPick = {}, accReqChoosing = {};
+  function reqDoc(uid) { return fbDb.collection('congregations').doc(accessCode).collection('solicitudes').doc(uid); }
+  function startAccessRequests() {
+    if (accReqUnsub || !fbDb || !accessCode || !currentUser || currentUserRole !== 'super') return;
+    try {
+      accReqUnsub = fbDb.collection('congregations').doc(accessCode).collection('solicitudes').onSnapshot((snap) => {
+        accReqs = snap.docs.map(d => Object.assign({ uid: d.id }, d.data()));
+        renderAccessRequests();
+      }, (err) => { console.warn('Solicitudes de acceso', err); accReqUnsub = null; });
+    } catch (e) { console.warn(e); }
+  }
+  function reqTokens(s) { return accNorm(s).replace(/[^a-z0-9ñ ]/g, ' ').split(/\s+/).filter(t => t.length > 1); }
+  // Hermanos que coinciden con el nombre escrito (sin importar tildes ni mayúsculas). Primero los sin email.
+  function reqMatches(name) {
+    const q = reqTokens(name);
+    if (!q.length) return [];
+    const pubs = (data.publishers || []).filter(p => p.status !== 'inactivo');
+    const exact = pubs.filter(p => reqTokens(p.name).join(' ') === q.join(' '));
+    const res = exact.length ? exact : pubs.filter(p => {
+      const t = reqTokens(p.name);
+      return (q.length >= 2 && q.every(x => t.includes(x))) || (t.length >= 2 && t.every(x => q.includes(x)));
+    });
+    return res.sort((a, b) => (!!a.email - !!b.email) || a.name.localeCompare(b.name, 'es'));
+  }
+  function reqResolvedPick(r) {
+    if (accReqPick[r.uid] !== undefined) return accReqPick[r.uid];
+    const ms = reqMatches(r.name);
+    return ms.length === 1 ? ms[0].id : null;
+  }
+  function reqAgo(iso) { const d = new Date(iso); return isNaN(d) ? '' : anRelDate(d); }
+  function updateReqBadge(n) {
+    document.querySelectorAll('.tab-btn[data-tab="ajustes"]').forEach(b => {
+      let el = b.querySelector('.req-badge');
+      if (!n) { if (el) el.remove(); return; }
+      if (!el) { el = document.createElement('span'); el.className = 'req-badge'; b.appendChild(el); }
+      el.textContent = n;
+      b.setAttribute('aria-label', `Ajustes · ${n} ${n === 1 ? 'solicitud' : 'solicitudes'} de acceso`);
+    });
+  }
+  function renderAccessRequests() {
+    const box = $('accReqBox');
+    if (!box) return;
+    const pend = accReqs.filter(r => r.status !== 'rechazado').sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+    const rej = accReqs.filter(r => r.status === 'rechazado');
+    updateReqBadge(pend.length);
+    if (!pend.length && !rej.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+    const people = accPeople();
+    const pubOpts = (sel) => (data.publishers || []).filter(p => p.status !== 'inactivo')
+      .sort((a, b) => (!!a.email - !!b.email) || a.name.localeCompare(b.name, 'es'))
+      .map(p => `<option value="${escapeHtml(p.id)}"${p.id === sel ? ' selected' : ''}>${escapeHtml(p.name)}${p.email ? ' · ya tiene email' : ''}</option>`).join('');
+    const row = (r) => {
+      const already = people.find(x => String(x.email).toLowerCase() === String(r.email).toLowerCase());
+      let mid = '', canApprove = false, label = 'Aprobar';
+      if (already) {
+        mid = `<div class="req-match ok"><span>Ya tiene acceso${already.pub ? ' como <b>' + escapeHtml(already.pub.name) + '</b>' : ''}.</span></div>`;
+        return `<div class="req-row"><div class="req-who"><b>${escapeHtml(r.name)}</b><small>${escapeHtml(reqAgo(r.createdAt))}</small></div><div class="req-em">${escapeHtml(r.email)}</div>${mid}
+          <div class="req-acts"><button type="button" class="ap" data-req-del="${escapeHtml(r.uid)}">Quitar el pedido</button></div></div>`;
+      }
+      const ms = reqMatches(r.name);
+      const pick = reqResolvedPick(r);
+      const pub = pick && data.publishers.find(p => p.id === pick);
+      if (accReqChoosing[r.uid]) {
+        mid = `<select class="req-sel" data-req-sel="${escapeHtml(r.uid)}" aria-label="Elegí el hermano"><option value="">Elegí el hermano…</option>${pubOpts(pick)}</select>`;
+      } else if (ms.length > 1 && accReqPick[r.uid] === undefined) {
+        mid = `<div class="req-opts">${ms.map(p => `<button type="button" data-req-opt="${escapeHtml(r.uid)}" data-pub="${escapeHtml(p.id)}">${escapeHtml(p.name)} <small>· ${p.email ? 'ya tiene email' : 'sin email'}</small></button>`).join('')}</div>`;
+      } else if (ms.length > 1 && pub && ms.some(m => m.id === pub.id)) {
+        mid = `<div class="req-opts">${ms.map(p => `<button type="button" class="${p.id === pick ? 'sel' : ''}" data-req-opt="${escapeHtml(r.uid)}" data-pub="${escapeHtml(p.id)}">${escapeHtml(p.name)} <small>· ${p.email ? 'ya tiene email' : 'sin email'}</small></button>`).join('')}</div>`;
+        label = 'Aprobar como ' + pub.name;
+      } else if (pub) {
+        mid = `<div class="req-match ok"><span>✓ Es <b>${escapeHtml(pub.name)}</b></span><button type="button" data-req-change="${escapeHtml(r.uid)}">Cambiar</button></div>`;
+      } else {
+        mid = `<div class="req-match no"><span>No coincide con ningún hermano</span><button type="button" data-req-change="${escapeHtml(r.uid)}">Elegir ›</button></div>`;
+      }
+      if (pub) {
+        canApprove = true;
+        if (pub.email && String(pub.email).toLowerCase() !== String(r.email).toLowerCase()) mid += `<div class="req-match warn"><span>⚠ ${escapeHtml(pub.name)} ya tiene vinculado ${escapeHtml(pub.email)}: se reemplaza.</span></div>`;
+      }
+      return `<div class="req-row"><div class="req-who"><b>${escapeHtml(r.name)}</b><small>${escapeHtml(reqAgo(r.createdAt))}</small></div><div class="req-em">${escapeHtml(r.email)}</div>${mid}
+        <div class="req-acts"><button type="button" class="ap" data-req-ok="${escapeHtml(r.uid)}"${canApprove ? '' : ' disabled'}>${escapeHtml(label)}</button><button type="button" class="re" data-req-no="${escapeHtml(r.uid)}">Rechazar</button></div></div>`;
+    };
+    let html = '';
+    if (pend.length) html += `<div class="req-h"><span>Solicitudes de acceso</span><span class="n">${pend.length}</span></div>
+      <p class="hint" style="margin:3px 0 6px;">Al aprobar quedan con "Solo ver" y vinculados al hermano elegido.</p>` + pend.map(row).join('');
+    if (rej.length) html += `<details class="req-rej"><summary>Rechazados · ${rej.length}</summary>${rej.map(r => `<div class="rr"><span>${escapeHtml(r.name)} · ${escapeHtml(r.email)}</span><button type="button" class="req-lnk" data-req-del="${escapeHtml(r.uid)}">Borrar</button></div>`).join('')}
+      <p class="hint" style="margin:4px 0 0;">Borrar le permite volver a pedir acceso.</p></details>`;
+    box.innerHTML = html;
+    box.classList.remove('hidden');
+  }
+  async function approveRequest(uid) {
+    const r = accReqs.find(x => x.uid === uid);
+    const pick = r && reqResolvedPick(r);
+    const pub = pick && data.publishers.find(p => p.id === pick);
+    if (!r || !pub) return;
+    const email = String(r.email).trim();
+    const low = email.toLowerCase();
+    data.publishers.forEach(p => { if (p !== pub && p.email && String(p.email).toLowerCase() === low) p.email = null; });
+    pub.email = email;
+    if (!ROLE_FIELDS.some(f => (data.settings[f] || []).some(e => String(e).toLowerCase() === low))) {
+      data.settings.viewerEmails = (data.settings.viewerEmails || []).concat(email);
+    }
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) { /* sin acceso */ }
+    try { await pushChangesToCloud(); setSyncStatus('ok'); }
+    catch (e) { console.error(e); setSyncStatus('error'); showToast('No se pudo aprobar. Revisá la conexión y probá de nuevo.'); return; }
+    try { await reqDoc(uid).delete(); } catch (e) { console.warn('No se pudo borrar el pedido', e); }
+    delete accReqPick[uid]; delete accReqChoosing[uid];
+    renderAccessLists(); renderAccessRequests();
+    showToast(`${pub.name} ya tiene acceso`);
+  }
+  $('accReqBox').addEventListener('click', async (e) => {
+    const t = e.target.closest('button');
+    if (!t) return;
+    const d = t.dataset;
+    if (d.reqOk) { t.disabled = true; t.textContent = 'Aprobando…'; await approveRequest(d.reqOk); return; }
+    if (d.reqNo) {
+      const r = accReqs.find(x => x.uid === d.reqNo);
+      try { await reqDoc(d.reqNo).update({ status: 'rechazado', rejectedAt: new Date().toISOString() }); showToast(`Pedido de ${r ? r.name : ''} rechazado`); }
+      catch (err) { showToast('No se pudo rechazar. Revisá la conexión.'); }
+      return;
+    }
+    if (d.reqDel) { try { await reqDoc(d.reqDel).delete(); } catch (err) { showToast('No se pudo borrar. Revisá la conexión.'); } return; }
+    if (d.reqChange) { accReqChoosing[d.reqChange] = true; renderAccessRequests(); const sel = document.querySelector(`[data-req-sel="${d.reqChange}"]`); if (sel) sel.focus(); return; }
+    if (d.reqOpt) { accReqPick[d.reqOpt] = d.pub; renderAccessRequests(); }
+  });
+  $('accReqBox').addEventListener('change', (e) => {
+    const sel = e.target.closest('[data-req-sel]');
+    if (!sel) return;
+    const uid = sel.dataset.reqSel;
+    accReqPick[uid] = sel.value || null;
+    if (sel.value) delete accReqChoosing[uid];
+    renderAccessRequests();
+  });
+  // El aviso push de una solicitud abre la app con #solicitudes: se va directo a Ajustes → Acceso.
+  let reqLinkDone = false;
+  function openRequestsFromLink() {
+    if (reqLinkDone || location.hash !== '#solicitudes') return;
+    reqLinkDone = true;
+    setTimeout(() => {
+      switchTab('ajustes');
+      $('accCard').open = true;
+      $('accCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* nada */ }
+    }, 300);
+  }
 
   /* ---------- Puesta en marcha (Super Admin) ----------
      Cinco puntos que se tildan solos según los datos reales; cada pendiente lleva a donde se resuelve. */

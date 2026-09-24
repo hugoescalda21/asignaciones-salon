@@ -21,7 +21,7 @@ Google Calendar, recordatorios, el calendario desplegable, Inicio, las
 tarjetas de anuncios y la estructura del HTML. Al final muestra algo como:
 
 ```
-72 pruebas OK, 0 fallaron.
+78 pruebas OK, 0 fallaron.
 ```
 
 Si alguna falla, aparece marcada con ❌ y dice qué obtuvo.
@@ -59,7 +59,7 @@ node tests/editor/run.js anuncios   (solo las que tengan "anuncios" en el nombre
 ```
 
 Al final muestra una línea por archivo y el total, por ejemplo
-`417 de 417 pruebas OK.` Si algo falla, muestra qué.
+`436 de 436 pruebas OK.` Si algo falla, muestra qué.
 
 | Archivo | Qué prueba |
 |---|---|
@@ -79,6 +79,7 @@ Al final muestra una línea por archivo y el total, por ejemplo
 | `15-notificaciones` | Ajustes → Notificaciones de los hermanos: lista, enviar prueba, quitar |
 | `16-bienvenida` | Bienvenida según el rol y "Puesta en marcha" del Super Admin |
 | `17-permisos-servidor` | Lo que guarda cada Admin pasa las reglas del servidor y el control de guardRoles |
+| `18-solicitudes` | Solicitudes de acceso: sugerencia del hermano, aprobar, rechazar, numerito |
 
 Las capturas de pantalla que sacan quedan en `tests/editor/capturas/`
 (no se suben a git), por si querés mirarlas.

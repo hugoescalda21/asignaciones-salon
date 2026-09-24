@@ -394,7 +394,16 @@ function guardSummary(email, changes) {
   return `${email} cambió ${partes.join(', ')}, que no corresponde a su rol. Se deshizo automáticamente.`;
 }
 
+// Aviso al Super Admin cuando alguien pide acceso (si hay varios pendientes, se agrupan).
+function accessRequestMessage(name, pending) {
+  const n = Math.max(1, pending || 1);
+  const who = String(name || 'Alguien').trim().slice(0, 60) || 'Alguien';
+  if (n === 1) return { title: 'Nueva solicitud de acceso', body: `${who} quiere entrar a la app. Tocá para aprobarla.` };
+  return { title: `${n} solicitudes de acceso`, body: `${who} y ${n - 1 === 1 ? 'otra persona esperan' : (n - 1) + ' personas más esperan'} tu aprobación.` };
+}
+
 module.exports = {
+  accessRequestMessage,
   roleAreasFor, isEmptyDeep, leaves, weekLeafArea, disallowedWeekChanges, guardSummary,
   PROGRAM_SIMPLE_FIELDS, ROLES_MAP, roleLabel, collectNewlyAssignedIds,
   avisoPreview, selectNewAvisos, notificationForNewAvisos, validateReminder, reminderDocId,

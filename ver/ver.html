@@ -159,6 +159,27 @@
   }
   .gate button { width: 100%; border: none; background: var(--ink); color: #fff; padding: 11px; border-radius: var(--radius-s); font-size: 14px; font-weight: 600; }
   .gate .err { color: #A8433A; font-size: 12.5px; margin-top: 10px; }
+  /* Página de entrada y pedido de acceso */
+  .lp-ic { width: 60px; height: 60px; border-radius: 16px; margin: 0 auto 12px; display: block; box-shadow: 0 6px 18px rgba(0,0,0,.12); }
+  .lp-eyebrow { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 2px; }
+  .gate h1.lp-title { font-family: 'Fraunces', serif; font-weight: 500; font-size: 24px; line-height: 1.2; margin: 0 0 8px; }
+  .lp-bens { text-align: left; margin: 0 0 20px; }
+  .lp-ben { display: flex; gap: 11px; align-items: flex-start; padding: 9px 0; border-top: 1px solid var(--line); font-size: 13px; line-height: 1.4; }
+  .lp-ben i { font-style: normal; width: 30px; height: 30px; border-radius: 9px; background: var(--surface); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 15px; }
+  .lp-ben b { display: block; font-size: 13.5px; color: var(--ink); }
+  .lp-ben span { color: var(--ink-soft); }
+  .lp-foot { font-size: 11px !important; color: var(--ink-faint) !important; margin: 12px 0 0 !important; }
+  .req-fld { text-align: left; margin-bottom: 12px; }
+  .req-fld label { display: block; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 5px; }
+  .gate .req-fld input { text-transform: none; letter-spacing: 0; text-align: left; margin-bottom: 0; background: var(--surface); color: var(--ink); }
+  .req-ro { border: 1px solid var(--line); border-radius: var(--radius-s); padding: 10px 12px; font-size: 13.5px; background: var(--bg); color: var(--ink-soft); display: flex; justify-content: space-between; gap: 8px; overflow: hidden; }
+  .req-ro span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .req-ok { width: 56px; height: 56px; border-radius: 50%; background: #E3EEE7; color: #4C7A5E; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 700; margin: 0 auto 12px; }
+  .req-box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; text-align: left; font-size: 13px; line-height: 1.5; color: var(--ink-soft); margin: 0 0 12px; }
+  .req-box b { display: block; color: var(--ink); font-size: 13.5px; margin-bottom: 2px; }
+  .req-box ol { margin: 4px 0 0; padding-left: 18px; }
+  .gate button.req-green { background: #4C7A5E; color: #fff; margin-bottom: 12px; }
+  .gate button.req-link { background: none; color: var(--ink-soft); font-weight: 600; font-size: 13px; text-decoration: underline; padding: 8px; }
 
   .footer-note { text-align: center; font-size: 11px; color: var(--ink-faint); padding: 20px 0 4px; }
   .live-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #3F7D4F; margin-right: 5px; animation: pulse 1.6s infinite; }
@@ -454,9 +475,15 @@
 
 <div id="authGateView" class="gate hidden">
   <div id="authStepEmail">
-    <div style="margin-bottom:8px;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--ink-soft);"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div>
-    <h1>Iniciar sesión</h1>
-    <p>Para ver las asignaciones necesitás iniciar sesión.</p>
+    <img class="lp-ic" src="icon-192-ver.png" alt="">
+    <div class="lp-eyebrow">Salón del Reino</div>
+    <h1 class="lp-title">Asignaciones de la congregación</h1>
+    <p>Tus asignaciones, el calendario de las reuniones y los anuncios, en tu celular.</p>
+    <div class="lp-bens">
+      <div class="lp-ben"><i>📋</i><div><b>Qué te toca y cuándo</b><span>Tu próxima asignación siempre a la vista.</span></div></div>
+      <div class="lp-ben"><i>🔔</i><div><b>Avisos en el celular</b><span>Cuando te asignan algo y antes de la reunión.</span></div></div>
+      <div class="lp-ben"><i>📢</i><div><b>Anuncios</b><span>Las novedades de la congregación.</span></div></div>
+    </div>
     <button type="button" id="authGoogleBtn" style="display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:12px;">
       <svg width="16" height="16" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.6 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34.5 5.9 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l6-6C34.5 5.9 29.5 4 24 4c-7.5 0-14 4.2-17.7 10.7z"/><path fill="#4CAF50" d="M24 44c5.4 0 10.3-1.9 14.1-5.1l-6.5-5.5c-2.1 1.5-4.7 2.4-7.6 2.4-5.2 0-9.6-3.5-11.2-8.3l-6.5 5C9.9 39.6 16.4 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.2 5.6l6.5 5.5C40.9 36.6 44 30.9 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>
       Continuar con Google
@@ -470,6 +497,7 @@
       <button type="button" id="authSendLinkBtn">Enviarme el link</button>
     </div>
     <p class="err hidden" id="authEmailErr"></p>
+    <p class="lp-foot">Sin contraseña · Solo entran los hermanos aprobados</p>
   </div>
   <div id="authStepSent" class="hidden">
     <div style="margin-bottom:8px;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--ink-soft);"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></div>
@@ -478,21 +506,47 @@
     <button type="button" id="authSentBackBtn" style="border:none; background:none; color:var(--ink-faint); font-size:12px; text-decoration:underline; margin-top:8px;">Volver / probar de otra forma</button>
   </div>
   <div id="authStepDenied" class="hidden">
-    <div style="margin-bottom:8px;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--ink-soft);"><circle cx="12" cy="12" r="9"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/></svg></div>
-    <h1>Sin acceso todavía</h1>
-    <p>Tu email todavía no está autorizado para ver esta congregación.</p>
-    <div style="background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:14px;">
-      <p style="font-size:10.5px; color:var(--ink-faint); margin:0 0 4px; text-transform:uppercase; letter-spacing:0.03em;">Tu email</p>
-      <div style="display:flex; align-items:center; gap:8px;">
-        <span id="deniedEmailText" style="flex:1; font-size:13px; font-weight:600; text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
-        <button type="button" id="deniedCopyBtn" style="border:1px solid var(--line); background:var(--bg); border-radius:6px; padding:6px 10px; font-size:11px; font-weight:600; color:var(--ink); display:flex; align-items:center; gap:4px; flex-shrink:0;">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          Copiar
-        </button>
-      </div>
+    <div id="reqLoading"><p>Un momento…</p></div>
+    <div id="reqForm" class="hidden">
+      <img class="lp-ic" src="icon-192-ver.png" alt="">
+      <h1 class="lp-title" id="reqFormTitle">Pedí tu acceso</h1>
+      <p id="reqFormText">Todavía no tenés acceso. Escribí tu nombre y lo aprobamos lo antes posible.</p>
+      <div class="req-fld"><label for="reqNameInput">Tu nombre y apellido</label><input type="text" id="reqNameInput" autocomplete="name" maxlength="80" placeholder="Nombre y apellido"></div>
+      <div class="req-fld"><label>Tu email</label><div class="req-ro"><span id="reqEmailText"></span><span aria-hidden="true">✓</span></div></div>
+      <button type="button" id="reqSendBtn">Pedir acceso</button>
+      <p class="err hidden" id="reqErr"></p>
+      <button type="button" class="req-link" id="reqOtherBtn">¿No es tu cuenta? Entrar con otra</button>
     </div>
-    <p style="font-size:12.5px; color:var(--ink-soft); line-height:1.5; margin-bottom:18px;">Copiá este email y enviaselo a la persona que te compartió este link, pidiéndole acceso.</p>
-    <button type="button" id="authRetryBtn">Probar con otro email</button>
+    <div id="reqWait" class="hidden">
+      <div class="req-ok">✓</div>
+      <h1 class="lp-title">¡Pedido enviado!</h1>
+      <p id="reqWaitText"></p>
+      <div id="reqInstall"></div>
+      <div class="req-box"><b>¿Cerrás la página?</b>No pasa nada: volvé a abrir este link (o la app) más tarde. Apenas lo aprueben, entrás directo.</div>
+      <button type="button" class="req-link" id="reqEditBtn">Corregir mi nombre</button>
+    </div>
+    <div id="reqRejected" class="hidden">
+      <h1 class="lp-title">Tu pedido no fue aprobado</h1>
+      <p>Si creés que es un error, hablá con quien administra la app de la congregación.</p>
+      <button type="button" class="req-link" id="reqRejOtherBtn">Entrar con otra cuenta</button>
+    </div>
+    <div id="reqOld" class="hidden">
+    <div style="margin-bottom:8px;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--ink-soft);"><circle cx="12" cy="12" r="9"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/></svg></div>
+      <h1>Sin acceso todavía</h1>
+      <p>Tu email todavía no está autorizado para ver esta congregación.</p>
+      <div style="background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:14px;">
+        <p style="font-size:10.5px; color:var(--ink-faint); margin:0 0 4px; text-transform:uppercase; letter-spacing:0.03em;">Tu email</p>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span id="deniedEmailText" style="flex:1; font-size:13px; font-weight:600; text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
+          <button type="button" id="deniedCopyBtn" style="border:1px solid var(--line); background:var(--bg); border-radius:6px; padding:6px 10px; font-size:11px; font-weight:600; color:var(--ink); display:flex; align-items:center; gap:4px; flex-shrink:0;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copiar
+          </button>
+        </div>
+      </div>
+      <p style="font-size:12.5px; color:var(--ink-soft); line-height:1.5; margin-bottom:18px;">Copiá este email y enviaselo a la persona que te compartió este link, pidiéndole acceso.</p>
+      <button type="button" id="authRetryBtn">Probar con otro email</button>
+    </div>
   </div>
 </div>
 
@@ -636,7 +690,7 @@
 
     <details class="guide-item">
       <summary>🔑&nbsp;&nbsp;Iniciar sesión<span class="gchev">›</span></summary>
-      <p>Con tu email (te llega un link, sin contraseña) o con tu cuenta de Google. Solo entran las personas que quien administra la app haya autorizado.</p>
+      <p>Con tu email (te llega un link, sin contraseña) o con tu cuenta de Google. Si todavía no tenés acceso, escribís tu nombre y tocás "Pedir acceso": apenas lo aprueben, la app se abre sola.</p>
     </details>
     <button type="button" class="guide-welcome-btn hidden" id="guideWelcomeBtn">👋 Ver la bienvenida otra vez</button>
   </div>
@@ -1037,13 +1091,52 @@
       finishIfLink();
     });
   }
-  function showAccessDenied() {
-    hideInitialLoading();
-    $('gateView').classList.add('hidden');
-    $('mainView').classList.add('hidden');
-    $('authGateView').classList.remove('hidden');
-    authStep('authStepDenied');
-    const email = (currentUser && currentUser.email) || '';
+  /* ---------- Pedir acceso ----------
+     Quien entra sin estar autorizado pide acceso con su nombre (el email lo pone el inicio de
+     sesión). Queda en congregations/{código}/solicitudes/{uid}; el Super Admin lo aprueba en
+     Ajustes → Acceso. Mientras espera, esta pantalla escucha su pedido: cuando lo aprueban el
+     pedido se borra y la app entra sola. Si vuelve más tarde (link o app instalada), ve el estado. */
+  let reqUnsub = null, reqCode = '', reqData = null, reqEditing = false;
+  function reqRef(code) { return initFirebase().collection('congregations').doc(code).collection('solicitudes').doc(currentUser.uid); }
+  function reqView(v) {
+    ['reqLoading', 'reqForm', 'reqWait', 'reqRejected', 'reqOld'].forEach(id => $(id).classList.toggle('hidden', id !== v));
+  }
+  function reqAgo(iso) {
+    const d = new Date(iso); if (isNaN(d)) return '';
+    const min = Math.floor((Date.now() - d) / 60000);
+    if (min < 2) return 'recién';
+    if (min < 60) return `hace ${min} minutos`;
+    const h = Math.floor(min / 60); if (h < 24) return h === 1 ? 'hace 1 hora' : `hace ${h} horas`;
+    const dd = Math.floor(h / 24); return dd === 1 ? 'ayer' : `hace ${dd} días`;
+  }
+  function paintReqWait() {
+    const r = reqData || {};
+    $('reqWaitText').innerHTML = `Pediste acceso ${escapeHtml(reqAgo(r.createdAt))} como <b>${escapeHtml(r.name || '')}</b>. Todavía está pendiente: apenas lo aprueben, esta página se abre sola.`;
+    const box = $('reqInstall');
+    const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+    if (isStandalone()) box.innerHTML = '';
+    else if (deferredInstallPrompt) box.innerHTML = '<div class="req-box"><b>Mientras tanto: instalá la app</b>Así la tenés a mano en la pantalla de inicio y los avisos funcionan mejor.</div><button type="button" class="req-green" id="reqInstallBtn">📲 Instalar la app</button>';
+    else if (ios) box.innerHTML = '<div class="req-box"><b>Mientras tanto: instalá la app</b><ol><li>Tocá <b style="display:inline">Compartir</b> (abajo en Safari).</li><li>Elegí <b style="display:inline">Agregar a inicio</b>.</li></ol></div>';
+    else box.innerHTML = '';
+    const ib = $('reqInstallBtn');
+    if (ib) ib.onclick = async () => {
+      const p = deferredInstallPrompt; if (!p) return;
+      p.prompt(); try { await p.userChoice; } catch (e) { /* nada */ }
+      deferredInstallPrompt = null; renderInstallPrompt(); paintReqWait();
+    };
+  }
+  function showReqForm(editing) {
+    reqEditing = !!editing;
+    $('reqFormTitle').textContent = editing ? 'Corregí tu nombre' : 'Pedí tu acceso';
+    $('reqFormText').textContent = editing ? 'Así te encuentran más fácil en la lista de la congregación.' : 'Todavía no tenés acceso. Escribí tu nombre y lo aprobamos lo antes posible.';
+    $('reqSendBtn').textContent = editing ? 'Guardar' : 'Pedir acceso';
+    $('reqNameInput').value = editing && reqData ? reqData.name || '' : ($('reqNameInput').value || (currentUser && currentUser.displayName) || '');
+    $('reqErr').classList.add('hidden');
+    $('reqSendBtn').disabled = false;
+    reqView('reqForm');
+  }
+  function showOldDenied(email) {
+    reqView('reqOld');
     $('deniedEmailText').textContent = email;
     $('deniedCopyBtn').onclick = async () => {
       try {
@@ -1055,6 +1148,70 @@
       } catch (e) { /* sin acceso al portapapeles */ }
     };
   }
+  function showAccessDenied() {
+    hideInitialLoading();
+    $('gateView').classList.add('hidden');
+    $('mainView').classList.add('hidden');
+    $('authGateView').classList.remove('hidden');
+    authStep('authStepDenied');
+    const email = (currentUser && currentUser.email) || '';
+    reqCode = getCode();
+    $('reqEmailText').textContent = email;
+    if (!currentUser || !reqCode) { showOldDenied(email); return; }
+    reqView('reqLoading');
+    if (reqUnsub) { reqUnsub(); reqUnsub = null; }
+    let hadRequest = false;
+    reqUnsub = reqRef(reqCode).onSnapshot((snap) => {
+      if (!snap.exists) {
+        if (hadRequest) {   // lo aprobaron (el pedido se borra al aprobar): entrar
+          if (reqUnsub) { reqUnsub(); reqUnsub = null; }
+          reqView('reqLoading');
+          startViewing(reqCode);
+          return;
+        }
+        reqData = null;
+        showReqForm(false);
+        return;
+      }
+      hadRequest = true;
+      reqData = snap.data() || {};
+      if (reqData.status === 'rechazado') { reqView('reqRejected'); return; }
+      if (reqEditing && !$('reqForm').classList.contains('hidden')) return;
+      paintReqWait();
+      reqView('reqWait');
+    }, (err) => {
+      console.warn('Pedido de acceso', err);
+      showOldDenied(email);   // p. ej. reglas del servidor todavía sin publicar
+    });
+  }
+  async function sendAccessRequest() {
+    const name = $('reqNameInput').value.replace(/\s+/g, ' ').trim();
+    const err = $('reqErr');
+    if (name.length < 3 || !/\s/.test(name)) { err.textContent = 'Escribí tu nombre y apellido.'; err.classList.remove('hidden'); return; }
+    err.classList.add('hidden');
+    $('reqSendBtn').disabled = true;
+    const now = new Date().toISOString();
+    try {
+      if (reqEditing && reqData) await reqRef(reqCode).update({ name, updatedAt: now });
+      else await reqRef(reqCode).set({ email: currentUser.email, name, createdAt: now, updatedAt: now, status: 'pendiente' });
+      reqEditing = false;
+      reqData = Object.assign({}, reqData || { createdAt: now, status: 'pendiente' }, { name });
+      paintReqWait(); reqView('reqWait');
+    } catch (e) {
+      err.textContent = 'No se pudo enviar. Revisá la conexión y probá de nuevo.';
+      err.classList.remove('hidden');
+      logCloudError('pedido-acceso', `${(e && e.code) || ''} ${(e && e.message) || e}`.trim(), '');
+    }
+    $('reqSendBtn').disabled = false;
+  }
+  function reqSignOut() {
+    if (reqUnsub) { reqUnsub(); reqUnsub = null; }
+    reqData = null; reqEditing = false; $('reqNameInput').value = '';
+    try { localStorage.removeItem(AUTH_EMAIL_KEY); } catch (e) { /* sin acceso */ }
+    if (fbAuth) fbAuth.signOut();
+    authStep('authStepEmail');
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     $('authShowEmailBtn').addEventListener('click', () => {
       $('authEmailBlock').classList.remove('hidden');
@@ -1096,11 +1253,12 @@
         $('authEmailErr').classList.remove('hidden');
       }
     });
-    $('authRetryBtn').addEventListener('click', () => {
-      try { localStorage.removeItem(AUTH_EMAIL_KEY); } catch (e) { /* sin acceso */ }
-      if (fbAuth) fbAuth.signOut();
-      authStep('authStepEmail');
-    });
+    $('authRetryBtn').addEventListener('click', reqSignOut);
+    $('reqOtherBtn').addEventListener('click', () => { if (reqEditing) { reqEditing = false; paintReqWait(); reqView('reqWait'); } else reqSignOut(); });
+    $('reqRejOtherBtn').addEventListener('click', reqSignOut);
+    $('reqSendBtn').addEventListener('click', sendAccessRequest);
+    $('reqNameInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') sendAccessRequest(); });
+    $('reqEditBtn').addEventListener('click', () => showReqForm(true));
     $('authSentBackBtn').addEventListener('click', () => {
       try { localStorage.removeItem(AUTH_EMAIL_KEY); } catch (e) { /* sin acceso */ }
       authStep('authStepEmail');
@@ -2403,6 +2561,7 @@
   $('gateCodeInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('gateBtn').click(); });
 
   (async () => {
+    if (new URLSearchParams(location.search).get('codigo') && getCode()) { try { localStorage.setItem(LAST_CODE_KEY, getCode()); } catch (e) { /* sin acceso */ } }
     initFirebase();
     await initAuth();
     const codeFromUrl = getCode();

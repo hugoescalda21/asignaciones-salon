@@ -8,7 +8,7 @@ const {
   selectNewAvisos, notificationForNewAvisos, validateReminder, reminderDocId,
   arParts, parseHHMM, meetingDateFor, assignmentsOnDate, normalizeReminderPrefs,
   remindersDue, reminderMessage, sentReminderId,
-  roleAreasFor, disallowedWeekChanges, guardSummary
+  roleAreasFor, disallowedWeekChanges, guardSummary, accessRequestMessage
 } = require('./lib');
 
 let passed = 0;
@@ -269,6 +269,16 @@ t('guard: Super Admin puede todo', () => {
 t('guard: resumen legible', () => {
   const d = disallowedWeekChanges(W(), mod((m) => { m.program.presidente = 'z'; }), ['tecnico']);
   assert.match(guardSummary('tec@x', d), /tec@x cambió Programa \(semana del 2026-09-21 entre semana\).*Se deshizo/);
+});
+
+// ---- aviso de solicitud de acceso ----
+t('solicitud: una sola', () => {
+  assert.deepStrictEqual(accessRequestMessage('Rebeca Escalda', 1), { title: 'Nueva solicitud de acceso', body: 'Rebeca Escalda quiere entrar a la app. Tocá para aprobarla.' });
+});
+t('solicitud: varias pendientes se agrupan', () => {
+  assert.strictEqual(accessRequestMessage('Lucas', 2).body, 'Lucas y otra persona esperan tu aprobación.');
+  assert.strictEqual(accessRequestMessage('Lucas', 4).title, '4 solicitudes de acceso');
+  assert.strictEqual(accessRequestMessage('Lucas', 4).body, 'Lucas y 3 personas más esperan tu aprobación.');
 });
 
 console.log('\n' + passed + ' pruebas OK' + (process.exitCode ? ' — HAY FALLAS' : ''));

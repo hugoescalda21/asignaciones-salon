@@ -288,7 +288,21 @@ const isoDay = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate
   }
 
   // =====================================================================
-  section('7) Estructura del HTML');
+  section('7) Pedir acceso');
+  {
+    const ctx = {}; vm.createContext(ctx);
+    vm.runInContext(fn('reqAgo') + '\nthis.reqAgo = reqAgo;', ctx);
+    const ago = (min) => ctx.reqAgo(new Date(Date.now() - min * 60000).toISOString());
+    check('"recién", minutos, horas y días', ago(0) === 'recién' && ago(15) === 'hace 15 minutos' && ago(60) === 'hace 1 hora' && ago(180) === 'hace 3 horas' && ago(1500) === 'ayer' && ago(4400) === 'hace 3 días', [ago(0), ago(15), ago(60), ago(180), ago(1500), ago(4400)]);
+    check('el pedido va a solicitudes/{uid} de la congregación', /collection\('congregations'\)\.doc\(code\)\.collection\('solicitudes'\)\.doc\(currentUser\.uid\)/.test(JS));
+    check('pide nombre y apellido', /name\.length < 3 \|\| !\/\\s\/\.test\(name\)/.test(JS));
+    check('al aprobarse (pedido borrado) entra solo', /if \(hadRequest\) \{[\s\S]{0,200}startViewing\(reqCode\)/.test(JS));
+    check('guarda el código apenas se abre el link (antes de iniciar sesión)', JS.indexOf("localStorage.setItem(LAST_CODE_KEY, getCode())") > -1 && JS.indexOf("localStorage.setItem(LAST_CODE_KEY, getCode())") < JS.indexOf('await initAuth();', JS.indexOf("localStorage.setItem(LAST_CODE_KEY, getCode())") - 200));
+    check('pantallas: pedir, esperar, rechazado y la vieja de respaldo', ['reqForm', 'reqWait', 'reqRejected', 'reqOld'].every(id => HTML.includes(`id="${id}"`)));
+  }
+
+  // =====================================================================
+  section('8) Estructura del HTML');
   {
     const ids = [...HTML.matchAll(/id="([A-Za-z0-9_]+)"/g)].map(m => m[1]);
     const dupes = [...new Set(ids.filter((x, i) => ids.indexOf(x) !== i))];
