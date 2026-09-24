@@ -267,7 +267,7 @@
 </head>
 <body>
 <h1 class="page">Territorios</h1>
-<p class="lead">Una pestaña nueva en la app de asignaciones para el encargado de territorios, y "Mis territorios" en la vista para cada hermano. Arranca con fotos de las tarjetas de papel; los límites se dibujan sobre el mapa cuando haya tiempo.</p>
+<p class="lead">Una pestaña nueva en la app de asignaciones para el encargado de territorios (territorios y programa de salidas), y en la vista, las salidas de la semana y "Mis territorios" para cada hermano. Arranca con fotos de las tarjetas de papel; los límites se dibujan sobre el mapa cuando haya tiempo.</p>
 
 <h2 class="sec">Encargado de territorios</h2>
 <div class="grid">
@@ -410,13 +410,96 @@
 
 </div>
 
+
+<h2 class="sec">Programa de salidas de la semana</h2>
+<div class="grid">
+
+  <div class="col">
+    <div class="label">7 · Las salidas de la semana</div>
+    <div class="phone">
+      <div class="ehead"><span class="dot"></span><b>Asignaciones</b><span class="cb">San Agustín</span></div>
+      <div class="scr">
+        <div class="seg" style="margin-bottom:0"><span>Territorios</span><span class="on">Salidas</span><span>Lugares</span></div>
+        <div class="h2" style="font-size:13px">Semana del 5 al 11 de oct <span class="btnp">+ Salida</span></div>
+        <div class="hl" style="outline-offset:2px;border-radius:9px;position:relative;display:flex;flex-direction:column;gap:5px"><span class="pin">7</span>
+          <div class="tr" style="align-items:flex-start"><span class="num" style="width:36px;height:auto;padding:4px 0;flex-direction:column;font-size:7.5px;line-height:1.15;text-align:center">MAR<b style="font-size:11px">9:30</b></span><div class="tx"><b>🏠 Casa de la familia Gómez</b><small>Belgrano 450 · Conduce <b style="display:inline;font-size:inherit;color:var(--ink)">Martín Ruiz</b></small><small>Territorios 12 y 4</small></div></div>
+          <div class="tr" style="align-items:flex-start"><span class="num" style="width:36px;height:auto;padding:4px 0;flex-direction:column;font-size:7.5px;line-height:1.15;text-align:center">JUE<b style="font-size:11px">17:00</b></span><div class="tx"><b>📍 Esquina Mitre y Sarmiento</b><small>Frente a la plaza · Conduce <b style="display:inline;font-size:inherit;color:var(--ink)">Diego Fernández</b></small><small>Territorio 22 (edificios)</small></div></div>
+          <div class="tr" style="align-items:flex-start"><span class="num" style="width:36px;height:auto;padding:4px 0;flex-direction:column;font-size:7.5px;line-height:1.15;text-align:center">SÁB<b style="font-size:11px">9:30</b></span><div class="tx"><b>🏛 Salón del Reino</b><small>Conduce <b style="display:inline;font-size:inherit;color:#8A2E22">falta asignar</b></small><small>Territorios 7 y 31</small></div><span class="pill pr">Falta</span></div>
+          <div class="tr" style="align-items:flex-start"><span class="num" style="width:36px;height:auto;padding:4px 0;flex-direction:column;font-size:7.5px;line-height:1.15;text-align:center">DOM<b style="font-size:11px">10:00</b></span><div class="tx"><b>🏠 Casa de la familia Paz</b><small>Los Aromos 120 · Conduce <b style="display:inline;font-size:inherit;color:var(--ink)">Pablo Sosa</b></small><small>Grupo 3 · Territorio 15</small></div></div>
+        </div>
+        <div class="acts2" style="margin-top:auto"><span>✨ Auto-asignar conductores</span><span class="pri">📤 Compartir</span></div>
+      </div>
+      <div class="tabsb"><span>Programa</span><span>Cronómetro</span><span>Hermanos</span><span class="on">Territorios</span><span>Ajustes</span></div>
+    </div>
+    <div class="note"><span class="n">7</span><b>El programa semanal:</b> día y hora, lugar de encuentro (casa, esquina o el Salón), quién conduce y qué territorios se trabajan. Las salidas fijas se repiten solas cada semana; solo se cambia el conductor o el territorio. <b>Auto-asignar</b> reparte a los conductores parejo, y <b>Compartir</b> lo manda por WhatsApp o en PDF, como el programa de la reunión.</div>
+  </div>
+
+  <div class="col">
+    <div class="label">8 · Crear o editar una salida</div>
+    <div class="phone">
+      <div class="ehead"><span class="dot"></span><b>Asignaciones</b><span class="cb">San Agustín</span></div>
+      <div class="scr"></div>
+      <div class="sheet-ov">
+        <div class="sheet hl" style="outline-offset:-2px"><span class="pin" style="top:6px;left:6px">8</span>
+          <div class="handle"></div>
+          <h4>Salida del martes</h4>
+          <div class="kv" style="font-size:9.5px"><span>Día y hora</span><b>Martes · 9:30</b></div>
+          <div class="sw" style="border-top:none;padding-top:2px"><span>Se repite todas las semanas</span><i></i></div>
+          <div class="lbl">Lugar de encuentro</div>
+          <div class="opt sel"><div>🏠 Casa de la familia Gómez<small>Belgrano 450</small></div><span class="rad"></span></div>
+          <div class="opt"><div>📍 Esquina Mitre y Sarmiento<small>Frente a la plaza</small></div><span class="rad"></span></div>
+          <div class="opt"><div style="color:var(--accent-blue);font-weight:700">+ Nuevo lugar</div></div>
+          <div class="lbl">Conduce</div>
+          <div class="opt sel"><div>Martín Ruiz<small>Condujo hace 3 semanas</small></div><span class="rad"></span></div>
+          <div class="lbl">Territorios</div>
+          <div class="chips" style="flex-wrap:wrap"><span class="on">12 · Centro Norte ✕</span><span class="on">4 · Los Aromos ✕</span><span>+ Elegir</span></div>
+          <span class="btnk">Guardar</span>
+        </div>
+      </div>
+      <div class="tabsb"><span>Programa</span><span>Cronómetro</span><span>Hermanos</span><span class="on">Territorios</span><span>Ajustes</span></div>
+    </div>
+    <div class="note"><span class="n">8</span><b>Los lugares se guardan una vez</b> (casa de una familia, una esquina, el Salón) con su dirección y ubicación en el mapa, y después se eligen de la lista. Para conducir aparecen los hermanos habilitados (se marca en Hermanos, como los otros puestos), primero el que hace más que no conduce.</div>
+  </div>
+
+  <div class="col">
+    <div class="label">9 · Lo que ve el hermano</div>
+    <div class="phone">
+      <div class="vhead"><small>Salón del Reino</small><b>San Agustín</b></div>
+      <div class="scr">
+        <div class="card hl" style="outline-offset:2px;background:linear-gradient(135deg,#212C34,#33444F);color:#fff"><span class="pin">9</span>
+          <div style="font-size:7.5px;font-weight:700;letter-spacing:.06em;color:#D8BB82;text-transform:uppercase">Hola, Martín · tu próxima asignación</div>
+          <div style="font-family:'Fraunces',serif;font-size:14px;margin:2px 0">Conducís la salida</div>
+          <div style="font-size:8.5px;opacity:.85">Martes 7 · 9:30 · Casa de la familia Gómez · Territorios 12 y 4</div>
+        </div>
+        <div class="h2" style="font-size:13px">Salidas de esta semana</div>
+        <div class="card" style="padding:7px 9px">
+          <div class="kv"><b>Mar 9:30 · 🏠 Casa de la familia Gómez</b></div>
+          <div class="kv"><span>Belgrano 450 · Conduce Martín Ruiz</span></div>
+          <div class="acts2" style="margin-top:4px"><span>🧭 Cómo llegar</span><span>📅 Calendar</span></div>
+        </div>
+        <div class="card" style="padding:7px 9px">
+          <div class="kv"><b>Jue 17:00 · 📍 Mitre y Sarmiento</b></div>
+          <div class="kv"><span>Frente a la plaza · Conduce Diego Fernández</span></div>
+        </div>
+        <div class="card" style="padding:7px 9px">
+          <div class="kv"><b>Sáb 9:30 · 🏛 Salón del Reino</b></div>
+          <div class="kv"><span>Conduce Tomás Bravo</span></div>
+        </div>
+      </div>
+      <div class="tabsb"><span class="on">Inicio</span><span>Calendario</span><span>Territorios</span><span>Anuncios</span></div>
+    </div>
+    <div class="note"><span class="n">9</span><b>Todos ven dónde y cuándo son las salidas</b>, con "Cómo llegar". Al que conduce le aparece como su asignación, con aviso cuando se la dan y recordatorios antes, igual que las de la reunión; además ve los territorios de esa salida para repartirlos ahí mismo.</div>
+  </div>
+
+</div>
+
 <div class="reco">
   <h2>Resumen</h2>
-  <p><strong>Arranque:</strong> se cargan los territorios con la foto de cada tarjeta y la última fecha en que se terminó (del papel). Con eso el semáforo funciona desde el primer día (1).</p>
-  <p><strong>Día a día:</strong> la ficha de cada territorio con mapa e historial (2), asignar a un hermano o a un grupo con aviso (3), y campañas (5). El registro de asignación de territorios se arma solo, en PDF.</p>
-  <p><strong>Mapas:</strong> se dibujan los límites sobre OpenStreetMap cuando haya tiempo (4); mientras tanto se usa la foto de la tarjeta.</p>
-  <p><strong>Para el hermano:</strong> "Mis territorios" con el mapa, cómo llegar y "Lo terminé" (6).</p>
-  <p><strong>Por dentro:</strong> rol nuevo "Encargado de territorios" (con permisos del servidor) y datos aparte de las reuniones. Las direcciones de "No visitar" solo las ven el encargado y quien tiene el territorio.</p>
+  <p><strong>Territorios:</strong> se cargan con la foto de cada tarjeta y la última fecha en que se terminó; el semáforo funciona desde el primer día (1). Ficha con mapa e historial (2), asignar a un hermano o grupo (3), dibujar límites cuando haya tiempo (4) y campañas (5). El registro se arma solo, en PDF.</p>
+  <p><strong>Programa de salidas:</strong> cada semana, día y hora, lugar de encuentro (casa, esquina o el Salón), quién conduce y qué territorios (7, 8). Se repite solo, se comparte por WhatsApp o PDF y el conductor lo recibe como asignación (9).</p>
+  <p><strong>Para el hermano:</strong> las salidas de la semana con "Cómo llegar", y "Mis territorios" con el mapa y "Lo terminé" (6, 9).</p>
+  <p><strong>Por dentro:</strong> rol nuevo "Encargado de territorios" (maneja territorios y salidas, con permisos del servidor) y datos aparte de las reuniones. Las direcciones de "No visitar" solo las ven el encargado y quien tiene el territorio.</p>
+  <p><strong>Orden propuesto:</strong> A) programa de salidas + catálogo de territorios con fotos y semáforo; B) la vista del hermano (salidas, Mis territorios, avisos); C) mapa dibujado, campañas y registro en PDF.</p>
 </div>
 </body>
 </html>
