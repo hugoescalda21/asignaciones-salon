@@ -490,9 +490,9 @@
       q('#tsSiempreW').style.display = (isNew ? q('#tsFija').checked : st.fija) ? '' : 'none';
     }
     function paintTerr() {
-      q('#tsTags').innerHTML = st.territorios.map(t => `<span>${esc(tName(t))}${T.territorios[t] ? ' · ' + esc(T.territorios[t].nombre || '') : ''}<button type="button" data-rm="${esc(t)}" aria-label="Quitar">✕</button></span>`).join('');
+      q('#tsTags').innerHTML = st.territorios.map(t => `<span>${esc(tName(t))}${T.territorios[t] && T.territorios[t].nombre ? ' · ' + esc(T.territorios[t].nombre) : ''}<button type="button" data-rm="${esc(t)}" aria-label="Quitar">✕</button></span>`).join('');
       const opts = Object.values(T.territorios).filter(t => !st.territorios.includes(t.id)).sort((x, y) => String(x.num).localeCompare(String(y.num), 'es', { numeric: true }));
-      q('#tsTerr').innerHTML = `<option value="">${opts.length ? '+ Agregar territorio…' : (Object.keys(T.territorios).length ? 'No hay más territorios' : 'Todavía no hay territorios cargados')}</option>` + opts.map(t => `<option value="${esc(t.id)}">${esc(t.num)} · ${esc(t.nombre || '')}</option>`).join('');
+      q('#tsTerr').innerHTML = `<option value="">${opts.length ? '+ Agregar territorio…' : (Object.keys(T.territorios).length ? 'No hay más territorios' : 'Todavía no hay territorios cargados')}</option>` + opts.map(t => `<option value="${esc(t.id)}">${esc(t.num)}${t.nombre ? ' · ' + esc(t.nombre) : ''}</option>`).join('');
     }
     paintGroups(); paintLugar(); paintCond(); paintTerr();
     q('#tsDia').value = String(st.dia); q('#tsHora').value = st.hora;

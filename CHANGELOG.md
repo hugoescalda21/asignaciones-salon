@@ -6,6 +6,12 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Mis territorios: también los de la salida que conducís — 24 sep 2026 (cachés asignaciones-salon-v37, ver-salon-v31)
+
+- En la vista, la pestaña **Territorios** muestra también los territorios de las salidas que la persona **conduce** en los próximos días ("Para la salida que conducís el sábado 26 · 09:30 · …"), con la tarjeta y "Lo terminé". Antes solo aparecían los asignados a ella o a su grupo desde la ficha del territorio.
+- En "Salidas al servicio", cada territorio se puede **tocar para ver su tarjeta** (foto y notas).
+- Un territorio sin nombre ya no muestra "1 ·".
+
 ## Territorios etapa B: lo que ve cada hermano — 24 sep 2026 (cachés asignaciones-salon-v36, ver-salon-v30)
 
 - **Vista, Inicio → "Salidas al servicio":** las de los próximos 7 días de su grupo y de toda la congregación ("Todas" muestra también las de los otros grupos), con lugar, dirección, quién conduce, territorios y **"Cómo llegar"** (Google Maps). Si no tiene grupo, ve todas.

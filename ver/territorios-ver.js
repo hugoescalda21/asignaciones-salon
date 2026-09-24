@@ -33,6 +33,7 @@
   .sal-place { font-size: 15px; font-weight: 700; margin: 3px 0 1px; }
   .sal-sub { font-size: 12.5px; color: var(--ink-soft); line-height: 1.45; }
   .sal-sub b { color: var(--ink); font-weight: 600; }
+  .sal-terr { border: 1px solid var(--line); background: var(--bg); border-radius: 12px; padding: 2px 9px; margin: 3px 4px 0 0; font: inherit; font-size: 12px; font-weight: 700; color: var(--ink); cursor: pointer; }
   .sal-btn { display: inline-block; margin-top: 7px; border: 1px solid var(--line); border-radius: 9px; padding: 6px 11px; font-size: 12.5px; font-weight: 700; color: var(--ink); text-decoration: none; background: var(--bg); }
   .mt-card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; margin-bottom: 12px; }
   .mt-card img { width: 100%; max-height: 300px; object-fit: contain; background: var(--bg); display: block; cursor: zoom-in; }
@@ -128,7 +129,10 @@
     box = document.createElement('div'); box.id = 'salidasBox';
     const title = panel.querySelector('.sec-title');
     panel.insertBefore(box, title || null);
-    box.addEventListener('click', (e) => { const b = e.target.closest('[data-sal-all]'); if (b) { V.showAll = b.dataset.salAll === '1'; renderSalidasBox(); } });
+    box.addEventListener('click', (e) => {
+      const t = e.target.closest('[data-sal-terr]'); if (t) { openTerritorySheet(t.dataset.salTerr); return; }
+      const b = e.target.closest('[data-sal-all]'); if (b) { V.showAll = b.dataset.salAll === '1'; renderSalidasBox(); }
+    });
     return box;
   }
   function renderSalidasBox() {
@@ -145,13 +149,13 @@
       const d = new Date(s.fecha + 'T12:00:00');
       const L = V.lugares[s.lugar];
       const mine = pub && s.conductor === pub.id;
-      const terr = s.territorios.map(t => V.territorios[t] ? V.territorios[t].num : '').filter(Boolean);
+      const terr = s.territorios.filter(t => V.territorios[t]).map(t => `<button type="button" class="sal-terr" data-sal-terr="${esc(t)}">${tTitle(V.territorios[t])}</button>`);
       const when = `${s.fecha === from ? 'Hoy' : s.fecha === addDays(from, 1) ? 'Mañana' : DIAS3[d.getDay()] + ' ' + d.getDate()} · ${esc(s.hora)}`;
       return `<div class="sal-card${mine ? ' mine' : ''}${s.cancelada ? ' off' : ''}" id="sal-${esc(s.gid)}-${esc(s.id)}-${s.fecha}">
         <div class="sal-when"><span>${when}</span><span class="tag${mine ? ' me' : ''}">${mine ? 'Vos conducís' : s.cancelada ? 'Suspendida' : esc(grupoName(s.gid))}</span></div>
         <div class="sal-place">${L ? (ICON_L[L.tipo] || '📌') + ' ' + esc(L.nombre) : '📌 Lugar a confirmar'}</div>
         <div class="sal-sub">${L && L.direccion ? esc(L.direccion) + ' · ' : ''}Conduce <b>${s.conductor ? esc(pubName(s.conductor)) : 'a confirmar'}</b></div>
-        ${terr.length ? `<div class="sal-sub">Territorio${terr.length > 1 ? 's' : ''} ${esc(terr.join(', '))}</div>` : ''}
+        ${terr.length ? `<div class="sal-sub">Territorio${terr.length > 1 ? 's' : ''} ${terr.join(' ')}</div>` : ''}
         ${L && L.notas ? `<div class="sal-sub">${esc(L.notas)}</div>` : ''}
         ${L && L.direccion && !s.cancelada ? `<a class="sal-btn" href="${esc(mapsUrl(L))}" target="_blank" rel="noopener">🧭 Cómo llegar</a>` : ''}
       </div>`;
@@ -171,12 +175,22 @@
   }
 
   /* ---------- Mis territorios ---------- */
+  // Sus territorios: los asignados a él o a su grupo, y los de las salidas que conduce en los próximos días.
   function myTerritories() {
     const pub = myPub(); if (!pub) return [];
     const g = myGroup(pub);
-    return Object.values(V.territorios).filter(t => t.asignado && ((t.asignado.tipo === 'hermano' && t.asignado.id === pub.id) || (g && t.asignado.tipo === 'grupo' && t.asignado.id === g.id)))
-      .sort((a, b) => String(a.num).localeCompare(String(b.num), 'es', { numeric: true }));
+    const out = [];
+    Object.values(V.territorios).forEach(t => {
+      if (t.asignado && ((t.asignado.tipo === 'hermano' && t.asignado.id === pub.id) || (g && t.asignado.tipo === 'grupo' && t.asignado.id === g.id))) out.push({ t, via: null });
+    });
+    salidasBetween(hoy(), addDays(hoy(), 7)).filter(s => s.conductor === pub.id && !s.cancelada).forEach(s => {
+      s.territorios.forEach(tid => { const t = V.territorios[tid]; if (t && !out.some(x => x.t.id === tid)) out.push({ t, via: s }); });
+    });
+    return out.sort((a, b) => String(a.t.num).localeCompare(String(b.t.num), 'es', { numeric: true }));
   }
+  function tTitle(t) { return `${esc(t.num)}${t.nombre ? ' · ' + esc(t.nombre) : ''}`; }
+  function tImg(t) { return t.foto && t.foto.url ? `<img src="${esc(t.foto.url)}" alt="Tarjeta del territorio ${esc(t.num)}" data-mt-img="${esc(t.foto.url)}">` : '<div class="mt-noimg">Sin foto de la tarjeta todavía</div>'; }
+  function viaTxt(s) { const d = new Date(s.fecha + 'T12:00:00'); const L = V.lugares[s.lugar]; return `Para la salida que conducís el ${DIAS[d.getDay()].toLowerCase()} ${d.getDate()} · ${esc(s.hora)}${L ? ' · ' + esc(L.nombre) : ''}`; }
   function ensureTab() {
     if (!$('panel-territorios')) {
       const sec = document.createElement('section');
@@ -206,20 +220,32 @@
       return;
     }
     const pub = myPub(); const g = myGroup(pub);
-    const canReport = (t) => t.asignado.tipo === 'hermano' || (g && (g.encargado === pub.id || g.auxiliar === pub.id));
-    panel.innerHTML = `<h2 class="sec-title" style="margin-top:6px;">Mis territorios</h2>` + list.map(t => {
-      const due = addDays(t.asignado.desde, VENCE_DIAS);
-      const late = hoy() > due;
+    const canReport = (t, via) => !!via || (t.asignado && (t.asignado.tipo === 'hermano' || (g && (g.encargado === pub.id || g.auxiliar === pub.id))));
+    panel.innerHTML = `<h2 class="sec-title" style="margin-top:6px;">Mis territorios</h2>` + list.map(({ t, via }) => {
       const rep = V.terminados[t.id];
-      const img = t.foto && t.foto.url ? `<img src="${esc(t.foto.url)}" alt="Tarjeta del territorio ${esc(t.num)}" data-mt-img="${esc(t.foto.url)}">` : '<div class="mt-noimg">Sin foto de la tarjeta todavía</div>';
-      return `<div class="mt-card">${img}<div class="mt-body">
-        <div class="mt-title"><b>${esc(t.num)} · ${esc(t.nombre || 'Territorio')}</b><span>${esc(TIPOS_T[t.tipo] || '')}</span></div>
-        ${t.asignado.tipo === 'grupo' ? `<div class="sal-sub">De tu grupo · ${esc(grupoName(t.asignado.id))}</div>` : ''}
-        <div class="mt-due${late ? ' late' : ''}">Asignado ${esc(agoTxt(t.asignado.desde))} · ${late ? 'se pasó la fecha: ' : 'terminalo antes del '}${esc(fmtLong(due))}</div>
+      let info = '';
+      if (via) info = `<div class="mt-due">${viaTxt(via)}</div>`;
+      else {
+        const due = addDays(t.asignado.desde, VENCE_DIAS);
+        const late = hoy() > due;
+        info = `${t.asignado.tipo === 'grupo' ? `<div class="sal-sub">De tu grupo · ${esc(grupoName(t.asignado.id))}</div>` : ''}<div class="mt-due${late ? ' late' : ''}">Asignado ${esc(agoTxt(t.asignado.desde))} · ${late ? 'se pasó la fecha: ' : 'terminalo antes del '}${esc(fmtLong(due))}</div>`;
+      }
+      return `<div class="mt-card">${tImg(t)}<div class="mt-body">
+        <div class="mt-title"><b>${tTitle(t)}</b><span>${esc(TIPOS_T[t.tipo] || '')}</span></div>
+        ${info}
         ${t.notas ? `<div class="mt-notes">${esc(t.notas)}</div>` : ''}
-        ${rep ? `<div class="mt-sent">✓ Avisaste que lo terminaste el ${esc(fmtLong(rep.fecha))}. Falta que lo confirme el encargado.</div>` : (canReport(t) ? `<button type="button" class="mt-done" data-mt-done="${esc(t.id)}">✓ Lo terminé</button>` : '')}
+        ${rep ? `<div class="mt-sent">✓ Avisaste que lo terminaste el ${esc(fmtLong(rep.fecha))}. Falta que lo confirme el encargado.</div>` : (canReport(t, via) ? `<button type="button" class="mt-done" data-mt-done="${esc(t.id)}">✓ Lo terminé</button>` : '')}
       </div></div>`;
     }).join('');
+  }
+  // Tarjeta de un territorio (desde una salida): foto y notas.
+  function openTerritorySheet(tid) {
+    const t = V.territorios[tid]; if (!t) return;
+    const ov = document.createElement('div');
+    ov.className = 'mt-ov';
+    ov.innerHTML = `<div class="mt-sheet" role="dialog" aria-modal="true" style="max-height:88vh;overflow:auto;"><div class="mt-card" style="margin:0 0 12px;">${tImg(t)}<div class="mt-body"><div class="mt-title"><b>${tTitle(t)}</b><span>${esc(TIPOS_T[t.tipo] || '')}</span></div>${t.notas ? `<div class="mt-notes" style="margin-top:6px;">${esc(t.notas)}</div>` : ''}</div></div><div class="row"><button type="button" id="mtClose">Cerrar</button></div></div>`;
+    document.body.appendChild(ov);
+    ov.addEventListener('click', (e) => { if (e.target === ov || e.target.id === 'mtClose') { ov.remove(); return; } const im = e.target.closest('[data-mt-img]'); if (im) window.open(im.dataset.mtImg, '_blank', 'noopener'); });
   }
   function onTerrClick(e) {
     const im = e.target.closest('[data-mt-img]');

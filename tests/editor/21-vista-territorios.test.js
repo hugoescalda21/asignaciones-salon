@@ -20,7 +20,7 @@ const DOCS = {
     t4: { id: 't4', num: '4', nombre: 'Los Aromos', tipo: 'casas', asignado: { tipo: 'grupo', id: 'g1', desde: '2026-04-01' } },
     t9: { id: 't9', num: '9', nombre: 'Otro', tipo: 'casas', asignado: { tipo: 'hermano', id: 'p8', desde: '2026-09-01' } } } },
   'congregations/C/salidas/g1': { plantilla: { s1: { id: 's1', dia: 5, hora: '09:30', lugar: 'L1', conductor: null, territorios: ['t4'] } },
-    semanas: { '2026-09-21': { cambios: { s1: { conductor: 'p1', territorios: ['t4', 't12'] } } } } },
+    semanas: { '2026-09-21': { cambios: { s1: { conductor: 'p1', territorios: ['t4', 't12', 't9'] } } } } },
   'congregations/C/salidas/g2': { plantilla: { s3: { id: 's3', dia: 4, hora: '17:00', lugar: 'L1', conductor: 'p6' } } },
   'congregations/C/salidas/congregacion': { plantilla: { s2: { id: 's2', dia: 6, hora: '10:00', lugar: 'L2', conductor: 'p4' } } }
 };
@@ -69,11 +69,13 @@ function installMock(store) {
   console.log('\nMartín (Grupo 1, conduce el viernes, tiene territorios)');
   const p = await open('martin@x.com');
   let cards = await p.evaluate(() => [...document.querySelectorAll('#salidasBox .sal-card')].map(c => c.innerText.replace(/\s+/g, ' ')));
-  check('Inicio: salidas de su grupo y de la congregación (no las del Grupo 2)', cards.length === 2 && /^Vie 25 · 09:30 Vos conducís 🏠 Casa de la familia Gómez Belgrano 450 · Conduce Martín Ruiz Territorios 4, 12/.test(cards[0]) && /^Sáb 26 · 10:00 Congregación 🏛 Salón del Reino Conduce Tomás Bravo/.test(cards[1]), cards);
+  check('Inicio: salidas de su grupo y de la congregación (no las del Grupo 2)', cards.length === 2 && /^Vie 25 · 09:30 Vos conducís 🏠 Casa de la familia Gómez Belgrano 450 · Conduce Martín Ruiz Territorios 4 · Los Aromos 12 · Centro Norte 9 · Otro/.test(cards[0]) && /^Sáb 26 · 10:00 Congregación 🏛 Salón del Reino Conduce Tomás Bravo/.test(cards[1]), cards);
   check('"Cómo llegar" con la dirección', await p.evaluate(() => /maps\/search\/\?api=1&query=Belgrano%20450/.test(document.querySelector('#salidasBox .sal-btn').href)));
   await p.click('#salidasBox [data-sal-all="1"]'); await p.waitForTimeout(80);
   check('"Todas" muestra también las del Grupo 2', await p.evaluate(() => document.querySelectorAll('#salidasBox .sal-card').length === 3));
   await p.click('#salidasBox [data-sal-all="0"]');
+  await p.click('#salidasBox [data-sal-terr="t12"]'); await p.waitForTimeout(80);
+  check('tocando un territorio de la salida se ve su tarjeta', await p.evaluate(() => { const ov = document.querySelector('.mt-ov'); const ok = ov && /12 · Centro Norte/.test(ov.innerText) && !!ov.querySelector('img'); if (ov) ov.remove(); return ok; }));
   check('la salida que conduce es una asignación suya', await p.evaluate(() => /Conducir la salida/.test(($('nextHero').innerText || '') + ($('personalSummary').innerText || ''))));
   await p.evaluate(() => { const el = $('salidasBox'); el.scrollIntoView(); });
   await p.screenshot({ path: SHOTS + '/vista-salidas.png' });
@@ -81,8 +83,8 @@ function installMock(store) {
   check('aparece la pestaña Territorios', await p.evaluate(() => !document.querySelector('.bt-btn[data-tab="territorios"]').classList.contains('hidden')));
   await p.click('.bt-btn[data-tab="territorios"]'); await p.waitForTimeout(150);
   const terr = await p.evaluate(() => [...document.querySelectorAll('#panel-territorios .mt-card')].map(c => c.innerText.replace(/\s+/g, ' ')));
-  check('Mis territorios: el suyo y el de su grupo (no el de otro)', terr.length === 2 && /4 · Los Aromos/.test(terr[0]) && /De tu grupo · Grupo 1/.test(terr[0]) && /^12 · Centro Norte/.test(terr[1]), terr);
-  check('fecha para terminarlo (y si se pasó, lo dice)', /se pasó la fecha/.test(terr[0]) && /terminalo antes del [^,]+, 30 de diciembre/.test(terr[1]), terr);
+  check('Mis territorios: el suyo, el de su grupo y el de la salida que conduce (no los de otros)', terr.length === 3 && /4 · Los Aromos/.test(terr[0]) && /De tu grupo · Grupo 1/.test(terr[0]) && /9 · Otro/.test(terr[1]) && /Para la salida que conducís el viernes 25 · 09:30 · Casa de la familia Gómez/.test(terr[1]) && /^12 · Centro Norte/.test(terr[2]), terr);
+  check('fecha para terminarlo (y si se pasó, lo dice)', /se pasó la fecha/.test(terr[0]) && /terminalo antes del [^,]+, 30 de diciembre/.test(terr[2]), terr);
   check('la foto de la tarjeta', await p.evaluate(() => !!document.querySelector('#panel-territorios img[src="https://example.com/t12.jpg"]')));
   await p.screenshot({ path: SHOTS + '/vista-territorios.png' });
   await p.click('[data-mt-done="t12"]'); await p.waitForTimeout(100);
