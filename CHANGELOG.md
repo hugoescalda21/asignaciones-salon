@@ -6,6 +6,14 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Compartir la app: links y códigos QR — 24 sep 2026 (caché asignaciones-salon-v34)
+
+- Ajustes → **Compartir la app** (Super Admin): el link **para los hermanos** (la vista, donde piden acceso) y el link **para los admins** (la app de asignaciones), cada uno con **WhatsApp** (mensaje listo), **Copiar link** y **Código QR**. El QR se puede **descargar para imprimir**, con título e indicación ("Escaneá con la cámara del celular"), por ejemplo para el tablero de anuncios del salón.
+- Acceso → menú de cada persona → **Mandarle el link por WhatsApp**: a quien tiene "Solo ver" le manda el de la vista; a los admins, el de la app de asignaciones.
+- El link para admins trae el código de la congregación (`?codigo=`): quien lo abre ya no tiene que escribirlo.
+- El QR se genera en el propio celular con `vendor/qrcode.js` (qrcode-generator, licencia MIT), sin servicios externos.
+- Pruebas: `19-compartir-app` (446 en total).
+
 ## Página para pedir acceso — 24 sep 2026 (cachés asignaciones-salon-v33, ver-salon-v29)
 
 - **Un solo link para toda la congregación.** La vista explica qué es la app antes de iniciar sesión. Quien entra sin estar autorizado ya no ve "Sin acceso todavía, copiá tu email": escribe su nombre y toca **Pedir acceso** (el email lo pone el inicio de sesión, ya comprobado).

@@ -636,6 +636,17 @@
 
   /* ---------- Ajustes → Acceso (lista larga) ---------- */
   .acc-top { display: flex; justify-content: flex-end; margin: 6px 0 -2px; }
+  /* Compartir la app */
+  .sa-row { border-top: 1px solid var(--line); padding: 12px 0 4px; }
+  .sa-row:first-child { border-top: none; padding-top: 4px; }
+  .sa-t b { display: block; font-size: 14px; }
+  .sa-t span { display: block; font-size: 12.5px; color: var(--ink-soft); line-height: 1.45; margin: 2px 0 6px; }
+  .sa-link { font-size: 11.5px; color: var(--ink-faint); word-break: break-all; margin-bottom: 8px; }
+  .sa-btns { display: flex; gap: 7px; flex-wrap: wrap; }
+  .sa-btns .btn { flex: 1; min-width: 90px; }
+  .sa-btns .btn.wa { background: #25D366; border-color: #25D366; color: #fff; }
+  .qr-box { display: flex; justify-content: center; margin: 6px 0 4px; }
+  .qr-box canvas { width: 240px; height: 240px; image-rendering: pixelated; background: #fff; border-radius: 10px; padding: 8px; }
   /* Solicitudes de acceso */
   .tab-btn { position: relative; }
   .req-badge { position: absolute; top: 3px; right: 6px; min-width: 16px; height: 16px; border-radius: 8px; background: #C0392B; color: #fff; font-size: 10px; font-weight: 700; line-height: 16px; padding: 0 4px; box-sizing: border-box; text-align: center; }
@@ -1517,6 +1528,21 @@
       <div class="acc-chips" id="accChips" role="group" aria-label="Filtrar por rol"></div>
       <div id="accessRolesList"></div>
     </details>
+    <details class="settings-card" id="shareCard">
+      <summary><div><h3>Compartir la app</h3><span class="sc-sub">Los links para los hermanos y para los admins, con código QR</span></div><span class="chev">›</span></summary>
+      <div class="share-app" style="margin-top:8px;">
+        <div class="sa-row">
+          <div class="sa-t"><b>👥 Para los hermanos</b><span>La vista de la congregación. Entran con este link y piden acceso; vos los aprobás en Acceso.</span></div>
+          <div class="sa-link" id="saLinkVista"></div>
+          <div class="sa-btns"><button type="button" class="btn wa" data-share-app="vista" data-how="wa">WhatsApp</button><button type="button" class="btn" data-share-app="vista" data-how="copy">Copiar link</button><button type="button" class="btn" data-share-app="vista" data-how="qr">Código QR</button></div>
+        </div>
+        <div class="sa-row">
+          <div class="sa-t"><b>🛠 Para los admins</b><span>La app de asignaciones, para quienes cargan su parte o publican anuncios. Primero dales el rol en Acceso.</span></div>
+          <div class="sa-link" id="saLinkAdmin"></div>
+          <div class="sa-btns"><button type="button" class="btn wa" data-share-app="admin" data-how="wa">WhatsApp</button><button type="button" class="btn" data-share-app="admin" data-how="copy">Copiar link</button><button type="button" class="btn" data-share-app="admin" data-how="qr">Código QR</button></div>
+        </div>
+      </div>
+    </details>
     <div class="settings-group">Avisos</div>
     <details class="settings-card">
       <summary><div><h3>Aviso de puestos sin cubrir</h3><span class="sc-sub">Te avisa el día anterior si falta cubrir algún puesto (con la app abierta)</span></div><span class="chev">›</span></summary>
@@ -1638,6 +1664,16 @@
 </div>
 
 <!-- Modal: bienvenida -->
+<div class="modal-overlay hidden" id="qrOverlay" role="dialog" aria-modal="true" aria-label="Código QR">
+  <div class="modal" style="max-width:380px; text-align:center;">
+    <h3 id="qrTitle" style="margin:0 0 4px;"></h3>
+    <p class="modal-sub" id="qrSub" style="margin:0 0 8px;"></p>
+    <div class="qr-box" id="qrBox"></div>
+    <p class="hint" id="qrLink" style="word-break:break-all; margin:6px 0 0; font-size:11px;"></p>
+    <div class="modal-footer"><button type="button" class="btn" id="qrCloseBtn">Cerrar</button><button type="button" class="btn btn-primary" id="qrDownloadBtn">Descargar para imprimir</button></div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="guideOverlay">
   <div class="modal" style="max-width:480px; max-height:82vh; overflow-y:auto;">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
@@ -2278,6 +2314,8 @@
   };
   const ACCESS_CODE_KEY = 'kh-access-code';
   const AUTH_EMAIL_KEY = 'kh-auth-email';
+  // El link para admins trae el código (?codigo=): se guarda antes de iniciar sesión, así no hay que escribirlo.
+  try { const c = normalizeCode(new URLSearchParams(location.search).get('codigo') || ''); if (c) localStorage.setItem(ACCESS_CODE_KEY, c); } catch (e) { /* sin acceso */ }
   let fbDb = null;
   let fbAuth = null;
   let fbUnsubscribe = null;
@@ -2784,7 +2822,8 @@
     pubModalOverlay: 'pubCancelBtn',
     excludeModalOverlay: 'excludeCloseBtn',
     waModalOverlay: 'waCloseBtn',
-    assignOnlyModalOverlay: 'assignOnlyCloseBtn'
+    assignOnlyModalOverlay: 'assignOnlyCloseBtn',
+    qrOverlay: 'qrCloseBtn'
   };
   function getFocusable(container) {
     return Array.from(container.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
@@ -6123,6 +6162,7 @@
     $('accMenuBody').innerHTML = `<div class="an-fl" style="margin-top:0;">Rol</div><div class="acc-roles">${roleBtns}</div>
       ${anPermRowHTML({ email, field })}
       <div style="margin-top:10px;">
+        ${item('send', '📤', 'Mandarle el link por WhatsApp', field === 'viewerEmails' ? 'El de la vista de la congregación' : 'El de la app de asignaciones')}
         ${item('link', '🔗', pub ? 'Cambiar hermano vinculado' : 'Vincular a un hermano', pub ? '' : 'Para que vea sus propias asignaciones')}
         ${pub ? item('unlink', '⛓', 'Desvincular', `Deja de estar asociado a ${escapeHtml(pub.name)}`) : ''}
         ${item('remove', '✕', 'Quitar acceso', 'Deja de poder entrar', 'danger')}
@@ -6186,6 +6226,7 @@
     if (!m) return;
     const k = m.dataset.accm;
     if (k === 'back') { accState.picking = false; renderAccMenu(); return; }
+    if (k === 'send') { shareApp(field === 'viewerEmails' ? 'vista' : 'admin', 'wa'); return; }
     if (k === 'link') { accState.picking = true; renderAccMenu(); setTimeout(() => $('accPickSearch') && $('accPickSearch').focus(), 50); return; }
     if (k === 'unlink') {
       const pub = accPubOf(email);
@@ -6266,6 +6307,100 @@
     box.innerHTML = html;
   }
   $('devCard').addEventListener('toggle', () => { if ($('devCard').open && !devItems) loadDevices(); });
+
+
+  /* ---------- Compartir la app: links para hermanos y admins, con QR ---------- */
+  function appLinks() {
+    const code = accessCode || '';
+    const vista = new URL('ver/ver.html', location.href); vista.search = ''; vista.hash = '';
+    const admin = new URL(location.href); admin.search = ''; admin.hash = '';
+    if (code) { vista.searchParams.set('codigo', code); admin.searchParams.set('codigo', code); }
+    return { vista: vista.toString(), admin: admin.toString() };
+  }
+  const SHARE_APP_MSG = {
+    vista: (l) => `Ya tenemos la app de la congregación 🙌 Entrá a este link, pedí tu acceso y apenas lo apruebe ya podés usarla:\n👉 ${l}`,
+    admin: (l) => `Este es el link de la app de asignaciones, para cargar tu parte. Entrá con el mismo email que usás en la app de la congregación:\n👉 ${l}`
+  };
+  function renderShareCard() {
+    const l = appLinks();
+    $('saLinkVista').textContent = l.vista;
+    $('saLinkAdmin').textContent = l.admin;
+  }
+  async function shareApp(kind, how) {
+    if (!accessCode) { showToast('Conectate con un código primero (Ajustes → Sincronización)'); return; }
+    const link = appLinks()[kind];
+    if (how === 'wa') { window.open('https://wa.me/?text=' + encodeURIComponent(SHARE_APP_MSG[kind](link)), '_blank', 'noopener'); return; }
+    if (how === 'copy') {
+      try { await navigator.clipboard.writeText(link); showToast('Link copiado'); }
+      catch (e) { prompt('Copiá este link:', link); }
+      return;
+    }
+    if (how === 'qr') openQr(kind, link);
+  }
+  let qrLibPromise = null;
+  function loadQrLib() {
+    if (window.qrcode) return Promise.resolve();
+    if (!qrLibPromise) qrLibPromise = new Promise((res, rej) => {
+      const sc = document.createElement('script');
+      sc.src = 'vendor/qrcode.js';
+      sc.onload = () => res(); sc.onerror = () => { qrLibPromise = null; rej(new Error('qr')); };
+      document.head.appendChild(sc);
+    });
+    return qrLibPromise;
+  }
+  // Dibuja el QR (y, para imprimir, un título arriba y una indicación abajo) en un canvas.
+  function drawQr(link, px, withText, kind) {
+    const qr = window.qrcode(0, 'M'); qr.addData(link); qr.make();
+    const n = qr.getModuleCount(), margin = 4;
+    const cell = Math.max(1, Math.floor(px / (n + margin * 2)));
+    const size = cell * (n + margin * 2);
+    const head = withText ? Math.round(size * 0.22) : 0, foot = withText ? Math.round(size * 0.2) : 0;
+    const c = document.createElement('canvas');
+    c.width = size; c.height = size + head + foot;
+    const g = c.getContext('2d');
+    g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+    g.fillStyle = '#000';
+    for (let r = 0; r < n; r++) for (let q = 0; q < n; q++) if (qr.isDark(r, q)) g.fillRect((q + margin) * cell, head + (r + margin) * cell, cell, cell);
+    if (withText) {
+      const cong = (data.settings && data.settings.congregationName) || 'la congregación';
+      g.fillStyle = '#212C34'; g.textAlign = 'center';
+      g.font = `600 ${Math.round(size * 0.06)}px Georgia, serif`;
+      g.fillText(kind === 'admin' ? 'App de asignaciones' : 'Asignaciones de la congregación', size / 2, head * 0.5);
+      g.font = `${Math.round(size * 0.04)}px sans-serif`; g.fillStyle = '#5C6B74';
+      g.fillText(cong, size / 2, head * 0.82);
+      g.fillStyle = '#212C34'; g.font = `600 ${Math.round(size * 0.045)}px sans-serif`;
+      g.fillText('Escaneá con la cámara del celular', size / 2, head + size + foot * 0.4);
+      g.fillStyle = '#5C6B74'; g.font = `${Math.round(size * 0.035)}px sans-serif`;
+      g.fillText(kind === 'admin' ? 'Entrá con tu email de admin' : 'Entrá y pedí tu acceso', size / 2, head + size + foot * 0.75);
+    }
+    return c;
+  }
+  let qrCurrent = null;
+  async function openQr(kind, link) {
+    qrCurrent = { kind, link };
+    $('qrTitle').textContent = kind === 'admin' ? 'Link para los admins' : 'Link para los hermanos';
+    $('qrSub').textContent = kind === 'admin' ? 'App de asignaciones' : 'Lo escanean con la cámara, entran y piden acceso.';
+    $('qrLink').textContent = link;
+    $('qrBox').innerHTML = '<p class="hint">Generando…</p>';
+    $('qrOverlay').classList.remove('hidden');
+    try { await loadQrLib(); $('qrBox').innerHTML = ''; $('qrBox').appendChild(drawQr(link, 480, false, kind)); }
+    catch (e) { $('qrBox').innerHTML = '<p class="hint">No se pudo generar el código. Revisá la conexión y probá de nuevo.</p>'; }
+  }
+  $('shareCard').addEventListener('toggle', () => { if ($('shareCard').open) renderShareCard(); });
+  $('shareCard').addEventListener('click', (e) => { const b = e.target.closest('[data-share-app]'); if (b) shareApp(b.dataset.shareApp, b.dataset.how); });
+  $('qrCloseBtn').addEventListener('click', () => $('qrOverlay').classList.add('hidden'));
+  $('qrOverlay').addEventListener('click', (e) => { if (e.target.id === 'qrOverlay') $('qrOverlay').classList.add('hidden'); });
+  $('qrDownloadBtn').addEventListener('click', async () => {
+    if (!qrCurrent) return;
+    try {
+      await loadQrLib();
+      const c = drawQr(qrCurrent.link, 1000, true, qrCurrent.kind);
+      const a = document.createElement('a');
+      a.href = c.toDataURL('image/png');
+      a.download = qrCurrent.kind === 'admin' ? 'qr-app-asignaciones.png' : 'qr-app-congregacion.png';
+      document.body.appendChild(a); a.click(); a.remove();
+    } catch (e) { showToast('No se pudo generar la imagen'); }
+  });
 
   /* ---------- Solicitudes de acceso ----------
      Quien entra a la vista sin estar autorizado pide acceso con su nombre; el pedido queda en
