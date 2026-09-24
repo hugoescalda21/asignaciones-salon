@@ -1463,7 +1463,7 @@
     <details class="settings-card" id="accCard">
       <summary><div><h3>Acceso</h3><span class="sc-sub">Quién puede editar o ver, y con qué rol</span></div><span class="chev">›</span></summary>
       <p class="hint">Cada persona inicia sesión con su email (le llega un link, sin contraseña). Solo entran los que agregues acá — sacar a alguien le corta el acceso al instante.</p>
-      <p class="hint" style="margin-top:4px;">🔒 Quién tiene acceso y quién publica anuncios lo controla también el servidor: solo un Super Admin puede cambiarlo. El resto de los permisos por rol todavía es una restricción de la interfaz (detalles en el roadmap).</p>
+      <p class="hint" style="margin-top:4px;">🔒 Los permisos los controla también el servidor: solo un Super Admin cambia accesos, ajustes y hermanos; cada Admin puede cambiar únicamente su área de cada reunión, y los anuncios si tiene el permiso. Si alguien lo intentara por fuera de la app, el cambio se deshace solo y queda anotado en Registro de errores.</p>
       <div class="acc-top"><span id="accCount" class="acc-count"></span></div>
       <button type="button" class="btn btn-primary acc-add-btn" id="accAddToggle">+ Agregar persona</button>
       <div class="add-block acc-add hidden" id="accAddBlock">
@@ -1659,7 +1659,7 @@
       </details>
       <details class="guide-item">
         <summary><span class="gicon" data-icon="lock"></span>Quién puede entrar<span class="chev">›</span></summary>
-        <p>Ajustes → Acceso. Cada persona inicia sesión con su email (link o Google, sin contraseña) — solo entran los que agregues ahí. Roles: Super Admin (todo), Admin de Equipo técnico, de Acomodadores o de Asignaciones (solo su parte), Solo anuncios (publica anuncios y nada más) y Solo ver (va a la vista de la congregación). Los anuncios los publican los Super Admin, los de "Solo anuncios" y los Admin a los que les prendas "📢 Puede publicar anuncios". Sacar a alguien de la lista le corta el acceso al instante.</p>
+        <p>Ajustes → Acceso. Cada persona inicia sesión con su email (link o Google, sin contraseña) — solo entran los que agregues ahí. Roles: Super Admin (todo), Admin de Equipo técnico, de Acomodadores o de Asignaciones (solo su parte), Solo anuncios (publica anuncios y nada más) y Solo ver (va a la vista de la congregación). Los anuncios los publican los Super Admin, los de "Solo anuncios" y los Admin a los que les prendas "📢 Puede publicar anuncios". Sacar a alguien de la lista le corta el acceso al instante. Todo esto lo controla también el servidor, no solo la app.</p>
       </details>
       <details class="guide-item">
         <summary><span class="gicon" data-icon="cronometrista"></span>Cronómetro<span class="chev">›</span></summary>
@@ -2501,6 +2501,7 @@
       if (!snap.exists) return;
       applyingRemoteUpdate = true;
       const raw = snap.data();
+      const prevGuardAt = data && data._guard ? data._guard.at : null;
       data = migrate(jsonClone(raw));
       // La base de comparación es la copia YA normalizada: así los ajustes automáticos de
       // migrate() (campos por defecto) no se suben como si fueran cambios de alguien.
@@ -2514,6 +2515,11 @@
       }
       applyingRemoteUpdate = false;
       setSyncStatus('ok');
+      // El servidor deshizo un cambio que no correspondía al rol de esta persona.
+      const g = raw._guard;
+      if (g && g.at !== prevGuardAt && currentUser && g.by === currentUser.email && Date.now() - Date.parse(g.at) < 120000) {
+        showToast('Ese cambio no corresponde a tu rol y se deshizo');
+      }
       updateCloudSize(raw);
       flushCloudErrors();
       checkNewCloudErrors();
@@ -4976,24 +4982,26 @@
 
   /* ---------- Tema (claro / oscuro / automático) ---------- */
   const darkMediaQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  // El tema es de cada dispositivo (antes se guardaba en la congregación y le cambiaba el tema a todos).
+  function themeMode() {
+    let m = null; try { m = localStorage.getItem('kh-theme-mode'); } catch (e) { /* sin acceso */ }
+    return m || (data.settings && data.settings.themeMode) || 'auto';
+  }
+  function setThemeMode(m) { try { localStorage.setItem('kh-theme-mode', m); } catch (e) { /* sin acceso */ } applyTheme(); }
   function applyTheme() {
-    const mode = (data.settings && data.settings.themeMode) || 'auto';
+    const mode = themeMode();
     const effective = mode === 'auto' ? (darkMediaQuery && darkMediaQuery.matches ? 'dark' : 'light') : mode;
     document.documentElement.setAttribute('data-theme', effective);
     document.querySelectorAll('.theme-opt').forEach(b => b.classList.toggle('active', b.dataset.themeChoice === mode));
   }
   document.querySelectorAll('.theme-opt').forEach(b => b.addEventListener('click', () => {
-    data.settings.themeMode = b.dataset.themeChoice;
-    saveData();
-    applyTheme();
+    setThemeMode(b.dataset.themeChoice);
   }));
   $('narrowThemeBtn').addEventListener('click', () => {
     const order = ['auto', 'light', 'dark'];
-    const cur = (data.settings && data.settings.themeMode) || 'auto';
-    data.settings.themeMode = order[(order.indexOf(cur) + 1) % order.length];
-    saveData();
-    applyTheme();
-    showToast('Tema: ' + ({ auto: 'Automático', light: 'Claro', dark: 'Oscuro' }[data.settings.themeMode]));
+    const next = order[(order.indexOf(themeMode()) + 1) % order.length];
+    setThemeMode(next);
+    showToast('Tema: ' + ({ auto: 'Automático', light: 'Claro', dark: 'Oscuro' }[next]));
   });
   if (darkMediaQuery) {
     darkMediaQuery.addEventListener ? darkMediaQuery.addEventListener('change', applyTheme) : darkMediaQuery.addListener(applyTheme);
@@ -6370,7 +6378,7 @@
     if (!errLogItems.length) { box.innerHTML = '<p class="hint" style="margin:0;">✓ No hubo errores en los últimos 30 días.</p>'; return; }
     box.innerHTML = errLogItems.map(x => `<details class="err-item">
       <summary><span class="err-kind">${escapeHtml(ERR_KIND[x.kind] || x.kind || 'Error')}</span> <span class="err-msg">${escapeHtml(x.msg || '')}</span>
-        <small>${escapeHtml(x.at ? anRelDate(new Date(x.at)) : '')} · ${x.app === 'vista' ? 'Vista de la congregación' : 'App de asignaciones'}${x.role ? ' · ' + escapeHtml(x.role) : ''} · ${escapeHtml(x.device || '')}${x.online === false ? ' · sin conexión' : ''}</small></summary>
+        <small>${escapeHtml(x.at ? anRelDate(new Date(x.at)) : '')} · ${x.app === 'vista' ? 'Vista de la congregación' : x.app === 'servidor' ? '🔒 Control de permisos' : 'App de asignaciones'}${x.role ? ' · ' + escapeHtml(x.role) : ''} · ${escapeHtml(x.device || '')}${x.online === false ? ' · sin conexión' : ''}</small></summary>
       ${x.where ? `<pre class="err-where">${escapeHtml(x.where)}</pre>` : ''}
     </details>`).join('');
   }

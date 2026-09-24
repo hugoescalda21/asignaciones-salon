@@ -1,7 +1,7 @@
 /**
  * Función en la nube — Avisos push y recordatorios
  */
-const { onDocumentUpdated, onDocumentDeleted } = require('firebase-functions/v2/firestore');
+const { onDocumentUpdated, onDocumentDeleted, onDocumentUpdatedWithAuthContext } = require('firebase-functions/v2/firestore');
 const { onRequest } = require('firebase-functions/v2/https');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const admin = require('firebase-admin');
@@ -12,7 +12,7 @@ const messaging = admin.messaging();
 
 const REGION = 'southamerica-east1';
 const { roleLabel, collectNewlyAssignedIds, avisoPreview, selectNewAvisos, notificationForNewAvisos, validateReminder, reminderDocId, ROLES_MAP,
-  arParts, addDaysIso, remindersDue, reminderMessage, sentReminderId } = require('./lib');
+  arParts, addDaysIso, remindersDue, reminderMessage, sentReminderId, roleAreasFor, disallowedWeekChanges, guardSummary } = require('./lib');
 
 // La app vive en GitHub Pages bajo /asignaciones-salon/, no en la raíz del
 // dominio: un link o ícono con "/" apunta a hugoescalda21.github.io/ y no a la app.
@@ -90,6 +90,12 @@ exports.onCongregationWrite = onDocumentUpdated({ document: 'congregations/{code
   const beforeWeeks = before.weeks || {};
   const afterWeeks = after.weeks || {};
   console.log('[push] guardado en la congregación', code);
+  // Un guardado que es solo la corrección de guardRoles (deshacer un cambio que no
+  // correspondía) no tiene que avisarle a nadie de nada.
+  if (after._guard && (!before._guard || after._guard.at !== before._guard.at)) {
+    console.log('[push] es una corrección de permisos: no se avisa a nadie');
+    return null;
+  }
   try { await notifyNewAvisos(code, before, after); }
   catch (e) { console.error('[push] error avisando de un aviso nuevo:', e && e.message); }
 
@@ -222,6 +228,43 @@ exports.onCongregationWrite = onDocumentUpdated({ document: 'congregations/{code
 
 // Solo deja rastro en el registro: avisa cuándo se borra el registro de un celular
 // (y de quién era), para poder averiguar qué lo está borrando.
+/* ---------- Control de permisos por rol ----------
+   Las reglas de Firestore dejan a un Admin cambiar solo "weeks" (y "anuncios" si tiene
+   el permiso), pero no pueden mirar más adentro. Esta función revisa cada guardado:
+   si un Admin de Equipo técnico cambió el Programa (o al revés), lo deshace al instante
+   y lo anota en el Registro de errores para que el Super Admin lo vea.
+   Quien guardó llega en authId (el uid de Firebase Auth); de ahí se saca el email. */
+exports.guardRoles = onDocumentUpdatedWithAuthContext({ document: 'congregations/{code}', region: REGION }, async (event) => {
+  const code = event.params.code;
+  if (!event.authId || event.authType === 'service_account' || event.authType === 'system') return null;
+  const before = event.data.before.data() || {};
+  const after = event.data.after.data() || {};
+  let email = null;
+  try { email = (await admin.auth().getUser(event.authId)).email || null; }
+  catch (e) { console.log('[permisos] no se pudo identificar a quien guardó:', event.authType, e && e.message); return null; }
+  const areas = roleAreasFor(before.settings, email);
+  const changes = disallowedWeekChanges(before.weeks, after.weeks, areas);
+  if (!changes.length) return null;
+  const now = new Date().toISOString();
+  const args = [];
+  changes.forEach((c) => {
+    args.push(new admin.firestore.FieldPath('weeks', ...c.path), c.before === undefined ? admin.firestore.FieldValue.delete() : c.before);
+  });
+  args.push('_guard', { at: now, by: email, n: changes.length });
+  const msg = guardSummary(email, changes);
+  console.warn('[permisos]', code, msg);
+  try { await db.collection('congregations').doc(code).update(...args); }
+  catch (e) { console.error('[permisos] no se pudo deshacer:', e && e.message); }
+  try {
+    await db.collection('congregations').doc(code).collection('errores').add({
+      at: now, app: 'servidor', kind: 'permiso', msg: msg.slice(0, 500),
+      where: changes.slice(0, 20).map(c => c.path.join(' › ')).join('\n').slice(0, 1000),
+      role: (areas || []).join(', ') || 'sin rol de admin', device: '', online: true
+    });
+  } catch (e) { console.error('[permisos] no se pudo anotar en el registro:', e && e.message); }
+  return null;
+});
+
 exports.onPushSubscriptionDeleted = onDocumentDeleted({ document: 'pushSubscriptions/{token}', region: REGION }, (event) => {
   const d = (event.data && event.data.data()) || {};
   console.log('[push] SUSCRIPCIÓN BORRADA:', String(event.params.token).slice(0, 12) + '…',

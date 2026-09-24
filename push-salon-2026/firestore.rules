@@ -21,11 +21,14 @@ rules_version = '2';
 //                                para cualquiera de los tres Admin.
 // "viewerEmails"               = solo pueden ver (ver.html).
 //
-// Qué controla el servidor: quién publica anuncios y quién puede
-// cambiar las listas de acceso (solo Super Admin). Por lo demás, un
-// Admin todavía puede escribir asignaciones de otras áreas — es la
-// interfaz la que le oculta lo que no le corresponde. Eso sigue
-// anotado en el roadmap del proyecto.
+// Qué controla el servidor:
+//  · Estas reglas: un Admin solo puede cambiar las semanas ("weeks"),
+//    y los anuncios si tiene el permiso. Ajustes, accesos, hermanos y
+//    el cronómetro, solo el Super Admin.
+//  · La función guardRoles (functions/index.js): dentro de las semanas,
+//    que cada Admin toque solo su área (Equipo técnico, Acomodadores o
+//    Programa). Si no, lo deshace al instante y lo anota en el Registro
+//    de errores. Las reglas no pueden mirar tan adentro del documento.
 //
 // El primer email que crea una congregación nueva se agrega solo
 // a "editorEmails" — así el que arma la congregación no queda
@@ -52,22 +55,10 @@ service cloud.firestore {
       }
       function esSoloAnuncios() { return mail() in lista('anunciosOnlyEmails'); }
       function puedeAnuncios() { return esSuper() || esSoloAnuncios() || mail() in lista('anunciosEmails'); }
-      // Los anuncios quedan igual que estaban.
-      function anunciosSinCambios() {
-        return request.resource.data.get('anuncios', []) == resource.data.get('anuncios', []);
-      }
-      // Las listas de acceso (roles y permiso de anuncios) quedan igual:
-      // solo un Super Admin las puede cambiar.
-      function accesoSinCambios() {
-        let antes = resource.data.settings;
-        let despues = request.resource.data.settings;
-        return despues.get('editorEmails', []) == antes.get('editorEmails', []) &&
-               despues.get('tecnicoAdminEmails', []) == antes.get('tecnicoAdminEmails', []) &&
-               despues.get('acomodadoresAdminEmails', []) == antes.get('acomodadoresAdminEmails', []) &&
-               despues.get('asignacionesAdminEmails', []) == antes.get('asignacionesAdminEmails', []) &&
-               despues.get('anunciosOnlyEmails', []) == antes.get('anunciosOnlyEmails', []) &&
-               despues.get('anunciosEmails', []) == antes.get('anunciosEmails', []) &&
-               despues.get('viewerEmails', []) == antes.get('viewerEmails', []);
+      // Qué partes del documento cambian en este guardado (primer nivel:
+      // settings, publishers, weeks, anuncios, timerLog...).
+      function soloCambia(campos) {
+        return request.resource.data.diff(resource.data).affectedKeys().hasOnly(campos);
       }
 
       // Leer: logueado, y el email tiene que estar en alguna de las
@@ -84,14 +75,15 @@ service cloud.firestore {
 
       // Editar:
       //  · Super Admin (o congregación sin editores todavía): todo.
-      //  · Admins (técnico / acomodadores / asignaciones): todo menos
-      //    las listas de acceso; y los anuncios solo si tienen el
-      //    permiso "Puede publicar anuncios" (anunciosEmails).
+      //  · Admins (técnico / acomodadores / asignaciones): solo las
+      //    semanas; y los anuncios si tienen el permiso "Puede publicar
+      //    anuncios" (anunciosEmails). Qué parte de cada semana le toca a
+      //    cada uno lo controla la función guardRoles.
       //  · "Solo anuncios": únicamente el campo de anuncios.
       allow update: if request.auth != null && (
                     esSuper() ||
-                    (esAdmin() && accesoSinCambios() && (puedeAnuncios() || anunciosSinCambios())) ||
-                    (esSoloAnuncios() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['anuncios']))
+                    (esAdmin() && (soloCambia(['weeks']) || (puedeAnuncios() && soloCambia(['weeks', 'anuncios'])))) ||
+                    (esSoloAnuncios() && soloCambia(['anuncios']))
                   );
 
       // Nunca se borra una congregación completa desde la app.

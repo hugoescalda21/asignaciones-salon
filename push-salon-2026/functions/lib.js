@@ -323,7 +323,79 @@ function sentReminderId(token, kind, dateIso) {
   return crypto.createHash('sha256').update(['auto', token, kind, dateIso].join('|')).digest('hex').slice(0, 40);
 }
 
+/* ---------- Control de permisos por rol (función guardRoles) ----------
+   Las reglas de Firestore no pueden revisar tan adentro del documento: para un Admin
+   dejan cambiar "weeks" completo. Esta lógica mira, hoja por hoja, qué cambió dentro de
+   las semanas y marca lo que no corresponde al rol de quien guardó, para deshacerlo. */
+const ADMIN_FIELDS = { tecnico: 'tecnicoAdminEmails', acomodadores: 'acomodadoresAdminEmails', asignaciones: 'asignacionesAdminEmails' };
+// Áreas que puede tocar un email: null = todo (Super Admin); [] = nada dentro de las semanas.
+function roleAreasFor(settings, email) {
+  const s = settings || {};
+  const inList = (f) => Array.isArray(s[f]) && s[f].includes(email);
+  if (!email) return [];
+  if (inList('editorEmails') || !(s.editorEmails || []).length) return null;
+  return Object.keys(ADMIN_FIELDS).filter(r => inList(ADMIN_FIELDS[r]));
+}
+function isPlainObj(v) { return v !== null && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Date) && typeof v.toDate !== 'function'; }
+function isEmptyDeep(v) {
+  if (v === null || v === undefined || v === '' || v === false) return true;
+  if (Array.isArray(v)) return v.every(isEmptyDeep);
+  if (isPlainObj(v)) return Object.keys(v).every(k => isEmptyDeep(v[k]));
+  return false;
+}
+function canon(v) {
+  if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']';
+  if (isPlainObj(v)) return '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}';
+  return JSON.stringify(v === undefined ? null : v);
+}
+// Hojas de un objeto: { 'a\u0000b': valor }. Las listas son hojas; los objetos vacíos no cuentan.
+function leaves(obj, prefix, out) {
+  out = out || {};
+  Object.keys(obj || {}).forEach((k) => {
+    const path = prefix.concat(k);
+    const v = obj[k];
+    if (isPlainObj(v)) leaves(v, path, out);
+    else out[path.join('\u0000')] = { path, v };
+  });
+  return out;
+}
+// ¿A qué área pertenece una hoja de weeks? [monday, type, campo, ...]
+function weekLeafArea(path) {
+  const field = path[2], key = path[3];
+  if (field === 'roles') return /^usher/.test(key || '') ? 'acomodadores' : 'tecnico';
+  if (field === 'program') return 'asignaciones';
+  return null;   // excluded, topic y lo que no es de un área: cualquiera de los Admin
+}
+// Cambios dentro de "weeks" que no le corresponden a esas áreas.
+// Devuelve [{ path, before, after, area }] con path relativo a weeks.
+function disallowedWeekChanges(beforeWeeks, afterWeeks, areas) {
+  if (areas === null) return [];
+  const a = leaves(beforeWeeks || {}, []), b = leaves(afterWeeks || {}, []);
+  const keys = new Set(Object.keys(a).concat(Object.keys(b)));
+  const out = [];
+  keys.forEach((k) => {
+    const before = a[k] ? a[k].v : undefined, after = b[k] ? b[k].v : undefined;
+    if (canon(before) === canon(after)) return;
+    if (isEmptyDeep(before) && isEmptyDeep(after)) return;   // p. ej. una semana nueva, en blanco
+    const path = (a[k] || b[k]).path;
+    const area = weekLeafArea(path);
+    if (area && !areas.includes(area)) out.push({ path, before, after, area });
+  });
+  return out;
+}
+const AREA_LABEL = { tecnico: 'Equipo técnico', acomodadores: 'Acomodadores', asignaciones: 'Programa' };
+function guardSummary(email, changes) {
+  const byMeeting = {};
+  changes.forEach((c) => {
+    const k = c.path[0] + ' ' + (c.path[1] === 'finde' ? 'fin de semana' : 'entre semana');
+    (byMeeting[k] = byMeeting[k] || new Set()).add(AREA_LABEL[c.area] || c.area);
+  });
+  const partes = Object.keys(byMeeting).sort().map(k => `${[...byMeeting[k]].join(' y ')} (semana del ${k})`);
+  return `${email} cambió ${partes.join(', ')}, que no corresponde a su rol. Se deshizo automáticamente.`;
+}
+
 module.exports = {
+  roleAreasFor, isEmptyDeep, leaves, weekLeafArea, disallowedWeekChanges, guardSummary,
   PROGRAM_SIMPLE_FIELDS, ROLES_MAP, roleLabel, collectNewlyAssignedIds,
   avisoPreview, selectNewAvisos, notificationForNewAvisos, validateReminder, reminderDocId,
   arParts, addDaysIso, parseHHMM, fmtHHMM, meetingDateFor, assignmentLabels, assignmentsOnDate,

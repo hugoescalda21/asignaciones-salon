@@ -7,7 +7,8 @@ const {
   roleLabel, collectNewlyAssignedIds, avisoPreview,
   selectNewAvisos, notificationForNewAvisos, validateReminder, reminderDocId,
   arParts, parseHHMM, meetingDateFor, assignmentsOnDate, normalizeReminderPrefs,
-  remindersDue, reminderMessage, sentReminderId
+  remindersDue, reminderMessage, sentReminderId,
+  roleAreasFor, disallowedWeekChanges, guardSummary
 } = require('./lib');
 
 let passed = 0;
@@ -223,6 +224,51 @@ t('sentReminderId: estable y distinto por tipo/fecha', () => {
   assert.match(a, /^[0-9a-f]{40}$/);
   assert.strictEqual(a, sentReminderId(TOKEN, 'dayBefore', '2026-09-24'));
   assert.notStrictEqual(a, sentReminderId(TOKEN, 'morning', '2026-09-24'));
+});
+
+// ---- guardRoles: permisos por rol dentro de las semanas ----
+const SET = { editorEmails: ['super@x'], tecnicoAdminEmails: ['tec@x', 'doble@x'], acomodadoresAdminEmails: ['aco@x'], asignacionesAdminEmails: ['asig@x', 'doble@x'], viewerEmails: ['ver@x'] };
+const W = () => ({ '2026-09-21': { semana: { roles: { sonido: 'a', usher1: 'b', mic1: null }, excluded: [], topic: '', program: { presidente: 'c', estudiantes: [{ tema: 'x', estudiante: 'd' }] } } } });
+const mod = (fn) => { const w = W(); fn(w['2026-09-21'].semana, w); return w; };
+t('roleAreasFor: super = todo, admins = sus áreas, doble rol = las dos', () => {
+  assert.strictEqual(roleAreasFor(SET, 'super@x'), null);
+  assert.deepStrictEqual(roleAreasFor(SET, 'tec@x'), ['tecnico']);
+  assert.deepStrictEqual(roleAreasFor(SET, 'doble@x'), ['tecnico', 'asignaciones']);
+  assert.deepStrictEqual(roleAreasFor(SET, 'ver@x'), []);
+  assert.strictEqual(roleAreasFor({ editorEmails: [] }, 'x@x'), null);
+});
+t('guard: el técnico puede cambiar su puesto y "no disponibles"', () => {
+  const after = mod((m) => { m.roles.sonido = 'z'; m.roles.mic1 = 'y'; m.excluded = ['q']; });
+  assert.deepStrictEqual(disallowedWeekChanges(W(), after, ['tecnico']), []);
+});
+t('guard: el técnico no puede tocar el Programa ni los acomodadores', () => {
+  const after = mod((m) => { m.program.presidente = 'z'; m.roles.usher1 = 'z'; });
+  const d = disallowedWeekChanges(W(), after, ['tecnico']);
+  assert.deepStrictEqual(d.map(c => c.path.join('.')).sort(), ['2026-09-21.semana.program.presidente', '2026-09-21.semana.roles.usher1']);
+  assert.strictEqual(d.find(c => c.area === 'asignaciones').before, 'c');
+});
+t('guard: Asignaciones no toca el Equipo técnico; sí las listas del programa', () => {
+  const after = mod((m) => { m.program.estudiantes[0].estudiante = 'z'; m.program.lectura = 'k'; m.roles.sonido = 'z'; });
+  const d = disallowedWeekChanges(W(), after, ['asignaciones']);
+  assert.deepStrictEqual(d.map(c => c.path.join('.')), ['2026-09-21.semana.roles.sonido']);
+});
+t('guard: semana nueva en blanco no cuenta como cambio', () => {
+  const after = W(); after['2026-09-28'] = { semana: { roles: { sonido: null, usher1: null }, excluded: [], topic: '', program: { presidente: null, estudiantes: [{ tema: '', estudiante: null }] } } };
+  assert.deepStrictEqual(disallowedWeekChanges(W(), after, ['acomodadores']), []);
+  after['2026-09-28'].semana.program.presidente = 'p';
+  assert.strictEqual(disallowedWeekChanges(W(), after, ['acomodadores']).length, 1);
+});
+t('guard: borrar una asignación ajena también se deshace', () => {
+  const after = mod((m) => { delete m.program.presidente; });
+  const d = disallowedWeekChanges(W(), after, ['tecnico']);
+  assert.strictEqual(d.length, 1); assert.strictEqual(d[0].after, undefined); assert.strictEqual(d[0].before, 'c');
+});
+t('guard: Super Admin puede todo', () => {
+  assert.deepStrictEqual(disallowedWeekChanges(W(), mod((m) => { m.program.presidente = 'z'; }), null), []);
+});
+t('guard: resumen legible', () => {
+  const d = disallowedWeekChanges(W(), mod((m) => { m.program.presidente = 'z'; }), ['tecnico']);
+  assert.match(guardSummary('tec@x', d), /tec@x cambió Programa \(semana del 2026-09-21 entre semana\).*Se deshizo/);
 });
 
 console.log('\n' + passed + ' pruebas OK' + (process.exitCode ? ' — HAY FALLAS' : ''));

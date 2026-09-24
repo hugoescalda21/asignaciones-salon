@@ -6,6 +6,14 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Permisos por rol controlados por el servidor — 24 sep 2026 (caché asignaciones-salon-v32)
+
+- **Reglas de Firestore:** un Admin (Equipo técnico, Acomodadores, Asignaciones) ahora solo puede guardar cambios en las reuniones (`weeks`), y en los anuncios si tiene el permiso. Ajustes, accesos, hermanos y el historial del cronómetro quedan solo para el Super Admin. Antes, un Admin podía cambiar cualquier cosa menos los accesos si lo intentaba por fuera de la app.
+- **Función nueva `guardRoles`:** dentro de cada reunión, revisa que cada Admin toque solo su área (Equipo técnico, Acomodadores o Programa). Si no, **lo deshace al instante**, le avisa a esa persona ("Ese cambio no corresponde a tu rol y se deshizo") y lo anota en Ajustes → Registro de errores como "🔒 Control de permisos". La corrección no manda avisos push a nadie.
+- **Tema claro/oscuro:** ahora es de cada celular. Antes se guardaba en la congregación y el cambio de uno le cambiaba el tema a todos (y un Admin ya no puede tocar los Ajustes).
+- **Requiere:** `firebase deploy --only firestore:rules,functions` (desde push-salon-2026).
+- Pruebas: `17-permisos-servidor` (417 en total) y 8 nuevas en las funciones (`npm test`, 52).
+
 ## Pantallas de bienvenida — 23 sep 2026 (cachés asignaciones-salon-v31, ver-salon-v28)
 
 - **Vista de la congregación:** la primera vez aparecen tres pantallas que se pasan deslizando, con "Saltar" siempre a mano: (1) "Hola, Rebeca" con su próxima asignación (o, si su email no está vinculado, le explica que se lo pida al administrador); (2) Calendario y anuncios; (3) Avisos: "Activar avisos" pide el permiso, manda el aviso de prueba y pregunta "¿Te apareció?" (el mismo paso de la versión anterior). Si la abrió desde Chrome y se puede instalar, antes ofrece **Instalar la app**; en iPhone explica cómo (Compartir → Agregar a inicio). Se vuelve a ver desde el "?".

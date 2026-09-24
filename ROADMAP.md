@@ -88,6 +88,9 @@ _Actualizado el 23 de septiembre de 2026: se sumaron a "lo ya hecho" las notific
   persona, vincular con el hermano.
 - Solo un Super Admin puede cambiar roles y permisos (lo exige el
   servidor). "Solo ver" va directo a la vista de la congregación.
+- Permisos por área controlados por el servidor: cada Admin solo puede
+  guardar en su parte de cada reunión (reglas de Firestore + función
+  guardRoles, que deshace lo que no corresponde y lo anota).
 
 **Datos y mantenimiento**
 - Guardado por partes: se sube solo lo que cambió, así dos personas
@@ -115,26 +118,14 @@ pasar el 70 %: recién ahí conviene pasar las semanas de más de un año a
 documentos aparte (sin perder los reportes).
 *Esfuerzo: medio. Sin apuro.*
 
-### 2. Roles por área, con restricción real del lado del servidor
-Hoy el servidor ya controla quién publica anuncios y quién cambia los
-accesos. Lo que sigue siendo solo de la interfaz: que un Admin de
-Equipo técnico no pueda tocar el Programa (y viceversa). Para que lo
-exija el servidor hay que **separar los datos en varios documentos**
-(Equipo técnico, Acomodadores, Programa, Hermanos/Ajustes), porque las
-reglas de Firestore no pueden revisar tan adentro de un documento
-único. Implica reescribir la carga, el guardado y la sincronización en
-los dos archivos y migrar los datos sin perder nada. Con hermanos de
-confianza, no hace falta por ahora.
-*Esfuerzo: alto.*
-
-### 3. Multi-congregación con alta propia
+### 2. Multi-congregación con alta propia
 Cada congregación ya tiene sus datos aislados por código. Lo que falta,
 si alguna vez la usa otra congregación, es que se puedan dar de alta
 solas (nombre, código, día de reunión) sin configurarles todo a mano.
 Solo tiene sentido si de verdad hay otra congregación interesada.
 *Esfuerzo: medio-alto.*
 
-### 4. Consentimiento de uso de datos, para el resumen personal
+### 3. Consentimiento de uso de datos, para el resumen personal
 Pendiente de una decisión de fondo primero: si el consentimiento de
 uso de datos que los publicadores ya firmaron en papel (el de la
 organización) alcanza para esta app externa, o si hace falta pedir

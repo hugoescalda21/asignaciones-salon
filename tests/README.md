@@ -59,7 +59,7 @@ node tests/editor/run.js anuncios   (solo las que tengan "anuncios" en el nombre
 ```
 
 Al final muestra una línea por archivo y el total, por ejemplo
-`405 de 405 pruebas OK.` Si algo falla, muestra qué.
+`417 de 417 pruebas OK.` Si algo falla, muestra qué.
 
 | Archivo | Qué prueba |
 |---|---|
@@ -78,6 +78,7 @@ Al final muestra una línea por archivo y el total, por ejemplo
 | `14-datos-incompletos` | Que la app abra y se conecte aunque haya semanas con datos incompletos |
 | `15-notificaciones` | Ajustes → Notificaciones de los hermanos: lista, enviar prueba, quitar |
 | `16-bienvenida` | Bienvenida según el rol y "Puesta en marcha" del Super Admin |
+| `17-permisos-servidor` | Lo que guarda cada Admin pasa las reglas del servidor y el control de guardRoles |
 
 Las capturas de pantalla que sacan quedan en `tests/editor/capturas/`
 (no se suben a git), por si querés mirarlas.
