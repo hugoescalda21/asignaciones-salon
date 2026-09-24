@@ -226,7 +226,8 @@ const isoDay = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate
     vm.runInContext('renderAnnTeaser();', ctx2);
     check('sin anuncios nuevos muestra el fijado', /Fijado/.test(ctx2.$('annTeaser').innerHTML) && /Horario de limpieza/.test(ctx2.$('annTeaser').innerHTML));
     check('el fijado tiene borde dorado', /announcement-item pinned/.test(ctx.cards));
-    check('fecha relativa ("Hace 2 h")', /Hace 2 h/.test(ctx.cards));
+    // (entre las 0 y las 2 de la mañana, "hace 2 horas" ya es "Ayer")
+    check('fecha relativa ("Hace 2 h")', new Date().getHours() < 2 ? /Ayer/.test(ctx.cards) : /Hace 2 h/.test(ctx.cards));
     check('muestra el vencimiento', /Vence el/.test(ctx.cards));
     check('marca "editado"', /editado/.test(ctx.cards));
     check('"Compartir" en cada tarjeta', (ctx.cards.match(/data-ann-share=/g) || []).length === 4);
@@ -252,7 +253,42 @@ const isoDay = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate
   }
 
   // =====================================================================
-  section('6) Estructura del HTML');
+  section('6) Bienvenida');
+  {
+    const ctx = calCtx({
+      '2099-09-14': { semana: { roles: {}, program: { presidente: 'p2' } } },
+      '2099-09-21': { semana: { roles: { mic2: 'p1' }, program: {} }, finde: { roles: {}, program: { atalayaLector: 'p1' } } },
+      '2099-09-28': { semana: { roles: {}, program: { lectura: 'p1' } } }
+    });
+    Object.assign(ctx, { navigator: { userAgent: 'Android' }, window: { Notification: {}, }, deferredInstallPrompt: null, __inst: true });
+    vm.runInContext([fn('programMatches'), fn('welcomeNextAssignment'), fn('welcomeWhen'), fn('welcomeMode'),
+      'function isInstalledApp() { return this.__inst; }'].join('\n') + '\nthis.api = { welcomeNextAssignment, welcomeWhen, welcomeMode };', ctx);
+    const { welcomeNextAssignment, welcomeWhen, welcomeMode } = ctx.api;
+    const n = welcomeNextAssignment(pubs[0]);
+    check('toma la primera asignación que viene (técnico o programa)', n && n.date === '2099-09-24' && /Micrófono/.test(n.label), n);
+    check('con la hora de la reunión', /19:30$/.test(welcomeWhen(n)), welcomeWhen(n));
+    check('sin asignaciones → nada', welcomeNextAssignment(pubs[7]) === null);
+    check('sin hermano vinculado → nada', welcomeNextAssignment(null) === null);
+    const mode = (o) => {
+      ctx.__inst = !!o.inst; ctx.deferredInstallPrompt = o.prompt ? {} : null; ctx.navigator.userAgent = o.ios ? 'iPhone' : 'Android';
+      ctx.window = o.noNotif ? {} : { Notification: {} }; ctx.navigator.serviceWorker = {};
+      ctx.Notification = { permission: o.perm || 'default' };
+      vm.runInContext('this.window.navigator = this.navigator;', ctx);
+      return welcomeMode(o.pub === undefined ? pubs[0] : o.pub, o.noInstall);
+    };
+    check('en el navegador y se puede instalar → ofrece instalar', mode({ prompt: true }) === 'install');
+    check('"Seguir en el navegador" → pasa a los avisos', mode({ prompt: true, noInstall: true }) === 'ask');
+    check('iPhone sin instalar → explica cómo instalar', mode({ ios: true }) === 'ios');
+    check('app instalada, permiso sin pedir → "Activar avisos"', mode({ inst: true }) === 'ask');
+    check('permiso ya dado → "ya están activados"', mode({ inst: true, perm: 'granted' }) === 'on');
+    check('bloqueados → explica cómo activarlos', mode({ inst: true, perm: 'denied' }) === 'blocked');
+    check('email sin vincular → no ofrece avisos', mode({ inst: true, pub: null }) === 'unlinked');
+    check('la bienvenida se muestra una sola vez y el aviso de la app instalada espera a que termine', /if \(!welcomeSeen\(code\) \|\| !\$\('welcomeOv'\)/.test(JS) && /if \(welcomeSeen\(code\) \|\| !\$\('welcomeOv'\)/.test(JS));
+    check('se puede volver a ver desde el "?"', /id="guideWelcomeBtn"/.test(HTML));
+  }
+
+  // =====================================================================
+  section('7) Estructura del HTML');
   {
     const ids = [...HTML.matchAll(/id="([A-Za-z0-9_]+)"/g)].map(m => m[1]);
     const dupes = [...new Set(ids.filter((x, i) => ids.indexOf(x) !== i))];

@@ -6,6 +6,13 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Pantallas de bienvenida — 23 sep 2026 (cachés asignaciones-salon-v31, ver-salon-v28)
+
+- **Vista de la congregación:** la primera vez aparecen tres pantallas que se pasan deslizando, con "Saltar" siempre a mano: (1) "Hola, Rebeca" con su próxima asignación (o, si su email no está vinculado, le explica que se lo pida al administrador); (2) Calendario y anuncios; (3) Avisos: "Activar avisos" pide el permiso, manda el aviso de prueba y pregunta "¿Te apareció?" (el mismo paso de la versión anterior). Si la abrió desde Chrome y se puede instalar, antes ofrece **Instalar la app**; en iPhone explica cómo (Compartir → Agregar a inicio). Se vuelve a ver desde el "?".
+- **App de asignaciones:** reemplaza el "¡Bienvenido!" viejo por una pantalla según el rol, con los tres consejos que más le sirven (Equipo técnico, Acomodadores, Asignaciones y Solo anuncios). Aparece una vez por celular y por rol; se vuelve a ver desde el "?" → "Ver la bienvenida otra vez".
+- **Super Admin → Puesta en marcha:** lista con tildes que se completan solas según los datos reales: nombre y horario de las reuniones, hermanos cargados, accesos dados, emails vinculados y avisos activados por los hermanos (se tilda cuando al menos la mitad de los hermanos con email los tiene). Cada punto lleva a donde se resuelve (por ejemplo Acceso filtrado por "Sin vincular"). Queda también en Ajustes, primera tarjeta.
+- Pruebas: `16-bienvenida` y 13 nuevas en la vista pública (405 + 72 en total).
+
 ## Bienvenida de la app instalada: activar y comprobar los avisos — 23 sep 2026 (caché ver-salon-v27)
 
 - Android trata la app instalada "Ver Asignaciones" como una app aparte, con su propio permiso de notificaciones: si los avisos se habían activado en Chrome antes de instalarla, a la app instalada le podían quedar apagados y los avisos no aparecían.

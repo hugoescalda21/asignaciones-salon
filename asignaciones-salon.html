@@ -559,6 +559,25 @@
   .top-banner.backup button { background: rgba(0,0,0,0.08); color: #7A5A0E; }
 
   /* ---------- Bienvenida ---------- */
+  /* Bienvenida según el rol + Puesta en marcha */
+  .wl-badge { display: inline-block; font-size: 11px; font-weight: 700; background: color-mix(in srgb, var(--accent-blue) 14%, transparent); color: var(--accent-blue); border-radius: 8px; padding: 3px 9px; margin-bottom: 8px; }
+  .wl-modal h3 { margin: 0 0 4px; }
+  .wl-lead { font-size: 13.5px; color: var(--ink-soft); line-height: 1.5; margin: 0 0 8px; }
+  .wl-tip { display: flex; gap: 11px; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--line); font-size: 13px; line-height: 1.45; }
+  .wl-tip .ti { width: 34px; height: 34px; border-radius: 10px; background: var(--bg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 17px; }
+  .wl-tip b { display: block; font-size: 13.5px; }
+  .wl-tip span { color: var(--ink-soft); }
+  .setup-head { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--ink-soft); margin: 4px 0 5px; }
+  .setup-bar { height: 7px; border-radius: 4px; background: var(--bg); overflow: hidden; margin-bottom: 6px; }
+  .setup-bar i { display: block; height: 100%; background: #4C7A5E; border-radius: 4px; transition: width .3s; }
+  .setup-row { display: flex; gap: 11px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); font-size: 13.5px; width: 100%; background: none; border-left: none; border-right: none; border-bottom: none; text-align: left; font-family: inherit; color: var(--ink); cursor: pointer; }
+  .setup-row .c { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; font-weight: 700; box-sizing: border-box; }
+  .setup-row.done .c { background: #4C7A5E; border-color: #4C7A5E; }
+  .setup-row .t { flex: 1; line-height: 1.35; }
+  .setup-row .t small { display: block; color: var(--ink-soft); font-size: 12px; }
+  .setup-row.done .t > span { color: var(--ink-soft); }
+  .setup-row .go { font-size: 12.5px; font-weight: 700; color: var(--accent-blue); flex-shrink: 0; }
+  .guide-welcome-btn { width: 100%; margin: 0 0 8px; border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 10px; font: inherit; font-size: 13px; font-weight: 600; color: var(--ink); cursor: pointer; }
   .onboarding-steps { list-style: none; padding: 0; margin: 0 0 4px; display: flex; flex-direction: column; gap: 14px; font-size: 13.5px; line-height: 1.4; }
   .onboarding-steps strong { color: var(--accent-gold-text); display: block; margin-bottom: 2px; font-family: 'Fraunces', serif; font-size: 14.5px; }
 
@@ -1408,7 +1427,11 @@
   <!-- ---------------- Ajustes ---------------- -->
   <section class="tab-panel hidden" id="panel-ajustes">
     <div class="settings-group">Congregación</div>
-    <details class="settings-card">
+    <details class="settings-card" id="setupCard">
+      <summary><div><h3>Puesta en marcha</h3><span class="sc-sub" id="setupSub">Qué falta para que todo funcione</span></div><span class="chev">›</span></summary>
+      <div id="setupList" style="margin-top:8px;"></div>
+    </details>
+    <details class="settings-card" id="congCard">
       <summary><div><h3>Congregación</h3><span class="sc-sub">Nombre, días y horario de las reuniones, sala auxiliar</span></div><span class="chev">›</span></summary>
       <p class="hint">Se usa en el encabezado, la impresión y los mensajes de WhatsApp.</p>
       <div class="field"><label>Nombre de la congregación</label><input type="text" id="congNameInput"></div>
@@ -1437,7 +1460,7 @@
         <button type="button" class="switch" id="auxRoomSwitch" aria-label="Activar sala auxiliar"></button>
       </div>
     </details>
-    <details class="settings-card">
+    <details class="settings-card" id="accCard">
       <summary><div><h3>Acceso</h3><span class="sc-sub">Quién puede editar o ver, y con qué rol</span></div><span class="chev">›</span></summary>
       <p class="hint">Cada persona inicia sesión con su email (le llega un link, sin contraseña). Solo entran los que agregues acá — sacar a alguien le corta el acceso al instante.</p>
       <p class="hint" style="margin-top:4px;">🔒 Quién tiene acceso y quién publica anuncios lo controla también el servidor: solo un Super Admin puede cambiarlo. El resto de los permisos por rol todavía es una restricción de la interfaz (detalles en el roadmap).</p>
@@ -1590,6 +1613,7 @@
       <button type="button" id="guideCloseBtn" aria-label="Cerrar" style="border:none; background:none; color:var(--ink-faint); font-size:18px;">✕</button>
     </div>
     <div class="guide-body">
+      <button type="button" class="guide-welcome-btn" id="guideWelcomeBtn">👋 Ver la bienvenida otra vez</button>
       <details class="guide-item" open>
         <summary><span class="gicon" data-icon="users"></span>Cargar hermanos<span class="chev">›</span></summary>
         <p>Pestaña Hermanos → "+ Agregar". Tildá qué puede cubrir cada uno (Sonido, Video, Micrófonos, Plataforma, Acomodadores, Cronometrista) — eso decide quién aparece como opción en cada puesto. Sin capacitación marcada, no va a salir en la lista.</p>
@@ -1672,16 +1696,10 @@
   </div>
 </div>
 
-<div class="modal-overlay hidden" id="onboardingOverlay">
-  <div class="modal">
-    <h3>¡Bienvenido!</h3>
-    <p class="modal-sub">Tres pasos para arrancar:</p>
-    <ol class="onboarding-steps">
-      <li><strong>1. Hermanos</strong> — cargá a los publicadores y marcá qué asignaciones puede cubrir cada uno.</li>
-      <li><strong>2. Programa</strong> — elegí la semana y completá Audio, Video, Micrófonos, Plataforma y Cronometrista (o usá Auto-asignar).</li>
-      <li><strong>3. Compartir</strong> — mandalo por WhatsApp o descargalo en PDF para el tablero de anuncios.</li>
-    </ol>
-    <div class="modal-footer"><button type="button" class="btn btn-primary" id="onboardingCloseBtn">Entendido</button></div>
+<div class="modal-overlay hidden" id="onboardingOverlay" role="dialog" aria-modal="true" aria-label="Bienvenida">
+  <div class="modal wl-modal">
+    <div id="onbBody"></div>
+    <div class="modal-footer"><button type="button" class="btn btn-primary" id="onboardingCloseBtn" style="width:100%;">Empezar</button></div>
   </div>
 </div>
 
@@ -2107,7 +2125,7 @@
     }
     await initCloudSync();
     // El modal de código tiene prioridad; recién si no hace falta mostrarlo, se ofrece la bienvenida.
-    if ($('codeModalOverlay').classList.contains('hidden')) maybeShowOnboarding();
+    if ($('codeModalOverlay').classList.contains('hidden') && !accessCode && !currentUser) maybeShowRoleWelcome();
   }
   /* ---------- Guardado en la nube: solo lo que cambió ----------
      Antes se subía la congregación entera en cada guardado, y así un cambio podía pisar
@@ -2314,6 +2332,7 @@
     // equipo — no tienen sentido para un rol acotado a su propia parte.
     document.querySelectorAll('[data-share="pdfmes"], [data-share="viewlink"]')
       .forEach(b => b.classList.toggle('hidden', narrow));
+    if (role === 'super') renderSetupChecklist($('setupList'), false);
   }
   let applyingRemoteUpdate = false; // evita que un cambio recibido de la nube dispare otro guardado
 
@@ -2490,7 +2509,7 @@
       currentUserRole = computeUserRole();
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) { /* sin acceso */ }
       // Si algo falla al dibujar, la sincronización sigue funcionando igual.
-      for (const fn of [initUiFromData, renderAll, applyRoleUI]) {
+      for (const fn of [initUiFromData, renderAll, applyRoleUI, maybeShowRoleWelcome]) {
         try { fn(); } catch (e) { console.error(e); logCloudError('error', e && e.message, e && e.stack); if (!fatalErrorShown) showFatalErrorBanner({ error: e }); }
       }
       applyingRemoteUpdate = false;
@@ -2636,15 +2655,68 @@
     $('backupReminderDismiss').addEventListener('click', () => bar.remove());
   }
 
-  /* ---------- Bienvenida (primera vez) ---------- */
-  const ONBOARDING_KEY = 'kh-onboarding-seen';
-  function maybeShowOnboarding() {
-    let seen = false;
-    try { seen = localStorage.getItem(ONBOARDING_KEY) === '1'; } catch (e) { /* sin acceso a localStorage */ }
-    if (seen) return;
-    const hasData = data.publishers.length > 0 || Object.keys(data.weeks).length > 0;
-    if (hasData) { try { localStorage.setItem(ONBOARDING_KEY, '1'); } catch (e) { /* no se pudo guardar */ } return; }
+  /* ---------- Bienvenida según el rol (una vez por celular y por rol) ----------
+     Admins: tres consejos de lo que más usa su rol. Super Admin: la lista de
+     "Puesta en marcha", que también queda en Ajustes. Se vuelve a ver desde el "?". */
+  const WELCOME_ROLES = {
+    tecnico: { badge: 'Admin — Equipo técnico', lead: 'Vas a cargar quién está en audio, video, micrófonos, plataforma y cronómetro en cada reunión.', tips: [
+      ['📅', 'Elegí la reunión arriba', 'La tira muestra las reuniones del mes: cada una dice si está completa (✓) o cuánto le falta.'],
+      ['✨', 'Auto-asignar', 'Completa los puestos vacíos repartiendo parejo, sin repetir la semana anterior. Se puede deshacer.'],
+      ['📤', 'Compartir', 'Mandá el equipo de la reunión por WhatsApp o en PDF.']] },
+    acomodadores: { badge: 'Admin — Acomodadores', lead: 'Vas a cargar quiénes son los acomodadores de cada reunión.', tips: [
+      ['📅', 'Elegí la reunión arriba', 'La tira muestra las reuniones del mes: cada una dice si está completa (✓) o cuánto le falta.'],
+      ['✨', 'Auto-asignar', 'Completa los lugares vacíos repartiendo parejo, sin repetir la semana anterior. Se puede deshacer.'],
+      ['📤', 'Compartir', 'Mandá los acomodadores de la reunión por WhatsApp o en PDF.']] },
+    asignaciones: { badge: 'Admin — Asignaciones', lead: 'Vas a cargar el programa de cada reunión: presidente, oraciones, cánticos, discursos y estudiantes.', tips: [
+      ['📅', 'Elegí la reunión arriba', 'La tira muestra las reuniones del mes: cada una dice si está completa (✓) o cuánto le falta.'],
+      ['👥', 'Quién tiene cada parte', 'Al tocar una parte aparecen primero los disponibles, empezando por quien hace más tiempo que no tiene una.'],
+      ['🎤', 'Orador visitante', 'En el fin de semana, "+ Viene de otra congregación" carga un orador de afuera.']] },
+    anuncios: { badge: 'Anuncios', lead: 'Vas a publicar los anuncios que ve toda la congregación en su celular.', tips: [
+      ['➕', 'Nuevo anuncio', 'Con título, texto y, si hace falta, una foto o un PDF. Podés fijarlo arriba de todo.'],
+      ['👁', 'Vista previa', 'Antes de publicar ves cómo les va a aparecer a los hermanos.'],
+      ['📅', 'Fecha del evento', 'Si es de un evento, muestra cuánto falta, se puede agregar a Google Calendar y deja de verse cuando pasa.']] }
+  };
+  let welcomeRole = null;
+  function welcomeKey(role) { return 'kh-welcome-' + role; }
+  function welcomeFirstName() {
+    const p = currentUser && currentUser.email ? accPubOf(currentUser.email) : null;
+    return p ? String(p.name || '').trim().split(' ')[0] : '';
+  }
+  function maybeShowRoleWelcome() {
+    const role = currentUserRole;
+    if (!data || role === 'viewer' || redirectingToViewer) return;
+    if (!$('onboardingOverlay').classList.contains('hidden') || !$('codeModalOverlay').classList.contains('hidden')) return;
+    let seen = true;
+    try { seen = !!localStorage.getItem(welcomeKey(role)); } catch (e) { /* sin acceso: no se muestra */ }
+    if (!seen) openRoleWelcome(role);
+  }
+  function openRoleWelcome(role) {
+    welcomeRole = role || currentUserRole;
+    paintRoleWelcome();
+    closeGuide();
     $('onboardingOverlay').classList.remove('hidden');
+    setTimeout(() => $('onboardingCloseBtn').focus(), 60);
+  }
+  function paintRoleWelcome() {
+    const role = welcomeRole;
+    const first = welcomeFirstName();
+    const hola = first ? 'Hola, ' + escapeHtml(first) : '¡Bienvenido!';
+    const cfg = WELCOME_ROLES[role];
+    if (cfg) {
+      $('onbBody').innerHTML = `<span class="wl-badge">${escapeHtml(cfg.badge)}</span><h3>${hola}</h3><p class="wl-lead">${escapeHtml(cfg.lead)}</p>`
+        + cfg.tips.map(([ic, t, x]) => `<div class="wl-tip"><span class="ti" aria-hidden="true">${ic}</span><div><b>${escapeHtml(t)}</b><span>${escapeHtml(x)}</span></div></div>`).join('');
+      $('onboardingCloseBtn').textContent = 'Empezar';
+      return;
+    }
+    // Super Admin: puesta en marcha
+    $('onbBody').innerHTML = `<span class="wl-badge">Super Admin</span><h3>${hola}</h3>
+      <p class="wl-lead">Esto es lo que hace falta para que todo funcione. Se va tildando solo a medida que lo completás, y queda en Ajustes → Puesta en marcha.</p>
+      <div id="onbSetup"></div>`;
+    renderSetupChecklist($('onbSetup'), true);
+  }
+  function closeRoleWelcome() {
+    $('onboardingOverlay').classList.add('hidden');
+    try { localStorage.setItem(welcomeKey(welcomeRole || currentUserRole), String(Date.now())); } catch (e) { /* no se pudo guardar */ }
   }
   function updateAccountAvatar(user) {
     const letter = (user.email || '?').charAt(0).toUpperCase();
@@ -2726,11 +2798,10 @@
   $('guideOpenBtn').addEventListener('click', openGuide);
   $('guideCloseBtn').addEventListener('click', closeGuide);
   $('guideOverlay').addEventListener('click', (e) => { if (e.target.id === 'guideOverlay') closeGuide(); });
+  $('onboardingOverlay').addEventListener('click', (e) => { if (e.target.id === 'onboardingOverlay') closeRoleWelcome(); });
 
-  $('onboardingCloseBtn').addEventListener('click', () => {
-    $('onboardingOverlay').classList.add('hidden');
-    try { localStorage.setItem(ONBOARDING_KEY, '1'); } catch (e) { /* no se pudo guardar */ }
-  });
+  $('onboardingCloseBtn').addEventListener('click', closeRoleWelcome);
+  $('guideWelcomeBtn').addEventListener('click', () => openRoleWelcome(currentUserRole));
 
   /* ---------- Tabs ---------- */
   function switchTab(tab) {
@@ -6155,6 +6226,75 @@
     box.innerHTML = html;
   }
   $('devCard').addEventListener('toggle', () => { if ($('devCard').open && !devItems) loadDevices(); });
+
+  /* ---------- Puesta en marcha (Super Admin) ----------
+     Cinco puntos que se tildan solos según los datos reales; cada pendiente lleva a donde se resuelve. */
+  let setupDevLoading = false;
+  function setupItems() {
+    const s = data.settings || {};
+    const tOk = v => /^\d{2}:\d{2}$/.test(v || '');
+    const DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const name = String(s.congregationName || '').trim();
+    const nameOk = !!name && name !== 'Mi Congregación';
+    const timesOk = tOk(s.meetingTimeSemana) && tOk(s.meetingTimeFinde);
+    const active = (data.publishers || []).filter(p => p.status !== 'inactivo');
+    const admins = new Set(['tecnicoAdminEmails', 'acomodadoresAdminEmails', 'asignacionesAdminEmails'].flatMap(f => s[f] || [])).size;
+    const soloAn = (s.anunciosOnlyEmails || []).length;
+    const viewers = (s.viewerEmails || []).length;
+    const people = accPeople();
+    const unlinked = new Set(people.filter(r => !r.pub).map(r => String(r.email).toLowerCase())).size;
+    const linked = active.filter(p => p.email).length;
+    let avisos;
+    if (devItems) {
+      const withDev = new Set(devItems.map(d => d.pubId).filter(id => active.some(p => p.id === id && p.email))).size;
+      avisos = { ok: linked > 0 && withDev * 2 >= linked, detail: linked ? `${withDev} de ${linked} con email vinculado` : 'Primero vinculá los emails' };
+    } else avisos = { ok: false, detail: currentUser ? (setupDevLoading ? 'Consultando…' : 'Tocá para ver cuántos') : 'Hace falta estar conectado a la nube' };
+    return [
+      { key: 'reuniones', ok: nameOk && timesOk, title: 'Nombre y horario de las reuniones', go: 'congregacion',
+        detail: nameOk && timesOk ? `${DAYS[s.weekdaySemana] || ''} ${s.meetingTimeSemana} · ${DAYS[s.weekdayFinde] || ''} ${s.meetingTimeFinde}` : !nameOk ? 'Falta el nombre de la congregación' : 'Falta la hora de las reuniones' },
+      { key: 'hermanos', ok: active.length > 0, title: 'Hermanos cargados', go: 'hermanos',
+        detail: active.length ? `${active.length} ${active.length === 1 ? 'hermano' : 'hermanos'}` : 'Todavía no hay hermanos' },
+      { key: 'accesos', ok: admins + soloAn + viewers > 0, title: 'Accesos dados', go: 'acceso',
+        detail: admins + soloAn + viewers ? [`${admins} ${admins === 1 ? 'admin' : 'admins'}`, soloAn ? `${soloAn} solo anuncios` : '', `${viewers} solo ver`].filter(Boolean).join(' · ') : 'Por ahora solo entrás vos' },
+      { key: 'emails', ok: people.length > 1 && unlinked === 0, title: 'Emails vinculados a hermanos', go: 'unlinked',
+        detail: unlinked ? `${unlinked} sin vincular` : people.length > 1 ? 'Todos vinculados' : 'Primero dá acceso a los hermanos' },
+      { key: 'avisos', ok: avisos.ok, title: 'Avisos activados por los hermanos', go: 'avisos', detail: avisos.detail }
+    ];
+  }
+  function renderSetupChecklist(box, fetchDevices) {
+    if (!box) return;
+    const items = setupItems();
+    const done = items.filter(i => i.ok).length;
+    const pct = Math.round(done * 100 / items.length);
+    box.innerHTML = `<div class="setup-head"><span>${done} de ${items.length} listos</span><span>${pct}%</span></div>
+      <div class="setup-bar"><i style="width:${pct}%"></i></div>`
+      + items.map(i => `<button type="button" class="setup-row${i.ok ? ' done' : ''}" data-setup-go="${i.go}">
+        <span class="c" aria-hidden="true">${i.ok ? '✓' : ''}</span>
+        <span class="t"><span>${escapeHtml(i.title)}</span><small>${escapeHtml(i.detail)}</small></span>
+        ${i.ok ? '' : '<span class="go">Ver ›</span>'}</button>`).join('');
+    $('setupSub').textContent = done === items.length ? 'Todo listo ✓' : `${done} de ${items.length} listos`;
+    if (box.id === 'onbSetup') $('onboardingCloseBtn').textContent = done === items.length ? 'Empezar' : 'Seguir más tarde';
+    if (fetchDevices && !devItems && currentUser && accessCode && !setupDevLoading) {
+      setupDevLoading = true;
+      devicesCall('list').then(r => { devItems = r.devices || []; }).catch(() => { /* se ve en Notificaciones de los hermanos */ })
+        .finally(() => { setupDevLoading = false; renderSetupChecklist(box, false); });
+    }
+  }
+  function setupGo(where) {
+    if (!$('onboardingOverlay').classList.contains('hidden')) closeRoleWelcome();
+    if (where === 'hermanos') { switchTab('hermanos'); return; }
+    switchTab('ajustes');
+    const card = where === 'congregacion' ? $('congCard') : where === 'avisos' ? $('devCard') : $('accCard');
+    if (where === 'unlinked') { accState.filter = 'unlinked'; renderAccessLists(); }
+    if (where === 'avisos' && devItems) setTimeout(renderDevices, 0);
+    card.open = true;
+    setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+  }
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-setup-go]');
+    if (b) setupGo(b.dataset.setupGo);
+  });
+  $('setupCard').addEventListener('toggle', () => { if ($('setupCard').open) renderSetupChecklist($('setupList'), true); });
   $('devRefreshBtn').addEventListener('click', loadDevices);
   $('devSearch').addEventListener('input', renderDevices);
   $('devList').addEventListener('click', async (e) => {

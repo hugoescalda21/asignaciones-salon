@@ -188,6 +188,38 @@
   .ann-foot .ann-share { padding: 6px 12px; font-size: 12px; }
   .app-toast { position: fixed; left: 16px; right: 16px; bottom: calc(var(--tab-h, 62px) + 14px + env(safe-area-inset-bottom)); max-width: 480px; margin: 0 auto; background: #212C34; color: #fff; border-radius: 10px; padding: 11px 14px; font-size: 13px; line-height: 1.4; box-shadow: 0 6px 18px rgba(0,0,0,0.25); z-index: 350; opacity: 0; transform: translateY(8px); transition: opacity .2s, transform .2s; pointer-events: none; }
   .app-toast.show { opacity: 1; transform: none; }
+  /* Bienvenida (una vez por celular) */
+  .wl-ov { position: fixed; inset: 0; z-index: 70; background: var(--surface); display: flex; justify-content: center; }
+  .wl-box { width: 100%; max-width: 480px; display: flex; flex-direction: column; padding: calc(12px + env(safe-area-inset-top)) 0 calc(14px + env(safe-area-inset-bottom)); position: relative; min-height: 0; }
+  .wl-skip { position: absolute; top: calc(8px + env(safe-area-inset-top)); right: 10px; border: none; background: none; font: inherit; font-size: 14px; font-weight: 700; color: var(--ink-soft); padding: 10px; z-index: 2; cursor: pointer; }
+  .wl-track { flex: 1; min-height: 0; display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
+  .wl-track::-webkit-scrollbar { display: none; }
+  .wl-slide { flex: 0 0 100%; scroll-snap-align: start; scroll-snap-stop: always; padding: 40px 22px 6px; box-sizing: border-box; overflow-y: auto; }
+  .wl-art { border-radius: 18px; min-height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 18px 14px; margin-bottom: 22px; background: var(--bg); box-sizing: border-box; }
+  .wl-slide h2 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 26px; line-height: 1.2; margin: 0 0 8px; color: var(--ink); }
+  .wl-slide p { font-size: 15px; line-height: 1.55; color: var(--ink-soft); margin: 0 0 10px; }
+  .wl-slide p b { color: var(--ink); }
+  .wl-slide ol { font-size: 15px; line-height: 1.55; color: var(--ink-soft); margin: 0; padding-left: 20px; }
+  .wl-slide ol li { margin-bottom: 6px; }
+  .wl-hero { background: linear-gradient(135deg, #212C34, #33444F); color: #fff; border-radius: 14px; padding: 14px 16px; width: 100%; box-sizing: border-box; }
+  .wl-hero small { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #D8BB82; }
+  .wl-hero b { display: block; font-family: 'Fraunces', serif; font-weight: 500; font-size: 20px; margin: 3px 0 2px; }
+  .wl-hero span { font-size: 12.5px; opacity: .85; }
+  .wl-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; width: 100%; box-sizing: border-box; font-size: 13px; line-height: 1.35; display: flex; gap: 10px; align-items: center; color: var(--ink); text-align: left; }
+  .wl-card .ic { font-size: 20px; flex-shrink: 0; }
+  .wl-card small { display: block; color: var(--ink-soft); font-size: 11.5px; }
+  .wl-card.notif { box-shadow: 0 6px 18px rgba(0,0,0,.12); border: none; }
+  .wl-appic { width: 72px; height: 72px; border-radius: 18px; box-shadow: 0 6px 18px rgba(0,0,0,.15); }
+  .wl-slide .rt-help { font-size: 13px; }
+  .wl-dots { display: flex; gap: 6px; justify-content: center; margin: 10px 0 14px; }
+  .wl-dots i { width: 7px; height: 7px; border-radius: 4px; background: var(--line); transition: width .2s, background .2s; }
+  .wl-dots i.on { width: 22px; background: var(--ink); }
+  .wl-go { margin: 0 22px; border: none; border-radius: 12px; padding: 15px; font: inherit; font-size: 16px; font-weight: 700; background: var(--ink); color: var(--surface); cursor: pointer; }
+  .wl-go.green { background: #4C7A5E; color: #fff; }
+  .wl-go:focus:not(:focus-visible), .wl-sub:focus:not(:focus-visible), .wl-skip:focus:not(:focus-visible) { outline: none; }
+  .wl-go:disabled { opacity: .6; }
+  .wl-sub { border: none; background: none; font: inherit; font-size: 14px; color: var(--ink-soft); padding: 12px 12px 2px; cursor: pointer; }
+  .guide-welcome-btn { width: 100%; margin-top: 12px; border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 11px; font: inherit; font-size: 13px; font-weight: 600; color: var(--ink); cursor: pointer; }
   .pw-modal { border-radius: 18px; margin: 16px; text-align: center; padding: 24px 20px 18px; }
   .pw-ic { font-size: 40px; line-height: 1; margin-bottom: 8px; }
   .pw-modal h3 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 21px; margin: 0 0 6px; }
@@ -543,6 +575,20 @@
   </div>
 </div>
 
+<div id="welcomeOv" class="wl-ov hidden" role="dialog" aria-modal="true" aria-label="Bienvenida">
+  <div class="wl-box">
+    <button type="button" class="wl-skip" id="wlSkipBtn">Saltar</button>
+    <div class="wl-track" id="wlTrack">
+      <section class="wl-slide" id="wlS1"></section>
+      <section class="wl-slide" id="wlS2"></section>
+      <section class="wl-slide" id="wlS3"></section>
+    </div>
+    <div class="wl-dots" id="wlDots" aria-hidden="true"><i class="on"></i><i></i><i></i></div>
+    <button type="button" class="wl-go" id="wlGoBtn">Siguiente</button>
+    <button type="button" class="wl-sub hidden" id="wlSubBtn">Ahora no</button>
+  </div>
+</div>
+
 <div id="pushWelcome" class="day-modal-overlay hidden" style="z-index:60; align-items:center;" role="dialog" aria-modal="true" aria-label="Activar avisos">
   <div class="day-modal pw-modal">
     <div class="pw-ic" aria-hidden="true">🔔</div>
@@ -592,6 +638,7 @@
       <summary>🔑&nbsp;&nbsp;Iniciar sesión<span class="gchev">›</span></summary>
       <p>Con tu email (te llega un link, sin contraseña) o con tu cuenta de Google. Solo entran las personas que quien administra la app haya autorizado.</p>
     </details>
+    <button type="button" class="guide-welcome-btn hidden" id="guideWelcomeBtn">👋 Ver la bienvenida otra vez</button>
   </div>
 </div>
 
@@ -1761,6 +1808,7 @@
   function pwKey(code, pub) { return `push-welcome-${code}-${pub.id}`; }
   function maybeShowPushWelcome(pub, code) {
     if (!pub || !isInstalledApp() || !('Notification' in window) || !('serviceWorker' in navigator)) return;
+    if (!welcomeSeen(code) || !$('welcomeOv').classList.contains('hidden')) return;   // la bienvenida ya incluye este paso
     if (!$('pushWelcome').classList.contains('hidden')) return;
     let st = null; try { st = JSON.parse(localStorage.getItem(pwKey(code, pub)) || 'null'); } catch (e) { /* nada */ }
     const perm = Notification.permission;
@@ -1826,6 +1874,193 @@
     if (!(st && st.ok)) pwSave({ later: Date.now() });
     closePushWelcome();
   });
+
+  /* ---------- Bienvenida: tres pantallas, una sola vez por celular ----------
+     1) Hola + tu próxima asignación (o cómo vincular el email), 2) Calendario y anuncios,
+     3) Avisos: activar y comprobar (usa el mismo paso de pushWelcome). Si se abrió desde el
+     navegador y se puede instalar, el paso 3 ofrece primero instalar la app.
+     Se vuelve a ver desde el "?". */
+  let wlCtx = null, wlLast = null, wlIdx = 0;
+  function wlKey(code) { return `welcome-seen-${code}`; }
+  function welcomeSeen(code) { try { return !!localStorage.getItem(wlKey(code)); } catch (e) { return true; } }
+  function welcomeMarkSeen() { if (!wlCtx) return; try { localStorage.setItem(wlKey(wlCtx.code), String(Date.now())); } catch (e) { /* sin acceso */ } }
+  // Próxima asignación de esta persona (equipo técnico o programa), desde hoy.
+  function welcomeNextAssignment(pub) {
+    if (!pub || !data) return null;
+    const settings = data.settings || { weekdaySemana: 4, weekdayFinde: 0, micCount: 2, usherCount: 2 };
+    const today = localIso(new Date());
+    let best = null;
+    const take = (r) => { if (!best || r.date < best.date) best = r; };
+    Object.keys(data.weeks || {}).forEach(monday => {
+      ['semana', 'finde'].forEach(t => {
+        const w = data.weeks[monday] && data.weeks[monday][t];
+        if (!w) return;
+        const date = dateForType(monday, t, settings);
+        if (date < today || (best && date >= best.date)) return;
+        getRoles(t, settings.micCount, settings.usherCount).forEach(r => {
+          if (w.roles && w.roles[r.key] === pub.id) take({ label: r.label, date, meetingType: t });
+        });
+        programMatches(w.program, t, new Set([pub.id])).forEach(pm => take({ label: pm.label, date, meetingType: t }));
+      });
+    });
+    return best;
+  }
+  function welcomeWhen(r) {
+    let when = new Date(r.date + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+    when = when.charAt(0).toUpperCase() + when.slice(1);
+    const hora = meetingTimeOf(r.meetingType);
+    return when + (hora ? ' · ' + hora : '');
+  }
+  // Qué muestra la última pantalla.
+  function welcomeMode(pub, noInstall) {
+    const inst = isInstalledApp();
+    const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+    if (!inst && !noInstall && deferredInstallPrompt) return 'install';
+    if (!inst && ios) return 'ios';
+    if (!pub) return 'unlinked';
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) return 'nosupport';
+    if (Notification.permission === 'granted') return 'on';
+    if (Notification.permission === 'denied') return 'blocked';
+    return 'ask';
+  }
+  function paintWelcome() {
+    const { pub } = wlCtx;
+    const first = ((pub && pub.name) || '').trim().split(' ')[0];
+    const next = welcomeNextAssignment(pub);
+    const email = currentUser && currentUser.email ? currentUser.email : '';
+    // 1) Hola
+    let art1, txt1;
+    if (pub && next) {
+      art1 = `<div class="wl-hero"><small>Tu próxima asignación</small><b>${escapeHtml(next.label)}</b><span>${escapeHtml(welcomeWhen(next))}</span></div>`;
+      txt1 = '<p>Acá vas a ver tus asignaciones de la congregación: qué te toca y cuándo. Arriba de todo, en Inicio, siempre aparece la próxima.</p>';
+    } else if (pub) {
+      art1 = '<div class="wl-card"><span class="ic">📋</span><div><b>Todavía no tenés asignaciones próximas</b><small>Cuando te asignen algo, aparece acá.</small></div></div>';
+      txt1 = '<p>Acá vas a ver tus asignaciones de la congregación: qué te toca y cuándo. Arriba de todo, en Inicio, siempre aparece la próxima.</p>';
+    } else {
+      art1 = `<div class="wl-card"><span class="ic">🔗</span><div><b>Tu email todavía no está vinculado</b><small>${escapeHtml(email)}</small></div></div>`;
+      txt1 = `<p>Acá vas a ver las reuniones y los anuncios de la congregación.</p><p>Para ver también <b>tus</b> asignaciones, pedile a quien administra la app que vincule tu email a tu nombre.</p>`;
+    }
+    $('wlS1').innerHTML = `<div class="wl-art">${art1}</div><h2>${first ? 'Hola, ' + escapeHtml(first) : 'Hola'} 👋</h2>${txt1}`;
+    // 2) Calendario y anuncios
+    $('wlS2').innerHTML = `<div class="wl-art">
+        <div class="wl-card"><span class="ic">📅</span><div><b>Calendario</b><small>Todas las reuniones, con cada asignación</small></div></div>
+        <div class="wl-card"><span class="ic">📢</span><div><b>Anuncios</b><small>Las novedades, con fotos o PDF</small></div></div>
+        <div class="wl-card"><span class="ic">➕</span><div><b>Google Calendar</b><small>Agregá tus asignaciones con un toque</small></div></div>
+      </div>
+      <h2>Toda la congregación, en un lugar</h2>
+      <p>En <b>Calendario</b> están todas las reuniones con cada asignación; con la lupa buscás por nombre o fecha. En <b>Anuncios</b>, las novedades de la congregación.</p>`;
+    // 3) Avisos / instalar
+    const mode = wlCtx.mode = welcomeMode(pub, wlCtx.noInstall);
+    const notifArt = `<div class="wl-card notif"><span class="ic">🔔</span><div><b>${first ? 'Hola ' + escapeHtml(first) + ', tenés' : 'Tenés'} una asignación</b><small>${next ? escapeHtml(next.label) + ' · ' + escapeHtml(welcomeWhen(next)) : 'Te avisamos apenas te la den'}</small></div></div>`;
+    let s3;
+    if (mode === 'install') {
+      s3 = `<div class="wl-art"><img class="wl-appic" src="icon-192-ver.png" alt=""></div><h2>Instalá la app</h2>
+        <p>Queda en la pantalla de inicio como una app más, se abre al instante y <b>los avisos de tus asignaciones funcionan mejor</b>.</p>`;
+    } else if (mode === 'ios') {
+      s3 = `<div class="wl-art"><img class="wl-appic" src="icon-192-ver.png" alt=""></div><h2>Instalala en tu iPhone</h2>
+        <p>En iPhone los avisos solo llegan con la app instalada. Es un momento:</p>
+        <ol><li>Tocá <b>Compartir</b> (el cuadrado con la flecha, abajo en Safari).</li><li>Elegí <b>Agregar a inicio</b>.</li><li>Abrí la app desde ese ícono nuevo.</li></ol>`;
+    } else if (mode === 'ask') {
+      s3 = `<div class="wl-art">${notifArt}</div><h2>Que no se te pase ninguna</h2>
+        <p>Te avisamos en este celular cuando te den una asignación nueva, y te lo recordamos antes de la reunión.</p>`;
+    } else if (mode === 'on') {
+      s3 = `<div class="wl-art">${notifArt}</div><h2>Los avisos ya están activados ✓</h2>
+        <p>Te avisamos cuando te den una asignación nueva. En Inicio → <b>Recordatorios</b> elegís cuándo te lo recordamos.</p>`;
+    } else if (mode === 'blocked') {
+      s3 = `<div class="wl-art">${notifArt}</div><h2>Los avisos están bloqueados</h2>
+        <p>Para que te lleguen tus asignaciones, activalos en los ajustes del teléfono. Es una sola vez:</p>${remTestHelp('none')}`;
+    } else if (mode === 'unlinked') {
+      s3 = `<div class="wl-art">${notifArt}</div><h2>Avisos en el celular</h2>
+        <p>Cuando vinculen tu email a tu nombre, vas a poder activar avisos de tus asignaciones desde Inicio.</p>`;
+    } else {
+      s3 = `<div class="wl-art"><img class="wl-appic" src="icon-192-ver.png" alt=""></div><h2>¡Todo listo!</h2><p>Ya podés empezar a usar la app.</p>`;
+    }
+    $('wlS3').innerHTML = s3;
+    paintWelcomeNav();
+  }
+  function paintWelcomeNav() {
+    document.querySelectorAll('#wlDots i').forEach((d, i) => d.classList.toggle('on', i === wlIdx));
+    const go = $('wlGoBtn'), sub = $('wlSubBtn');
+    go.disabled = false;
+    $('wlSkipBtn').classList.toggle('hidden', wlIdx >= 2);
+    if (wlIdx < 2) { go.textContent = 'Siguiente'; go.classList.remove('green'); sub.classList.add('hidden'); return; }
+    const mode = wlCtx && wlCtx.mode;
+    const labels = { install: ['📲 Instalar la app', 'Seguir en el navegador'], ask: ['🔔 Activar avisos', 'Ahora no'], ios: ['Entendido', ''], on: ['Empezar', ''], blocked: ['Empezar', ''], unlinked: ['Empezar', ''], nosupport: ['Empezar', ''] };
+    const [a, b] = labels[mode] || ['Empezar', ''];
+    go.textContent = a;
+    go.classList.toggle('green', mode === 'install' || mode === 'ask');
+    sub.textContent = b;
+    sub.classList.toggle('hidden', !b);
+  }
+  function welcomeGoTo(i) {
+    wlIdx = Math.max(0, Math.min(2, i));
+    const tr = $('wlTrack');
+    try { tr.scrollTo({ left: wlIdx * tr.clientWidth, behavior: 'smooth' }); } catch (e) { tr.scrollLeft = wlIdx * tr.clientWidth; }
+    paintWelcomeNav();
+  }
+  function openWelcome(pub, code) {
+    wlCtx = { pub, code, noInstall: false, mode: '' };
+    wlIdx = 0;
+    paintWelcome();
+    $('pushWelcome').classList.add('hidden');
+    $('guideOverlay').classList.add('hidden');
+    $('welcomeOv').classList.remove('hidden');
+    $('wlTrack').scrollLeft = 0;
+  }
+  function maybeShowWelcome(pub, code) {
+    wlLast = { pub, code };
+    $('guideWelcomeBtn').classList.remove('hidden');
+    if (welcomeSeen(code) || !$('welcomeOv').classList.contains('hidden')) return;
+    openWelcome(pub, code);
+  }
+  // Al cerrar: si no activó los avisos, el cartel de la app instalada se vuelve a ofrecer en una semana.
+  function closeWelcome(postponePush) {
+    welcomeMarkSeen();
+    $('welcomeOv').classList.add('hidden');
+    if (postponePush && wlCtx && wlCtx.pub && ('Notification' in window) && Notification.permission !== 'granted') {
+      pwCtx = { pub: wlCtx.pub, code: wlCtx.code };
+      pwSave({ later: Date.now() });
+    }
+  }
+  $('wlTrack').addEventListener('scroll', () => {
+    const tr = $('wlTrack');
+    const i = Math.round(tr.scrollLeft / Math.max(1, tr.clientWidth));
+    if (i !== wlIdx) { wlIdx = i; paintWelcomeNav(); }
+  }, { passive: true });
+  $('wlSkipBtn').addEventListener('click', () => closeWelcome(true));
+  $('wlGoBtn').addEventListener('click', async () => {
+    if (!wlCtx) return;
+    if (wlIdx < 2) { welcomeGoTo(wlIdx + 1); return; }
+    const mode = wlCtx.mode;
+    if (mode === 'install') {
+      const p = deferredInstallPrompt;
+      if (!p) { wlCtx.noInstall = true; paintWelcome(); return; }
+      $('wlGoBtn').disabled = true;
+      p.prompt();
+      let outcome = '';
+      try { outcome = (await p.userChoice).outcome; } catch (e) { /* sin acceso al resultado */ }
+      deferredInstallPrompt = null;
+      renderInstallPrompt();
+      if (outcome === 'accepted') { closeWelcome(false); return; }   // la app instalada ofrece los avisos al abrirla
+      wlCtx.noInstall = true; paintWelcome();
+      return;
+    }
+    if (mode === 'ask') {
+      closeWelcome(false);
+      pwCtx = { pub: wlCtx.pub, code: wlCtx.code };
+      paintPushWelcome('ask');
+      $('pushWelcome').classList.remove('hidden');
+      $('pwMainBtn').click();   // mismo toque: pide el permiso y manda el aviso de prueba
+      return;
+    }
+    closeWelcome(false);
+  });
+  $('wlSubBtn').addEventListener('click', () => {
+    if (!wlCtx) return;
+    if (wlCtx.mode === 'install') { wlCtx.noInstall = true; paintWelcome(); return; }
+    closeWelcome(true);
+  });
+  $('guideWelcomeBtn').addEventListener('click', () => { if (wlLast) openWelcome(wlLast.pub, wlLast.code); });
   window.addEventListener('appinstalled', () => { try { Object.keys(localStorage).filter(k => k.startsWith('push-welcome-')).forEach(k => localStorage.removeItem(k)); } catch (e) { /* nada */ } });
 
   function renderPushPrompt(pub, code) {
@@ -1887,6 +2122,7 @@
     $('reminderRow').classList.add('hidden'); $('reminderRow').innerHTML = '';
     if (!currentUser || !currentUser.email) { box.classList.add('hidden'); box.innerHTML = ''; $('pushPrompt').classList.add('hidden'); $('pushPrompt').innerHTML = ''; return; }
     const pub = (data.publishers || []).find(p => p.email === currentUser.email);
+    maybeShowWelcome(pub || null, code);
     if (!pub) {
       $('pushPrompt').classList.add('hidden'); $('pushPrompt').innerHTML = '';
       // Entró con un email que no está vinculado a ningún hermano: se le explica por qué no ve su resumen.

@@ -18,9 +18,12 @@ async function launch() {
   const browser = await chromium.launch();
   const original = browser.newContext.bind(browser);
   browser.newContext = async (opts = {}) => {
-    const ctx = await original({ timezoneId: 'America/Argentina/Buenos_Aires', ...opts });
+    const { welcome, ...rest } = opts;
+    const ctx = await original({ timezoneId: 'America/Argentina/Buenos_Aires', ...rest });
     await ctx.clock.install({ time: HOY });
     await ctx.route(/gstatic/, r => r.abort());
+    // La bienvenida por rol se da por vista, salvo en las pruebas que la revisan ({ welcome: true }).
+    if (!welcome) await ctx.addInitScript(() => { ['super', 'tecnico', 'acomodadores', 'asignaciones', 'anuncios'].forEach(r => localStorage.setItem('kh-welcome-' + r, '1')); });
     return ctx;
   };
   return browser;

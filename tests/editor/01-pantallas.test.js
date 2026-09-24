@@ -73,7 +73,7 @@ let ok = 0, bad = 0; const check = (l, c, d) => { if (c) { ok++; console.log('  
   const groups = await m.evaluate(() => [...document.querySelectorAll('#panel-ajustes .settings-group')].map(x => x.textContent));
   check('Ajustes agrupados', JSON.stringify(groups) === JSON.stringify(['Congregación','Avisos','Reportes y datos','Este dispositivo','Ayuda']), groups);
   check('todas las tarjetas cerradas', await m.evaluate(() => [...document.querySelectorAll('#panel-ajustes details')].every(d => !d.open)));
-  check('Congregación primero y con el horario adentro', await m.evaluate(() => { const d = document.querySelector('#panel-ajustes details'); return /Congregación/.test(d.querySelector('h3').textContent) && !!d.querySelector('#meetingTimeSemanaInput'); }));
+  check('Puesta en marcha primero, después Congregación con el horario adentro', await m.evaluate(() => { const [a, d] = document.querySelectorAll('#panel-ajustes details'); return /Puesta en marcha/.test(a.querySelector('h3').textContent) && /Congregación/.test(d.querySelector('h3').textContent) && !!d.querySelector('#meetingTimeSemanaInput'); }));
   check('nombre nuevo del aviso', await m.evaluate(() => /Aviso de puestos sin cubrir/.test($('panel-ajustes').textContent) && !!document.querySelector('#panel-ajustes #reminderSwitch')));
   check('Ajustes: no se corre de costado', await overflow(m) === 0);
   await m.screenshot({ path: SHOTS + '/n-ajustes.png', fullPage: true });

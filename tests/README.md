@@ -21,7 +21,7 @@ Google Calendar, recordatorios, el calendario desplegable, Inicio, las
 tarjetas de anuncios y la estructura del HTML. Al final muestra algo como:
 
 ```
-59 pruebas OK, 0 fallaron.
+72 pruebas OK, 0 fallaron.
 ```
 
 Si alguna falla, aparece marcada con ❌ y dice qué obtuvo.
@@ -59,7 +59,7 @@ node tests/editor/run.js anuncios   (solo las que tengan "anuncios" en el nombre
 ```
 
 Al final muestra una línea por archivo y el total, por ejemplo
-`371 de 371 pruebas OK.` Si algo falla, muestra qué.
+`405 de 405 pruebas OK.` Si algo falla, muestra qué.
 
 | Archivo | Qué prueba |
 |---|---|
@@ -77,6 +77,7 @@ Al final muestra una línea por archivo y el total, por ejemplo
 | `13-fin-estimado` | Cronómetro: a qué hora termina la reunión, ayuda para recuperar tiempo |
 | `14-datos-incompletos` | Que la app abra y se conecte aunque haya semanas con datos incompletos |
 | `15-notificaciones` | Ajustes → Notificaciones de los hermanos: lista, enviar prueba, quitar |
+| `16-bienvenida` | Bienvenida según el rol y "Puesta en marcha" del Super Admin |
 
 Las capturas de pantalla que sacan quedan en `tests/editor/capturas/`
 (no se suben a git), por si querés mirarlas.
