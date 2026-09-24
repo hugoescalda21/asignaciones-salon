@@ -16,7 +16,7 @@ const DOCS = {
     L1: { id: 'L1', tipo: 'casa', nombre: 'Casa de la familia Gómez', direccion: 'Belgrano 450' },
     L2: { id: 'L2', tipo: 'salon', nombre: 'Salón del Reino', direccion: '' } } },
   'congregations/C/terr/territorios': { lista: {
-    t12: { id: 't12', num: '12', nombre: 'Centro Norte', tipo: 'casas', foto: { url: 'https://example.com/t12.jpg' }, notas: 'Tocar timbre', asignado: { tipo: 'hermano', id: 'p1', desde: '2026-09-01' } },
+    t12: { id: 't12', num: '12', nombre: 'Centro Norte', tipo: 'casas', foto: { url: 'https://example.com/t12.jpg' }, notas: 'Tocar timbre', asignado: { tipo: 'hermano', id: 'p1', desde: '2026-09-01' }, limites: [{ lat: -34.6, lng: -58.38 }, { lat: -34.6, lng: -58.375 }, { lat: -34.604, lng: -58.375 }, { lat: -34.604, lng: -58.38 }] },
     t4: { id: 't4', num: '4', nombre: 'Los Aromos', tipo: 'casas', asignado: { tipo: 'grupo', id: 'g1', desde: '2026-04-01' } },
     t9: { id: 't9', num: '9', nombre: 'Otro', tipo: 'casas', asignado: { tipo: 'hermano', id: 'p8', desde: '2026-09-01' } } } },
   'congregations/C/salidas/g1': { plantilla: { s1: { id: 's1', dia: 5, hora: '09:30', lugar: 'L1', conductor: null, territorios: ['t4'] } },
@@ -51,7 +51,7 @@ function installMock(store) {
   const b = await launch();
   async function open(email) {
     const ctx = await b.newContext({ viewport: { width: 390, height: 844 } });
-    await ctx.route(/googleapis/, r => r.abort());
+    await ctx.route(/googleapis|tile\.openstreetmap/, r => r.abort());
     await ctx.addInitScript(() => { localStorage.setItem('welcome-seen-C', '1'); window.__opened = []; window.open = (u) => { window.__opened.push(u); return null; }; });
     const p = await ctx.newPage(); p.errs = []; p.on('pageerror', e => { if (!/firebase is not defined/.test(e.message)) p.errs.push(e.message); });   // sin Firebase de verdad (bloqueado en las pruebas)
     await p.goto(VER); await p.waitForTimeout(500);
@@ -83,9 +83,15 @@ function installMock(store) {
   check('aparece la pestaña Territorios', await p.evaluate(() => !document.querySelector('.bt-btn[data-tab="territorios"]').classList.contains('hidden')));
   await p.click('.bt-btn[data-tab="territorios"]'); await p.waitForTimeout(150);
   const terr = await p.evaluate(() => [...document.querySelectorAll('#panel-territorios .mt-card')].map(c => c.innerText.replace(/\s+/g, ' ')));
-  check('Mis territorios: el suyo, el de su grupo y el de la salida que conduce (no los de otros)', terr.length === 3 && /4 · Los Aromos/.test(terr[0]) && /De tu grupo · Grupo 1/.test(terr[0]) && /9 · Otro/.test(terr[1]) && /Para la salida que conducís el viernes 25 · 09:30 · Casa de la familia Gómez/.test(terr[1]) && /^12 · Centro Norte/.test(terr[2]), terr);
+  check('Mis territorios: el suyo, el de su grupo y el de la salida que conduce (no los de otros)', terr.length === 3 && /4 · Los Aromos/.test(terr[0]) && /De tu grupo · Grupo 1/.test(terr[0]) && /9 · Otro/.test(terr[1]) && /Para la salida que conducís el viernes 25 · 09:30 · Casa de la familia Gómez/.test(terr[1]) && /12 · Centro Norte Casas/.test(terr[2]), terr);
   check('fecha para terminarlo (y si se pasó, lo dice)', /se pasó la fecha/.test(terr[0]) && /terminalo antes del [^,]+, 30 de diciembre/.test(terr[2]), terr);
-  check('la foto de la tarjeta', await p.evaluate(() => !!document.querySelector('#panel-territorios img[src="https://example.com/t12.jpg"]')));
+  await p.waitForTimeout(600);
+  check('el 12 tiene límites: se ve el mapa con el territorio marcado', await p.evaluate(() => !!document.querySelector('#panel-territorios [data-mt-map="t12"] path.leaflet-interactive')));
+  check('"Cómo llegar" al territorio y la tarjeta a un toque', await p.evaluate(() => /google\.com\/maps\/dir\/\?api=1&destination=-34\.602000,-58\.377500/.test(document.querySelector('#panel-territorios .mt-maprow a').href) && !!document.querySelector('#panel-territorios [data-mt-img="https://example.com/t12.jpg"]')));
+  check('botón "Mi ubicación" en el mapa', await p.evaluate(() => /Mi ubicación/.test(document.querySelector('#panel-territorios [data-mt-map="t12"]').innerText)));
+  await p.click('[data-mt-big="t12"]'); await p.waitForTimeout(500);
+  check('"Mapa grande" a pantalla completa', await p.evaluate(() => { const o = document.querySelector('.mt-big'); const ok = o && !!o.querySelector('path.leaflet-interactive'); if (o) o.remove(); return ok; }));
+  check('la foto de la tarjeta (los sin mapa)', await p.evaluate(() => !!document.querySelector('#panel-territorios .mt-noimg')));
   await p.screenshot({ path: SHOTS + '/vista-territorios.png' });
   await p.click('[data-mt-done="t12"]'); await p.waitForTimeout(100);
   await p.click('#mtOk'); await p.waitForTimeout(200);

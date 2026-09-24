@@ -13,10 +13,13 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-const CACHE_NAME = 'asignaciones-salon-v37';
+const CACHE_NAME = 'asignaciones-salon-v38';
 const ASSETS = [
   './asignaciones-salon.html',
   './territorios.js',
+  './mapa.js',
+  './vendor/leaflet/leaflet.js',
+  './vendor/leaflet/leaflet.css',
   './vendor/qrcode.js',
   './manifest.json',
   './icon-192.png',

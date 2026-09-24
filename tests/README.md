@@ -59,7 +59,7 @@ node tests/editor/run.js anuncios   (solo las que tengan "anuncios" en el nombre
 ```
 
 Al final muestra una línea por archivo y el total, por ejemplo
-`503 de 503 pruebas OK.` Si algo falla, muestra qué.
+`528 de 528 pruebas OK.` Si algo falla, muestra qué.
 
 | Archivo | Qué prueba |
 |---|---|
@@ -82,7 +82,8 @@ Al final muestra una línea por archivo y el total, por ejemplo
 | `18-solicitudes` | Solicitudes de acceso: sugerencia del hermano, aprobar, rechazar, numerito |
 | `19-compartir-app` | Ajustes → Compartir la app: links, WhatsApp, copiar, QR y "Mandarle el link" |
 | `20-territorios` | Territorios, grupos, lugares y salidas (con Firestore simulado); encargado de grupo y Admin de Territorios; confirmar "Lo terminé" |
-| `21-vista-territorios` | Vista: salidas en Inicio, la salida que conduce como asignación, Mis territorios y "Lo terminé" |
+| `21-vista-territorios` | Vista: salidas en Inicio, la salida que conduce como asignación, Mis territorios (con mapa) y "Lo terminé" |
+| `22-territorios-mapa` | Mapa de todos, dibujar límites, campañas y registro en PDF (para el PDF sin internet: `JSPDF_DIR`) |
 
 Las capturas de pantalla que sacan quedan en `tests/editor/capturas/`
 (no se suben a git), por si querés mirarlas.

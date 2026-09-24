@@ -20,7 +20,7 @@
   'use strict';
 
   const T = {
-    grupos: {}, gruposMeta: {}, lugares: {}, territorios: {}, salidas: {}, terminados: {},
+    grupos: {}, gruposMeta: {}, lugares: {}, territorios: {}, salidas: {}, terminados: {}, campanas: {}, tMode: 'lista',
     loaded: { grupos: false, lugares: false, territorios: false, salidas: false },
     unsub: [], code: null, started: false,
     week: null, view: 'salidas', sFilter: 'todas', tFilter: 'todos', tSearch: '',
@@ -116,6 +116,29 @@
   .tfoot { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
   .tfoot .btn { flex: 1; justify-content: center; }
   .tfoot .btn-danger { flex: 0 0 auto; }
+  .ttools { display: flex; gap: 6px; margin: 0 0 10px; flex-wrap: wrap; }
+  .ttools .btn { flex: 1; justify-content: center; min-width: 100px; font-size: 13px; }
+  .ttools .btn.on { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+  .tmapbox { height: 62vh; min-height: 320px; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: #e8eae3; }
+  .tmapsm { height: 190px; border-radius: 10px; overflow: hidden; margin: 6px 0 10px; border: 1px solid var(--line); background: #e8eae3; }
+  .tlegend { display: flex; gap: 10px; flex-wrap: wrap; font-size: 12px; color: var(--ink-soft); margin: 8px 2px; }
+  .tlegend i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
+  .tdraw { position: fixed; inset: 0; z-index: 200; background: var(--surface); display: flex; flex-direction: column; }
+  .tdraw-h { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  .tdraw-h b { flex: 1; font-family: 'Fraunces', serif; font-weight: 500; font-size: 16px; }
+  .tdraw-h button { border: none; background: none; font-size: 20px; color: var(--ink-soft); cursor: pointer; }
+  .tdraw-s { display: flex; gap: 6px; padding: 8px 12px; position: relative; }
+  .tdraw-s input { flex: 1; border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px; font: inherit; font-size: 14px; background: var(--bg); color: var(--ink); }
+  .tdraw-res { position: absolute; left: 12px; right: 12px; top: 100%; z-index: 1000; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 6px 18px rgba(0,0,0,.15); max-height: 40vh; overflow: auto; }
+  .tdraw-res button { display: block; width: 100%; text-align: left; border: none; border-bottom: 1px solid var(--line); background: none; padding: 9px 11px; font: inherit; font-size: 13px; color: var(--ink); cursor: pointer; }
+  .tdraw-map { flex: 1; min-height: 0; position: relative; }
+  .tdraw-map .tdraw-card { position: absolute; left: 10px; bottom: 10px; z-index: 900; width: 45%; max-width: 260px; border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,.3); background: #fff; }
+  .tdraw-f { padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
+  .tdraw-f p { margin: 0 0 8px; font-size: 13px; color: var(--ink-soft); }
+  .tdraw-f .row { display: flex; gap: 6px; }
+  .tdraw-f .row .btn { flex: 1; justify-content: center; }
+  .tprog { height: 8px; border-radius: 4px; background: var(--bg); overflow: hidden; margin: 6px 0 4px; }
+  .tprog i { display: block; height: 100%; background: #4C7A5E; }
   `;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
@@ -208,6 +231,7 @@
     if (!a.all && !a.groups.length) return;
     territoriosListening = true;
     T.unsub.push(listenDoc('territorios', () => { territoriosListening = false; }));
+    if (a.all) T.unsub.push(listenDoc('campanas'));
     // Avisos de "Lo terminé" que mandan los hermanos desde la vista (los confirma quien maneja territorios).
     if (a.all) T.unsub.push(congRef().collection('terminados').onSnapshot((qs) => { const o = {}; qs.forEach(d => { o[d.id] = d.data() || {}; }); T.terminados = o; onData('terminados'); }, () => {}));
   }
@@ -221,7 +245,7 @@
     }
     if (renderQueued) return;
     renderQueued = true;
-    setTimeout(() => { renderQueued = false; if (isVisible()) render(); }, 0);
+    setTimeout(() => { renderQueued = false; if (isVisible() && !(T.view === 'territorios' && T.tMode === 'mapa' && name !== 'territorios' && $('tMapAll'))) render(); }, 0);
   }
   function isVisible() { const p = $('panel-territorios'); return p && !p.classList.contains('hidden'); }
 
@@ -557,6 +581,7 @@
     if (!t.ultimoTerminado) return `Sin fecha de la última vez · ${esc(TIPOS_T[t.tipo] || '')}`;
     return s === 'anio' ? `Sin trabajar desde ${fmtMonthYear(t.ultimoTerminado)} · ${esc((TIPOS_T[t.tipo] || '').toLowerCase())}` : `Terminado ${agoTxt(t.ultimoTerminado)} · ${esc((TIPOS_T[t.tipo] || '').toLowerCase())}`;
   }
+  function TerrMapaColor(state) { return (window.TerrMapa && window.TerrMapa.COLORS[state]) || '#3E6B8A'; }
   function renderTerritorios(root) {
     const all = Object.values(T.territorios);
     const cnt = { disponible: 0, asignado: 0, vencido: 0, anio: 0 };
@@ -579,6 +604,17 @@
     let html = `<div class="thead"><h3>Territorios</h3>${access().all ? '<button type="button" class="btn btn-primary" data-t="t-new">+ Territorio</button>' : ''}</div>`;
     const pend = pendingTerminados();
     if (pend.length) html += `<div class="tcard" style="border:1.5px solid var(--accent-gold);"><h4>Avisaron que lo terminaron <span class="tpill o">${pend.length}</span></h4>` + pend.map(r => { const t = T.territorios[r.id]; return `<div class="tkv" style="align-items:center;border-top:1px solid var(--line);padding-top:8px;margin-top:4px;"><span style="color:var(--ink);"><b>${esc(t.num)} · ${esc(t.nombre || '')}</b><br><small style="color:var(--ink-soft);">${esc(r.nombre || '')} · el ${fmtShort(r.fecha)}</small></span><span style="display:flex;gap:6px;flex-shrink:0;"><button type="button" class="btn" data-t="tt-no" data-id="${esc(r.id)}">Descartar</button><button type="button" class="btn btn-primary" data-t="tt-ok" data-id="${esc(r.id)}">Confirmar</button></span></div>`; }).join('') + '</div>';
+    if (all.length && access().all) html += `<div class="ttools"><button type="button" class="btn${T.tMode === 'mapa' ? ' on' : ''}" data-t="t-mode">${T.tMode === 'mapa' ? '☰ Lista' : '🗺 Mapa'}</button><button type="button" class="btn" data-t="camp">🗓 Campañas</button><button type="button" class="btn" data-t="t-pdf">📄 Registro PDF</button></div>`;
+    if (all.length && T.tMode === 'mapa') {
+      const dib = all.filter(t => t.limites && t.limites.length >= 3);
+      const sin = all.filter(t => !(t.limites && t.limites.length >= 3)).sort((x, y) => String(x.num).localeCompare(String(y.num), 'es', { numeric: true }));
+      root.innerHTML = html + `<div class="tmapbox" id="tMapAll"></div>
+        <div class="tlegend"><span><i style="background:${TerrMapaColor('disponible')}"></i>Disponible</span><span><i style="background:${TerrMapaColor('asignado')}"></i>Asignado</span><span><i style="background:${TerrMapaColor('vencido')}"></i>Vencido</span><span><i style="background:${TerrMapaColor('anio')}"></i>+1 año</span></div>
+        ${sin.length ? `<p class="hint" style="margin:4px 2px;">Sin dibujar (${sin.length}): ${sin.map(t => esc(t.num)).join(', ')}. Se dibujan desde la ficha de cada uno → "Dibujar límites".</p>` : ''}`;
+      if (window.TerrMapa) window.TerrMapa.showAll($('tMapAll'), dib.map(t => ({ id: t.id, limites: t.limites, label: t.num, color: TerrMapaColor(tState(t)) })), (id) => openTerritorio(id))
+        .catch(() => { const b = $('tMapAll'); if (b) b.innerHTML = '<div class="tempty">No se pudo cargar el mapa. Revisá la conexión.</div>'; });
+      return;
+    }
     if (!all.length) {
       root.innerHTML = html + `<div class="tempty">Todavía no hay territorios cargados.<br>Tocá <b>+ Territorio</b> y cargá cada uno con su número, la zona, <b>una foto de la tarjeta</b> y la última fecha en que se terminó (sale del registro en papel). Con eso el semáforo funciona desde el primer día.</div>`;
       return;
@@ -602,7 +638,9 @@
     const hist = (t.historial || []).slice(0, 12);
     const all = access().all;
     const m = openModal(`<h3 style="display:flex;justify-content:space-between;gap:8px;"><span>${esc(t.num)} · ${esc(t.nombre || '')}</span><span class="tpill ${c}">${l}</span></h3>
-      ${t.foto && t.foto.url ? `<img class="tphoto" src="${esc(t.foto.url)}" alt="Tarjeta del territorio ${esc(t.num)}" id="tPh">` : '<div class="tnophoto">Sin foto de la tarjeta todavía</div>'}
+      ${t.limites && t.limites.length >= 3 ? '<div class="tmapsm" id="tFichaMap"></div>' : ''}
+      ${t.foto && t.foto.url ? `<img class="tphoto" src="${esc(t.foto.url)}" alt="Tarjeta del territorio ${esc(t.num)}" id="tPh"${t.limites && t.limites.length >= 3 ? ' style="max-height:140px;"' : ''}>` : '<div class="tnophoto">Sin foto de la tarjeta todavía</div>'}
+      ${all ? `<div class="tfoot" style="margin:0 0 10px;"><button type="button" class="btn" id="tDraw">✏️ ${t.limites && t.limites.length >= 3 ? 'Editar los límites en el mapa' : 'Dibujar los límites en el mapa'}</button></div>` : ''}
       <div class="tcard" style="padding:8px 11px;">
         <div class="tkv"><span>Tipo</span><b>${esc(TIPOS_T[t.tipo] || '—')}</b></div>
         <div class="tkv"><span>${t.asignado ? 'Asignado a' : 'Estado'}</span><b>${t.asignado ? esc(asignadoName(t.asignado)) + ' · ' + fmtShort(t.asignado.desde) : 'Disponible'}</b></div>
@@ -613,6 +651,8 @@
       <div class="tsec"><span class="tlbl">Historial</span><div class="thist">${hist.length ? hist.map(h => `<div><b>${esc(h.nombre || '')}</b><span>${fmtShort(h.desde)}${h.hasta ? ' → ' + fmtShort(h.hasta) + ' ' + h.hasta.slice(0, 4) : ' → en curso'}</span></div>`).join('') : '<div><span>Todavía sin registros en la app.</span></div>'}</div></div>
       <div class="tfoot">${all ? '<button type="button" class="btn" id="tEdit">Editar</button>' : ''}<button type="button" class="btn" data-tclose>Cerrar</button></div>`);
     if (m.q('#tPh')) m.q('#tPh').addEventListener('click', () => window.open(t.foto.url, '_blank', 'noopener'));
+    if (m.q('#tFichaMap') && window.TerrMapa) window.TerrMapa.show(m.q('#tFichaMap'), t.limites, { label: t.num, color: TerrMapaColor(tState(t)) }).catch(() => { m.q('#tFichaMap').remove(); });
+    if (m.q('#tDraw')) m.q('#tDraw').addEventListener('click', () => { m.close(); openDraw(id); });
     if (m.q('#tEdit')) m.q('#tEdit').addEventListener('click', () => { m.close(); openTerritorioForm(id); });
     if (m.q('#tAsg')) m.q('#tAsg').addEventListener('click', () => { m.close(); openAsignar(id); });
     if (m.q('#tDone')) m.q('#tDone').addEventListener('click', () => { m.close(); openTerminar(id); });
@@ -633,6 +673,8 @@
     if (hist[0] && !hist[0].hasta && hist[0].id === t.asignado.id) hist[0] = Object.assign({}, hist[0], { hasta: f });
     else hist.unshift({ tipo: t.asignado.tipo, id: t.asignado.id, nombre: asignadoName(t.asignado), desde: t.asignado.desde, hasta: f });
     const nt = Object.assign({}, t, { asignado: null, ultimoTerminado: f, historial: hist.slice(0, 40) });
+    // La fecha anterior (por ejemplo, la que venía del registro en papel) se guarda para el registro en PDF.
+    if (t.ultimoTerminado && t.ultimoTerminado !== f && !(t.historial || []).some(h => h.hasta === t.ultimoTerminado)) nt.fechasPrevias = [...(t.fechasPrevias || []), t.ultimoTerminado].slice(-10);
     const ok = await safe(() => tWrite(tRef('territorios'), [[['lista', id], nt]]), `Territorio ${t.num} terminado`);
     if (ok && T.terminados[id]) { try { await congRef().collection('terminados').doc(id).delete(); } catch (e) { /* nada */ } }
     return ok;
@@ -650,11 +692,14 @@
     });
     return { cur, last };
   }
-  function openAsignar(id) {
-    const t = T.territorios[id]; if (!t) return;
+  function openAsignar(idOrIds, onDone) {
+    const ids = Array.isArray(idOrIds) ? idOrIds : [idOrIds];
+    const ts = ids.map(i => T.territorios[i]).filter(Boolean);
+    if (!ts.length) return;
+    const t = ts[0];
     const { cur, last } = territoryHolders();
     const st = { tipo: 'hermano', sel: null, q: '' };
-    const m = openModal(`<h3>Asignar el territorio ${esc(t.num)}</h3><p class="modal-sub" style="margin:0 0 10px;">${esc(t.nombre || '')}</p>
+    const m = openModal(`<h3>${ts.length > 1 ? `Asignar ${ts.length} territorios` : 'Asignar el territorio ' + esc(t.num)}</h3><p class="modal-sub" style="margin:0 0 10px;">${ts.length > 1 ? esc(ts.map(x => x.num).join(', ')) : esc(t.nombre || '')}</p>
       <div class="tseg" id="taSeg"><button type="button" class="on" data-k="hermano">Hermano</button><button type="button" data-k="grupo">Grupo</button></div>
       <input type="search" class="tsearch" id="taQ" placeholder="🔍 Buscar" autocomplete="off">
       <div class="tlist" id="taList"></div>
@@ -685,14 +730,17 @@
     m.q('#taOk').addEventListener('click', async () => {
       if (!st.sel) return;
       const desde = m.q('#taDate').value || hoy();
-      const asg = { tipo: st.tipo, id: st.sel, desde };
-      const hist = (t.historial || []).slice();
-      if (t.asignado) { // reasignación: se cierra la anterior sin marcarla como terminada
-        if (hist[0] && !hist[0].hasta) hist[0] = Object.assign({}, hist[0], { hasta: desde, reasignado: true });
-      }
-      hist.unshift({ tipo: st.tipo, id: st.sel, nombre: st.tipo === 'grupo' ? grupoName(st.sel) : pubName(st.sel), desde, hasta: null });
-      const nt = Object.assign({}, t, { asignado: asg, historial: hist.slice(0, 40) });
-      if (await safe(() => tWrite(tRef('territorios'), [[['lista', id], nt]]), `Territorio ${t.num} asignado a ${hist[0].nombre}`)) m.close();
+      const nombre = st.tipo === 'grupo' ? grupoName(st.sel) : pubName(st.sel);
+      const pairs = ts.map(tt => {
+        const hist = (tt.historial || []).slice();
+        if (tt.asignado) { // reasignación: se cierra la anterior sin marcarla como terminada
+          if (hist[0] && !hist[0].hasta) hist[0] = Object.assign({}, hist[0], { hasta: desde, reasignado: true });
+        }
+        hist.unshift({ tipo: st.tipo, id: st.sel, nombre, desde, hasta: null });
+        return [['lista', tt.id], Object.assign({}, tt, { asignado: { tipo: st.tipo, id: st.sel, desde }, historial: hist.slice(0, 40) })];
+      });
+      const msg = ts.length > 1 ? `${ts.length} territorios asignados a ${nombre}` : `Territorio ${t.num} asignado a ${nombre}`;
+      if (await safe(() => tWrite(tRef('territorios'), pairs), msg)) { m.close(); if (onDone) onDone(); }
     });
     paint();
   }
@@ -761,6 +809,195 @@
       if (await safe(() => tWrite(tRef('territorios'), [[['lista', tid], nt]]), t ? 'Territorio guardado' : `Territorio ${num} agregado`)) m.close();
       else { btn.disabled = false; btn.textContent = 'Guardar'; }
     });
+  }
+
+
+  /* ---------- Dibujar los límites en el mapa ---------- */
+  function openDraw(id) {
+    const t = T.territorios[id]; if (!t || !window.TerrMapa) return;
+    const ov = document.createElement('div');
+    ov.className = 'tdraw';
+    ov.innerHTML = `<div class="tdraw-h"><b>Límites del territorio ${esc(t.num)}${t.nombre ? ' · ' + esc(t.nombre) : ''}</b><button type="button" id="tdX" aria-label="Cerrar">✕</button></div>
+      <div class="tdraw-s"><input type="search" id="tdQ" placeholder="🔍 Buscar una calle o barrio" autocomplete="off"><button type="button" class="btn" id="tdGo">Buscar</button><div class="tdraw-res hidden" id="tdRes"></div></div>
+      <div class="tdraw-map"><div id="tdMap" style="position:absolute;inset:0;"></div>${t.foto && t.foto.url ? `<img class="tdraw-card hidden" id="tdCard" src="${esc(t.foto.url)}" alt="Tarjeta">` : ''}</div>
+      <div class="tdraw-f"><p id="tdMsg">Tocá las esquinas del territorio sobre el mapa. Los puntos se pueden arrastrar para acomodarlos.</p>
+        <div class="row"><button type="button" class="btn" id="tdUndo">↶ Deshacer</button>${t.foto && t.foto.url ? '<button type="button" class="btn" id="tdPh">📷 Tarjeta</button>' : ''}<button type="button" class="btn" id="tdClr">Borrar</button><button type="button" class="btn btn-primary" id="tdOk">Listo</button></div></div>`;
+    document.body.appendChild(ov);
+    const q = (x) => ov.querySelector(x);
+    const close = () => { ov.remove(); document.removeEventListener('keydown', onKey); };
+    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    document.addEventListener('keydown', onKey);
+    q('#tdX').addEventListener('click', close);
+    let ctl = null;
+    const msg = (n) => { q('#tdMsg').textContent = n < 3 ? `Tocá las esquinas del territorio sobre el mapa (van ${n}${n === 1 ? ' punto' : ' puntos'}; hacen falta al menos 3).` : `${n} esquinas. Arrastrá un punto para acomodarlo, o tocá "Listo".`; };
+    const otros = Object.values(T.territorios).filter(o => o.id !== id && o.limites && o.limites.length >= 3).map(o => ({ limites: o.limites, label: o.num }));
+    window.TerrMapa.draw(q('#tdMap'), t.limites || [], otros, msg).then(c => { ctl = c; }).catch(() => { q('#tdMsg').textContent = 'No se pudo cargar el mapa. Revisá la conexión.'; });
+    q('#tdUndo').addEventListener('click', () => ctl && ctl.undo());
+    q('#tdClr').addEventListener('click', () => { if (ctl && confirm('¿Borrar todos los puntos?')) ctl.clear(); });
+    if (q('#tdPh')) q('#tdPh').addEventListener('click', () => q('#tdCard').classList.toggle('hidden'));
+    const doSearch = async () => {
+      const text = q('#tdQ').value.trim(); if (!text) return;
+      const res = q('#tdRes'); res.classList.remove('hidden'); res.innerHTML = '<button type="button" disabled>Buscando…</button>';
+      try {
+        const c = ctl ? ctl.map.getCenter() : null;
+        const r = await window.TerrMapa.search(text, c ? { lat: c.lat, lng: c.lng } : null);
+        res.innerHTML = r.length ? r.map((x, i) => `<button type="button" data-i="${i}">${esc(x.nombre)}</button>`).join('') : '<button type="button" disabled>No se encontró. Probá con calle y ciudad.</button>';
+        res.onclick = (e) => { const b = e.target.closest('[data-i]'); if (!b) return; const x = r[+b.dataset.i]; if (ctl) ctl.goTo(x.lat, x.lng); res.classList.add('hidden'); };
+      } catch (e) { res.innerHTML = '<button type="button" disabled>No se pudo buscar. Revisá la conexión.</button>'; }
+    };
+    q('#tdGo').addEventListener('click', doSearch);
+    q('#tdQ').addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
+    q('#tdOk').addEventListener('click', async () => {
+      if (!ctl) { close(); return; }
+      const pts = ctl.points();
+      if (pts.length && pts.length < 3) { showToast('Hacen falta al menos 3 esquinas'); return; }
+      if (await safe(() => tWrite(tRef('territorios'), [[['lista', id, 'limites'], pts.length ? pts : undefined]]), pts.length ? `Límites del territorio ${t.num} guardados` : 'Límites borrados')) { close(); setTimeout(() => openTerritorio(id), 250); }
+    });
+  }
+
+  /* ---------- Campañas ---------- */
+  // Un territorio queda "cubierto" en la campaña si se terminó entre las dos fechas.
+  function cubiertoEn(t, c) {
+    const dentro = (f) => f && f >= c.desde && f <= c.hasta;
+    if (dentro(t.ultimoTerminado)) return t.ultimoTerminado;
+    const h = (t.historial || []).find(x => !x.reasignado && dentro(x.hasta));
+    return h ? h.hasta : null;
+  }
+  function campStats(c) {
+    const ts = (c.territorios || []).map(id => T.territorios[id]).filter(Boolean);
+    return { ts, total: ts.length, hechos: ts.filter(t => cubiertoEn(t, c)).length };
+  }
+  function openCampanas() {
+    const cs = Object.values(T.campanas).sort((a, b) => String(b.desde).localeCompare(String(a.desde)));
+    const h = hoy();
+    const m = openModal(`<h3>Campañas</h3><p class="modal-sub" style="margin:0 0 10px;">Muchos territorios en un período: se asignan juntos y se ve cuánto se cubrió.</p>
+      ${cs.length ? cs.map(c => { const s = campStats(c); const pct = s.total ? Math.round(s.hechos * 100 / s.total) : 0; return `<button type="button" class="trow" data-c="${esc(c.id)}" style="display:block;"><span class="tx"><b style="display:flex;justify-content:space-between;gap:8px;">${esc(c.nombre)}<span class="tpill ${c.hasta < h ? 'n' : c.desde > h ? 'b' : 'g'}">${c.hasta < h ? 'Terminada' : c.desde > h ? 'Próxima' : 'En curso'}</span></b><small>${fmtShort(c.desde)} al ${fmtShort(c.hasta)} · ${s.hechos} de ${s.total} cubiertos</small><span class="tprog"><i style="width:${pct}%"></i></span></span></button>`; }).join('') : '<div class="tempty">Todavía no hay campañas.</div>'}
+      <div class="tfoot"><button type="button" class="btn" data-tclose>Cerrar</button><button type="button" class="btn btn-primary" id="cNew">+ Nueva campaña</button></div>`);
+    m.q('#cNew').addEventListener('click', () => { m.close(); openCampanaForm(null); });
+    m.el.addEventListener('click', (e) => { const b = e.target.closest('[data-c]'); if (b) { m.close(); openCampana(b.dataset.c); } });
+  }
+  function openCampanaForm(id) {
+    const c = id ? T.campanas[id] : null;
+    const sel = new Set(c ? c.territorios || [] : []);
+    const all = Object.values(T.territorios).sort((x, y) => String(x.num).localeCompare(String(y.num), 'es', { numeric: true }));
+    const m = openModal(`<h3>${c ? 'Editar campaña' : 'Nueva campaña'}</h3>
+      <div class="tf"><label for="cN">Nombre</label><input id="cN" value="${esc(c ? c.nombre : '')}" placeholder="Ej: Invitación a la Conmemoración"></div>
+      <div class="trow2"><div class="tf"><label for="cD">Desde</label><input type="date" id="cD" value="${esc(c ? c.desde : hoy())}"></div><div class="tf"><label for="cH">Hasta</label><input type="date" id="cH" value="${esc(c ? c.hasta : '')}"></div></div>
+      <div class="tf"><label>Territorios <span id="cCnt"></span></label>
+        <div class="ttools" style="margin-bottom:6px;"><button type="button" class="btn" id="cAllFree">Todos los disponibles</button><button type="button" class="btn" id="cAll">Todos</button><button type="button" class="btn" id="cNone">Ninguno</button></div>
+        <div class="tlist" id="cL">${all.map(t => { const [cl, l] = ST_PILL[tState(t)]; return `<label class="tchk"><input type="checkbox" data-id="${esc(t.id)}"${sel.has(t.id) ? ' checked' : ''}><span style="flex:1;">${esc(t.num)}${t.nombre ? ' · ' + esc(t.nombre) : ''}</span><span class="tpill ${cl}">${l}</span></label>`; }).join('')}</div></div>
+      <div class="tfoot">${c ? '<button type="button" class="btn btn-danger" id="cDel">Borrar</button>' : ''}<button type="button" class="btn" data-tclose>Cancelar</button><button type="button" class="btn btn-primary" id="cOk">Guardar</button></div>`);
+    const cnt = () => { m.q('#cCnt').textContent = `· ${m.qa('#cL input:checked').length} elegidos`; };
+    const setAll = (fn) => { m.qa('#cL input').forEach(x => { x.checked = fn(T.territorios[x.dataset.id]); }); cnt(); };
+    m.q('#cL').addEventListener('change', cnt); cnt();
+    m.q('#cAllFree').addEventListener('click', () => setAll(t => !t.asignado));
+    m.q('#cAll').addEventListener('click', () => setAll(() => true));
+    m.q('#cNone').addEventListener('click', () => setAll(() => false));
+    if (m.q('#cDel')) m.q('#cDel').addEventListener('click', async () => { if (confirm('¿Borrar esta campaña? Los territorios no cambian.') && await safe(() => tWrite(tRef('campanas'), [[['lista', id], undefined]]), 'Campaña borrada')) m.close(); });
+    m.q('#cOk').addEventListener('click', async () => {
+      const nombre = m.q('#cN').value.trim(), desde = m.q('#cD').value, hasta = m.q('#cH').value;
+      if (!nombre) { showToast('Poné el nombre de la campaña'); return; }
+      if (!desde || !hasta || hasta < desde) { showToast('Revisá las fechas'); return; }
+      const ids = [...m.qa('#cL input:checked')].map(x => x.dataset.id);
+      if (!ids.length) { showToast('Elegí al menos un territorio'); return; }
+      const cid = c ? c.id : newId();
+      if (await safe(() => tWrite(tRef('campanas'), [[['lista', cid], { id: cid, nombre, desde, hasta, territorios: ids }]]), c ? 'Campaña guardada' : 'Campaña creada')) { m.close(); setTimeout(() => openCampana(cid), 250); }
+    });
+  }
+  function openCampana(id) {
+    const c = T.campanas[id]; if (!c) return;
+    const s = campStats(c);
+    const pct = s.total ? Math.round(s.hechos * 100 / s.total) : 0;
+    const row = (t) => {
+      const f = cubiertoEn(t, c);
+      const st = f ? `<span class="tpill g">✓ ${fmtShort(f)}</span>` : t.asignado ? `<span class="tpill b">${esc(asignadoName(t.asignado))}</span>` : '<span class="tpill n">Sin asignar</span>';
+      return `<label class="tchk"><input type="checkbox" data-id="${esc(t.id)}"${f || t.asignado ? ' disabled' : ''}><span style="flex:1;">${esc(t.num)}${t.nombre ? ' · ' + esc(t.nombre) : ''}</span>${st}</label>`;
+    };
+    const m = openModal(`<h3>${esc(c.nombre)}</h3><p class="modal-sub" style="margin:0 0 6px;">Del ${fmtShort(c.desde)} al ${fmtShort(c.hasta)}</p>
+      <div class="tkv"><span>Cubiertos</span><b>${s.hechos} de ${s.total} (${pct}%)</b></div><div class="tprog"><i style="width:${pct}%"></i></div>
+      <p class="hint" style="margin:8px 0 4px;">Marcá los que no tienen a nadie y asignalos juntos.</p>
+      <div class="tlist" id="cpL">${s.ts.sort((x, y) => String(x.num).localeCompare(String(y.num), 'es', { numeric: true })).map(row).join('')}</div>
+      <div class="tfoot"><button type="button" class="btn" id="cpEdit">Editar</button><button type="button" class="btn" id="cpShare">📤 Resumen</button><button type="button" class="btn btn-primary" id="cpAsg" disabled>Asignar marcados</button></div>
+      <div class="tfoot" style="margin-top:6px;"><button type="button" class="btn" data-tclose>Cerrar</button></div>`);
+    const upd = () => { const n = m.qa('#cpL input:checked').length; const b = m.q('#cpAsg'); b.disabled = !n; b.textContent = n ? `Asignar ${n} marcado${n > 1 ? 's' : ''}` : 'Asignar marcados'; };
+    m.q('#cpL').addEventListener('change', upd);
+    m.q('#cpEdit').addEventListener('click', () => { m.close(); openCampanaForm(id); });
+    m.q('#cpAsg').addEventListener('click', () => { const ids = [...m.qa('#cpL input:checked')].map(x => x.dataset.id); m.close(); openAsignar(ids, () => setTimeout(() => openCampana(id), 300)); });
+    m.q('#cpShare').addEventListener('click', () => {
+      let txt = `*${c.nombre}*\nDel ${fmtShort(c.desde)} al ${fmtShort(c.hasta)}\nCubiertos: ${s.hechos} de ${s.total} (${pct}%)\n`;
+      const falta = s.ts.filter(t => !cubiertoEn(t, c));
+      if (falta.length) txt += `\nFaltan: ${falta.map(t => t.num + (t.asignado ? ` (${asignadoName(t.asignado)})` : '')).join(', ')}`;
+      window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank', 'noopener');
+    });
+  }
+
+  /* ---------- Registro de asignación de territorios (PDF) ---------- */
+  function serviceYear(iso) { const d = new Date(iso + 'T12:00:00'); const y = d.getMonth() >= 8 ? d.getFullYear() : d.getFullYear() - 1; return y; }
+  function registroRows(y) {
+    const start = `${y}-09-01`, end = `${y + 1}-08-31`;
+    return Object.values(T.territorios).sort((a, b) => String(a.num).localeCompare(String(b.num), 'es', { numeric: true })).map(t => {
+      const hist = (t.historial || []).slice().reverse();   // de la más vieja a la más nueva
+      const enAnio = hist.filter(h => h.desde <= end && (!h.hasta || h.hasta >= start));
+      const antes = hist.filter(h => h.hasta && !h.reasignado && h.hasta < start).map(h => h.hasta);
+      if (t.ultimoTerminado && t.ultimoTerminado < start) antes.push(t.ultimoTerminado);
+      (t.fechasPrevias || []).forEach(x => { if (x < start) antes.push(x); });
+      const ultimo = antes.sort().pop() || '';
+      return { t, ultimo, asign: enAnio.map(h => ({ nombre: h.nombre || '', desde: h.desde, hasta: h.reasignado ? '' : (h.hasta || '') })) };
+    });
+  }
+  function openRegistro() {
+    const y0 = serviceYear(hoy());
+    const m = openModal(`<h3>Registro de asignación de territorios</h3><p class="modal-sub" style="margin:0 0 12px;">Un PDF con cada territorio, la última vez que se terminó antes del año y cada asignación del año de servicio (septiembre a agosto).</p>
+      <div class="tf"><label for="rY">Año de servicio</label><select id="rY">${[0, 1, 2].map(i => `<option value="${y0 - i}">${y0 - i}-${y0 - i + 1}</option>`).join('')}</select></div>
+      <div class="tfoot"><button type="button" class="btn" data-tclose>Cancelar</button><button type="button" class="btn btn-primary" id="rOk">Generar PDF</button></div>`);
+    m.q('#rOk').addEventListener('click', async () => { const y = parseInt(m.q('#rY').value, 10); m.close(); await registroPdf(y); });
+  }
+  async function registroPdf(y) {
+    if (!window.jspdf) { showToast('No se pudo cargar el generador de PDF (revisá tu conexión)'); return; }
+    const rows = registroRows(y);
+    if (!rows.length) { showToast('No hay territorios cargados'); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'landscape' });
+    const W = doc.internal.pageSize.getWidth();
+    const cong = (data.settings && data.settings.congregationName) || 'Congregación';
+    const f = (iso) => iso ? iso.split('-').reverse().join('/') : '';
+    doc.setFillColor(33, 44, 52); doc.rect(0, 0, W, 64, 'F');
+    doc.setFillColor(169, 130, 47); doc.rect(0, 64, W, 3, 'F');
+    doc.setTextColor(216, 187, 130); doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
+    doc.text(`SALÓN DEL REINO — ${cong.toUpperCase()}`, 30, 22);
+    doc.setTextColor(255, 255, 255); doc.setFontSize(17);
+    doc.text('Registro de asignación de territorios', 30, 44);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(203, 211, 216);
+    doc.text(`Año de servicio ${y}-${y + 1}`, 30, 58);
+    const N = 4, body = [];
+    rows.forEach(r => {
+      const chunks = [];
+      for (let i = 0; i < Math.max(1, r.asign.length); i += N) chunks.push(r.asign.slice(i, i + N));
+      chunks.forEach((ch, k) => {
+        const cells = [k === 0 ? String(r.t.num) : '', k === 0 ? (r.t.nombre || '') : '', k === 0 ? f(r.ultimo) : ''];
+        for (let i = 0; i < N; i++) { const a = ch[i]; cells.push(a ? a.nombre : '', a ? f(a.desde) : '', a ? f(a.hasta) : ''); }
+        body.push(cells);
+      });
+    });
+    const head = [
+      [{ content: 'Nº', rowSpan: 2 }, { content: 'Zona', rowSpan: 2 }, { content: 'Última vez terminado', rowSpan: 2 }, ...[1, 2, 3, 4].map(i => ({ content: `Asignación ${i}`, colSpan: 3 }))],
+      [1, 2, 3, 4].flatMap(() => ['Asignado a', 'Desde', 'Terminado'])
+    ];
+    doc.autoTable({
+      startY: 80, margin: { left: 18, right: 18 }, theme: 'grid', head, body,
+      headStyles: { fillColor: [33, 44, 52], textColor: 255, fontStyle: 'bold', fontSize: 7.5, halign: 'center', valign: 'middle' },
+      styles: { fontSize: 7.5, cellPadding: 3.5, valign: 'middle' },
+      columnStyles: { 0: { fontStyle: 'bold', halign: 'center', cellWidth: 26 }, 1: { cellWidth: 70 }, 2: { halign: 'center', cellWidth: 52 } }
+    });
+    doc.setFontSize(8); doc.setTextColor(140);
+    doc.text(`Generado el ${new Date().toLocaleDateString('es-ES')}`, 18, doc.internal.pageSize.getHeight() - 14);
+    const filename = `Registro de territorios ${y}-${y + 1}.pdf`;
+    try {
+      const file = new File([doc.output('blob')], filename, { type: 'application/pdf' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Registro de territorios' }); return; }
+    } catch (e) { /* se cancela el panel de compartir: se descarga */ }
+    doc.save(filename);
+    showToast('PDF generado');
   }
 
   /* =====================================================================
@@ -915,6 +1152,9 @@
     else if (k === 's-share') shareSalidas();
     else if (k === 't-filter') { T.tFilter = T.tFilter === b.dataset.k && b.classList.contains('tkpi') ? 'todos' : b.dataset.k; render(); }
     else if (k === 't-new') openTerritorioForm(null);
+    else if (k === 't-mode') { T.tMode = T.tMode === 'mapa' ? 'lista' : 'mapa'; render(); }
+    else if (k === 'camp') openCampanas();
+    else if (k === 't-pdf') openRegistro();
     else if (k === 't-open') openTerritorio(b.dataset.id);
     else if (k === 'tt-ok') { const r = T.terminados[b.dataset.id]; if (r) finishTerritory(b.dataset.id, r.fecha || hoy()); }
     else if (k === 'tt-no') { if (confirm('¿Descartar este aviso? El territorio sigue asignado.')) safe(() => congRef().collection('terminados').doc(b.dataset.id).delete(), 'Aviso descartado'); }

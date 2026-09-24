@@ -36,6 +36,15 @@
   .sal-terr { border: 1px solid var(--line); background: var(--bg); border-radius: 12px; padding: 2px 9px; margin: 3px 4px 0 0; font: inherit; font-size: 12px; font-weight: 700; color: var(--ink); cursor: pointer; }
   .sal-btn { display: inline-block; margin-top: 7px; border: 1px solid var(--line); border-radius: 9px; padding: 6px 11px; font-size: 12.5px; font-weight: 700; color: var(--ink); text-decoration: none; background: var(--bg); }
   .mt-card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; margin-bottom: 12px; }
+  .mt-map { height: 210px; background: #e8eae3; }
+  .mt-maprow { display: flex; gap: 6px; flex-wrap: wrap; padding: 8px 12px 0; }
+  .mt-maprow .sal-btn { margin-top: 0; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+  .mt-big { position: fixed; inset: 0; z-index: 70; background: var(--surface); display: flex; flex-direction: column; }
+  .mt-big-h { display: flex; align-items: center; gap: 8px; padding: calc(10px + env(safe-area-inset-top)) 12px 10px; border-bottom: 1px solid var(--line); }
+  .mt-big-h b { flex: 1; font-size: 15px; }
+  .mt-big-h .sal-btn { margin-top: 0; }
+  .mt-big-h button { border: none; background: none; font-size: 20px; color: var(--ink-soft); }
+  .mt-big-map { flex: 1; }
   .mt-card img { width: 100%; max-height: 300px; object-fit: contain; background: var(--bg); display: block; cursor: zoom-in; }
   .mt-noimg { padding: 22px; text-align: center; color: var(--ink-faint); font-size: 12.5px; background: var(--bg); }
   .mt-body { padding: 12px 14px 14px; }
@@ -189,6 +198,29 @@
     return out.sort((a, b) => String(a.t.num).localeCompare(String(b.t.num), 'es', { numeric: true }));
   }
   function tTitle(t) { return `${esc(t.num)}${t.nombre ? ' · ' + esc(t.nombre) : ''}`; }
+  const hasMap = (t) => !!(t.limites && t.limites.length >= 3 && window.TerrMapa);
+  function tTop(t) {
+    if (!hasMap(t)) return tImg(t);
+    return `<div class="mt-map" data-mt-map="${esc(t.id)}"></div><div class="mt-maprow"><a class="sal-btn" href="${esc(window.TerrMapa.directionsUrl(t.limites))}" target="_blank" rel="noopener">🧭 Cómo llegar</a><button type="button" class="sal-btn" data-mt-big="${esc(t.id)}">🗺 Mapa grande</button>${t.foto && t.foto.url ? `<button type="button" class="sal-btn" data-mt-img="${esc(t.foto.url)}">📷 Tarjeta</button>` : ''}</div>`;
+  }
+  function initMaps(root) {
+    if (!window.TerrMapa) return;
+    (root || document).querySelectorAll('[data-mt-map]:not([data-done])').forEach(el => {
+      if (!el.offsetWidth) return;   // todavía oculto: se dibuja al mostrar la pestaña
+      const t = V.territorios[el.dataset.mtMap]; if (!t) return;
+      el.dataset.done = '1';
+      window.TerrMapa.show(el, t.limites, { label: t.num, locate: true }).catch(() => { el.outerHTML = tImg(t); });
+    });
+  }
+  function openBigMap(tid) {
+    const t = V.territorios[tid]; if (!t || !hasMap(t)) return;
+    const ov = document.createElement('div');
+    ov.className = 'mt-big';
+    ov.innerHTML = `<div class="mt-big-h"><b>${tTitle(t)}</b><a class="sal-btn" href="${esc(window.TerrMapa.directionsUrl(t.limites))}" target="_blank" rel="noopener">🧭 Cómo llegar</a><button type="button" aria-label="Cerrar" id="mtBigX">✕</button></div><div class="mt-big-map" id="mtBigMap"></div>`;
+    document.body.appendChild(ov);
+    ov.querySelector('#mtBigX').addEventListener('click', () => ov.remove());
+    window.TerrMapa.show(ov.querySelector('#mtBigMap'), t.limites, { label: t.num, locate: true, big: true }).catch(() => ov.remove());
+  }
   function tImg(t) { return t.foto && t.foto.url ? `<img src="${esc(t.foto.url)}" alt="Tarjeta del territorio ${esc(t.num)}" data-mt-img="${esc(t.foto.url)}">` : '<div class="mt-noimg">Sin foto de la tarjeta todavía</div>'; }
   function viaTxt(s) { const d = new Date(s.fecha + 'T12:00:00'); const L = V.lugares[s.lugar]; return `Para la salida que conducís el ${DIAS[d.getDay()].toLowerCase()} ${d.getDate()} · ${esc(s.hora)}${L ? ' · ' + esc(L.nombre) : ''}`; }
   function ensureTab() {
@@ -205,6 +237,7 @@
       b.innerHTML = '<span class="bt-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg></span>Territorios';
       const av = document.querySelector('.bt-btn[data-tab="avisos"]');
       av.parentNode.insertBefore(b, av);
+      b.addEventListener('click', () => setTimeout(() => initMaps($('panel-territorios')), 60));
     }
     if (typeof TAB_NAMES !== 'undefined' && !TAB_NAMES.includes('territorios')) TAB_NAMES.push('territorios');
   }
@@ -230,26 +263,34 @@
         const late = hoy() > due;
         info = `${t.asignado.tipo === 'grupo' ? `<div class="sal-sub">De tu grupo · ${esc(grupoName(t.asignado.id))}</div>` : ''}<div class="mt-due${late ? ' late' : ''}">Asignado ${esc(agoTxt(t.asignado.desde))} · ${late ? 'se pasó la fecha: ' : 'terminalo antes del '}${esc(fmtLong(due))}</div>`;
       }
-      return `<div class="mt-card">${tImg(t)}<div class="mt-body">
+      return `<div class="mt-card">${tTop(t)}<div class="mt-body">
         <div class="mt-title"><b>${tTitle(t)}</b><span>${esc(TIPOS_T[t.tipo] || '')}</span></div>
         ${info}
         ${t.notas ? `<div class="mt-notes">${esc(t.notas)}</div>` : ''}
         ${rep ? `<div class="mt-sent">✓ Avisaste que lo terminaste el ${esc(fmtLong(rep.fecha))}. Falta que lo confirme el encargado.</div>` : (canReport(t, via) ? `<button type="button" class="mt-done" data-mt-done="${esc(t.id)}">✓ Lo terminé</button>` : '')}
       </div></div>`;
     }).join('');
+    setTimeout(() => initMaps(panel), 30);
   }
   // Tarjeta de un territorio (desde una salida): foto y notas.
   function openTerritorySheet(tid) {
     const t = V.territorios[tid]; if (!t) return;
     const ov = document.createElement('div');
     ov.className = 'mt-ov';
-    ov.innerHTML = `<div class="mt-sheet" role="dialog" aria-modal="true" style="max-height:88vh;overflow:auto;"><div class="mt-card" style="margin:0 0 12px;">${tImg(t)}<div class="mt-body"><div class="mt-title"><b>${tTitle(t)}</b><span>${esc(TIPOS_T[t.tipo] || '')}</span></div>${t.notas ? `<div class="mt-notes" style="margin-top:6px;">${esc(t.notas)}</div>` : ''}</div></div><div class="row"><button type="button" id="mtClose">Cerrar</button></div></div>`;
+    ov.innerHTML = `<div class="mt-sheet" role="dialog" aria-modal="true" style="max-height:88vh;overflow:auto;"><div class="mt-card" style="margin:0 0 12px;">${tTop(t)}<div class="mt-body"><div class="mt-title"><b>${tTitle(t)}</b><span>${esc(TIPOS_T[t.tipo] || '')}</span></div>${t.notas ? `<div class="mt-notes" style="margin-top:6px;">${esc(t.notas)}</div>` : ''}</div></div><div class="row"><button type="button" id="mtClose">Cerrar</button></div></div>`;
     document.body.appendChild(ov);
-    ov.addEventListener('click', (e) => { if (e.target === ov || e.target.id === 'mtClose') { ov.remove(); return; } const im = e.target.closest('[data-mt-img]'); if (im) window.open(im.dataset.mtImg, '_blank', 'noopener'); });
+    ov.addEventListener('click', (e) => {
+      if (e.target === ov || e.target.id === 'mtClose') { ov.remove(); return; }
+      const im = e.target.closest('[data-mt-img]'); if (im) { window.open(im.dataset.mtImg, '_blank', 'noopener'); return; }
+      const bg = e.target.closest('[data-mt-big]'); if (bg) openBigMap(bg.dataset.mtBig);
+    });
+    setTimeout(() => initMaps(ov), 30);
   }
   function onTerrClick(e) {
     const im = e.target.closest('[data-mt-img]');
     if (im) { window.open(im.dataset.mtImg, '_blank', 'noopener'); return; }
+    const bg = e.target.closest('[data-mt-big]');
+    if (bg) { openBigMap(bg.dataset.mtBig); return; }
     const b = e.target.closest('[data-mt-done]');
     if (b) openDone(b.dataset.mtDone);
   }

@@ -6,6 +6,16 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Territorios etapa C: mapa, campañas y registro en PDF — 24 sep 2026 (cachés asignaciones-salon-v38, ver-salon-v32)
+
+- **Dibujar los límites** de cada territorio sobre el mapa (OpenStreetMap, gratis y sin cuentas): desde la ficha → "Dibujar los límites en el mapa". Se tocan las esquinas, los puntos se arrastran para acomodarlos, hay "Deshacer", buscador de calles y la foto de la tarjeta al lado como guía. Los demás territorios se ven de fondo para no superponerlos.
+- **Mapa de todos los territorios** (Territorios → 🗺 Mapa), coloreados por el semáforo; tocando uno se abre su ficha. Dice cuáles faltan dibujar.
+- **Campañas** (🗓 Campañas): nombre, fechas y territorios ("Todos los disponibles" de un toque). Se asignan varios juntos a un grupo o hermano, y muestra cuántos se cubrieron (terminados dentro de las fechas), con resumen por WhatsApp.
+- **Registro de asignación de territorios en PDF** (📄 Registro PDF), por año de servicio (septiembre a agosto): cada territorio con la última vez que se terminó antes del año y cada asignación del año (a quién, desde, terminado). Se conserva la fecha del registro en papel aunque después se termine en la app.
+- **Vista, Mis territorios:** si el territorio tiene límites, se ve el **mapa** con el territorio marcado, **"📍 Mi ubicación"** (punto azul que sigue al celular), **"Cómo llegar"** y **"Mapa grande"**; la foto de la tarjeta queda a un toque.
+- Leaflet (licencia BSD-2) va copiado en `vendor/leaflet`, así no depende de otro servicio. No hace falta publicar nada en Firebase.
+- Pruebas: `22-territorios-mapa` y más en `21-vista-territorios` (528 en total).
+
 ## Mis territorios: también los de la salida que conducís — 24 sep 2026 (cachés asignaciones-salon-v37, ver-salon-v31)
 
 - En la vista, la pestaña **Territorios** muestra también los territorios de las salidas que la persona **conduce** en los próximos días ("Para la salida que conducís el sábado 26 · 09:30 · …"), con la tarjeta y "Lo terminé". Antes solo aparecían los asignados a ella o a su grupo desde la ficha del territorio.

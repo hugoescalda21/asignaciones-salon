@@ -99,7 +99,8 @@ _Actualizado el 23 de septiembre de 2026: se sumaron a "lo ya hecho" las notific
   con foto y semáforo, grupos de predicación y lugares de encuentro.
 - Etapa B: en la vista, salidas en Inicio, la salida que conduce como
   asignación (con avisos y recordatorios), "Mis territorios" y "Lo terminé".
-  Pendiente: etapa C (mapa dibujado, campañas, registro en PDF).
+- Etapa C: límites dibujados en el mapa, mapa de todos, campañas y
+  registro de asignación en PDF.
 
 **Datos y mantenimiento**
 - Guardado por partes: se sube solo lo que cambió, así dos personas
