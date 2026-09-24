@@ -35,5 +35,21 @@ service firebase.storage {
                     && request.resource.contentType.matches('image/.*|application/pdf');
       allow delete: if esEditor();
     }
+
+    // Fotos de las tarjetas de territorio: las suben el Super Admin y el Admin de Territorios.
+    match /congregations/{code}/territorios/{file} {
+      function gestorTerr() {
+        let s = firestore.get(/databases/(default)/documents/congregations/$(code)).data.settings;
+        return request.auth != null && (
+          request.auth.token.email in s.get('editorEmails', []) ||
+          request.auth.token.email in s.get('territoriosAdminEmails', [])
+        );
+      }
+      allow read: if request.auth != null;
+      allow create: if gestorTerr()
+                    && request.resource.size < 5 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*');
+      allow delete: if gestorTerr();
+    }
   }
 }

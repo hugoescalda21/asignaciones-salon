@@ -16,6 +16,7 @@ rules_version = '2';
 // "tecnicoAdminEmails"        = Admin de Equipo técnico.
 // "acomodadoresAdminEmails"   = Admin de Acomodadores.
 // "asignacionesAdminEmails"   = Admin de Asignaciones (Programa).
+// "territoriosAdminEmails"    = Admin de Territorios (territorios, grupos y salidas).
 // "anunciosOnlyEmails"         = Solo anuncios (publican anuncios y nada más).
 // "anunciosEmails"             = permiso extra "Puede publicar anuncios"
 //                                para cualquiera de los tres Admin.
@@ -54,6 +55,7 @@ service cloud.firestore {
                mail() in lista('asignacionesAdminEmails');
       }
       function esSoloAnuncios() { return mail() in lista('anunciosOnlyEmails'); }
+      function esTerritorios() { return mail() in lista('territoriosAdminEmails'); }
       function puedeAnuncios() { return esSuper() || esSoloAnuncios() || mail() in lista('anunciosEmails'); }
       // Qué partes del documento cambian en este guardado (primer nivel:
       // settings, publishers, weeks, anuncios, timerLog...).
@@ -69,7 +71,7 @@ service cloud.firestore {
       // por eso .get(..., []) en vez de leerlo directo, que se rompe
       // si el campo no está).
       allow read: if request.auth != null && (
-                    esSuper() || esAdmin() || esSoloAnuncios() ||
+                    esSuper() || esAdmin() || esSoloAnuncios() || esTerritorios() ||
                     mail() in lista('viewerEmails')
                   );
 
@@ -83,7 +85,8 @@ service cloud.firestore {
       allow update: if request.auth != null && (
                     esSuper() ||
                     (esAdmin() && (soloCambia(['weeks']) || (puedeAnuncios() && soloCambia(['weeks', 'anuncios'])))) ||
-                    (esSoloAnuncios() && soloCambia(['anuncios']))
+                    (esSoloAnuncios() && soloCambia(['anuncios'])) ||
+                    (esTerritorios() && puedeAnuncios() && soloCambia(['anuncios']))
                   );
 
       // Nunca se borra una congregación completa desde la app.
@@ -98,12 +101,51 @@ service cloud.firestore {
       function en(campo) { return request.auth.token.email in ajustes().get(campo, []); }
       allow create: if request.auth != null
                     && (en('editorEmails') || en('tecnicoAdminEmails') || en('acomodadoresAdminEmails') ||
-                        en('asignacionesAdminEmails') || en('anunciosOnlyEmails') || en('viewerEmails'))
+                        en('asignacionesAdminEmails') || en('territoriosAdminEmails') || en('anunciosOnlyEmails') || en('viewerEmails'))
                     && request.resource.data.keys().hasOnly(['at', 'app', 'kind', 'msg', 'where', 'role', 'device', 'online'])
                     && request.resource.data.msg is string && request.resource.data.msg.size() <= 500
                     && request.resource.data.get('where', '') is string && request.resource.data.get('where', '').size() <= 1000;
       allow read, delete: if request.auth != null && en('editorEmails');
       allow update: if false;
+    }
+
+    // Territorios, grupos de predicación y lugares de encuentro (documentos "grupos",
+    // "lugares" y "territorios"). Los lee cualquiera con acceso (el de territorios,
+    // solo quien los maneja y los encargados de grupo). Los cambian el Super Admin y el
+    // Admin de Territorios; los lugares, también los encargados y auxiliares de grupo.
+    match /congregations/{code}/terr/{docId} {
+      function ajT() { return get(/databases/$(database)/documents/congregations/$(code)).data.settings; }
+      function enT(c) { return request.auth.token.email in ajT().get(c, []); }
+      function conAccesoT() {
+        return enT('editorEmails') || enT('tecnicoAdminEmails') || enT('acomodadoresAdminEmails') ||
+               enT('asignacionesAdminEmails') || enT('territoriosAdminEmails') || enT('anunciosOnlyEmails') || enT('viewerEmails');
+      }
+      function gestorT() { return enT('editorEmails') || enT('territoriosAdminEmails'); }
+      function encargadoDeGrupo() {
+        let g = /databases/$(database)/documents/congregations/$(code)/terr/grupos;
+        return exists(g) && request.auth.token.email in get(g).data.get('editoresTodos', []);
+      }
+      allow read: if request.auth != null && (docId == 'territorios' ? (gestorT() || encargadoDeGrupo()) : conAccesoT());
+      allow write: if request.auth != null && (gestorT() || (docId == 'lugares' && encargadoDeGrupo()));
+    }
+
+    // Salidas al servicio: un documento por grupo ("congregacion" para las de toda la
+    // congregación). Las ve cualquiera con acceso; las cambian el Super Admin, el Admin de
+    // Territorios y, las de cada grupo, su encargado y su auxiliar.
+    match /congregations/{code}/salidas/{gid} {
+      function ajS() { return get(/databases/$(database)/documents/congregations/$(code)).data.settings; }
+      function enS(c) { return request.auth.token.email in ajS().get(c, []); }
+      function conAccesoS() {
+        return enS('editorEmails') || enS('tecnicoAdminEmails') || enS('acomodadoresAdminEmails') ||
+               enS('asignacionesAdminEmails') || enS('territoriosAdminEmails') || enS('anunciosOnlyEmails') || enS('viewerEmails');
+      }
+      function editaGrupo() {
+        let g = /databases/$(database)/documents/congregations/$(code)/terr/grupos;
+        return gid != 'congregacion' && exists(g) &&
+               request.auth.token.email in get(g).data.get('lista', {}).get(gid, {}).get('editores', []);
+      }
+      allow read: if request.auth != null && conAccesoS();
+      allow write: if request.auth != null && (enS('editorEmails') || enS('territoriosAdminEmails') || editaGrupo());
     }
 
     // Solicitudes de acceso — quien entra a la vista sin estar autorizado pide acceso con

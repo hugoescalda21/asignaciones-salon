@@ -46,7 +46,7 @@ let ok = 0, bad = 0; const check = (l, c, x) => { if (c) { ok++; console.log('  
     await p.click('[data-acc-filter="all"]');
     // menú de persona: rol y permiso
     await p.evaluate(() => document.querySelector('[data-acc="tbravo@gmail.com"]').click()); await p.waitForTimeout(150);
-    check('menú: 6 roles con el actual marcado + permiso', await p.evaluate(() => document.querySelectorAll('#accMenuBody [data-acc-role]').length === 6 && document.querySelector('[data-acc-role="tecnicoAdminEmails"]').classList.contains('on') && !!document.querySelector('#accMenuBody [data-an-perm]')));
+    check('menú: 7 roles con el actual marcado + permiso', await p.evaluate(() => document.querySelectorAll('#accMenuBody [data-acc-role]').length === 7 && document.querySelector('[data-acc-role="tecnicoAdminEmails"]').classList.contains('on') && !!document.querySelector('#accMenuBody [data-an-perm]')));
     if (w < 500) await p.screenshot({ path: SHOTS + '/acc-4.png' });
     await p.click('#accMenuBody [data-an-perm]'); await p.waitForTimeout(100);
     check('prender permiso desde el menú', await p.evaluate(() => data.settings.anunciosEmails.includes('tbravo@gmail.com') && /Anuncios 5/.test($('accChips').textContent)));

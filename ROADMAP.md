@@ -94,6 +94,13 @@ _Actualizado el 23 de septiembre de 2026: se sumaron a "lo ya hecho" las notific
 - Página para pedir acceso: un solo link para todos; el Super Admin
   aprueba cada pedido con el hermano ya sugerido y vinculado.
 
+**Territorios**
+- Etapa A: programa de salidas por grupo o de congregación, territorios
+  con foto y semáforo, grupos de predicación y lugares de encuentro.
+  Pendiente: etapa B (lo que ve el hermano en la vista: salidas, "Mis
+  territorios", avisos, "Lo terminé") y etapa C (mapa dibujado,
+  campañas, registro en PDF).
+
 **Datos y mantenimiento**
 - Guardado por partes: se sube solo lo que cambió, así dos personas
   trabajando a la vez (o alguien sin señal) no se pisan.

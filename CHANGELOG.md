@@ -6,6 +6,18 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Territorios y programa de salidas (etapa A) — 24 sep 2026 (caché asignaciones-salon-v35)
+
+- **Pestaña nueva "Territorios"** en la app de asignaciones, con cuatro secciones:
+  - **Salidas:** el programa de salidas al servicio de cada semana: día, hora, lugar de encuentro, quién conduce y qué territorios; cada salida es de un **grupo de predicación** o de **toda la congregación**. Las fijas se repiten solas cada semana (se cambia el conductor o se suspende solo esa semana). **Auto-asignar conductores** reparte parejo entre los que pueden conducir, y **Compartir** manda la semana por WhatsApp.
+  - **Territorios:** cada uno con número, zona, tipo, **foto de la tarjeta** (se achica antes de subirla), notas y la última fecha en que se terminó. **Semáforo:** disponibles, asignados, vencidos (más de 4 meses) y "+1 año sin trabajar"; "Para dar primero" los ordena por el que hace más que no se trabaja. Se asigna a un hermano o a un grupo, se marca terminado y queda el historial.
+  - **Grupos:** encargado, auxiliar, hermanos (cada uno en un solo grupo) y quiénes pueden conducir. Aparte, los conductores de las salidas de congregación.
+  - **Lugares:** casas, esquinas o el Salón, con dirección ("Ver en el mapa").
+- **Roles:** nuevo **"Admin — Territorios"** en Acceso (solo ve esta pestaña, y Anuncios si tiene el permiso). El **encargado y el auxiliar de cada grupo** entran a la app aunque tengan "Solo ver" y organizan solo las salidas de su grupo (necesitan el email vinculado).
+- Los datos van aparte del documento de la congregación (`terr/grupos`, `terr/lugares`, `terr/territorios`, `salidas/{grupo}`), con reglas propias. **Requiere `firebase deploy --only firestore:rules,storage,functions`.**
+- A quien no es Super Admin ya no se le recuerda hacer la copia de seguridad.
+- Pruebas: `20-territorios` (485 en total).
+
 ## Compartir la app: links y códigos QR — 24 sep 2026 (caché asignaciones-salon-v34)
 
 - Ajustes → **Compartir la app** (Super Admin): el link **para los hermanos** (la vista, donde piden acceso) y el link **para los admins** (la app de asignaciones), cada uno con **WhatsApp** (mensaje listo), **Copiar link** y **Código QR**. El QR se puede **descargar para imprimir**, con título e indicación ("Escaneá con la cámara del celular"), por ejemplo para el tablero de anuncios del salón.

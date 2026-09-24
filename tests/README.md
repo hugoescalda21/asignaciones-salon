@@ -59,7 +59,7 @@ node tests/editor/run.js anuncios   (solo las que tengan "anuncios" en el nombre
 ```
 
 Al final muestra una línea por archivo y el total, por ejemplo
-`446 de 446 pruebas OK.` Si algo falla, muestra qué.
+`485 de 485 pruebas OK.` Si algo falla, muestra qué.
 
 | Archivo | Qué prueba |
 |---|---|
@@ -81,6 +81,7 @@ Al final muestra una línea por archivo y el total, por ejemplo
 | `17-permisos-servidor` | Lo que guarda cada Admin pasa las reglas del servidor y el control de guardRoles |
 | `18-solicitudes` | Solicitudes de acceso: sugerencia del hermano, aprobar, rechazar, numerito |
 | `19-compartir-app` | Ajustes → Compartir la app: links, WhatsApp, copiar, QR y "Mandarle el link" |
+| `20-territorios` | Territorios, grupos, lugares y salidas (con Firestore simulado); encargado de grupo y Admin de Territorios |
 
 Las capturas de pantalla que sacan quedan en `tests/editor/capturas/`
 (no se suben a git), por si querés mirarlas.

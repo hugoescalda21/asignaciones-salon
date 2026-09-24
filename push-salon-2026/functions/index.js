@@ -551,7 +551,7 @@ exports.testMyDevice = onRequest({ cors: ['https://hugoescalda21.github.io'], re
     if (!code || !token || !email) { res.status(400).send({ error: 'Datos no válidos' }); return; }
     const cong = await db.collection('congregations').doc(code).get();
     const s = ((cong.exists && cong.data().settings) || {});
-    const lists = ['editorEmails', 'tecnicoAdminEmails', 'acomodadoresAdminEmails', 'asignacionesAdminEmails', 'anunciosOnlyEmails', 'viewerEmails'];
+    const lists = ['editorEmails', 'tecnicoAdminEmails', 'acomodadoresAdminEmails', 'asignacionesAdminEmails', 'territoriosAdminEmails', 'anunciosOnlyEmails', 'viewerEmails'];
     if (!lists.some((k) => (s[k] || []).map((e) => String(e).toLowerCase()).includes(email))) { res.status(403).send({ error: 'Sin acceso a la congregación' }); return; }
     const sub = await db.collection('pushSubscriptions').doc(token).get();
     if (!sub.exists || sub.data().code !== code) { res.status(404).send({ error: 'Este celular no está registrado' }); return; }

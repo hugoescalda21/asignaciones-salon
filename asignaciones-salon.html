@@ -1281,6 +1281,7 @@
       <button class="tab-btn active" data-tab="programa">Programa</button>
       <button class="tab-btn" data-tab="timer">Cronómetro</button>
       <button class="tab-btn" data-tab="hermanos">Hermanos</button>
+      <button class="tab-btn hidden" data-tab="territorios">Territorios</button>
       <button class="tab-btn" data-tab="ajustes">Ajustes</button>
       <button class="tab-btn" id="navAnunciosBtn" type="button">📢 Anuncios</button>
     </nav>
@@ -1467,6 +1468,8 @@
   </section>
 
   <!-- ---------------- Ajustes ---------------- -->
+  <section class="tab-panel hidden" id="panel-territorios"><div id="terrRoot"></div></section>
+
   <section class="tab-panel hidden" id="panel-ajustes">
     <div class="settings-group">Congregación</div>
     <details class="settings-card" id="setupCard">
@@ -1517,6 +1520,7 @@
             <option value="tecnicoAdminEmails">Admin — Equipo técnico</option>
             <option value="acomodadoresAdminEmails">Admin — Acomodadores</option>
             <option value="asignacionesAdminEmails">Admin — Asignaciones</option>
+            <option value="territoriosAdminEmails">Admin — Territorios</option>
             <option value="anunciosOnlyEmails">Solo anuncios</option>
             <option value="viewerEmails" selected>Solo ver</option>
           </select>
@@ -1642,6 +1646,7 @@
   <button class="tab-btn active" data-tab="programa"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="16" y1="3" x2="16" y2="7"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="3" y1="10" x2="21" y2="10"/></svg><br>Programa</button>
   <button class="tab-btn" data-tab="timer"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg><br>Cronómetro</button>
   <button class="tab-btn" data-tab="hermanos"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20v-1.2a5.8 5.8 0 0 1 11.6 0V20"/><circle cx="17" cy="9" r="2.6"/><path d="M16 13.2c2.4.4 4 1.9 4 4V20h-3.2"/></svg><br>Hermanos</button>
+  <button class="tab-btn hidden" data-tab="territorios"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><br>Territorios</button>
   <button class="tab-btn" data-tab="ajustes"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="6" r="2"/><line x1="11" y1="6" x2="20" y2="6"/><line x1="4" y1="6" x2="7" y2="6"/><circle cx="15" cy="12" r="2"/><line x1="17" y1="12" x2="20" y2="12"/><line x1="4" y1="12" x2="13" y2="12"/><circle cx="9" cy="18" r="2"/><line x1="11" y1="18" x2="20" y2="18"/><line x1="4" y1="18" x2="7" y2="18"/></svg><br>Ajustes</button>
   <button class="tab-btn" id="navAnunciosBtnMobile" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 6a9 9 0 0 1 0 12"/></svg><br>Anuncios</button>
 </nav>
@@ -1724,6 +1729,10 @@
           <p class="guide-diagram-caption">Tocar cualquier asignación abre la ficha completa del día</p>
         </div>
         <p>También se puede instalar como app aparte (aparece un botón para eso), y agregar cualquier asignación directo a Google Calendar con el ícono al lado.</p>
+      </details>
+      <details class="guide-item">
+        <summary><span class="gicon" data-icon="users"></span>Territorios y salidas<span class="chev">›</span></summary>
+        <p>Pestaña Territorios (Super Admin y Admin — Territorios). <b>Salidas:</b> el programa de cada semana: día, hora, lugar de encuentro, quién conduce y qué territorios, de cada grupo o de toda la congregación; las fijas se repiten solas, "Auto-asignar conductores" reparte parejo y "Compartir" las manda por WhatsApp. <b>Territorios:</b> cada uno con la foto de la tarjeta; el semáforo muestra los disponibles, asignados, vencidos (más de 4 meses) y los que hace más de un año no se trabajan; en cada uno se asigna a un hermano o grupo y se marca terminado, y queda el historial. <b>Grupos:</b> encargado, auxiliar, hermanos y quiénes pueden conducir. El encargado y el auxiliar de cada grupo entran a la app y ven solo las salidas de su grupo. <b>Lugares:</b> las casas, esquinas o el Salón donde se juntan.</p>
       </details>
       <details class="guide-item">
         <summary><span class="gicon" data-icon="lock"></span>Quién puede entrar<span class="chev">›</span></summary>
@@ -2271,7 +2280,7 @@
       console.error('No se pudo guardar', e);
       showSaveErrorBanner();
     }
-    if (fbDb && accessCode && !applyingRemoteUpdate) {
+    if (fbDb && accessCode && !applyingRemoteUpdate && currentUserRole !== 'grupo') {
       try {
         await pushChangesToCloud();
         setSyncStatus('ok');
@@ -2330,6 +2339,7 @@
     if ((s.tecnicoAdminEmails || []).includes(email)) return 'tecnico';
     if ((s.acomodadoresAdminEmails || []).includes(email)) return 'acomodadores';
     if ((s.asignacionesAdminEmails || []).includes(email)) return 'asignaciones';
+    if ((s.territoriosAdminEmails || []).includes(email)) return 'territorios';
     if ((s.anunciosOnlyEmails || []).includes(email)) return 'anuncios';
     if ((s.viewerEmails || []).includes(email)) return 'viewer';
     return 'super'; // fallback defensivo: no debería llegar acá si el login ya validó acceso
@@ -2366,12 +2376,17 @@
   }
   function applyRoleUI() {
     const role = currentUserRole;
-    if (role === 'viewer') { goToViewerPage(); return; }
+    // La copia de seguridad la hace el Super Admin: a los demás no se les recuerda.
+    if (role !== 'super') { const bb = $('backupBanner'); if (bb) bb.remove(); }
+    // "Solo ver": se va a la vista, salvo que sea encargado o auxiliar de un grupo (organiza sus salidas acá).
+    if (role === 'viewer' || role === 'grupo') { if (typeof terrMaybeGroupEditor === 'function') terrMaybeGroupEditor(); else goToViewerPage(); return; }
     document.body.classList.toggle('an-only', role === 'anuncios');
     const canAn = canManageAnuncios();
     ['navAnunciosBtn', 'navAnunciosBtnMobile'].forEach(id => $(id) && $(id).classList.toggle('hidden', !canAn));
     if (!canAn) { $('anunciosModalOverlay').classList.add('hidden'); $('anMenuOverlay').classList.add('hidden'); }
     if (role === 'anuncios') { $('narrowThemeBtn').classList.remove('hidden'); setupAnunciosOnly(); return; }
+    // "Admin — Territorios": solo la pestaña Territorios (y Anuncios si tiene el permiso).
+    if (role === 'territorios') { if (typeof terrOnRole === 'function') terrOnRole(); return; }
     const narrow = role === 'tecnico' || role === 'acomodadores' || role === 'asignaciones';
     // Pestañas principales: Cronómetro, Hermanos y Ajustes quedan solo para Super Admin.
     document.querySelectorAll('.tab-btn[data-tab="timer"], .tab-btn[data-tab="hermanos"], .tab-btn[data-tab="ajustes"]')
@@ -2403,6 +2418,7 @@
     document.querySelectorAll('[data-share="pdfmes"], [data-share="viewlink"]')
       .forEach(b => b.classList.toggle('hidden', narrow));
     if (role === 'super') { renderSetupChecklist($('setupList'), false); startAccessRequests(); openRequestsFromLink(); }
+    if (typeof terrOnRole === 'function') terrOnRole();
   }
   let applyingRemoteUpdate = false; // evita que un cambio recibido de la nube dispare otro guardado
 
@@ -2555,7 +2571,7 @@
         const isEditor = (remoteSettings.editorEmails || []).includes(currentUser.email);
         const isTecnico = (remoteSettings.tecnicoAdminEmails || []).includes(currentUser.email);
         const isAcomodadores = (remoteSettings.acomodadoresAdminEmails || []).includes(currentUser.email);
-        const isAsignaciones = (remoteSettings.asignacionesAdminEmails || []).includes(currentUser.email);
+        const isAsignaciones = (remoteSettings.asignacionesAdminEmails || []).includes(currentUser.email) || (remoteSettings.territoriosAdminEmails || []).includes(currentUser.email);
         const isViewer = (remoteSettings.viewerEmails || []).includes(currentUser.email) || (remoteSettings.anunciosOnlyEmails || []).includes(currentUser.email);
         const orphaned = !(remoteSettings.editorEmails || []).length; // congregación de antes del login: nadie es editor todavía
         if (orphaned) {
@@ -2750,7 +2766,15 @@
     anuncios: { badge: 'Anuncios', lead: 'Vas a publicar los anuncios que ve toda la congregación en su celular.', tips: [
       ['➕', 'Nuevo anuncio', 'Con título, texto y, si hace falta, una foto o un PDF. Podés fijarlo arriba de todo.'],
       ['👁', 'Vista previa', 'Antes de publicar ves cómo les va a aparecer a los hermanos.'],
-      ['📅', 'Fecha del evento', 'Si es de un evento, muestra cuánto falta, se puede agregar a Google Calendar y deja de verse cuando pasa.']] }
+      ['📅', 'Fecha del evento', 'Si es de un evento, muestra cuánto falta, se puede agregar a Google Calendar y deja de verse cuando pasa.']] },
+    territorios: { badge: 'Admin — Territorios', lead: 'Vas a organizar los territorios, los grupos de predicación y el programa de salidas.', tips: [
+      ['🗓', 'Salidas de la semana', 'Día, hora, lugar de encuentro y quién conduce. Las fijas se repiten solas; "Compartir" las manda por WhatsApp.'],
+      ['🗺', 'Territorios con semáforo', 'Cargá cada uno con la foto de la tarjeta. Ves cuáles están vencidos y cuáles hace más de un año que no se trabajan.'],
+      ['👥', 'Grupos', 'Cada grupo con su encargado, su auxiliar y sus hermanos. El encargado y el auxiliar pueden armar las salidas de su grupo.']] },
+    grupo: { badge: 'Encargado de grupo', lead: 'Acá organizás las salidas al servicio de tu grupo.', tips: [
+      ['🗓', 'Salidas de la semana', 'Tocá "+ Salida" para cargar las fijas (se repiten solas) o una solo para esta semana.'],
+      ['🙋', 'Quién conduce', 'Elegilo en cada salida, o tocá "Auto-asignar conductores" para repartir parejo.'],
+      ['📤', 'Compartir', 'Mandá las salidas de la semana por WhatsApp al grupo.']] }
   };
   let welcomeRole = null;
   function welcomeKey(role) { return 'kh-welcome-' + role; }
@@ -2891,6 +2915,7 @@
     else if (tab === 'hermanos') { renderBrothersTable(); }
     else if (tab === 'programa') { renderRoleCards(); renderMonthTable(); renderMonthCalendar(); if (currentSubtab === 'programa') renderProgramSection(); }
     else if (tab === 'timer') { renderWeeklyPartsGrid(); }
+    else if (tab === 'territorios' && typeof terrRender === 'function') { terrRender(); }
   }
   document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => {
     if (b.id === 'navAnunciosBtn' || b.id === 'navAnunciosBtnMobile') return;
@@ -5995,11 +6020,12 @@
     if (currentSubtab === 'programa') renderProgramSection();
   });
 
-  const ROLE_FIELDS = ['editorEmails', 'tecnicoAdminEmails', 'acomodadoresAdminEmails', 'asignacionesAdminEmails', 'anunciosOnlyEmails', 'viewerEmails'];
-  const AN_PERM_FIELDS = ['tecnicoAdminEmails', 'acomodadoresAdminEmails', 'asignacionesAdminEmails']; // roles a los que se les puede dar el permiso de anuncios
+  const ROLE_FIELDS = ['editorEmails', 'tecnicoAdminEmails', 'acomodadoresAdminEmails', 'asignacionesAdminEmails', 'territoriosAdminEmails', 'anunciosOnlyEmails', 'viewerEmails'];
+  const AN_PERM_FIELDS = ['tecnicoAdminEmails', 'acomodadoresAdminEmails', 'asignacionesAdminEmails', 'territoriosAdminEmails']; // roles a los que se les puede dar el permiso de anuncios
   const ROLE_LABELS = {
     editorEmails: 'Super Admin',
     tecnicoAdminEmails: 'Admin — Equipo técnico',
+    territoriosAdminEmails: 'Admin — Territorios',
     acomodadoresAdminEmails: 'Admin — Acomodadores',
     asignacionesAdminEmails: 'Admin — Asignaciones',
     anunciosOnlyEmails: 'Solo anuncios',
@@ -6019,7 +6045,7 @@
   }
 
   /* ---- Lista de Acceso: grupos por rol, buscador y filtros ---- */
-  const ROLE_SHORT = { tecnicoAdminEmails: 'Equipo técnico', acomodadoresAdminEmails: 'Acomodadores', asignacionesAdminEmails: 'Asignaciones' };
+  const ROLE_SHORT = { tecnicoAdminEmails: 'Equipo técnico', acomodadoresAdminEmails: 'Acomodadores', asignacionesAdminEmails: 'Asignaciones', territoriosAdminEmails: 'Territorios' };
   const accState = { filter: 'all', viewerOpen: false, menuEmail: null, picking: false };
   function accNorm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
   function accPubOf(email) { const e = String(email).toLowerCase(); return (data.publishers || []).find(p => p.email && String(p.email).toLowerCase() === e) || null; }
@@ -6563,7 +6589,7 @@
     const nameOk = !!name && name !== 'Mi Congregación';
     const timesOk = tOk(s.meetingTimeSemana) && tOk(s.meetingTimeFinde);
     const active = (data.publishers || []).filter(p => p.status !== 'inactivo');
-    const admins = new Set(['tecnicoAdminEmails', 'acomodadoresAdminEmails', 'asignacionesAdminEmails'].flatMap(f => s[f] || [])).size;
+    const admins = new Set(['tecnicoAdminEmails', 'acomodadoresAdminEmails', 'asignacionesAdminEmails', 'territoriosAdminEmails'].flatMap(f => s[f] || [])).size;
     const soloAn = (s.anunciosOnlyEmails || []).length;
     const viewers = (s.viewerEmails || []).length;
     const people = accPeople();
@@ -7497,5 +7523,6 @@
   }
 </script>
 
+<script src="territorios.js"></script>
 </body>
 </html>
