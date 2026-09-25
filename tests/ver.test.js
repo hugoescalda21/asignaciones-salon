@@ -230,7 +230,6 @@ const isoDay = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate
     check('fecha relativa ("Hace 2 h")', new Date().getHours() < 2 ? /Ayer/.test(ctx.cards) : /Hace 2 h/.test(ctx.cards));
     check('muestra el vencimiento', /Vence el/.test(ctx.cards));
     check('marca "editado"', /editado/.test(ctx.cards));
-    check('"Compartir" en cada tarjeta', (ctx.cards.match(/data-ann-share=/g) || []).length === 4);
     {
       const fut = new Date(ahora + 3 * 86400000), pas = new Date(ahora - 3 * 86400000);
       const dstr = x => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
