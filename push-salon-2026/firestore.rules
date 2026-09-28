@@ -47,8 +47,9 @@ service cloud.firestore {
 
       function mail() { return request.auth.token.email; }
       function lista(campo) { return resource.data.settings.get(campo, []); }
-      function sinEditores() { return lista('editorEmails').size() == 0; }
-      function esSuper() { return mail() in lista('editorEmails') || sinEditores(); }
+      // (Antes, una congregación sin ningún Super Admin la podía abrir cualquiera con sesión:
+      // era para las congregaciones de antes del login. Ya no hace falta y se cerró.)
+      function esSuper() { return mail() in lista('editorEmails'); }
       function esAdmin() {
         return mail() in lista('tecnicoAdminEmails') ||
                mail() in lista('acomodadoresAdminEmails') ||
@@ -64,19 +65,15 @@ service cloud.firestore {
       }
 
       // Leer: logueado, y el email tiene que estar en alguna de las
-      // listas de acceso de ESA congregación puntual — o la
-      // congregación todavía no tiene ningún editor cargado (caso de
-      // una congregación que ya existía antes de este sistema de
-      // login, donde el campo puede ni siquiera existir todavía —
-      // por eso .get(..., []) en vez de leerlo directo, que se rompe
-      // si el campo no está).
+      // listas de acceso de ESA congregación puntual (.get(..., []) por
+      // si alguna lista todavía no existe).
       allow read: if request.auth != null && (
                     esSuper() || esAdmin() || esSoloAnuncios() || esTerritorios() ||
                     mail() in lista('viewerEmails')
                   );
 
       // Editar:
-      //  · Super Admin (o congregación sin editores todavía): todo.
+      //  · Super Admin: todo.
       //  · Admins (técnico / acomodadores / asignaciones): solo las
       //    semanas; y los anuncios si tienen el permiso "Puede publicar
       //    anuncios" (anunciosEmails). Qué parte de cada semana le toca a

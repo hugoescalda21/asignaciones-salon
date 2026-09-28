@@ -14,6 +14,9 @@
 const fs = require('fs');
 const path = require('path');
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
+// Los "PERMISSION_DENIED" esperados no se muestran (ensucian la salida): lo que importa es el ✅ / ❌ de cada prueba.
+try { require('firebase/firestore').setLogLevel('silent'); } catch (e) { /* nada */ }
+try { require('firebase/compat/app').default.firestore.setLogLevel('silent'); } catch (e) { /* nada */ }
 
 const C = 'congregations/C';
 const S = {
@@ -77,10 +80,10 @@ const section = (t) => console.log('\n' + t);
   await check('Admin técnico NO toca el cronómetro', assertFails(db(S.tec).doc(C).update({ timerLog: [{ id: 'x' }] })));
   await check('Admin de asignaciones con permiso publica anuncios', assertSucceeds(db(S.asig).doc(C).update({ anuncios: [{ id: 'a1' }] })));
   await check('"Solo anuncios" publica anuncios', assertSucceeds(db(S.anun).doc(C).update({ anuncios: [{ id: 'a2' }] })));
-  await check('"Solo anuncios" NO cambia las semanas', assertFails(db(S.anun).doc(C).update({ 'weeks.2026-09-21.semana.roles.sonido': 'p1' })));
-  await check('Admin de territorios NO cambia las semanas', assertFails(db(S.terr).doc(C).update({ 'weeks.2026-09-21.semana.roles.sonido': 'p1' })));
+  await check('"Solo anuncios" NO cambia las semanas', assertFails(db(S.anun).doc(C).update({ 'weeks.2026-09-21.semana.roles.sonido': 'p7' })));
+  await check('Admin de territorios NO cambia las semanas', assertFails(db(S.terr).doc(C).update({ 'weeks.2026-09-21.semana.roles.sonido': 'p8' })));
   await check('Admin de territorios NO publica anuncios (sin permiso)', assertFails(db(S.terr).doc(C).update({ anuncios: [] })));
-  await check('Solo ver: NO cambia nada', assertFails(db(S.ver).doc(C).update({ 'weeks.2026-09-21.semana.roles.sonido': 'p1' })));
+  await check('Solo ver: NO cambia nada', assertFails(db(S.ver).doc(C).update({ 'weeks.2026-09-21.semana.roles.sonido': 'p9' })));
   await check('Nadie borra la congregación (ni el Super Admin)', assertFails(db(S.super).doc(C).delete()));
   await check('Alguien de afuera NO puede pisar la congregación', assertFails(db(S.afuera).doc(C).set({ settings: { editorEmails: [S.afuera] } })));
 
@@ -88,7 +91,8 @@ const section = (t) => console.log('\n' + t);
   await check('se puede crear una nueva siendo su Super Admin', assertSucceeds(db(S.afuera).doc('congregations/NUEVA').set({ settings: { editorEmails: [S.afuera] } })));
   await check('NO se puede crear una nueva a nombre de otro', assertFails(db(S.afuera).doc('congregations/OTRA').set({ settings: { editorEmails: [S.super] } })));
   await check('sin sesión NO se crea nada', assertFails(db(null).doc('congregations/X').set({ settings: { editorEmails: ['a@x.com'] } })));
-  await check('(de antes del login) congregación sin editores: la puede abrir quien entra', assertSucceeds(db(S.afuera).doc('congregations/SIN').get()));
+  await check('una congregación sin Super Admin NO la abre cualquiera', assertFails(db(S.afuera).doc('congregations/SIN').get()));
+  await check('ni la puede tomar (agregarse como Super Admin)', assertFails(db(S.afuera).doc('congregations/SIN').update({ 'settings.editorEmails': [S.afuera] })));
 
   section('4) Registro de errores');
   const err = { at: '2026-09-28', app: 'ver', kind: 'error', msg: 'falló algo', where: 'ver.html:10', role: '', device: 'Android', online: true };

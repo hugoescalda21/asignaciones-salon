@@ -8,9 +8,11 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ## Pruebas de las reglas de seguridad — 28 sep 2026
 
-- Nueva carpeta `push-salon-2026/pruebas-reglas`: 85 pruebas que comprueban, contra los **emuladores de Firebase** (en la PC, sin tocar la base real), quién puede ver y cambiar cada cosa: la congregación por rol, registro de errores, territorios, salidas, "Lo terminé", solicitudes de acceso, avisos push y archivos (adjuntos, fotos de territorios y copias de seguridad).
+- Nueva carpeta `push-salon-2026/pruebas-reglas`: 86 pruebas que comprueban, contra los **emuladores de Firebase** (en la PC, sin tocar la base real), quién puede ver y cambiar cada cosa: la congregación por rol, registro de errores, territorios, salidas, "Lo terminé", solicitudes de acceso, avisos push y archivos (adjuntos, fotos de territorios y copias de seguridad).
 - Cómo correrlas: `cd push-salon-2026/pruebas-reglas`, `npm install` (una vez) y `npm test`. Hace falta Java 21.
 - `firebase.json` ahora tiene la configuración de los emuladores (no cambia nada al publicar).
+- Primera corrida en la PC: 84 de 85; la que falló era un error de la prueba (un guardado que no cambiaba nada), corregido.
+- **Reglas:** se cerró la excepción de "congregación sin Super Admin" (de antes del login): antes cualquiera con sesión podía abrirla y tomarla. Hay que publicar: `firebase deploy --only firestore:rules`.
 
 ## App de asignaciones: estilos de color — 28 sep 2026 (caché asignaciones-salon-v43)
 
