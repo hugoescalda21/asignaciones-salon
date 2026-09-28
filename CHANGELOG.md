@@ -6,6 +6,12 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Vista: fecha del anuncio en Inicio y campanita con el color del estilo — 28 sep 2026 (caché ver-salon-v36)
+
+- La tarjeta del anuncio en Inicio (fijado o nuevo), si el anuncio tiene fecha de evento, muestra un **mini calendario** (OCT / 6) y la línea **"Martes 6 · 9:00 · faltan 8 días"** ("mañana", "hoy"). Cuando la fecha pasa, vuelve al ícono de siempre.
+- La campanita de **Recordatorios** ahora es un dibujo con el color del estilo elegido (antes era un emoji sobre un cuadrado oscuro fijo).
+- Pruebas: 3 más en la vista (80).
+
 ## Vista: el Calendario muestra la próxima reunión aunque sea del mes que viene — 28 sep 2026 (caché ver-salon-v35)
 
 - El Calendario de la vista abre en el **mes de la próxima reunión**. Antes elegía el mes según el lunes de la semana: a fin de septiembre, la reunión del jueves 1 de octubre no aparecía hasta tocar ›.

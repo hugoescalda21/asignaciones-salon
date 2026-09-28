@@ -150,7 +150,7 @@ const isoDay = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate
   const calCode = [escapeHtml, constBlock('ROLE_META', '};'), fn('getRoles'), fn('dateForType'), fn('formatDate'), oneLine('  function monthKey('), oneLine('  function localIso('),
     fn('meetingTimeOf'), fn('visitorName'), fn('programEntries'), constBlock('SECTION_COLOR', '};'), fn('isProgramFilled'), constBlock('calOpenState', ';'),
     fn('calRowHTML'), fn('bindCalAccordion'), oneLine('  let calMonth = null;'), fn('meetingDates'), oneLine('  function shiftMonth('), fn('renderMonth'), fn('renderUpcoming'),
-    constBlock('annState', ';'), fn('annVigentesList'), fn('annItemHtml'), fn('gcalUrl'), fn('annEventHtml'), fn('annLinkify'), fn('annRelDate'), fn('annExpiresLabel'), fn('renderAnnTeaser')].join('\n');
+    constBlock('annState', ';'), fn('annVigentesList'), fn('annItemHtml'), fn('gcalUrl'), fn('annEventHtml'), fn('annLinkify'), fn('annRelDate'), fn('annExpiresLabel'), fn('annTeaserEvent'), fn('renderAnnTeaser')].join('\n');
   function calCtx(weeks, anuncios, seenIso) {
     const $ = fakeDom();
     const ctx = { $, console, URLSearchParams, currentUser: { email: 'hugo@x.com' }, getCode: () => 'SALON', annGetSeen: () => seenIso || '2000-01-01T00:00:00Z',
@@ -242,6 +242,15 @@ const isoDay = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate
       check('links clickeables (jw.org/es sin el punto final)', /<a href="https:\/\/jw\.org\/es"[^>]*>jw\.org\/es<\/a>\./.test(ctx.cA));
       check('link con http y parámetros', /href="https:\/\/ejemplo\.com\/a\?b=1&amp;c=2"/.test(ctx.cA));
       check('los emails no se convierten en link', !/href="https:\/\/gmail\.com"/.test(ctx.cA));
+      // Anuncio fijado con fecha: en Inicio se ve el mini calendario y "Martes 6 · 9:00 · faltan 3 días"
+      const ctx3 = calCtx(weeks, [Object.assign({ pinned: true, dateIso: iso(ahora - 7 * 86400000) }, ctx.evA)], iso(ahora));
+      vm.runInContext('renderAnnTeaser();', ctx3);
+      const t3 = ctx3.$('annTeaser').innerHTML;
+      check('anuncio fijado con fecha: mini calendario con el día', new RegExp('ann-teaser-cal[^>]*><i>[a-z]+</i><b>' + fut.getDate() + '</b>').test(t3) && !/ann-teaser-ic/.test(t3), t3.slice(0, 300));
+      check('y la línea "día · hora · faltan 3 días"', /<em>[A-ZÁÉ][a-záéíóú]+ \d+ · 9:00 · faltan 3 días<\/em>/.test(t3), t3);
+      const ctx4 = calCtx(weeks, [Object.assign({ pinned: true, dateIso: iso(ahora - 7 * 86400000) }, ctx.evB)], iso(ahora));
+      vm.runInContext('renderAnnTeaser();', ctx4);
+      check('si la fecha ya pasó, vuelve al ícono de siempre', /ann-teaser-ic/.test(ctx4.$('annTeaser').innerHTML) && !/ann-teaser-cal/.test(ctx4.$('annTeaser').innerHTML));
     }
     vm.runInContext(`this.rel = [annRelDate(new Date(Date.now() - 30000)), annRelDate(new Date(Date.now() - 20 * 60000)), annRelDate(new Date(2020, 0, 5))];
       this.exp = [annExpiresLabel(new Date()), annExpiresLabel(new Date(Date.now() + 86400000)), annExpiresLabel(new Date('x'))];`, ctx);

@@ -310,6 +310,10 @@
   .ann-teaser-tx { flex: 1; min-width: 0; line-height: 1.3; }
   .ann-teaser-tx small { display: block; font-size: 10px; font-weight: 700; color: var(--accent-gold-text); text-transform: uppercase; letter-spacing: 0.04em; }
   .ann-teaser-tx b { display: block; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ann-teaser-tx em { display: block; font-style: normal; font-size: 12px; color: var(--ink-soft); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ann-teaser-cal { width: 38px; border-radius: 8px; overflow: hidden; text-align: center; background: var(--surface); border: 1px solid var(--line); flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .ann-teaser-cal i { display: block; font-style: normal; background: var(--accent-gold); color: #fff; font-size: 9.5px; font-weight: 700; letter-spacing: .03em; padding: 2px 0 1px; text-transform: uppercase; }
+  .ann-teaser-cal b { display: block; font-size: 17px; font-weight: 700; line-height: 1.35; color: var(--ink); }
   .ann-teaser-go { font-size: 13px; font-weight: 700; color: var(--accent-blue); flex-shrink: 0; }
   .unlinked-card { position: relative; background: var(--surface); border: 1px dashed var(--line); border-radius: 12px; padding: 12px 36px 12px 14px; margin-bottom: 14px; font-size: 12.5px; color: var(--ink-soft); line-height: 1.5; }
   .unlinked-card b { display: block; color: var(--ink); font-size: 13.5px; margin-bottom: 2px; }
@@ -448,7 +452,7 @@
 
   /* ---------- Recordatorios ---------- */
   .rem-row { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 14px; }
-  .rem-ic { width: 30px; height: 30px; border-radius: 8px; background: var(--ink); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 14px; }
+  .rem-ic { width: 34px; height: 34px; border-radius: 10px; background: rgba(169,130,47,0.14); background: color-mix(in srgb, var(--accent-gold) 14%, transparent); color: var(--accent-gold-text); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .rem-tx { flex: 1; min-width: 0; line-height: 1.3; }
   .rem-tx b { display: block; font-size: 13px; }
   .rem-tx span { font-size: 11.5px; color: var(--ink-soft); }
@@ -1865,7 +1869,7 @@
       action = '<button type="button" class="rem-link" id="reminderEnableBtn">Activar</button>';
     }
     box.classList.remove('hidden');
-    box.innerHTML = `<div class="rem-row"><div class="rem-ic" aria-hidden="true">🔔</div><div class="rem-tx"><b>Recordatorios</b><span>${escapeHtml(sub)}</span></div>${action}</div>`;
+    box.innerHTML = `<div class="rem-row"><div class="rem-ic" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></div><div class="rem-tx"><b>Recordatorios</b><span>${escapeHtml(sub)}</span></div>${action}</div>`;
     if ($('reminderChangeBtn')) $('reminderChangeBtn').addEventListener('click', () => openReminderSheet(pub, code));
     if ($('reminderEnableBtn')) $('reminderEnableBtn').addEventListener('click', async () => {
       try {
@@ -2530,11 +2534,25 @@
     const label = unread.length > 1 ? `${unread.length} anuncios nuevos` : unread.length ? 'Anuncio nuevo' : 'Fijado';
     const texto = a.title || (a.text || '').replace(/\s+/g, ' ').trim() || (a.attachmentType === 'image' ? 'Imagen adjunta' : 'Archivo adjunto');
     box.classList.remove('hidden');
+    // Si el anuncio tiene fecha de evento (y todavía no pasó): mini calendario y "Martes 6 · 09:00 · faltan 8 días".
+    const ev = annTeaserEvent(a);
     box.innerHTML = `<button type="button" class="ann-teaser" data-goto="avisos">
-      <span class="ann-teaser-ic" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></span>
-      <span class="ann-teaser-tx"><small>${label}</small><b>${escapeHtml(texto)}</b></span>
+      ${ev ? `<span class="ann-teaser-cal" aria-hidden="true"><i>${escapeHtml(ev.mes)}</i><b>${ev.dia}</b></span>` : `<span class="ann-teaser-ic" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></span>`}
+      <span class="ann-teaser-tx"><small>${label}</small><b>${escapeHtml(texto)}</b>${ev ? `<em>${escapeHtml(ev.linea)}</em>` : ''}</span>
       <span class="ann-teaser-go">Ver</span>
     </button>`;
+  }
+  function annTeaserEvent(a) {
+    if (!a || !/^\d{4}-\d{2}-\d{2}$/.test(a.eventDate || '')) return null;
+    const d = new Date(a.eventDate + 'T00:00:00');
+    const now = new Date();
+    const diff = Math.round((d.getTime() - new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()) / 86400000);
+    if (diff < 0) return null;
+    let dia = d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric' }).replace(',', '');
+    dia = dia.charAt(0).toUpperCase() + dia.slice(1);
+    const hora = /^\d{2}:\d{2}$/.test(a.eventTime || '') ? a.eventTime.replace(/^0(\d)/, '$1') : '';
+    const falta = diff === 0 ? 'hoy' : diff === 1 ? 'mañana' : `faltan ${diff} días`;
+    return { mes: d.toLocaleDateString('es-ES', { month: 'short' }).replace('.', ''), dia: d.getDate(), linea: `${dia}${hora ? ' · ' + hora : ''} · ${falta}` };
   }
   function annOnData() {
     if (currentTab === 'avisos') markAvisosSeen();
