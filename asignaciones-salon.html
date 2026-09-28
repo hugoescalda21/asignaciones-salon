@@ -1888,6 +1888,8 @@
   let fatalErrorShown = false;
   function showFatalErrorBanner(ev) {
     if (fatalErrorShown) return;
+    // "Script error." viene de un script de otro sitio (Firebase, Google) y no dice nada útil; no rompe la app.
+    try { const m0 = String((ev && (ev.message || (ev.reason && ev.reason.message))) || ''); if (!(ev && (ev.error || ev.reason)) && /^Script error\.?$|ResizeObserver loop/i.test(m0)) return; } catch (e) { /* nada */ }
     fatalErrorShown = true;
     let det = '';
     try {

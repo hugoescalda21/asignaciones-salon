@@ -6,6 +6,11 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Sin cartel rojo por "Script error." — 28 sep 2026 (caché asignaciones-salon-v40)
+
+- El cartel "Ocurrió un error inesperado" ya no aparece por un **"Script error."**: es un aviso sin detalle que tira un script de otro sitio (Firebase o Google), por ejemplo después de borrar los permisos del navegador, y no rompe nada. Los errores reales de la app se siguen mostrando.
+- Pruebas: `24-errores-banner` (554 en total).
+
 ## Vista: cada hermano elige sus colores — 28 sep 2026 (caché ver-salon-v34)
 
 - Botón **🎨** en el encabezado de la vista: hoja con 4 estilos (**Clásico**, **Moderno azul**, **Cálido**, **Vibrante**) y el modo (**Claro**, **Oscuro**, **Como el celular**). Cambia al instante y se guarda en ese celular.

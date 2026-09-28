@@ -59,7 +59,7 @@ node tests/editor/run.js anuncios   (solo las que tengan "anuncios" en el nombre
 ```
 
 Al final muestra una línea por archivo y el total, por ejemplo
-`551 de 551 pruebas OK.` Si algo falla, muestra qué.
+`554 de 554 pruebas OK.` Si algo falla, muestra qué.
 
 | Archivo | Qué prueba |
 |---|---|
@@ -85,6 +85,7 @@ Al final muestra una línea por archivo y el total, por ejemplo
 | `21-vista-territorios` | Vista: salidas en Inicio, la salida que conduce como asignación, Mis territorios (con mapa) y "Lo terminé" |
 | `22-territorios-mapa` | Mapa de todos, dibujar límites, campañas y registro en PDF (para el PDF sin internet: `JSPDF_DIR`) |
 | `23-colores-vista` | Vista: botón 🎨, estilos y modo claro/oscuro guardados en el celular, predeterminado para nuevos y aviso de una vez |
+| `24-errores-banner` | El cartel de error no aparece por "Script error." de otro sitio; sí por errores reales |
 
 Las capturas de pantalla que sacan quedan en `tests/editor/capturas/`
 (no se suben a git), por si querés mirarlas.
