@@ -6,6 +6,13 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Código mal escrito: ya no crea una congregación vacía — 28 sep 2026 (caché asignaciones-salon-v41)
+
+- Al conectar con un código que **no existe**, la app ya no crea sola una congregación nueva y vacía: avisa "No encontramos esa congregación" y ofrece **Revisar el código** (vuelve al cuadro con el código escrito) o **Crear una nueva** (con confirmación).
+- "Generar uno nuevo" sigue creando la congregación directo, sin preguntar.
+- Sin conexión no se toma ninguna decisión (no se sabe si el código existe).
+- Pruebas: `25-codigo-inexistente` (561 en total).
+
 ## Sin cartel rojo por "Script error." — 28 sep 2026 (caché asignaciones-salon-v40)
 
 - El cartel "Ocurrió un error inesperado" ya no aparece por un **"Script error."**: es un aviso sin detalle que tira un script de otro sitio (Firebase o Google), por ejemplo después de borrar los permisos del navegador, y no rompe nada. Los errores reales de la app se siguen mostrando.

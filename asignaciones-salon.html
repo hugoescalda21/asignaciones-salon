@@ -2555,7 +2555,8 @@
     }
   }
 
-  async function startSync(code) {
+  async function startSync(code, opts) {
+    opts = opts || {};
     accessCode = code;
     if (!initFirebase()) { setSyncStatus('error'); return; }
     setSyncStatus('connecting');
@@ -2564,6 +2565,15 @@
     const docRef = fbDb.collection('congregations').doc(code);
     try {
       const snap = await docRef.get();
+      if (!snap.exists && snap.metadata && snap.metadata.fromCache) { setSyncStatus('error'); return false; }   // sin conexión: no se sabe si existe
+      if (!snap.exists && !opts.create) {
+        // Código que no existe (casi siempre, mal escrito): no se crea sola una congregación vacía; se pregunta.
+        accessCode = null;
+        try { if (localStorage.getItem(ACCESS_CODE_KEY) === code) localStorage.removeItem(ACCESS_CODE_KEY); } catch (e) { /* sin acceso */ }
+        setSyncStatus('none');
+        showCodeNotFound(code);
+        return false;
+      }
       if (!snap.exists) {
         data.settings.editorEmails = [currentUser.email];
         data.settings.viewerEmails = data.settings.viewerEmails || [];
@@ -2619,13 +2629,44 @@
     });
   }
 
-  async function connectWithCode(code) {
+  async function connectWithCode(code, opts) {
     code = normalizeCode(code);
     if (!code) { showToast('Ingresá un código'); return; }
+    // Un código recién generado con "Generar uno nuevo" es para crear una congregación: no se pregunta.
+    if (code === lastGeneratedCode) opts = Object.assign({ create: true }, opts || {});
     try { localStorage.setItem(ACCESS_CODE_KEY, code); } catch (e) { /* sin acceso */ }
     $('codeModalOverlay').classList.add('hidden');
-    await startSync(code);
+    if (await startSync(code, opts) === false) return;
     showToast('Conectado');
+  }
+  let lastGeneratedCode = null;
+  // "No encontramos ninguna congregación con ese código": revisar (lo normal) o crear una nueva.
+  function showCodeNotFound(code) {
+    const old = $('codeNotFoundOverlay'); if (old) old.remove();
+    const ov = document.createElement('div');
+    ov.className = 'modal-overlay'; ov.id = 'codeNotFoundOverlay';
+    ov.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="cnfTitle">
+      <h3 id="cnfTitle">No encontramos esa congregación</h3>
+      <p class="modal-sub">No hay ninguna congregación con el código <b>${escapeHtml(code)}</b>. Revisá que esté bien escrito (letras y números, sin espacios).</p>
+      <p class="modal-sub" style="margin:0 0 14px;">Si lo que querés es empezar una congregación nueva desde cero, podés crearla con ese código.</p>
+      <div class="modal-footer">
+        <button type="button" class="btn" id="cnfCreate">Crear una nueva</button>
+        <button type="button" class="btn btn-primary" id="cnfFix">Revisar el código</button>
+      </div></div>`;
+    document.body.appendChild(ov);
+    $('cnfFix').addEventListener('click', () => {
+      ov.remove();
+      $('accessCodeInput').value = code;
+      $('codeStatusMsg').textContent = 'Revisá el código y tocá Conectar.';
+      $('codeModalOverlay').classList.remove('hidden');
+      setTimeout(() => { try { $('accessCodeInput').focus(); $('accessCodeInput').select(); } catch (e) { /* nada */ } }, 50);
+    });
+    $('cnfCreate').addEventListener('click', () => {
+      if (!confirm(`¿Crear una congregación nueva y vacía con el código ${code}? Vos vas a ser su Super Admin.`)) return;
+      ov.remove();
+      connectWithCode(code, { create: true });
+    });
+    setTimeout(() => { try { $('cnfFix').focus(); } catch (e) { /* nada */ } }, 50);
   }
 
   async function initCloudSync() {
@@ -2639,7 +2680,7 @@
       $('codeModalOverlay').classList.remove('hidden');
     }
   }
-  $('genCodeBtn').addEventListener('click', () => { $('accessCodeInput').value = randomCode(); });
+  $('genCodeBtn').addEventListener('click', () => { lastGeneratedCode = normalizeCode(randomCode()); $('accessCodeInput').value = lastGeneratedCode; });
   $('connectCodeBtn').addEventListener('click', () => connectWithCode($('accessCodeInput').value));
   $('changeCodeBtn').addEventListener('click', () => {
     $('accessCodeInput').value = accessCode || '';

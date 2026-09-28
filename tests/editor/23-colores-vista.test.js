@@ -2,10 +2,21 @@
 // la hoja para elegir estilo y modo, el aviso de una vez y que todo quede guardado en el celular.
 const path = require('path');
 const { launch, SHOTS } = require('./_helper');
-const VER = 'file://' + path.resolve(__dirname, '../../ver/ver.html') + '?codigo=C';
+// Se sirve por http://127.0.0.1 (no file://): así el almacenamiento del navegador sobrevive a recargar la página.
+const http = require('http'), fs = require('fs');
+const ROOT = path.resolve(__dirname, '../..');
+const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png' };
+const server = http.createServer((req, res) => {
+  const f = path.join(ROOT, decodeURIComponent(req.url.split('?')[0]));
+  if (!f.startsWith(ROOT) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); res.end(); return; }
+  res.writeHead(200, { 'Content-Type': TYPES[path.extname(f)] || 'application/octet-stream' }); fs.createReadStream(f).pipe(res);
+});
+let VER;
 let ok = 0, bad = 0; const check = (l, c, x) => { if (c) { ok++; console.log('  ✅', l); } else { bad++; console.log('  ❌', l, x === undefined ? '' : JSON.stringify(x).slice(0, 300)); } };
 
 (async () => {
+  await new Promise(r => server.listen(0, '127.0.0.1', r));
+  VER = `http://127.0.0.1:${server.address().port}/ver/ver.html?codigo=C`;
   const b = await launch();
   async function open(init, scheme) {
     const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, colorScheme: scheme || 'light' });
@@ -70,5 +81,5 @@ let ok = 0, bad = 0; const check = (l, c, x) => { if (c) { ok++; console.log('  
   await p.goto(VER + '&paleta=actual'); await p.waitForTimeout(300);
   check('?paleta=actual vuelve al Clásico', (await st(p)).lsP === 'clasico');
   check('sin errores', p.errs.length === 0, p.errs);
-  await b.close(); console.log(`\n${ok} OK, ${bad} fallaron`);
+  await b.close(); server.close(); console.log(`\n${ok} OK, ${bad} fallaron`);
 })();
