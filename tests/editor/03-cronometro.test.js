@@ -1,5 +1,7 @@
 const { launch, FILE, SHOTS, fixture } = require('./_helper');
 const data = fixture();
+// Sin hora de reunión: acá se prueba el ritmo por partes (la hora de fin estimada está en 13-fin-estimado).
+data.settings.meetingTimeSemana = ''; data.settings.meetingTimeFinde = '';
 let ok = 0, bad = 0; const check = (l, c, d) => { if (c) { ok++; console.log('  ✅', l); } else { bad++; console.log('  ❌', l, d === undefined ? '' : JSON.stringify(d)); } };
 (async () => {
   const b = await launch();

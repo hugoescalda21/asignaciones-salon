@@ -59,7 +59,7 @@ node tests/editor/run.js anuncios   (solo las que tengan "anuncios" en el nombre
 ```
 
 Al final muestra una línea por archivo y el total, por ejemplo
-`528 de 528 pruebas OK.` Si algo falla, muestra qué.
+`529 de 529 pruebas OK.` Si algo falla, muestra qué.
 
 | Archivo | Qué prueba |
 |---|---|

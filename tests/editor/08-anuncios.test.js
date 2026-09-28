@@ -1,6 +1,7 @@
-const { launch, FILE, SHOTS, fixture } = require('./_helper');
+const { launch, FILE, SHOTS, HOY, fixture } = require('./_helper');
 const data = fixture();
-const now = Date.now(), iso = ms => new Date(ms).toISOString();
+const now = HOY.getTime(),   // la misma fecha fija que usa la página en las pruebas
+  iso = ms => new Date(ms).toISOString();
 const d = ms => { const x = new Date(ms); return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`; };
 data.anuncios = [
   { id: 'a1', title: 'Visita del superintendente', text: 'Esta semana nos visita el superintendente. Más info: jw.org/es', dateIso: iso(now - 2*86400000), pinned: true, eventDate: d(now + 3*86400000), eventTime: '09:00', expiresIso: new Date(d(now + 3*86400000) + 'T23:59:59').toISOString(), notify: true },
