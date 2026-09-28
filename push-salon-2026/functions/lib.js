@@ -466,7 +466,71 @@ function newTerritoryAssignments(beforeList, afterList) {
   return out;
 }
 
+/* ---------- Copias de seguridad ----------
+   Una copia es un JSON con el documento de la congregación y sus colecciones de
+   territorios y salidas. Se guardan en Storage: backups/{código}/{fecha}_{hora}-{tipo}.json
+   (tipo: auto | manual | previa, la que se hace antes de restaurar). */
+const BACKUP_SUBS = ['terr', 'salidas', 'terminados'];
+const BACKUP_KINDS = { auto: 'Automática', manual: 'Manual', previa: 'Antes de restaurar' };
+function backupName(code, when, kind) {
+  const p = arParts(when);
+  const hhmm = String(Math.floor(p.minutes / 60)).padStart(2, '0') + String(p.minutes % 60).padStart(2, '0');
+  return `backups/${code}/${p.dateIso}_${hhmm}-${BACKUP_KINDS[kind] ? kind : 'manual'}.json`;
+}
+function parseBackupName(name) {
+  const m = String(name || '').match(/(?:^|\/)(\d{4}-\d{2}-\d{2})_(\d{2})(\d{2})-(auto|manual|previa)\.json$/);
+  if (!m) return null;
+  return { file: name.split('/').pop(), dateIso: m[1], time: `${m[2]}:${m[3]}`, kind: m[4], label: BACKUP_KINDS[m[4]] };
+}
+function buildBackup(code, main, subs, when) {
+  const out = { app: 'asignaciones-salon', version: 1, code, createdAt: when.toISOString(), main: main || {} };
+  BACKUP_SUBS.forEach((c) => { out[c] = (subs && subs[c]) || {}; });
+  return out;
+}
+// Qué copias borrar: se guardan todas las de las últimas 8 semanas; de ahí hasta un año,
+// solo la primera automática de cada mes; más viejas, ninguna.
+function backupsToPrune(names, todayIso) {
+  const today = Date.parse(todayIso + 'T00:00:00Z');
+  const items = names.map(n => ({ n, b: parseBackupName(n) })).filter(x => x.b)
+    .map(x => Object.assign(x, { age: Math.round((today - Date.parse(x.b.dateIso + 'T00:00:00Z')) / 86400000) }))
+    .sort((a, b) => a.n.localeCompare(b.n));
+  const firstOfMonth = new Set();
+  const seen = new Set();
+  items.forEach((x) => { const mk = x.b.dateIso.slice(0, 7); if (x.b.kind === 'auto' && !seen.has(mk)) { seen.add(mk); firstOfMonth.add(x.n); } });
+  return items.filter(x => !(x.age <= 56 || (x.age <= 366 && firstOfMonth.has(x.n)))).map(x => x.n);
+}
+// Qué escribir para restaurar. parts: ['programa'] y/o ['territorios'].
+// current: { terr: [ids], salidas: [ids], terminados: [ids] } — lo que hay ahora (lo que no está en la copia se borra).
+// Quien restaura sigue siendo Super Admin aunque en la copia no lo fuera.
+function restorePlan(backup, parts, current, email, nowIso) {
+  const plan = { main: null, docs: [] };
+  if (!backup || !backup.main) throw new Error('La copia no es válida');
+  if (parts.includes('programa')) {
+    const main = JSON.parse(JSON.stringify(backup.main));
+    main.settings = main.settings || {};
+    const eds = (main.settings.editorEmails || []).map(String);
+    if (email && !eds.map(e => e.toLowerCase()).includes(String(email).toLowerCase())) eds.push(email);
+    main.settings.editorEmails = eds;
+    delete main._guard;
+    main._restoredAt = nowIso;
+    plan.main = main;
+  }
+  if (parts.includes('territorios')) {
+    BACKUP_SUBS.forEach((c) => {
+      const want = backup[c] || {};
+      Object.keys(want).forEach((id) => plan.docs.push({ col: c, id, data: Object.assign({}, want[id], { _restoredAt: nowIso }) }));
+      ((current && current[c]) || []).filter(id => !(id in want)).forEach((id) => plan.docs.push({ col: c, id, data: null }));
+    });
+  }
+  return plan;
+}
+// ¿Esta escritura es una restauración? (los avisos de "te asignaron" no se mandan en ese caso)
+function isRestoreWrite(before, after) {
+  return !!(after && after._restoredAt && (!before || before._restoredAt !== after._restoredAt));
+}
+
 module.exports = {
+  BACKUP_SUBS, BACKUP_KINDS, backupName, parseBackupName, buildBackup, backupsToPrune, restorePlan, isRestoreWrite,
   salidaInstances, conductorAssignments, newConductors, conductorMessage, newTerritoryAssignments, mondayOfIsoLib,
   accessRequestMessage,
   roleAreasFor, isEmptyDeep, leaves, weekLeafArea, disallowedWeekChanges, guardSummary,

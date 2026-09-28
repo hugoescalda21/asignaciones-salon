@@ -328,4 +328,38 @@ t('territorio asignado: detecta hermano y grupo nuevos', () => {
   assert.deepStrictEqual(newTerritoryAssignments(before, after), [{ id: 'a', num: '12', nombre: 'Centro', tipo: 'hermano', to: 'p6' }]);
 });
 
+const { backupName, parseBackupName, buildBackup, backupsToPrune, restorePlan, isRestoreWrite } = require('./lib');
+t('copias: nombre con fecha y hora de Argentina, y se puede leer', () => {
+  const n = backupName('SALON2026', new Date('2026-09-27T06:30:00Z'), 'auto');
+  assert.strictEqual(n, 'backups/SALON2026/2026-09-27_0330-auto.json');
+  assert.deepStrictEqual(parseBackupName(n), { file: '2026-09-27_0330-auto.json', dateIso: '2026-09-27', time: '03:30', kind: 'auto', label: 'Automática' });
+  assert.strictEqual(parseBackupName('backups/X/otra-cosa.json'), null);
+});
+t('copias: incluye la congregación, territorios, salidas y avisos de terminado', () => {
+  const b = buildBackup('C', { publishers: [1] }, { terr: { territorios: { lista: {} } }, salidas: { g1: {} } }, new Date('2026-09-27T06:30:00Z'));
+  assert.deepStrictEqual(Object.keys(b).sort(), ['app', 'code', 'createdAt', 'main', 'salidas', 'terminados', 'terr', 'version'].sort());
+  assert.deepStrictEqual(b.terminados, {});
+});
+t('copias: se guardan 8 semanas y una por mes hasta un año', () => {
+  const names = ['2026-09-27_0330-auto', '2026-08-09_0330-auto', '2026-07-26_0330-auto', '2026-07-05_0330-auto', '2026-07-12_0330-auto', '2026-06-14_1200-manual', '2025-08-03_0330-auto', '2026-03-01_0330-auto']
+    .map(x => 'backups/C/' + x + '.json');
+  const del = backupsToPrune(names, '2026-09-28').map(n => n.split('/').pop());
+  assert.deepStrictEqual(del.sort(), ['2025-08-03_0330-auto.json', '2026-06-14_1200-manual.json', '2026-07-12_0330-auto.json', '2026-07-26_0330-auto.json'].sort());
+});
+t('restaurar: programa mantiene a quien restaura como Super Admin; territorios borra lo que no estaba', () => {
+  const b = { main: { settings: { editorEmails: ['otro@x.com'] }, _guard: { at: 'x' }, weeks: {} }, terr: { territorios: { lista: { a: 1 } } }, salidas: { g1: { plantilla: {} } }, terminados: {} };
+  const p = restorePlan(b, ['programa', 'territorios'], { terr: ['territorios', 'grupos'], salidas: ['g1', 'g2'], terminados: ['t9'] }, 'hugo@x.com', 'AHORA');
+  assert.deepStrictEqual(p.main.settings.editorEmails, ['otro@x.com', 'hugo@x.com']);
+  assert.strictEqual(p.main._guard, undefined); assert.strictEqual(p.main._restoredAt, 'AHORA');
+  assert.deepStrictEqual(p.docs.map(d => [d.col, d.id, d.data ? 'set' : 'del']), [['terr', 'territorios', 'set'], ['terr', 'grupos', 'del'], ['salidas', 'g1', 'set'], ['salidas', 'g2', 'del'], ['terminados', 't9', 'del']]);
+  const solo = restorePlan(b, ['territorios'], {}, 'hugo@x.com', 'AHORA');
+  assert.strictEqual(solo.main, null);
+  assert.throws(() => restorePlan({}, ['programa'], {}, 'h', 'A'));
+});
+t('restaurar: no manda avisos de "te asignaron"', () => {
+  assert.strictEqual(isRestoreWrite({}, { _restoredAt: 'A' }), true);
+  assert.strictEqual(isRestoreWrite({ _restoredAt: 'A' }, { _restoredAt: 'A' }), false);
+  assert.strictEqual(isRestoreWrite({}, {}), false);
+});
+
 console.log('\n' + passed + ' pruebas OK' + (process.exitCode ? ' — HAY FALLAS' : ''));

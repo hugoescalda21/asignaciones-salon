@@ -6,6 +6,16 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Copias de seguridad automáticas en la nube — 28 sep 2026 (caché asignaciones-salon-v42)
+
+- **Todos los domingos a las 3:30** el servidor guarda sola una copia de cada congregación: programa, hermanos, anuncios, ajustes, territorios (con su historial), grupos, lugares, campañas, salidas y avisos de "Lo terminé". Van a Storage (`backups/{código}/`), donde solo entra el servidor.
+- Se guardan todas las de las **últimas 8 semanas** y **una por mes durante un año**; las demás se borran solas.
+- **Ajustes → Copia de seguridad** (solo Super Admin): la lista de copias, **Hacer una copia ahora**, **Descargar** (⬇) y **Restaurar**, eligiendo qué: "Programa, hermanos, anuncios y ajustes" y/o "Territorios y salidas". Antes de restaurar se guarda una copia "Antes de restaurar" para poder volver atrás, y quien restaura sigue siendo Super Admin. Restaurar no les manda avisos a los hermanos.
+- "Importar copia (.json)" también acepta el archivo descargado de la nube (importa el programa).
+- Con la app conectada a la nube ya no aparece el cartel "Todavía no hiciste ninguna copia de seguridad".
+- Funciones nuevas: `weeklyBackups` y `backups`. Reglas de Storage: `backups/` cerrado para la app. Hay que publicar: `firebase deploy --only functions,storage`.
+- Pruebas: `26-copias-nube` y 5 más del servidor (574 del editor, 66 del servidor).
+
 ## Código mal escrito: ya no crea una congregación vacía — 28 sep 2026 (caché asignaciones-salon-v41)
 
 - Al conectar con un código que **no existe**, la app ya no crea sola una congregación nueva y vacía: avisa "No encontramos esa congregación" y ofrece **Revisar el código** (vuelve al cuadro con el código escrito) o **Crear una nueva** (con confirmación).

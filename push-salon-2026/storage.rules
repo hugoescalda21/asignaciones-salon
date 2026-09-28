@@ -51,5 +51,11 @@ service firebase.storage {
                     && request.resource.contentType.matches('image/.*');
       allow delete: if gestorTerr();
     }
+
+    // Copias de seguridad: solo las lee y escribe el servidor (función "backups").
+    // Desde la app nadie puede verlas ni tocarlas directamente.
+    match /backups/{rest=**} {
+      allow read, write: if false;
+    }
   }
 }

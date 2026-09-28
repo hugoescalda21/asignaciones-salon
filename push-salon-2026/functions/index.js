@@ -13,7 +13,8 @@ const messaging = admin.messaging();
 const REGION = 'southamerica-east1';
 const { roleLabel, collectNewlyAssignedIds, avisoPreview, selectNewAvisos, notificationForNewAvisos, validateReminder, reminderDocId, ROLES_MAP,
   arParts, addDaysIso, remindersDue, reminderMessage, sentReminderId, roleAreasFor, disallowedWeekChanges, guardSummary, accessRequestMessage,
-  conductorAssignments, newConductors, conductorMessage, newTerritoryAssignments } = require('./lib');
+  conductorAssignments, newConductors, conductorMessage, newTerritoryAssignments,
+  BACKUP_SUBS, backupName, parseBackupName, buildBackup, backupsToPrune, restorePlan, isRestoreWrite } = require('./lib');
 
 // La app vive en GitHub Pages bajo /asignaciones-salon/, no en la raíz del
 // dominio: un link o ícono con "/" apunta a hugoescalda21.github.io/ y no a la app.
@@ -97,6 +98,8 @@ exports.onCongregationWrite = onDocumentUpdated({ document: 'congregations/{code
     console.log('[push] es una corrección de permisos: no se avisa a nadie');
     return null;
   }
+  // Restaurar una copia de seguridad tampoco avisa a nadie.
+  if (isRestoreWrite(before, after)) { console.log('[push] es una restauración: no se avisa a nadie'); return null; }
   try { await notifyNewAvisos(code, before, after); }
   catch (e) { console.error('[push] error avisando de un aviso nuevo:', e && e.message); }
 
@@ -325,7 +328,7 @@ exports.onSalidasWrite = onDocumentWritten({ document: 'congregations/{code}/sal
   const code = event.params.code;
   const before = event.data.before.exists ? event.data.before.data() : {};
   const after = event.data.after.exists ? event.data.after.data() : null;
-  if (!after) return null;
+  if (!after || isRestoreWrite(before, after)) return null;
   const { dateIso: hoyIso } = arParts(new Date());
   const nuevos = newConductors(before, after, hoyIso, 56);
   if (!nuevos.length) return null;
@@ -344,6 +347,7 @@ exports.onSalidasWrite = onDocumentWritten({ document: 'congregations/{code}/sal
 // Territorio asignado → aviso al hermano (o al encargado y auxiliar del grupo).
 exports.onTerritoriosWrite = onDocumentWritten({ document: 'congregations/{code}/terr/{docId}', region: REGION }, async (event) => {
   if (event.params.docId !== 'territorios') return null;
+  if (isRestoreWrite(event.data.before.exists ? event.data.before.data() : {}, event.data.after.exists ? event.data.after.data() : null)) return null;
   const code = event.params.code;
   const before = event.data.before.exists ? (event.data.before.data().lista || {}) : {};
   const after = event.data.after.exists ? (event.data.after.data().lista || {}) : {};
@@ -370,7 +374,7 @@ exports.onTerritoriosWrite = onDocumentWritten({ document: 'congregations/{code}
 exports.onTerminado = onDocumentCreated({ document: 'congregations/{code}/terminados/{tid}', region: REGION }, async (event) => {
   const code = event.params.code;
   const r = event.data && event.data.data();
-  if (!r) return null;
+  if (!r || r._restoredAt) return null;
   const ref = db.collection('congregations').doc(code);
   const [congSnap, terSnap] = await Promise.all([ref.get(), ref.collection('terr').doc('territorios').get()]);
   const cong = congSnap.data() || {};
@@ -668,6 +672,116 @@ exports.testMyDevice = onRequest({ cors: ['https://hugoescalda21.github.io'], re
     }
   } catch (err) {
     console.error('[testMyDevice] error:', err && err.message);
+    res.status(500).send({ error: 'Error interno' });
+  }
+});
+
+/* =====================================================================
+   Copias de seguridad
+   ---------------------------------------------------------------------
+   Todos los domingos a la madrugada se guarda una copia de cada congregación
+   (programa, hermanos, anuncios, ajustes, territorios, grupos, lugares, campañas
+   y salidas) en Storage: backups/{código}/… Solo el servidor lee y escribe ahí.
+   El Super Admin las ve, descarga y restaura desde Ajustes (función "backups").
+   ===================================================================== */
+async function snapshotCongregation(code) {
+  const ref = db.collection('congregations').doc(code);
+  const main = await ref.get();
+  const subs = {};
+  for (const c of BACKUP_SUBS) {
+    const qs = await ref.collection(c).get();
+    subs[c] = {};
+    qs.forEach((d) => { subs[c][d.id] = d.data(); });
+  }
+  return { exists: main.exists, backup: buildBackup(code, main.exists ? main.data() : {}, subs, new Date()) };
+}
+async function saveBackup(code, kind) {
+  const snap = await snapshotCongregation(code);
+  if (!snap.exists) throw new Error('No existe la congregación');
+  const name = backupName(code, new Date(), kind);
+  const body = JSON.stringify(snap.backup);
+  await admin.storage().bucket().file(name).save(body, { contentType: 'application/json', resumable: false, metadata: { cacheControl: 'no-store' } });
+  return { name, size: Buffer.byteLength(body) };
+}
+async function listBackups(code) {
+  const [files] = await admin.storage().bucket().getFiles({ prefix: `backups/${code}/` });
+  return files.map((f) => Object.assign({ size: Number(f.metadata.size || 0) }, parseBackupName(f.name)))
+    .filter((x) => x.file).sort((a, b) => b.file.localeCompare(a.file));
+}
+async function pruneBackups(code) {
+  const [files] = await admin.storage().bucket().getFiles({ prefix: `backups/${code}/` });
+  const del = backupsToPrune(files.map(f => f.name), arParts(new Date()).dateIso);
+  for (const n of del) await admin.storage().bucket().file(n).delete().catch(() => {});
+  return del.length;
+}
+
+exports.weeklyBackups = onSchedule({ schedule: '30 3 * * 0', timeZone: 'America/Argentina/Buenos_Aires', region: REGION, timeoutSeconds: 540, memory: '512MiB' }, async () => {
+  const qs = await db.collection('congregations').select().get();
+  for (const d of qs.docs) {
+    try {
+      const r = await saveBackup(d.id, 'auto');
+      const n = await pruneBackups(d.id);
+      console.log('[copias]', d.id, r.name, r.size, 'bytes · borradas', n);
+    } catch (e) { console.error('[copias] falló', d.id, e && e.message); }
+  }
+});
+
+exports.backups = onRequest({ cors: ['https://hugoescalda21.github.io'], region: REGION, maxInstances: 3, timeoutSeconds: 120, memory: '512MiB' }, async (req, res) => {
+  if (req.method !== 'POST') { res.status(405).send({ error: 'Método no permitido' }); return; }
+  try {
+    const m = String(req.get('Authorization') || '').match(/^Bearer (.+)$/);
+    if (!m) { res.status(401).send({ error: 'Falta iniciar sesión' }); return; }
+    let decoded;
+    try { decoded = await admin.auth().verifyIdToken(m[1]); } catch (e) { res.status(401).send({ error: 'Sesión vencida' }); return; }
+    const email = String(decoded.email || '').toLowerCase();
+    const body = req.body || {};
+    const code = String(body.code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (!code || !email) { res.status(400).send({ error: 'Datos no válidos' }); return; }
+    const cong = await db.collection('congregations').doc(code).get();
+    const editors = ((cong.exists && cong.data().settings) || {}).editorEmails || [];
+    if (!editors.map((e) => String(e).toLowerCase()).includes(email)) { res.status(403).send({ error: 'Solo para Super Admin' }); return; }
+
+    if (body.action === 'list') { res.status(200).send({ backups: await listBackups(code) }); return; }
+    if (body.action === 'create') {
+      const r = await saveBackup(code, 'manual');
+      await pruneBackups(code);
+      res.status(200).send({ ok: true, file: r.name.split('/').pop(), size: r.size });
+      return;
+    }
+    const file = String(body.file || '');
+    if (!parseBackupName(file) || file.includes('/')) { res.status(400).send({ error: 'Copia no válida' }); return; }
+    const f = admin.storage().bucket().file(`backups/${code}/${file}`);
+    const [exists] = await f.exists();
+    if (!exists) { res.status(404).send({ error: 'Esa copia ya no existe' }); return; }
+    const [buf] = await f.download();
+    const backup = JSON.parse(buf.toString('utf8'));
+
+    if (body.action === 'get') { res.status(200).send({ backup }); return; }
+    if (body.action === 'restore') {
+      const parts = (Array.isArray(body.parts) ? body.parts : []).filter(x => x === 'programa' || x === 'territorios');
+      if (!parts.length) { res.status(400).send({ error: 'Elegí qué restaurar' }); return; }
+      if (backup.code && backup.code !== code) { res.status(400).send({ error: 'Esa copia es de otra congregación' }); return; }
+      // Antes de tocar nada, una copia de cómo está todo ahora (por si hay que volver atrás).
+      const previa = await saveBackup(code, 'previa');
+      const ref = db.collection('congregations').doc(code);
+      const current = {};
+      for (const c of BACKUP_SUBS) current[c] = (await ref.collection(c).listDocuments()).map(d => d.id);
+      const plan = restorePlan(backup, parts, current, email, new Date().toISOString());
+      if (plan.main) await ref.set(plan.main);
+      let batch = db.batch(), n = 0;
+      for (const d of plan.docs) {
+        const dr = ref.collection(d.col).doc(d.id);
+        if (d.data) batch.set(dr, d.data); else batch.delete(dr);
+        if (++n % 400 === 0) { await batch.commit(); batch = db.batch(); }
+      }
+      await batch.commit();
+      console.warn('[copias] restaurada', code, file, parts.join('+'), 'por', email, '· previa', previa.name);
+      res.status(200).send({ ok: true, previa: previa.name.split('/').pop() });
+      return;
+    }
+    res.status(400).send({ error: 'Acción desconocida' });
+  } catch (err) {
+    console.error('[copias] error:', err && err.message);
     res.status(500).send({ error: 'Error interno' });
   }
 });

@@ -507,6 +507,23 @@
   }
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .settings-actions { display: flex; flex-direction: column; gap: 10px; }
+  /* Copias de seguridad en la nube */
+  .bk-list { border: 1px solid var(--line); border-radius: 12px; margin: 0 0 12px; overflow: hidden; }
+  .bk-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-top: 1px solid var(--line); font-size: 13px; }
+  .bk-row:first-child { border-top: none; }
+  .bk-row .bk-tx { flex: 1; min-width: 0; }
+  .bk-row .bk-tx b { display: block; font-size: 13.5px; }
+  .bk-row .bk-tx small { color: var(--ink-soft); font-size: 11.5px; }
+  .bk-row .bk-tag { display: inline-block; font-size: 10px; font-weight: 700; border-radius: 6px; padding: 1px 6px; margin-left: 4px; background: var(--bg); color: var(--ink-soft); vertical-align: 1px; }
+  .bk-row .bk-tag.previa { background: #FFF4DC; color: #8A5A00; }
+  .bk-row button { flex-shrink: 0; min-height: 36px; padding: 6px 10px; font-size: 12.5px; }
+  .bk-empty { padding: 14px 12px; font-size: 12.5px; color: var(--ink-soft); text-align: center; }
+  .bk-h { font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 6px; }
+  .bk-parts label { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: 13.5px; cursor: pointer; }
+  .bk-parts label small { display: block; color: var(--ink-soft); font-size: 12px; margin-top: 2px; }
+  .bk-parts input { margin-top: 3px; width: 18px; height: 18px; flex-shrink: 0; }
+  .bk-warn { background: #FFF4DC; border: 1px solid #F0D9A6; color: #6B4A00; border-radius: 10px; padding: 10px 12px; font-size: 12.5px; line-height: 1.45; margin: 4px 0 12px; }
+  .btn.btn-danger { background: #B3261E; border-color: #B3261E; color: #fff; }
   .file-label {
     display: inline-block; border: 1px solid var(--line); border-radius: var(--radius-s);
     padding: 9px 15px; font-size: 13.5px; font-weight: 600; text-align: center; cursor: pointer;
@@ -1588,9 +1605,15 @@
         <button class="btn btn-primary" id="reportPdfBtn">Descargar PDF</button>
       </div>
     </details>
-    <details class="settings-card">
-      <summary><div><h3>Copia de seguridad</h3><span class="sc-sub">Exportar o importar todo en un archivo</span></div><span class="chev">›</span></summary>
-      <p class="hint">Todo se guarda solo en este navegador. Exportá seguido por las dudas.</p>
+    <details class="settings-card" id="backupCard">
+      <summary><div><h3>Copia de seguridad</h3><span class="sc-sub" id="bkSub">Exportar o importar todo en un archivo</span></div><span class="chev">›</span></summary>
+      <div id="bkCloud" class="hidden">
+        <p class="hint">Todos los domingos a la madrugada se guarda sola una copia de <b>todo</b>: programa, hermanos, anuncios, ajustes, territorios y salidas. Se guardan las de las últimas 8 semanas y una por mes durante un año. Solo el Super Admin las ve.</p>
+        <div id="bkList" class="bk-list"></div>
+        <div class="settings-actions" style="margin-bottom:18px;"><button class="btn" id="bkNowBtn">Hacer una copia ahora</button></div>
+        <h4 class="bk-h">En este dispositivo</h4>
+      </div>
+      <p class="hint" id="bkLocalHint">Todo se guarda solo en este navegador. Exportá seguido por las dudas.</p>
       <div class="settings-actions">
         <button class="btn btn-primary" id="exportBtn">Exportar copia (.json)</button>
         <button class="btn" id="exportCsvAllBtn">Exportar a Excel (.csv)</button>
@@ -2377,6 +2400,7 @@
     if (!$('anListView').classList.contains('hidden')) renderAnunciosList();
   }
   function applyRoleUI() {
+    setTimeout(() => { try { renderBackupCard(); } catch (e) { /* todavía no cargó esa parte */ } }, 0);
     const role = currentUserRole;
     // La copia de seguridad la hace el Super Admin: a los demás no se les recuerda.
     if (role !== 'super') { const bb = $('backupBanner'); if (bb) bb.remove(); }
@@ -2772,6 +2796,8 @@
   function getLastBackupDate() { try { return localStorage.getItem(LAST_BACKUP_KEY); } catch (e) { return null; } }
   function setLastBackupDate(iso) { try { localStorage.setItem(LAST_BACKUP_KEY, iso); } catch (e) { /* no se pudo guardar la fecha */ } }
   function checkBackupReminder() {
+    // Con la app conectada a la nube, las copias se hacen solas todos los domingos.
+    try { if (accessCode || localStorage.getItem(ACCESS_CODE_KEY)) return; } catch (e) { /* nada */ }
     const hasData = data.publishers.length > 0 || Object.keys(data.weeks).length > 0;
     if (!hasData) return;
     const last = getLastBackupDate();
@@ -6321,6 +6347,98 @@
     }
   });
   /* ---- Ajustes → Notificaciones de los hermanos (qué celulares las tienen activadas) ---- */
+  /* ---------- Copias de seguridad en la nube (Super Admin) ---------- */
+  const BACKUPS_URL = 'https://southamerica-east1-asignaciones-salon.cloudfunctions.net/backups';
+  async function backupsCall(action, extra) {
+    if (!currentUser || !accessCode) throw new Error('Hace falta estar conectado a la nube.');
+    const idToken = await currentUser.getIdToken();
+    let res;
+    try {
+      res = await fetch(BACKUPS_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + idToken }, body: JSON.stringify(Object.assign({ action, code: accessCode }, extra || {})) });
+    } catch (e) { throw new Error('No se pudo consultar. Si recién se agregó esta función, falta publicarla: firebase deploy --only functions (desde push-salon-2026).'); }
+    let out = {}; try { out = await res.json(); } catch (e) { /* nada */ }
+    if (!res.ok) throw new Error(out.error || (res.status === 404 ? 'Falta publicar la función nueva: firebase deploy --only functions (desde push-salon-2026).' : 'Error ' + res.status));
+    return out;
+  }
+  let bkItems = null, bkLoading = false;
+  function bkDate(b) {
+    const d = new Date(b.dateIso + 'T12:00:00');
+    const s = d.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short', year: d.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined });
+    return s.charAt(0).toUpperCase() + s.slice(1).replace(/[.,]/g, '');
+  }
+  function bkSize(n) { return n >= 1048576 ? (n / 1048576).toFixed(1).replace('.', ',') + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; }
+  function renderBackupCard() {
+    const cloud = currentUserRole === 'super' && !!accessCode && !!currentUser;
+    $('bkCloud').classList.toggle('hidden', !cloud);
+    $('bkLocalHint').textContent = cloud ? 'Un archivo con el programa, los hermanos y los ajustes, para guardarlo donde quieras.' : 'Todo se guarda solo en este navegador. Exportá seguido por las dudas.';
+    $('bkSub').textContent = cloud ? (bkItems && bkItems.length ? `Última copia: ${bkDate(bkItems[0])}` : 'Automáticas en la nube, cada domingo') : 'Exportar o importar todo en un archivo';
+    if (!cloud) return;
+    const box = $('bkList');
+    if (bkLoading && !bkItems) { box.innerHTML = '<div class="bk-empty">Cargando copias…</div>'; return; }
+    if (!bkItems) { box.innerHTML = '<div class="bk-empty">Abrí esta sección para ver las copias.</div>'; return; }
+    if (!bkItems.length) { box.innerHTML = '<div class="bk-empty">Todavía no hay copias en la nube. La primera se hace sola el domingo, o tocá "Hacer una copia ahora".</div>'; return; }
+    box.innerHTML = bkItems.map(b => `<div class="bk-row"><div class="bk-tx"><b>${escapeHtml(bkDate(b))} · ${escapeHtml(b.time)}<span class="bk-tag ${b.kind}">${escapeHtml(b.label)}</span></b><small>${bkSize(b.size)}</small></div>
+      <button type="button" class="btn" data-bk-get="${escapeHtml(b.file)}" aria-label="Descargar" title="Descargar">⬇</button><button type="button" class="btn" data-bk-restore="${escapeHtml(b.file)}">Restaurar</button></div>`).join('');
+  }
+  async function loadBackups() {
+    if (currentUserRole !== 'super' || !accessCode) return;
+    bkLoading = true; renderBackupCard();
+    try { bkItems = (await backupsCall('list')).backups || []; }
+    catch (e) { bkItems = null; $('bkList').innerHTML = `<div class="bk-empty">${escapeHtml(e.message)}</div>`; bkLoading = false; return; }
+    bkLoading = false; renderBackupCard();
+  }
+  $('backupCard').addEventListener('toggle', () => { renderBackupCard(); if ($('backupCard').open && !bkLoading) loadBackups(); });
+  $('bkNowBtn').addEventListener('click', async () => {
+    const b = $('bkNowBtn'); b.disabled = true; b.textContent = 'Guardando…';
+    try { await backupsCall('create'); showToast('Copia guardada en la nube'); await loadBackups(); }
+    catch (e) { alert(e.message); }
+    b.disabled = false; b.textContent = 'Hacer una copia ahora';
+  });
+  $('bkList').addEventListener('click', async (e) => {
+    const g = e.target.closest('[data-bk-get]'), r = e.target.closest('[data-bk-restore]');
+    if (g) {
+      g.disabled = true;
+      try {
+        const out = await backupsCall('get', { file: g.dataset.bkGet });
+        const blob = new Blob([JSON.stringify(out.backup, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = `copia-${accessCode}-${g.dataset.bkGet}`;
+        document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } catch (err) { alert(err.message); }
+      g.disabled = false;
+    } else if (r) openRestoreBackup(bkItems.find(x => x.file === r.dataset.bkRestore));
+  });
+  function openRestoreBackup(b) {
+    if (!b) return;
+    const old = $('bkRestoreOverlay'); if (old) old.remove();
+    const ov = document.createElement('div');
+    ov.className = 'modal-overlay'; ov.id = 'bkRestoreOverlay';
+    ov.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="bkrTitle">
+      <h3 id="bkrTitle">Restaurar la copia del ${escapeHtml(bkDate(b).toLowerCase())}</h3>
+      <p class="modal-sub">Elegí qué volver a como estaba ese día (${escapeHtml(b.time)}):</p>
+      <div class="bk-parts">
+        <label><input type="checkbox" id="bkrProg"><span><b>Programa, hermanos, anuncios y ajustes</b><small>Todas las semanas, asignaciones, hermanos y lo que está en Ajustes.</small></span></label>
+        <label><input type="checkbox" id="bkrTerr"><span><b>Territorios y salidas</b><small>Territorios con su historial, grupos, lugares, campañas y salidas.</small></span></label>
+      </div>
+      <div class="bk-warn">Lo que se cambió después de esa fecha en lo que elijas se pierde. Por las dudas, antes de restaurar se guarda una copia de cómo está todo ahora ("Antes de restaurar"), así podés volver atrás. No se les manda ningún aviso a los hermanos.</div>
+      <div class="modal-footer"><button type="button" class="btn" id="bkrCancel">Cancelar</button><button type="button" class="btn btn-danger" id="bkrOk" disabled>Restaurar</button></div></div>`;
+    document.body.appendChild(ov);
+    const parts = () => [$('bkrProg').checked && 'programa', $('bkrTerr').checked && 'territorios'].filter(Boolean);
+    ov.addEventListener('change', () => { $('bkrOk').disabled = !parts().length; });
+    $('bkrCancel').addEventListener('click', () => ov.remove());
+    $('bkrOk').addEventListener('click', async () => {
+      const ps = parts(); if (!ps.length) return;
+      if (!confirm('¿Seguro? Se reemplaza lo que elegiste por la copia.')) return;
+      const btn = $('bkrOk'); btn.disabled = true; btn.textContent = 'Restaurando…';
+      try {
+        await backupsCall('restore', { file: b.file, parts: ps });
+        ov.remove();
+        showToast('Listo: se restauró la copia. La de "Antes de restaurar" quedó guardada.');
+        await loadBackups();
+      } catch (err) { alert(err.message); btn.disabled = false; btn.textContent = 'Restaurar'; }
+    });
+  }
+
   const DEVICES_URL = 'https://southamerica-east1-asignaciones-salon.cloudfunctions.net/devices';
   let devItems = null;
   async function devicesCall(action, extra) {
@@ -6877,6 +6995,8 @@
       let parsed;
       try { parsed = JSON.parse(reader.result); }
       catch (err) { alert('El archivo no es un JSON válido.'); return; }
+      // Copia descargada de la nube: acá se importa el programa (los territorios se restauran desde la lista de copias).
+      if (parsed && parsed.app === 'asignaciones-salon' && parsed.main) parsed = parsed.main;
       if (!isValidBackup(parsed)) { alert('El archivo no tiene el formato esperado de una copia de seguridad de esta app.'); return; }
       if (!confirm('Esto reemplaza todos los datos actuales por los de la copia. ¿Continuar?')) return;
       const previousData = data;
