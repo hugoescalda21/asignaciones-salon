@@ -6,6 +6,14 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Vista: cada hermano elige sus colores — 28 sep 2026 (caché ver-salon-v34)
+
+- Botón **🎨** en el encabezado de la vista: hoja con 4 estilos (**Clásico**, **Moderno azul**, **Cálido**, **Vibrante**) y el modo (**Claro**, **Oscuro**, **Como el celular**). Cambia al instante y se guarda en ese celular.
+- Los que llegan nuevos arrancan con **Moderno azul**; los que ya usaban la app siguen con el Clásico y ven una vez el aviso "Nuevo: elegí tus colores" en Inicio.
+- El modo oscuro ya no depende solo del celular: ahora lo pone `html.dk` según lo que elija cada uno. La barra del celular toma el color del encabezado.
+- Archivos nuevos: `ver/paletas.css` (colores de cada estilo) y `ver/colores.js` (la hoja y el aviso). Con `?paleta=a|b|c|actual` en el link se puede forzar uno.
+- Pruebas: `23-colores-vista` (551 en total).
+
 ## Confirmar "Lo terminé" más fácil — 28 sep 2026 (caché asignaciones-salon-v39)
 
 - Los avisos de "Lo terminé" de territorios **sin ficha de asignación** (por ejemplo, trabajados en una salida) ahora también aparecen para confirmar; al confirmarlos queda en el historial quién lo hizo y la fecha.

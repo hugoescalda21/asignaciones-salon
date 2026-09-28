@@ -17,14 +17,34 @@
 <link rel="apple-touch-icon" href="./icon-192-ver.png">
 <meta name="theme-color" content="#212C34">
 <script>
-  // Estilos de color en prueba: ?paleta=a|b|c lo activa en este celular; ?paleta=actual vuelve al de siempre.
+  // Colores de la app (se eligen con 🎨 y se guardan en este celular). Va antes de pintar para que no parpadee.
+  // kh-paleta: clasico | a (Moderno azul) | b (Cálido) | c (Vibrante) · kh-modo: auto | claro | oscuro
   (function () {
+    var d = document.documentElement;
     try {
+      var ls = localStorage;
       var q = new URLSearchParams(location.search).get('paleta');
-      if (q) { if (/^[abc]$/.test(q)) localStorage.setItem('kh-paleta', q); else localStorage.removeItem('kh-paleta'); }
-      var v = localStorage.getItem('kh-paleta');
-      if (/^[abc]$/.test(v || '')) document.documentElement.setAttribute('data-paleta', v);
-    } catch (e) { /* nada */ }
+      if (q) ls.setItem('kh-paleta', /^[abc]$/.test(q) ? q : 'clasico');
+      var v = ls.getItem('kh-paleta');
+      if (!v) {
+        // Quien ya usaba la app sigue con el de siempre (y ve el aviso); quien llega nuevo arranca con Moderno azul.
+        var old = !!ls.getItem('ver-last-code') || Object.keys(ls).some(function (k) { return k.indexOf('welcome-seen-') === 0; });
+        v = old ? 'clasico' : 'a';
+        ls.setItem('kh-paleta', v);
+        if (old) ls.setItem('kh-colores-aviso', '1');
+      }
+      if (/^[abc]$/.test(v)) d.setAttribute('data-paleta', v);
+      var m = ls.getItem('kh-modo') || 'auto';
+      d.setAttribute('data-modo', m);
+    } catch (e) { d.setAttribute('data-modo', 'auto'); }
+    function dark() {
+      var m = d.getAttribute('data-modo');
+      var on = m === 'oscuro' || (m !== 'claro' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      d.classList.toggle('dk', on);
+    }
+    dark();
+    window.khApplyDark = dark;
+    try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', dark); } catch (e) { /* navegadores viejos */ }
   })();
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
@@ -316,7 +336,7 @@
   .ann-prev-btn { width: 100%; margin-top: 12px; border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius-s); padding: 10px 12px; color: var(--accent-gold-text); font-weight: 700; font-size: 13.5px; cursor: pointer; font-family: inherit; }
 
   /* ============ Pestañas, tarjeta destacada, esqueleto de carga y modo oscuro ============ */
-  :root { color-scheme: light dark; --tab-h: 62px; --hero-a: #212C34; --hero-b: #33444F; --danger: #C0392B; }
+  :root { color-scheme: light; --tab-h: 62px; --hero-a: #212C34; --hero-b: #33444F; --danger: #C0392B; }
   body { padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom)); }
   .content { padding-bottom: 28px; }
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -367,25 +387,24 @@
   .skel-line { height: 14px; margin-bottom: 12px; border-radius: 7px; }
   .skel-card { height: 92px; margin-bottom: 12px; }
 
-  /* modo oscuro (si el celular lo tiene activado) */
-  @media (prefers-color-scheme: dark) {
-    :root {
+  /* modo oscuro: html.dk lo pone el script del principio (según el celular o lo que elija cada uno en 🎨) */
+  html.dk { color-scheme: dark; }
+    html.dk {
       --bg: #12181D; --surface: #1B242B; --ink: #E9EEF1; --ink-soft: #AAB8C1; --ink-faint: #93A1AA; --line: #2D3A44;
       --accent-gold: #C9A24B; --accent-gold-text: #E0BD70; --accent-blue: #86B6D4;
       --sec-tesoros: #4FB0A3; --sec-maestros: #D9A044; --sec-vida: #E58A68;
       --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
       --hero-a: #26333D; --hero-b: #33454F;
     }
-    .topbar, .skel-top { background: #0C1216; }
-    .view-toggle-btn.active, .gate button { background: var(--accent-gold); color: #12181D; }
-    .install-card .install-icon { background: #0C1216; }
-    .search-input, .gate input { background: var(--surface); color: var(--ink); }
-    .offline-note { background: #2A2416; border-color: #5A4A22; }
-    .ann-pdf .pdf-icon { color: #E58A7D; }
-    .bottom-tabs { box-shadow: 0 -2px 10px rgba(0,0,0,0.35); }
-    .bt-btn.active .bt-ic { background: rgba(201,162,75,0.22); }
-    .app-toast { background: #3A4B56; border: 1px solid #56666F; }
-  }
+  html.dk .topbar, html.dk .skel-top { background: #0C1216; }
+  html.dk .view-toggle-btn.active, html.dk .gate button { background: var(--accent-gold); color: #12181D; }
+  html.dk .install-card .install-icon { background: #0C1216; }
+  html.dk .search-input, html.dk .gate input { background: var(--surface); color: var(--ink); }
+  html.dk .offline-note { background: #2A2416; border-color: #5A4A22; }
+  html.dk .ann-pdf .pdf-icon { color: #E58A7D; }
+  html.dk .bottom-tabs { box-shadow: 0 -2px 10px rgba(0,0,0,0.35); }
+  html.dk .bt-btn.active .bt-ic { background: rgba(201,162,75,0.22); }
+  html.dk .app-toast { background: #3A4B56; border: 1px solid #56666F; }
 
   /* ---------- Calendario: cada reunión se despliega (técnico + programa juntos) ---------- */
   #agendaCard, .cal-card { padding: 4px 14px; }
@@ -450,7 +469,8 @@
 
   /* ---------- Guía de uso (vista pública) ---------- */
   .topbar-inner { position: relative; }
-  .topbar-inner .eyebrow, .topbar-inner .cong-title { padding-right: 44px; }
+  .topbar-inner .eyebrow, .topbar-inner .cong-title { padding-right: 84px; }
+  .help-btn.pal-btn { right: 40px; font-size: 14px; }
   .help-btn { position: absolute; top: 0; right: 0; width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.35); background: rgba(255,255,255,0.08); color: #fff; font-weight: 700; font-size: 15px; line-height: 1; display: flex; align-items: center; justify-content: center; padding: 0; }
   .help-btn:active { background: rgba(255,255,255,0.2); }
   .help-btn:focus-visible { outline: 2px solid var(--accent-gold); outline-offset: 2px; }
@@ -568,6 +588,7 @@
       <div class="eyebrow">Salón del Reino</div>
       <h1 class="cong-title" id="congTitle">Congregación</h1>
       <span class="readonly-tag">Solo lectura</span>
+      <button type="button" class="help-btn pal-btn" id="colBtn" aria-label="Colores de la app" title="Colores de la app"><span aria-hidden="true">🎨</span></button>
       <button type="button" class="help-btn" id="guideHelpBtn" aria-label="Cómo usar esta app" title="Cómo usar esta app">?</button>
     </div>
   </div>
@@ -576,6 +597,7 @@
     <div id="offlineNote" class="offline-note hidden" role="status">Sin conexión · mostrando la última copia guardada</div>
 
     <section id="panel-inicio" class="tab-panel" aria-label="Inicio">
+      <div id="colNews" class="hidden"></div>
       <div id="annTeaser" class="hidden"></div>
       <div id="nextHero" class="hidden"></div>
       <div id="personalSummary" class="hidden"></div>
@@ -2912,5 +2934,6 @@
 
 <script src="../mapa.js"></script>
 <script src="territorios-ver.js"></script>
+<script src="colores.js"></script>
 </body>
 </html>

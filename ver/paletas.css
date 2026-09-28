@@ -1,6 +1,6 @@
 /* =====================================================================
-   Estilos de color de la vista (prueba): A · Moderno azul, B · Cálido, C · Vibrante.
-   Se activan con ?paleta=a|b|c (queda guardado en ese celular; ?paleta=actual vuelve al de siempre).
+   Estilos de color de la vista: A · Moderno azul, B · Cálido, C · Vibrante (sin atributo = Clásico).
+   Cada hermano elige el suyo con el botón 🎨; se guarda en su celular (ver colores.js).
    Solo cambian colores y formas; la estructura de la app es la misma.
    ===================================================================== */
 
@@ -94,40 +94,39 @@ html[data-paleta="c"] .cal-m.finde .cal-bar { background: #DB2777; }
 html[data-paleta="c"] .agenda-item.finde .agenda-body { border-left-color: #DB2777; }
 
 /* ---------- Modo oscuro ---------- */
-@media (prefers-color-scheme: dark) {
-  html[data-paleta] .personal-summary,
-  html[data-paleta] .card, html[data-paleta] .announcement-item, html[data-paleta] .sal-card, html[data-paleta] .mt-card,
-  html[data-paleta] .rem-row, html[data-paleta] .push-card, html[data-paleta] .install-card, html[data-paleta] .unlinked-card,
-  html[data-paleta] .ann-teaser { box-shadow: 0 1px 2px rgba(0,0,0,.4); border-color: var(--line); }
-  html[data-paleta] .ann-teaser { border-left-color: var(--accent-gold); }
-  html[data-paleta] .view-toggle-btn.active { color: #fff; }
+/* modo oscuro (html.dk lo pone ver.html según el celular o lo que se elija en 🎨) */
+  html.dk[data-paleta] .personal-summary,
+  html.dk[data-paleta] .card, html.dk[data-paleta] .announcement-item, html.dk[data-paleta] .sal-card, html.dk[data-paleta] .mt-card,
+  html.dk[data-paleta] .rem-row, html.dk[data-paleta] .push-card, html.dk[data-paleta] .install-card, html.dk[data-paleta] .unlinked-card,
+  html.dk[data-paleta] .ann-teaser { box-shadow: 0 1px 2px rgba(0,0,0,.4); border-color: var(--line); }
+  html.dk[data-paleta] .ann-teaser { border-left-color: var(--accent-gold); }
+  html.dk[data-paleta] .view-toggle-btn.active { color: #fff; }
 
-  html[data-paleta="a"] {
+  html.dk[data-paleta="a"] {
     --bg: #0B1220; --surface: #131C2E; --ink: #E8EEF8; --ink-soft: #A3B1C6; --ink-faint: #8B9AB0; --line: #22304A;
     --accent-gold: #3B82F6; --accent-gold-text: #93C5FD; --accent-blue: #60A5FA;
     --sec-tesoros: #22D3EE; --sec-maestros: #FBBF24; --sec-vida: #FB7185;
     --hero-a: #1E3A8A; --hero-b: #2563EB;
   }
-  html[data-paleta="a"] .topbar { background: linear-gradient(135deg, #060B16, #111D3A); }
-  html[data-paleta="a"] .next-hero { box-shadow: 0 12px 26px rgba(0,0,0,0.45); }
+  html.dk[data-paleta="a"] .topbar { background: linear-gradient(135deg, #060B16, #111D3A); }
+  html.dk[data-paleta="a"] .next-hero { box-shadow: 0 12px 26px rgba(0,0,0,0.45); }
 
-  html[data-paleta="b"] {
+  html.dk[data-paleta="b"] {
     --bg: #101614; --surface: #18211E; --ink: #EAF1EE; --ink-soft: #A7B6AF; --ink-faint: #8E9D96; --line: #26322E;
     --accent-gold: #1FA67F; --accent-gold-text: #6EE0BD; --accent-blue: #FF8A65;
     --sec-tesoros: #34C79D; --sec-maestros: #F2B84B; --sec-vida: #FF8A65;
     --hero-a: #1D2824; --hero-b: #2B2420;
   }
-  html[data-paleta="b"] .topbar { background: linear-gradient(135deg, #0B5E49, #08493A); }
-  html[data-paleta="b"] .next-hero { border-color: #33403B; box-shadow: 0 10px 24px rgba(0,0,0,0.45); }
-  html[data-paleta="b"] .nh-eyebrow { color: #FF8A65; }
+  html.dk[data-paleta="b"] .topbar { background: linear-gradient(135deg, #0B5E49, #08493A); }
+  html.dk[data-paleta="b"] .next-hero { border-color: #33403B; box-shadow: 0 10px 24px rgba(0,0,0,0.45); }
+  html.dk[data-paleta="b"] .nh-eyebrow { color: #FF8A65; }
 
-  html[data-paleta="c"] {
+  html.dk[data-paleta="c"] {
     --bg: #0E0A1F; --surface: #1A1433; --ink: #EEEAFF; --ink-soft: #ADA5D1; --ink-faint: #958DBA; --line: #2A2350;
     --accent-gold: #8B5CF6; --accent-gold-text: #C4B5FD; --accent-blue: #818CF8;
     --sec-tesoros: #22D3EE; --sec-maestros: #FBBF24; --sec-vida: #F472B6;
     --hero-a: #6D28D9; --hero-b: #BE185D;
   }
-  html[data-paleta="c"] .topbar { background: linear-gradient(120deg, #4C1D95, #3730A3 60%, #1E40AF); }
-  html[data-paleta="c"] .next-hero { box-shadow: 0 14px 30px rgba(0,0,0,0.5); }
-  html[data-paleta="c"] .bt-btn.active .bt-ic { background: #2A2350; }
-}
+  html.dk[data-paleta="c"] .topbar { background: linear-gradient(120deg, #4C1D95, #3730A3 60%, #1E40AF); }
+  html.dk[data-paleta="c"] .next-hero { box-shadow: 0 14px 30px rgba(0,0,0,0.5); }
+  html.dk[data-paleta="c"] .bt-btn.active .bt-ic { background: #2A2350; }
