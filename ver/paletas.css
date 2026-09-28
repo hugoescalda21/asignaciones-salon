@@ -1,0 +1,133 @@
+/* =====================================================================
+   Estilos de color de la vista (prueba): A · Moderno azul, B · Cálido, C · Vibrante.
+   Se activan con ?paleta=a|b|c (queda guardado en ese celular; ?paleta=actual vuelve al de siempre).
+   Solo cambian colores y formas; la estructura de la app es la misma.
+   ===================================================================== */
+
+/* ---------- Comunes a los tres ---------- */
+html[data-paleta] { --radius-s: 10px; --radius-m: 16px; }
+html[data-paleta] .topbar { padding: 20px 20px 18px; }
+html[data-paleta] .gold-bar { display: none; }
+html[data-paleta] .readonly-tag { background: rgba(255,255,255,0.18); }
+html[data-paleta] .eyebrow { color: rgba(255,255,255,0.8); }
+html[data-paleta] .next-hero { border-radius: 22px; padding: 18px 18px 20px; position: relative; overflow: hidden; }
+html[data-paleta] .next-hero::after { content: ''; position: absolute; right: -40px; bottom: -60px; width: 170px; height: 170px; border-radius: 50%; background: rgba(255,255,255,0.10); pointer-events: none; }
+html[data-paleta] .nh-eyebrow { color: rgba(255,255,255,0.85); }
+html[data-paleta] .nh-count { background: rgba(255,255,255,0.2); }
+html[data-paleta] .personal-summary { border: none; border-radius: 20px; box-shadow: 0 1px 2px rgba(15,27,45,.04), 0 8px 22px rgba(15,27,45,.07); }
+html[data-paleta] .card,
+html[data-paleta] .announcement-item,
+html[data-paleta] .sal-card,
+html[data-paleta] .mt-card,
+html[data-paleta] .rem-row,
+html[data-paleta] .push-card,
+html[data-paleta] .install-card,
+html[data-paleta] .unlinked-card { border-radius: 18px; border-color: transparent; box-shadow: 0 1px 2px rgba(15,27,45,.04), 0 6px 18px rgba(15,27,45,.06); }
+html[data-paleta] .sal-card.mine { border: 2px solid var(--accent-gold); }
+html[data-paleta] .announcement-item.pinned { border: 2px solid var(--accent-gold); box-shadow: 0 8px 22px color-mix(in srgb, var(--accent-gold) 18%, transparent); }
+html[data-paleta] .ann-teaser { border-radius: 16px; border-color: transparent; border-left-color: var(--accent-gold); box-shadow: 0 6px 18px rgba(15,27,45,.06); }
+html[data-paleta] .ann-teaser-ic,
+html[data-paleta] .cal-me,
+html[data-paleta] .cal-li.mine { background: color-mix(in srgb, var(--accent-gold) 14%, transparent); }
+html[data-paleta] .bt-btn.active { color: var(--accent-gold-text); }
+html[data-paleta] .bt-btn.active .bt-ic { background: color-mix(in srgb, var(--accent-gold) 16%, transparent); }
+html[data-paleta] .bottom-tabs { background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+html[data-paleta] .view-toggle { border-radius: 999px; border-color: transparent; box-shadow: 0 2px 10px rgba(15,27,45,.06); }
+html[data-paleta] .view-toggle-btn.active { background: var(--accent-gold); color: #fff; border-radius: 999px; }
+html[data-paleta] #salidasBox .sal-chips button.on { background: var(--accent-gold); border-color: var(--accent-gold); color: #fff; }
+html[data-paleta] .install-card .install-btn,
+html[data-paleta] .push-yes,
+html[data-paleta] .today-tag,
+html[data-paleta] .ann-new { background: var(--accent-gold); border-radius: 999px; }
+html[data-paleta] .install-card .install-btn,
+html[data-paleta] .push-yes { border-radius: 12px; }
+html[data-paleta] .gcal-btn { background: color-mix(in srgb, var(--accent-gold) 10%, var(--bg)); color: var(--accent-gold-text); }
+html[data-paleta] .linkbtn { border-radius: 14px; border-color: transparent; background: color-mix(in srgb, var(--accent-gold) 10%, var(--surface)); }
+html[data-paleta] .board-header { border-bottom-color: color-mix(in srgb, var(--accent-gold) 30%, transparent); }
+html[data-paleta] .week-block { border-radius: 14px; }
+html[data-paleta] .agenda-date { border-radius: 12px; }
+
+/* ---------- A · Moderno azul ---------- */
+html[data-paleta="a"] {
+  --bg: #F2F5FB; --surface: #FFFFFF; --ink: #0F1B2D; --ink-soft: #55667D; --ink-faint: #6B7A90; --line: #E3E9F2;
+  --accent-gold: #2563EB; --accent-gold-text: #1D4ED8; --accent-blue: #2563EB;
+  --role-mic: #EA580C; --role-plat: #059669; --role-sonido: #2563EB; --role-video: #0891B2; --role-crono: #9333EA; --role-usher: #16A34A; --role-program: #DB2777;
+  --sec-tesoros: #0E7490; --sec-maestros: #B45309; --sec-vida: #BE123C;
+  --hero-a: #1D4ED8; --hero-b: #3B82F6;
+}
+html[data-paleta="a"] .topbar { background: linear-gradient(135deg, #0F1B2D, #1E3A8A); }
+html[data-paleta="a"] .next-hero { box-shadow: 0 12px 26px rgba(37,99,235,0.32); }
+html[data-paleta="a"] .cal-m.finde .cal-bar, html[data-paleta="a"] .agenda-item.finde .agenda-body { border-left-color: #F59E0B; }
+html[data-paleta="a"] .cal-m.finde .cal-bar { background: #F59E0B; }
+
+/* ---------- B · Cálido ---------- */
+html[data-paleta="b"] {
+  --bg: #F7F5F0; --surface: #FFFFFF; --ink: #1F2A26; --ink-soft: #5F6C66; --ink-faint: #6E7A74; --line: #ECE7DD;
+  --accent-gold: #0F8A6A; --accent-gold-text: #0B6E54; --accent-blue: #E4572E;
+  --role-mic: #E4572E; --role-plat: #0F8A6A; --role-sonido: #2F7DB5; --role-video: #0E9384; --role-crono: #7C5CC4; --role-usher: #C68A12; --role-program: #C2417A;
+  --sec-tesoros: #0F8A6A; --sec-maestros: #B7790B; --sec-vida: #E4572E;
+  --hero-a: #FFFFFF; --hero-b: #FFF1E7;
+}
+html[data-paleta="b"] .topbar { background: linear-gradient(135deg, #0F8A6A, #0B6E54); }
+html[data-paleta="b"] .next-hero { color: var(--ink); border: 1px solid #F4DFCF; box-shadow: 0 10px 24px rgba(140,90,40,0.13); }
+html[data-paleta="b"] .next-hero::after { background: rgba(228,87,46,0.10); }
+html[data-paleta="b"] .nh-eyebrow { color: #E4572E; }
+html[data-paleta="b"] .nh-when { color: var(--ink-soft); opacity: 1; }
+html[data-paleta="b"] .nh-count { background: #0F8A6A; color: #fff; }
+html[data-paleta="b"] .cal-m.finde .cal-bar { background: #E4572E; }
+html[data-paleta="b"] .agenda-item.finde .agenda-body { border-left-color: #E4572E; }
+
+/* ---------- C · Vibrante ---------- */
+html[data-paleta="c"] {
+  --bg: #F4F2FF; --surface: #FFFFFF; --ink: #1A1433; --ink-soft: #5E5780; --ink-faint: #6F6893; --line: #E8E4F7;
+  --accent-gold: #7C3AED; --accent-gold-text: #6D28D9; --accent-blue: #4F46E5;
+  --role-mic: #F97316; --role-plat: #10B981; --role-sonido: #3B82F6; --role-video: #06B6D4; --role-crono: #A855F7; --role-usher: #14B8A6; --role-program: #EC4899;
+  --sec-tesoros: #0891B2; --sec-maestros: #D97706; --sec-vida: #DB2777;
+  --hero-a: #7C3AED; --hero-b: #DB2777;
+}
+html[data-paleta="c"] .topbar { background: linear-gradient(120deg, #6D28D9, #4F46E5 60%, #2563EB); }
+html[data-paleta="c"] .next-hero { box-shadow: 0 14px 30px rgba(124,58,237,0.38); }
+html[data-paleta="c"] .view-toggle-btn.active,
+html[data-paleta="c"] #salidasBox .sal-chips button.on { background: linear-gradient(120deg, #7C3AED, #DB2777); border-color: transparent; }
+html[data-paleta="c"] .bt-btn.active .bt-ic { background: linear-gradient(120deg, #EDE9FE, #FCE7F3); }
+html[data-paleta="c"] .cal-m.finde .cal-bar { background: #DB2777; }
+html[data-paleta="c"] .agenda-item.finde .agenda-body { border-left-color: #DB2777; }
+
+/* ---------- Modo oscuro ---------- */
+@media (prefers-color-scheme: dark) {
+  html[data-paleta] .personal-summary,
+  html[data-paleta] .card, html[data-paleta] .announcement-item, html[data-paleta] .sal-card, html[data-paleta] .mt-card,
+  html[data-paleta] .rem-row, html[data-paleta] .push-card, html[data-paleta] .install-card, html[data-paleta] .unlinked-card,
+  html[data-paleta] .ann-teaser { box-shadow: 0 1px 2px rgba(0,0,0,.4); border-color: var(--line); }
+  html[data-paleta] .ann-teaser { border-left-color: var(--accent-gold); }
+  html[data-paleta] .view-toggle-btn.active { color: #fff; }
+
+  html[data-paleta="a"] {
+    --bg: #0B1220; --surface: #131C2E; --ink: #E8EEF8; --ink-soft: #A3B1C6; --ink-faint: #8B9AB0; --line: #22304A;
+    --accent-gold: #3B82F6; --accent-gold-text: #93C5FD; --accent-blue: #60A5FA;
+    --sec-tesoros: #22D3EE; --sec-maestros: #FBBF24; --sec-vida: #FB7185;
+    --hero-a: #1E3A8A; --hero-b: #2563EB;
+  }
+  html[data-paleta="a"] .topbar { background: linear-gradient(135deg, #060B16, #111D3A); }
+  html[data-paleta="a"] .next-hero { box-shadow: 0 12px 26px rgba(0,0,0,0.45); }
+
+  html[data-paleta="b"] {
+    --bg: #101614; --surface: #18211E; --ink: #EAF1EE; --ink-soft: #A7B6AF; --ink-faint: #8E9D96; --line: #26322E;
+    --accent-gold: #1FA67F; --accent-gold-text: #6EE0BD; --accent-blue: #FF8A65;
+    --sec-tesoros: #34C79D; --sec-maestros: #F2B84B; --sec-vida: #FF8A65;
+    --hero-a: #1D2824; --hero-b: #2B2420;
+  }
+  html[data-paleta="b"] .topbar { background: linear-gradient(135deg, #0B5E49, #08493A); }
+  html[data-paleta="b"] .next-hero { border-color: #33403B; box-shadow: 0 10px 24px rgba(0,0,0,0.45); }
+  html[data-paleta="b"] .nh-eyebrow { color: #FF8A65; }
+
+  html[data-paleta="c"] {
+    --bg: #0E0A1F; --surface: #1A1433; --ink: #EEEAFF; --ink-soft: #ADA5D1; --ink-faint: #958DBA; --line: #2A2350;
+    --accent-gold: #8B5CF6; --accent-gold-text: #C4B5FD; --accent-blue: #818CF8;
+    --sec-tesoros: #22D3EE; --sec-maestros: #FBBF24; --sec-vida: #F472B6;
+    --hero-a: #6D28D9; --hero-b: #BE185D;
+  }
+  html[data-paleta="c"] .topbar { background: linear-gradient(120deg, #4C1D95, #3730A3 60%, #1E40AF); }
+  html[data-paleta="c"] .next-hero { box-shadow: 0 14px 30px rgba(0,0,0,0.5); }
+  html[data-paleta="c"] .bt-btn.active .bt-ic { background: #2A2350; }
+}

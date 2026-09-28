@@ -16,6 +16,17 @@
 <link rel="icon" href="./icon-192-ver.png">
 <link rel="apple-touch-icon" href="./icon-192-ver.png">
 <meta name="theme-color" content="#212C34">
+<script>
+  // Estilos de color en prueba: ?paleta=a|b|c lo activa en este celular; ?paleta=actual vuelve al de siempre.
+  (function () {
+    try {
+      var q = new URLSearchParams(location.search).get('paleta');
+      if (q) { if (/^[abc]$/.test(q)) localStorage.setItem('kh-paleta', q); else localStorage.removeItem('kh-paleta'); }
+      var v = localStorage.getItem('kh-paleta');
+      if (/^[abc]$/.test(v || '')) document.documentElement.setAttribute('data-paleta', v);
+    } catch (e) { /* nada */ }
+  })();
+</script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
@@ -451,6 +462,7 @@
   .guide-item[open] summary .gchev { transform: rotate(90deg); }
   .guide-item p { font-size: 11.5px; color: var(--ink-soft); line-height: 1.6; margin: 8px 0 0; }
 </style>
+<link rel="stylesheet" href="./paletas.css">
 </head>
 <body>
 
