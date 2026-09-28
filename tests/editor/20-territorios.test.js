@@ -198,6 +198,18 @@ function installMock(store, email) {
   await clickT(p, '#terrRoot [data-t="tt-ok"]'); await p.waitForTimeout(200);
   const T2b = await p.evaluate((id) => ({ t: window.__terr.territorios[id], aviso: window.__store.docs['congregations/C/terminados/' + id] }), T2id);
   check('Confirmar lo marca terminado en esa fecha y borra el aviso', !T2b.t.asignado && T2b.t.ultimoTerminado === '2026-09-20' && !T2b.aviso, T2b);
+  // Aviso de un territorio que no tenía ficha de asignación (lo trabajó en una salida)
+  await clickT(p, '#terrRoot [data-t="view"][data-k="salidas"]');
+  await p.evaluate((id) => { window.__store.docs['congregations/C/terminados/' + id] = { tid: id, pubId: 'p4', nombre: 'Tomás Bravo', email: 't@x.com', fecha: '2026-09-26', at: '2026-09-26T12:00:00Z' }; }, T1.id);
+  await p.evaluate(() => fbDb.collection('congregations').doc('C').collection('terr').doc('grupos').update(new firebase.firestore.FieldPath('x'), 2));
+  await p.waitForTimeout(200);
+  check('globito en la pestaña Territorios', await p.evaluate(() => [...document.querySelectorAll('.tab-btn[data-tab="territorios"] .req-badge')].every(x => x.textContent === '1') && document.querySelectorAll('.tab-btn[data-tab="territorios"] .req-badge').length === 2));
+  check('también se avisa en Salidas', await p.evaluate(() => /Un hermano avisó que terminó un territorio/.test(document.querySelector('#terrRoot .tnotice').innerText)));
+  await clickT(p, '#terrRoot [data-t="go-term"]'); await p.waitForTimeout(200);
+  check('tocando el aviso va a Territorios, a la tarjeta (dice que fue en una salida)', await p.evaluate(() => !!$('tTermCard') && /Tomás Bravo · el 26 sept · en una salida/.test($('tTermCard').innerText)));
+  await clickT(p, '#terrRoot [data-t="tt-ok"]'); await p.waitForTimeout(200);
+  const T1c = await p.evaluate((id) => ({ t: window.__terr.territorios[id], aviso: window.__store.docs['congregations/C/terminados/' + id], badge: document.querySelectorAll('.tab-btn[data-tab="territorios"] .req-badge').length }), T1.id);
+  check('sin ficha de asignación también se confirma: fecha nueva, en el historial quién lo hizo, sin globito', T1c.t.ultimoTerminado === '2026-09-26' && T1c.t.historial[0].nombre === 'Tomás Bravo' && T1c.t.historial[0].salida === true && !T1c.aviso && T1c.badge === 0, T1c);
   check('sin errores (Super Admin)', p.errs.length === 0, p.errs);
 
   console.log('\nEncargado de grupo con "Solo ver"');

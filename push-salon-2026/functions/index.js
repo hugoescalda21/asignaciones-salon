@@ -378,7 +378,7 @@ exports.onTerminado = onDocumentCreated({ document: 'congregations/{code}/termin
   const gestores = [...(s.editorEmails || []), ...(s.territoriosAdminEmails || [])].map((e) => String(e).toLowerCase());
   const pubIds = (cong.publishers || []).filter((p) => p.email && gestores.includes(String(p.email).toLowerCase())).map((p) => p.id);
   const t = ((terSnap.exists && terSnap.data().lista) || {})[event.params.tid] || {};
-  await sendToPubs(code, pubIds, { title: `${r.nombre || 'Un hermano'} terminó el territorio ${t.num || ''}`.trim(), body: 'Tocá para confirmarlo en Territorios.' }, APP_BASE + 'asignaciones-salon.html', 'aviso', `terminado-${event.params.tid}`);
+  await sendToPubs(code, pubIds, { title: `${r.nombre || 'Un hermano'} terminó el territorio ${t.num || ''}`.trim(), body: 'Tocá para confirmarlo en Territorios.' }, APP_BASE + 'asignaciones-salon.html#terminados', 'aviso', `terminado-${event.params.tid}`);
   return null;
 });
 

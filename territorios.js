@@ -79,6 +79,7 @@
   .tacts { display: flex; gap: 8px; margin: 10px 0 4px; flex-wrap: wrap; }
   .tacts .btn { flex: 1; justify-content: center; min-width: 130px; }
   .tempty { text-align: center; color: var(--ink-soft); font-size: 13.5px; padding: 24px 10px; line-height: 1.5; }
+  .tnotice { display: flex; gap: 8px; align-items: center; width: 100%; text-align: left; background: var(--surface); border: 1.5px solid var(--accent-gold); border-radius: 12px; padding: 10px 12px; margin: 0 0 10px; font: inherit; font-size: 13.5px; color: var(--ink); cursor: pointer; }
   .tcard { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 11px 12px; margin-bottom: 8px; }
   .tcard h4 { margin: 0 0 4px; font-size: 15px; display: flex; justify-content: space-between; gap: 8px; }
   .tkv { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; padding: 3px 0; }
@@ -235,8 +236,33 @@
     // Avisos de "Lo terminé" que mandan los hermanos desde la vista (los confirma quien maneja territorios).
     if (a.all) T.unsub.push(congRef().collection('terminados').onSnapshot((qs) => { const o = {}; qs.forEach(d => { o[d.id] = d.data() || {}; }); T.terminados = o; onData('terminados'); }, () => {}));
   }
+  // Globito en la pestaña Territorios con los avisos de "Lo terminé" que faltan confirmar.
+  function updateTermBadge() {
+    const n = access().all ? pendingTerminados().length : 0;
+    document.querySelectorAll('.tab-btn[data-tab="territorios"]').forEach(b => {
+      let el = b.querySelector('.req-badge');
+      if (!n) { if (el) el.remove(); b.removeAttribute('aria-label'); return; }
+      if (!el) { el = document.createElement('span'); el.className = 'req-badge'; b.appendChild(el); }
+      el.textContent = n;
+      b.setAttribute('aria-label', `Territorios · ${n} ${n === 1 ? 'aviso' : 'avisos'} para confirmar`);
+    });
+  }
+  function goToTerminados() {
+    T.view = 'territorios'; T.tMode = 'lista';
+    if (!isVisible()) switchTab('territorios'); else render();
+    setTimeout(() => { const c = $('tTermCard'); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 120);
+  }
+  // El aviso push de "Lo terminé" abre la app con #terminados.
+  let termLinkDone = false;
+  function openTerminadosFromLink() {
+    if (termLinkDone || location.hash !== '#terminados' || !T.loaded.territorios || !access().all) return;
+    termLinkDone = true;
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* nada */ }
+    setTimeout(goToTerminados, 300);
+  }
   let renderQueued = false;
   function onData(name) {
+    if (name === 'terminados' || name === 'territorios') { updateTermBadge(); openTerminadosFromLink(); }
     if (name === 'grupos') {
       ensureTerritorios();
       if (T.waitingViewer) decideViewer();
@@ -401,7 +427,8 @@
     if (!chips.some(c => c[0] === T.sFilter)) T.sFilter = 'todas';
     const list = T.sFilter === 'todas' ? all : all.filter(s => s.gid === T.sFilter);
     const canAdd = a.all || a.groups.length;
-    let html = `<div class="thead"><h3>Salidas</h3>${canAdd ? '<button type="button" class="btn btn-primary" data-t="s-new">+ Salida</button>' : ''}</div>
+    const np = a.all ? pendingTerminados().length : 0;
+    let html = `<div class="thead"><h3>Salidas</h3>${canAdd ? '<button type="button" class="btn btn-primary" data-t="s-new">+ Salida</button>' : ''}</div>${np ? `<button type="button" class="tnotice" data-t="go-term">✅ <span><b>${np === 1 ? 'Un hermano avisó' : np + ' avisos'}</b> que ${np === 1 ? 'terminó un territorio' : 'terminaron territorios'}. Tocá para confirmar.</span></button>` : ''}
       <div class="twk"><button type="button" data-t="wk" data-d="-7" aria-label="Semana anterior">‹</button><span class="lbl">${esc(weekLabel(T.week))}</span>${T.week !== mondayLocal(hoy()) ? '<button type="button" class="hoy" data-t="wk" data-d="0">Hoy</button>' : ''}<button type="button" data-t="wk" data-d="7" aria-label="Semana siguiente">›</button></div>
       <div class="tchips" role="group" aria-label="Filtrar por grupo">${chips.map(([k, l]) => `<button type="button" class="${k === T.sFilter ? 'on' : ''}" data-t="s-filter" data-k="${esc(k)}">${esc(l)}</button>`).join('')}</div>`;
     if (!list.length) {
@@ -603,7 +630,7 @@
     const chips = [['todos', `Todos · ${all.length}`], ['primero', 'Para dar primero'], ['asignados', 'Asignados'], ['grupos', 'A grupos']];
     let html = `<div class="thead"><h3>Territorios</h3>${access().all ? '<button type="button" class="btn btn-primary" data-t="t-new">+ Territorio</button>' : ''}</div>`;
     const pend = pendingTerminados();
-    if (pend.length) html += `<div class="tcard" style="border:1.5px solid var(--accent-gold);"><h4>Avisaron que lo terminaron <span class="tpill o">${pend.length}</span></h4>` + pend.map(r => { const t = T.territorios[r.id]; return `<div class="tkv" style="align-items:center;border-top:1px solid var(--line);padding-top:8px;margin-top:4px;"><span style="color:var(--ink);"><b>${esc(t.num)} · ${esc(t.nombre || '')}</b><br><small style="color:var(--ink-soft);">${esc(r.nombre || '')} · el ${fmtShort(r.fecha)}</small></span><span style="display:flex;gap:6px;flex-shrink:0;"><button type="button" class="btn" data-t="tt-no" data-id="${esc(r.id)}">Descartar</button><button type="button" class="btn btn-primary" data-t="tt-ok" data-id="${esc(r.id)}">Confirmar</button></span></div>`; }).join('') + '</div>';
+    if (pend.length) html += `<div class="tcard" id="tTermCard" style="border:1.5px solid var(--accent-gold);"><h4>Avisaron que lo terminaron <span class="tpill o">${pend.length}</span></h4><p style="margin:0 0 4px;font-size:12.5px;color:var(--ink-soft);">Confirmar lo marca como terminado con esa fecha y queda disponible para asignar.</p>` + pend.map(r => { const t = T.territorios[r.id]; return `<div class="tkv" style="align-items:center;border-top:1px solid var(--line);padding-top:8px;margin-top:4px;"><span style="color:var(--ink);"><b>${esc(t.num)} · ${esc(t.nombre || '')}</b><br><small style="color:var(--ink-soft);">${esc(r.nombre || '')} · el ${fmtShort(r.fecha)}${t.asignado ? '' : ' · en una salida'}</small></span><span style="display:flex;gap:6px;flex-shrink:0;"><button type="button" class="btn" data-t="tt-no" data-id="${esc(r.id)}">Descartar</button><button type="button" class="btn btn-primary" data-t="tt-ok" data-id="${esc(r.id)}">Confirmar</button></span></div>`; }).join('') + '</div>';
     if (all.length && access().all) html += `<div class="ttools"><button type="button" class="btn${T.tMode === 'mapa' ? ' on' : ''}" data-t="t-mode">${T.tMode === 'mapa' ? '☰ Lista' : '🗺 Mapa'}</button><button type="button" class="btn" data-t="camp">🗓 Campañas</button><button type="button" class="btn" data-t="t-pdf">📄 Registro PDF</button></div>`;
     if (all.length && T.tMode === 'mapa') {
       const dib = all.filter(t => t.limites && t.limites.length >= 3);
@@ -668,9 +695,12 @@
     });
   }
   async function finishTerritory(id, f) {
-    const t = T.territorios[id]; if (!t || !t.asignado) return false;
+    const t = T.territorios[id]; if (!t) return false;
+    const rep = T.terminados[id];
+    if (!t.asignado && !rep) return false;
     const hist = (t.historial || []).slice();
-    if (hist[0] && !hist[0].hasta && hist[0].id === t.asignado.id) hist[0] = Object.assign({}, hist[0], { hasta: f });
+    if (!t.asignado) hist.unshift({ tipo: 'hermano', id: rep.pubId || '', nombre: rep.nombre || '', desde: rep.desde || f, hasta: f, salida: true });   // lo trabajó en una salida, sin ficha de asignación
+    else if (hist[0] && !hist[0].hasta && hist[0].id === t.asignado.id) hist[0] = Object.assign({}, hist[0], { hasta: f });
     else hist.unshift({ tipo: t.asignado.tipo, id: t.asignado.id, nombre: asignadoName(t.asignado), desde: t.asignado.desde, hasta: f });
     const nt = Object.assign({}, t, { asignado: null, ultimoTerminado: f, historial: hist.slice(0, 40) });
     // La fecha anterior (por ejemplo, la que venía del registro en papel) se guarda para el registro en PDF.
@@ -680,7 +710,7 @@
     return ok;
   }
   function pendingTerminados() {
-    return Object.keys(T.terminados).map(id => Object.assign({ id }, T.terminados[id])).filter(r => T.territorios[r.id] && T.territorios[r.id].asignado)
+    return Object.keys(T.terminados).map(id => Object.assign({ id }, T.terminados[id])).filter(r => T.territorios[r.id])
       .sort((a, b) => String(a.at || '').localeCompare(String(b.at || '')));
   }
 
@@ -1144,6 +1174,7 @@
     if (!b) return;
     const k = b.dataset.t;
     if (k === 'view') { T.view = b.dataset.k; render(); }
+    else if (k === 'go-term') goToTerminados();
     else if (k === 'wk') { const d = parseInt(b.dataset.d, 10); T.week = d === 0 ? mondayLocal(hoy()) : addDays(T.week, d); render(); }
     else if (k === 's-filter') { T.sFilter = b.dataset.k; render(); }
     else if (k === 's-new') openSalida(null, null);
@@ -1157,7 +1188,7 @@
     else if (k === 't-pdf') openRegistro();
     else if (k === 't-open') openTerritorio(b.dataset.id);
     else if (k === 'tt-ok') { const r = T.terminados[b.dataset.id]; if (r) finishTerritory(b.dataset.id, r.fecha || hoy()); }
-    else if (k === 'tt-no') { if (confirm('¿Descartar este aviso? El territorio sigue asignado.')) safe(() => congRef().collection('terminados').doc(b.dataset.id).delete(), 'Aviso descartado'); }
+    else if (k === 'tt-no') { if (confirm('¿Descartar este aviso? El territorio queda como está.')) safe(() => congRef().collection('terminados').doc(b.dataset.id).delete(), 'Aviso descartado'); }
     else if (k === 'g-new') openGrupo(null);
     else if (k === 'g-edit') openGrupo(b.dataset.id);
     else if (k === 'g-cong') openPubsPicker('Pueden conducir las salidas de congregación', T.gruposMeta.conductoresCongregacion || [], (ids) => { safe(() => tWrite(tRef('grupos'), [[['conductoresCongregacion'], ids]]), 'Guardado'); });

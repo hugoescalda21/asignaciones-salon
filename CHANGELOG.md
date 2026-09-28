@@ -6,6 +6,13 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Confirmar "Lo terminé" más fácil — 28 sep 2026 (caché asignaciones-salon-v39)
+
+- Los avisos de "Lo terminé" de territorios **sin ficha de asignación** (por ejemplo, trabajados en una salida) ahora también aparecen para confirmar; al confirmarlos queda en el historial quién lo hizo y la fecha.
+- **Globito rojo** en la pestaña Territorios con los avisos por confirmar, y un cartel en **Salidas** que lleva directo a la tarjeta "Avisaron que lo terminaron".
+- La notificación push abre la app en esa tarjeta (`#terminados`). Hace falta `firebase deploy --only functions`.
+- Pruebas: 4 más en `20-territorios`.
+
 ## Territorios etapa C: mapa, campañas y registro en PDF — 24 sep 2026 (cachés asignaciones-salon-v38, ver-salon-v32)
 
 - **Dibujar los límites** de cada territorio sobre el mapa (OpenStreetMap, gratis y sin cuentas): desde la ficha → "Dibujar los límites en el mapa". Se tocan las esquinas, los puntos se arrastran para acomodarlos, hay "Deshacer", buscador de calles y la foto de la tarjeta al lado como guía. Los demás territorios se ven de fondo para no superponerlos.
