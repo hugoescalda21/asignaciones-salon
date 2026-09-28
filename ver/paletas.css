@@ -47,6 +47,21 @@ html[data-paleta] .board-header { border-bottom-color: color-mix(in srgb, var(--
 html[data-paleta] .week-block { border-radius: 14px; }
 html[data-paleta] .agenda-date { border-radius: 12px; }
 
+/* Botones principales y interruptores: con el color del estilo (en el Clásico siguen verdes) */
+html[data-paleta] .pw-main,
+html[data-paleta] .wl-go.green,
+html[data-paleta] .mt-done,
+html[data-paleta] .mt-sheet .row button.ok,
+html[data-paleta] .gate button.req-green { background: var(--accent-gold); border-color: var(--accent-gold); color: #fff; }
+html[data-paleta] .rem-sw[aria-checked="true"] { background: var(--accent-gold); }
+html[data-paleta] .wl-go { background: var(--accent-gold); color: #fff; }
+html[data-paleta] .wl-dots i.on { background: var(--accent-gold); }
+html[data-paleta] .wl-hero small { color: rgba(255,255,255,0.85); }
+html[data-paleta="b"] .wl-hero { color: var(--ink); border: 1px solid #F4DFCF; }
+html[data-paleta="b"] .wl-hero small { color: #E4572E; }
+html.dk[data-paleta="b"] .wl-hero { border-color: #33403B; }
+html[data-paleta] .psum-more-btn:active { background: color-mix(in srgb, var(--accent-gold) 10%, transparent); }
+
 /* ---------- A · Moderno azul ---------- */
 html[data-paleta="a"] {
   --bg: #F2F5FB; --surface: #FFFFFF; --ink: #0F1B2D; --ink-soft: #55667D; --ink-faint: #6B7A90; --line: #E3E9F2;

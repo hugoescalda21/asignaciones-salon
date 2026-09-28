@@ -6,6 +6,14 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Vista: todas las pantallas con los colores del estilo — 28 sep 2026 (caché ver-salon-v37)
+
+- Revisadas todas las pantallas de la vista en los 4 estilos, en claro y oscuro (Inicio, Calendario, Anuncios, Territorios, detalle de la reunión, guía y bienvenida).
+- **Anuncios:** el recuadro de la fecha del evento tenía colores fijos claros; ahora sigue el tema (en modo oscuro se veía un recuadro blanco).
+- **Bienvenida:** la tarjeta de ejemplo, el botón "Siguiente" y los puntitos toman el color del estilo.
+- **Botones de acción** ("Lo terminé", "Activar avisos", confirmar) e **interruptores**: con el color del estilo (en el Clásico siguen verdes).
+- **Mis territorios en modo oscuro:** los avisos de fecha ("se pasó la fecha", "Avisaste que lo terminaste") ahora se leen bien.
+
 ## Vista: fecha del anuncio en Inicio y campanita con el color del estilo — 28 sep 2026 (caché ver-salon-v36)
 
 - La tarjeta del anuncio en Inicio (fijado o nuevo), si el anuncio tiene fecha de evento, muestra un **mini calendario** (OCT / 6) y la línea **"Martes 6 · 9:00 · faltan 8 días"** ("mañana", "hoy"). Cuando la fecha pasa, vuelve al ícono de siempre.

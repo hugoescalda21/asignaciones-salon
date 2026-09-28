@@ -29,7 +29,7 @@
   .sal-card.off { opacity: .55; }
   .sal-when { font-size: 12px; font-weight: 700; color: var(--ink-soft); display: flex; justify-content: space-between; gap: 8px; }
   .sal-when .tag { font-size: 10.5px; border-radius: 9px; padding: 1px 8px; background: var(--bg); color: var(--ink-soft); white-space: nowrap; }
-  .sal-when .tag.me { background: rgba(169,130,47,0.2); color: var(--ink); }
+  .sal-when .tag.me { background: rgba(169,130,47,0.2); background: color-mix(in srgb, var(--accent-gold) 20%, transparent); color: var(--ink); }
   .sal-place { font-size: 15px; font-weight: 700; margin: 3px 0 1px; }
   .sal-sub { font-size: 12.5px; color: var(--ink-soft); line-height: 1.45; }
   .sal-sub b { color: var(--ink); font-weight: 600; }
@@ -53,6 +53,7 @@
   .mt-title span { font-size: 12px; color: var(--ink-soft); }
   .mt-due { font-size: 12.5px; font-weight: 600; border-radius: 8px; padding: 6px 9px; margin: 8px 0; background: rgba(201,138,27,0.15); color: #7A5410; }
   .mt-due.late { background: rgba(192,57,43,0.13); color: #8A2E22; }
+  html.dk .mt-due { color: #F2C46B; } html.dk .mt-due.late { color: #F1998D; } html.dk .mt-sent { color: #9FD4B2; }
   .mt-notes { font-size: 12.5px; color: var(--ink-soft); white-space: pre-wrap; margin-bottom: 8px; }
   .mt-done { width: 100%; border: none; border-radius: 11px; padding: 12px; font: inherit; font-size: 14px; font-weight: 700; background: #4C7A5E; color: #fff; }
   .mt-sent { font-size: 12.5px; border-radius: 9px; padding: 8px 10px; background: rgba(76,122,94,0.14); color: #2F5A40; }
