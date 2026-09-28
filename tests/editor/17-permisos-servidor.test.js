@@ -84,7 +84,7 @@ async function uploaded(p) {
   await q.waitForTimeout(150);
   check('a los demás no', await q.evaluate(() => !/no corresponde a tu rol/.test(document.body.innerText)));
   check('el campo _guard no se vuelve a subir', await q.evaluate(() => { saveData(); return window.__calls.every(c => !c.some(a => a && a.s && a.s[0] === '_guard')); }));
-  check('el registro muestra los del servidor como "Control de permisos"', await q.evaluate(() => /Control de permisos/.test(document.querySelector('script:not([src])').textContent)));
+  check('el registro muestra los del servidor como "Control de permisos"', await q.evaluate(() => [...document.querySelectorAll('script:not([src])')].some(s => /Control de permisos/.test(s.textContent))));
 
   await b.close(); console.log(`\n${ok} OK, ${bad} fallaron`);
 })();

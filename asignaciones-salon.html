@@ -6,6 +6,20 @@
 <title>Asignaciones — Salón del Reino</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#212C34">
+<script>
+  // Estilo de color (Ajustes → Apariencia), antes de pintar. Es la misma elección que la vista (kh-paleta).
+  (function () {
+    try {
+      var ls = localStorage, v = ls.getItem('kh-paleta');
+      if (!v) {
+        // Quien ya usaba la app sigue con el Clásico; quien empieza de cero arranca con Moderno azul.
+        v = (ls.getItem('kh-schedule-data-v2') || ls.getItem('kh-access-code')) ? 'clasico' : 'a';
+        ls.setItem('kh-paleta', v);
+      }
+      if (/^[abc]$/.test(v)) document.documentElement.setAttribute('data-paleta', v);
+    } catch (e) { /* sin acceso */ }
+  })();
+</script>
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -616,7 +630,7 @@
   .br-m { display: none; }
   .br-chips { display: none; }
   .br-chip { flex-shrink: 0; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); border-radius: 16px; padding: 6px 12px; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
-  .br-chip.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .br-chip.active { background: var(--ink); color: var(--surface); border-color: var(--ink); }
 
   /* ---------- Rol "Solo anuncios": la gestión de anuncios es la página ---------- */
   body.an-only .tabs, body.an-only .bottom-tabs, body.an-only #backupBanner, body.an-only main.content > .tab-panel, body.an-only #closeAnunciosBtn { display: none !important; }
@@ -1116,6 +1130,7 @@
     body { background: #fff; padding: 0; }
   }
 </style>
+<link rel="stylesheet" href="./paletas-asignaciones.css">
 </head>
 <body>
 
@@ -1633,8 +1648,15 @@
     </details>
     <div class="settings-group">Este dispositivo</div>
     <details class="settings-card">
-      <summary><div><h3>Apariencia</h3><span class="sc-sub">Claro, oscuro o automático</span></div><span class="chev">›</span></summary>
-      <p class="hint">"Automático" sigue la configuración de tu celular o computadora.</p>
+      <summary><div><h3>Apariencia</h3><span class="sc-sub">Colores, claro u oscuro</span></div><span class="chev">›</span></summary>
+      <p class="hint">Solo cambia en este dispositivo. Los colores de aviso (rojo, amarillo, verde) y los del cronómetro no cambian.</p>
+      <div class="pal-grid" id="palGrid" role="radiogroup" aria-label="Estilo de color">
+        <button type="button" class="pal-opt pal-o-clasico" data-pal="clasico" role="radio"><span class="pal-mini" aria-hidden="true"><i class="t"></i><i class="h"></i><i class="s"></i></span><b>Clásico</b><small>Sobrio, el de siempre</small><span class="pal-ck" aria-hidden="true">✓</span></button>
+        <button type="button" class="pal-opt pal-o-a" data-pal="a" role="radio"><span class="pal-mini" aria-hidden="true"><i class="t"></i><i class="h"></i><i class="s"></i></span><b>Moderno azul</b><small>Claro y prolijo</small><span class="pal-ck" aria-hidden="true">✓</span></button>
+        <button type="button" class="pal-opt pal-o-b" data-pal="b" role="radio"><span class="pal-mini" aria-hidden="true"><i class="t"></i><i class="h"></i><i class="s"></i></span><b>Cálido</b><small>Verde y coral</small><span class="pal-ck" aria-hidden="true">✓</span></button>
+        <button type="button" class="pal-opt pal-o-c" data-pal="c" role="radio"><span class="pal-mini" aria-hidden="true"><i class="t"></i><i class="h"></i><i class="s"></i></span><b>Vibrante</b><small>Violeta y fucsia</small><span class="pal-ck" aria-hidden="true">✓</span></button>
+      </div>
+      <p class="hint" style="margin-bottom:8px;">"Automático" sigue la configuración de tu celular o computadora.</p>
       <div class="theme-switcher" id="themeSwitcher">
         <button type="button" data-theme-choice="auto" class="theme-opt">Automático</button>
         <button type="button" data-theme-choice="light" class="theme-opt">Claro</button>
@@ -5158,7 +5180,22 @@
     const effective = mode === 'auto' ? (darkMediaQuery && darkMediaQuery.matches ? 'dark' : 'light') : mode;
     document.documentElement.setAttribute('data-theme', effective);
     document.querySelectorAll('.theme-opt').forEach(b => b.classList.toggle('active', b.dataset.themeChoice === mode));
+    applyPaleta();
   }
+  // Estilo de color (el mismo que elige cada uno en la vista con 🎨)
+  const PAL_TOP = { clasico: ['#FFFFFF', '#1D2329'], a: ['#0F1B2D', '#060B16'], b: ['#0F8A6A', '#0B5E49'], c: ['#6D28D9', '#4C1D95'] };
+  function paleta() { let v = null; try { v = localStorage.getItem('kh-paleta'); } catch (e) { /* sin acceso */ } return /^(clasico|[abc])$/.test(v || '') ? v : 'clasico'; }
+  function applyPaleta() {
+    const v = paleta();
+    if (v === 'clasico') document.documentElement.removeAttribute('data-paleta'); else document.documentElement.setAttribute('data-paleta', v);
+    document.querySelectorAll('.pal-opt').forEach(b => { const on = b.dataset.pal === v; b.classList.toggle('active', on); b.setAttribute('aria-checked', on); });
+    const m = document.querySelector('meta[name="theme-color"]');
+    if (m) m.setAttribute('content', PAL_TOP[v][document.documentElement.getAttribute('data-theme') === 'dark' ? 1 : 0]);
+  }
+  document.querySelectorAll('.pal-opt').forEach(b => b.addEventListener('click', () => {
+    try { localStorage.setItem('kh-paleta', b.dataset.pal); } catch (e) { /* sin acceso */ }
+    applyPaleta();
+  }));
   document.querySelectorAll('.theme-opt').forEach(b => b.addEventListener('click', () => {
     setThemeMode(b.dataset.themeChoice);
   }));

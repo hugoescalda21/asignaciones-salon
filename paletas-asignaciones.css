@@ -1,0 +1,66 @@
+/* =====================================================================
+   Estilos de color de la app de asignaciones: A · Moderno azul, B · Cálido,
+   C · Vibrante (sin atributo = Clásico). Se eligen en Ajustes → Apariencia y
+   se guardan en el dispositivo (kh-paleta, la misma que usa la vista).
+   Los colores que avisan algo (rojo, amarillo, verde, y los del cronómetro)
+   no cambian a propósito.
+   ===================================================================== */
+html[data-paleta] { --radius-s: 10px; --radius-m: 16px; }
+html[data-paleta] .topbar { background: var(--top); border-bottom: none; }
+html[data-paleta] .brand-row h1 { color: #fff; }
+html[data-paleta] .brand-mark { background: #fff; opacity: .85; }
+html[data-paleta] .cong-badge { background: rgba(255,255,255,.18); color: #fff; }
+html[data-paleta] .topbar .help-btn { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.4); color: #fff; }
+html[data-paleta] .topbar .tab-btn { color: rgba(255,255,255,.75); }
+html[data-paleta] .topbar .tab-btn.active { color: #fff; border-bottom-color: #fff; }
+html[data-paleta] .topbar .account-avatar { background: rgba(255,255,255,.22); box-shadow: 0 0 0 2px rgba(255,255,255,.5); }
+html[data-paleta] .btn-primary { background: var(--accent-gold); border-color: var(--accent-gold); color: #fff; }
+html[data-paleta] .btn { border-radius: 12px; }
+html[data-paleta] .settings-card, html[data-paleta] .timer-panel, html[data-paleta] .card,
+html[data-paleta] .mt-part, html[data-paleta] .ms-item { border-color: transparent; box-shadow: 0 1px 2px rgba(15,27,45,.04), 0 6px 18px rgba(15,27,45,.06); }
+html[data-paleta] .settings-card, html[data-paleta] .timer-panel, html[data-paleta] .card { border-radius: 18px; }
+html[data-paleta] .ms-item { border-radius: 14px; }
+html[data-paleta] .ms-item.active { border: 2px solid var(--accent-gold); box-shadow: 0 6px 16px color-mix(in srgb, var(--accent-gold) 28%, transparent); }
+html[data-paleta] .ms-next { background: var(--accent-gold); }
+html[data-paleta] .bottom-tabs .tab-btn.active { color: var(--accent-gold-text); }
+html[data-paleta] .bottom-tabs .tab-btn.active::before, html[data-paleta] .bottom-tabs .tab-btn.active { border-color: var(--accent-gold); }
+html[data-paleta] .tab-btn.active { border-bottom-color: var(--accent-gold); }
+html[data-paleta] .mt-part.selected { border: 1.5px solid var(--accent-gold); background: color-mix(in srgb, var(--accent-gold) 8%, var(--surface)); }
+
+html[data-paleta="a"] { --bg:#F2F5FB; --surface:#fff; --ink:#0F1B2D; --ink-soft:#55667D; --ink-faint:#6B7A90; --line:#E3E9F2; --accent-gold:#2563EB; --accent-gold-text:#1D4ED8; --accent-blue:#2563EB; --emphasis:#1D4ED8;
+  --role-mic:#EA580C; --role-plat:#059669; --role-sonido:#2563EB; --role-video:#0891B2; --role-crono:#9333EA; --role-usher:#16A34A; --top: linear-gradient(135deg,#0F1B2D,#1E3A8A); }
+html[data-paleta="b"] { --bg:#F7F5F0; --surface:#fff; --ink:#1F2A26; --ink-soft:#5F6C66; --ink-faint:#6E7A74; --line:#ECE7DD; --accent-gold:#0F8A6A; --accent-gold-text:#0B6E54; --accent-blue:#E4572E; --emphasis:#0F8A6A;
+  --role-mic:#E4572E; --role-plat:#0F8A6A; --role-sonido:#2F7DB5; --role-video:#0E9384; --role-crono:#7C5CC4; --role-usher:#C68A12; --top: linear-gradient(135deg,#0F8A6A,#0B6E54); }
+html[data-paleta="c"] { --bg:#F4F2FF; --surface:#fff; --ink:#1A1433; --ink-soft:#5E5780; --ink-faint:#6F6893; --line:#E8E4F7; --accent-gold:#7C3AED; --accent-gold-text:#6D28D9; --accent-blue:#4F46E5; --emphasis:#7C3AED;
+  --role-mic:#F97316; --role-plat:#10B981; --role-sonido:#3B82F6; --role-video:#06B6D4; --role-crono:#A855F7; --role-usher:#14B8A6; --top: linear-gradient(120deg,#6D28D9,#4F46E5 60%,#2563EB); }
+html[data-paleta="c"] .btn-primary { background: linear-gradient(120deg,#7C3AED,#DB2777); border-color: transparent; }
+
+html[data-theme="dark"][data-paleta="a"] { --bg:#0B1220; --surface:#131C2E; --ink:#E8EEF8; --ink-soft:#A3B1C6; --line:#22304A; --accent-gold:#3B82F6; --accent-gold-text:#93C5FD; --top: linear-gradient(135deg,#060B16,#111D3A); }
+html[data-theme="dark"][data-paleta="b"] { --bg:#101614; --surface:#18211E; --ink:#EAF1EE; --ink-soft:#A7B6AF; --line:#26322E; --accent-gold:#1FA67F; --accent-gold-text:#6EE0BD; --top: linear-gradient(135deg,#0B5E49,#08493A); }
+html[data-theme="dark"][data-paleta="c"] { --bg:#0E0A1F; --surface:#1A1433; --ink:#EEEAFF; --ink-soft:#ADA5D1; --line:#2A2350; --accent-gold:#8B5CF6; --accent-gold-text:#C4B5FD; --top: linear-gradient(120deg,#4C1D95,#3730A3 60%,#1E40AF); }
+html[data-theme="dark"][data-paleta] .settings-card, html[data-theme="dark"][data-paleta] .timer-panel, html[data-theme="dark"][data-paleta] .ms-item, html[data-theme="dark"][data-paleta] .mt-part { border-color: var(--line); box-shadow: 0 1px 2px rgba(0,0,0,.4); }
+
+/* Selector de estilo en Ajustes → Apariencia */
+.pal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0 0 14px; }
+.pal-opt { display: block; width: 100%; border: 2px solid var(--line); border-radius: 14px; padding: 7px; background: var(--surface); text-align: left; font: inherit; color: var(--ink); position: relative; cursor: pointer; }
+.pal-opt.active { border-color: var(--accent-gold); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-gold) 22%, transparent); }
+.pal-mini { display: block; height: 58px; border-radius: 9px; overflow: hidden; background: var(--mb); position: relative; }
+.pal-mini i { position: absolute; display: block; }
+.pal-mini .t { left: 0; right: 0; top: 0; height: 15px; background: var(--mt); }
+.pal-mini .h { left: 7px; right: 7px; top: 20px; height: 18px; border-radius: var(--mr); background: var(--mh); }
+.pal-mini .s { left: 7px; width: 42%; top: 42px; height: 10px; border-radius: 5px; background: var(--ma); }
+.pal-opt b { display: block; font-size: 13px; margin: 6px 2px 0; }
+.pal-opt small { display: block; font-size: 11px; color: var(--ink-soft); margin: 1px 2px 0; }
+.pal-ck { position: absolute; top: 10px; right: 10px; width: 20px; height: 20px; border-radius: 50%; background: var(--accent-gold); color: #fff; font-size: 11px; font-weight: 800; display: none; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,.25); }
+.pal-opt.active .pal-ck { display: flex; }
+.pal-o-clasico { --mb: #EDEFEF; --mt: #fff; --mh: #212C34; --ma: #A9822F; --mr: 4px; }
+.pal-o-a { --mb: #F2F5FB; --mt: linear-gradient(135deg,#0F1B2D,#1E3A8A); --mh: #fff; --ma: #2563EB; --mr: 8px; }
+.pal-o-b { --mb: #F7F5F0; --mt: linear-gradient(135deg,#0F8A6A,#0B6E54); --mh: #fff; --ma: #0F8A6A; --mr: 8px; }
+.pal-o-c { --mb: #F4F2FF; --mt: linear-gradient(120deg,#6D28D9,#2563EB); --mh: #fff; --ma: linear-gradient(120deg,#7C3AED,#DB2777); --mr: 8px; }
+.pal-o-clasico .pal-mini .t { border-bottom: 1px solid #DDE1E2; }
+.pal-mini .h { box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+
+/* Filtros y chips elegidos: con el color del estilo */
+html[data-paleta] .br-chip.active,
+html[data-paleta] .tchips button.on,
+html[data-paleta] .ttools .btn.on { background: var(--accent-gold); border-color: var(--accent-gold); color: #fff; }

@@ -6,6 +6,14 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## App de asignaciones: estilos de color — 28 sep 2026 (caché asignaciones-salon-v43)
+
+- **Ajustes → Apariencia** suma los 4 estilos (Clásico, Moderno azul, Cálido, Vibrante) junto a Claro / Oscuro / Automático. Cambia al instante y se guarda en el dispositivo; es la misma elección que la vista (si lo elegís en una, la otra lo toma en ese celular).
+- Cambian el encabezado (a color), los botones principales, la tira de reuniones, la pestaña activa, los filtros elegidos y las formas. Los colores de aviso (rojo, amarillo, verde) y los del cronómetro no cambian, a propósito.
+- Quien ya usaba la app sigue en Clásico; quien empieza de cero arranca con Moderno azul.
+- Corregido: en modo oscuro, el filtro elegido de Hermanos ("Todos") no se leía.
+- Archivo nuevo: `paletas-asignaciones.css`. Pruebas: `28-colores-asignaciones`.
+
 ## Vista: todas las pantallas con los colores del estilo — 28 sep 2026 (caché ver-salon-v37)
 
 - Revisadas todas las pantallas de la vista en los 4 estilos, en claro y oscuro (Inicio, Calendario, Anuncios, Territorios, detalle de la reunión, guía y bienvenida).

@@ -59,7 +59,7 @@ node tests/editor/run.js anuncios   (solo las que tengan "anuncios" en el nombre
 ```
 
 Al final muestra una línea por archivo y el total, por ejemplo
-`580 de 580 pruebas OK.` Si algo falla, muestra qué.
+`587 de 587 pruebas OK.` Si algo falla, muestra qué.
 
 | Archivo | Qué prueba |
 |---|---|
@@ -89,6 +89,7 @@ Al final muestra una línea por archivo y el total, por ejemplo
 | `25-codigo-inexistente` | Código que no existe: pregunta (Revisar / Crear una nueva) en vez de crear una congregación vacía |
 | `26-copias-nube` | Copias de seguridad en la nube (Super Admin): lista, hacer una ahora, descargar, restaurar por partes, importar el archivo |
 | `27-calendario-mes` | Vista: el Calendario abre en el mes de la próxima reunión y las flechas pasan de a un mes |
+| `28-colores-asignaciones` | App de asignaciones: estilos de color en Ajustes → Apariencia, predeterminado según si ya se usaba |
 
 Las capturas de pantalla que sacan quedan en `tests/editor/capturas/`
 (no se suben a git), por si querés mirarlas.
