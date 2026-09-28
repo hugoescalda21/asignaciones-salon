@@ -6,6 +6,14 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Vista: el Calendario muestra la próxima reunión aunque sea del mes que viene — 28 sep 2026 (caché ver-salon-v35)
+
+- El Calendario de la vista abre en el **mes de la próxima reunión**. Antes elegía el mes según el lunes de la semana: a fin de septiembre, la reunión del jueves 1 de octubre no aparecía hasta tocar ›.
+- Las flechas ‹ › pasan **de a un mes** (antes saltaban de a 28 días y a veces repetían un mes).
+- Usa la fecha de Argentina (a la noche ya no se adelanta un día).
+- Corregido "reuniónes" → "reuniones ya pasadas".
+- Pruebas: `27-calendario-mes` (580 en total).
+
 ## Copias de seguridad automáticas en la nube — 28 sep 2026 (caché asignaciones-salon-v42)
 
 - **Todos los domingos a las 3:30** el servidor guarda sola una copia de cada congregación: programa, hermanos, anuncios, ajustes, territorios (con su historial), grupos, lugares, campañas, salidas y avisos de "Lo terminé". Van a Storage (`backups/{código}/`), donde solo entra el servidor.

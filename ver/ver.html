@@ -1407,11 +1407,26 @@
     });
   }
 
+  // Mes que muestra el Calendario ('AAAA-MM'). Arranca en el mes de la próxima reunión:
+  // a fin de mes, si la que sigue ya es del mes que viene, se abre ese mes (antes quedaba escondida).
+  let calMonth = null;
+  function meetingDates(settings) {
+    const out = [];
+    Object.keys(data.weeks || {}).forEach(monday => ['semana', 'finde'].forEach(t => {
+      const w = data.weeks[monday][t];
+      if (!w || !((w.roles && Object.values(w.roles).some(Boolean)) || isProgramFilled(w.program, t))) return;
+      out.push(dateForType(monday, t, settings));
+    }));
+    return out.sort();
+  }
+  function shiftMonth(ym, n) { const d = new Date(ym + '-01T12:00:00'); d.setMonth(d.getMonth() + n); return localIso(d).slice(0, 7); }
   function renderMonth() {
-    $('monthLabel').textContent = monthKey(currentMonday);
-    $('congTitle').textContent = (data.settings && data.settings.congregationName) || 'Congregación';
-    const prefix = currentMonday.slice(0, 7);
     const settings = data.settings || { weekdaySemana: 4, weekdayFinde: 0, micCount: 2 };
+    const today = localIso(new Date());
+    if (!calMonth) { const nx = meetingDates(settings).find(d => d >= today); calMonth = (nx || today).slice(0, 7); }
+    const prefix = calMonth;
+    $('monthLabel').textContent = monthKey(prefix + '-01');
+    $('congTitle').textContent = (data.settings && data.settings.congregationName) || 'Congregación';
     const rows = [];
     Object.keys(data.weeks || {}).sort().forEach(monday => {
       ['semana', 'finde'].forEach(t => {
@@ -1430,7 +1445,6 @@
 
     if (!rows.length) { $('agendaCard').innerHTML = '<p class="empty-note">Sin asignaciones cargadas este mes.</p>'; return; }
 
-    const today = new Date().toISOString().slice(0, 10);
     const isCurrentMonth = prefix === today.slice(0, 7);
     const pastRows = isCurrentMonth ? rows.filter(r => r.date < today) : [];
     const currentRows = isCurrentMonth ? rows.filter(r => r.date >= today) : rows;
@@ -1439,20 +1453,14 @@
     if (pastRows.length) {
       html += `<div class="week-block">
         <button type="button" class="week-summary" id="pastWeekToggle">
-          <span>${pastRows.length} reunión${pastRows.length > 1 ? 'es' : ''} ya pasada${pastRows.length > 1 ? 's' : ''} este mes</span>
+          <span>${pastRows.length} ${pastRows.length > 1 ? 'reuniones ya pasadas' : 'reunión ya pasada'} este mes</span>
           <span class="wtoggle" id="pastWeekToggleLabel">Ver ›</span>
         </button>
         <div class="week-body hidden" id="pastWeekBody">${pastRows.map(r => calRowHTML(r, false)).join('')}</div>
       </div>`;
     }
     // La próxima reunión (de hoy en adelante) aparece abierta; las demás, cerradas.
-    let globalNext = null;
-    Object.keys(data.weeks || {}).forEach(monday => ['semana', 'finde'].forEach(t => {
-      const w = data.weeks[monday][t];
-      if (!w || !((w.roles && Object.values(w.roles).some(Boolean)) || isProgramFilled(w.program, t))) return;
-      const d = dateForType(monday, t, settings);
-      if (d >= today && (!globalNext || d < globalNext)) globalNext = d;
-    }));
+    const globalNext = meetingDates(settings).find(d => d >= today) || null;
     currentRows.forEach(r => { if (r.date === globalNext) r.isNext = true; });
     // Si en este mes no está la próxima (mes futuro), se abre la primera reunión del mes.
     const openFirst = !currentRows.some(r => r.isNext) && prefix > today.slice(0, 7);
@@ -2593,8 +2601,8 @@
     });
   }
 
-  $('prevBtn').addEventListener('click', () => { currentMonday = shiftDate(currentMonday, -28); renderMonth(); });
-  $('nextBtn').addEventListener('click', () => { currentMonday = shiftDate(currentMonday, 28); renderMonth(); });
+  $('prevBtn').addEventListener('click', () => { calMonth = shiftMonth(calMonth || localIso(new Date()).slice(0, 7), -1); renderMonth(); });
+  $('nextBtn').addEventListener('click', () => { calMonth = shiftMonth(calMonth || localIso(new Date()).slice(0, 7), 1); renderMonth(); });
   $('gateBtn').addEventListener('click', () => {
     const code = $('gateCodeInput').value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
     if (!code) return;
