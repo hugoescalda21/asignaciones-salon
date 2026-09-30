@@ -116,6 +116,13 @@
   .sl-wa { border: none; border-radius: 8px; padding: 5px 9px; font: inherit; font-size: 12px; font-weight: 800; background: #DCFCE7; color: #15803D; cursor: pointer; white-space: nowrap; text-decoration: none; }
   .sl-seg { display: flex; background: var(--bg); border-radius: 10px; padding: 3px; margin-bottom: 10px; gap: 2px; }
   .sl-seg button { flex: 1; border: none; background: none; border-radius: 8px; padding: 7px 4px; font: inherit; font-size: 13px; font-weight: 700; color: var(--ink-soft); cursor: pointer; }
+  .sl-pickbtn { width: 100%; box-sizing: border-box; display: flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 9px; padding: 9px 10px; font: inherit; font-size: 14px; background: var(--bg); color: var(--ink); text-align: left; cursor: pointer; min-height: 40px; }
+  .sl-pickbtn span:first-child { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sl-pickbtn .ph { color: var(--ink-faint, #999); }
+  .sl-pickbtn::after { content: '›'; color: var(--ink-soft); font-size: 16px; }
+  .sl-pickbtn.filled { font-weight: 600; }
+  .sl-chooser .tlist { max-height: 55vh; }
+  .sl-chooser .tpick span:last-child:not(:first-child) { color: var(--accent-blue); font-weight: 800; }
   .sl-seg button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.1); }
   `;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
@@ -241,7 +248,8 @@
     ov.innerHTML = `<div class="modal">${html}</div>`;
     document.body.appendChild(ov);
     const close = () => { ov.remove(); document.removeEventListener('keydown', onKey); if (opts && opts.onClose) opts.onClose(); };
-    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    // Escape cierra solo la ventana de arriba (el buscador sin cerrar el formulario de abajo).
+    const onKey = (e) => { if (e.key === 'Escape' && [...document.querySelectorAll('.slmodal')].pop() === ov) close(); };
     document.addEventListener('keydown', onKey);
     ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
     ov.addEventListener('click', (e) => { if (e.target.closest('[data-tclose]')) close(); });
@@ -339,14 +347,6 @@
   }
 
   /* ---------- Formulario de trabajo ---------- */
-  function pubOptions(sel) {
-    const cong = (data.settings && data.settings.congregationName) || 'Congregación';
-    const ext = extList();
-    return '<option value="">Elegí…</option>' +
-      `<optgroup label="${esc(cong)}">` + pubs().slice().sort((a, b) => a.name.localeCompare(b.name, 'es')).map(p => `<option value="${esc(p.id)}"${p.id === sel ? ' selected' : ''}>${esc(p.name)}</option>`).join('') + '</optgroup>' +
-      `<optgroup label="${esc(otraLabel())}">` + ext.map(x => `<option value="x:${esc(x.id)}"${'x:' + x.id === sel ? ' selected' : ''}>${esc(x.nombre)}${x.cong ? ' · Cong. ' + esc(x.cong) : ''}</option>`).join('') +
-      `<option value="__new">＋ Agregar hermano de ${esc(otraNombre() || 'otra congregación')}…</option></optgroup>`;
-  }
   function openForm(id, fechaDefault) {
     const t = id ? S.trabajos[id] : null;
     const f = t ? Object.assign({}, t) : { tipo: 'pintura', fecha: fechaDefault || C.addDays(hoy(), 7), hora: '09:00', cupo: 0, repite: 'no', materiales: [], vista: true };
@@ -354,7 +354,7 @@
       <div class="tf"><label for="slTit">Qué hay que hacer</label><input id="slTit" maxlength="80" placeholder="Ej.: Pintura de la entrada" value="${esc(f.titulo || '')}"></div>
       <div class="tf"><span class="tlbl">Tipo</span><div class="sl-types" id="slTipo">${Object.entries(C.TIPOS).map(([k, tp]) => `<button type="button" data-k="${k}" class="${f.tipo === k ? 'on' : ''}" style="${f.tipo === k ? 'background:' + tp.color : ''}">${tp.icon} ${tp.label}</button>`).join('')}</div></div>
       <div class="trow2"><div class="tf"><label for="slFec">Día</label><input type="date" id="slFec" value="${esc(f.fecha)}"></div><div class="tf"><label for="slHora">Hora</label><input type="time" id="slHora" value="${esc(f.hora || '')}"></div></div>
-      <div class="trow2"><div class="tf"><label for="slResp">Responsable <span class="sl-req">*</span></label><select id="slResp">${pubOptions(f.resp)}</select></div><div class="tf"><label for="slAux">Auxiliar <span class="sl-req">*</span></label><select id="slAux">${pubOptions(f.aux)}</select></div></div>
+      <div class="trow2"><div class="tf"><label for="slRespBtn">Responsable <span class="sl-req">*</span></label><button type="button" class="sl-pickbtn" id="slRespBtn" data-for="slResp"></button><input type="hidden" id="slResp" value="${esc(f.resp || '')}"></div><div class="tf"><label for="slAuxBtn">Auxiliar <span class="sl-req">*</span></label><button type="button" class="sl-pickbtn" id="slAuxBtn" data-for="slAux"></button><input type="hidden" id="slAux" value="${esc(f.aux || '')}"></div></div>
       <div class="trow2"><div class="tf"><label for="slCupo">Voluntarios además</label><input type="number" id="slCupo" min="0" max="30" value="${Number(f.cupo) || 0}"></div><div class="tf"></div></div>
       <div class="tf"><span class="tlbl">Se repite</span><div class="topts" id="slRep">${Object.entries(C.REPITE).map(([k, l]) => `<button type="button" data-k="${k}" class="${(f.repite || 'no') === k ? 'on' : ''}">${k === 'no' ? 'No' : l}</button>`).join('')}</div></div>
       <div class="tf"><label for="slMat">Qué llevar / materiales <small style="text-transform:none;letter-spacing:0;font-weight:400;">(uno por renglón)</small></label><textarea id="slMat" placeholder="Rodillos y pinceles&#10;2 latas de látex blanco">${esc((f.materiales || []).join('\n'))}</textarea></div>
@@ -367,15 +367,18 @@
       m.qa('#slTipo button').forEach(x => { const on = x.dataset.k === f.tipo; x.classList.toggle('on', on); x.style.background = on ? C.TIPOS[x.dataset.k].color : ''; });
     });
     m.q('#slRep').addEventListener('click', (e) => { const b = e.target.closest('[data-k]'); if (!b) return; f.repite = b.dataset.k; m.qa('#slRep button').forEach(x => x.classList.toggle('on', x.dataset.k === f.repite)); });
-    const prev = { slResp: f.resp || '', slAux: f.aux || '' };
-    ['slResp', 'slAux'].forEach(sid => m.q('#' + sid).addEventListener('change', (e) => {
-      const el = e.target;
-      if (el.value !== '__new') { prev[sid] = el.value; return; }
-      el.value = prev[sid];
-      openExterno(null, (xid) => {
-        ['slResp', 'slAux'].forEach(k => { const v = k === sid ? 'x:' + xid : m.q('#' + k).value; m.q('#' + k).innerHTML = pubOptions(v); m.q('#' + k).value = v; prev[k] = v; });
+    const pintarBtn = (sid) => {
+      const v = m.q('#' + sid).value, b = m.q('#' + sid + 'Btn');
+      b.innerHTML = v ? `<span>${esc(pubName(v, t))}</span>${congTag(v, t)}` : '<span class="ph">Elegí…</span>';
+      b.classList.toggle('filled', !!v);
+    };
+    ['slResp', 'slAux'].forEach(sid => {
+      pintarBtn(sid);
+      m.q('#' + sid + 'Btn').addEventListener('click', () => {
+        const otro = m.q('#' + (sid === 'slResp' ? 'slAux' : 'slResp')).value;
+        choosePub(sid === 'slResp' ? 'Elegí el responsable' : 'Elegí el auxiliar', { current: m.q('#' + sid).value, exclude: new Set(otro ? [otro] : []) }, (pid) => { m.q('#' + sid).value = pid; pintarBtn(sid); m.q('#slErr').textContent = ''; });
       });
-    }));
+    });
     m.q('#slSave').addEventListener('click', async () => {
       const titulo = m.q('#slTit').value.trim(), resp = m.q('#slResp').value, aux = m.q('#slAux').value, fecha = m.q('#slFec').value;
       const err = !titulo ? 'Escribí qué hay que hacer.' : !fecha ? 'Elegí el día.' : !resp ? 'Elegí el responsable.' : !aux ? 'Elegí el auxiliar: cada trabajo lleva responsable y auxiliar.' : resp === aux ? 'El responsable y el auxiliar tienen que ser dos hermanos distintos.' : '';
@@ -459,35 +462,43 @@
       else if (k === 'avisar') avisarExterno(t, fecha, b.dataset.p);
     });
   }
-  function pickPub(t, fecha) {
-    const ya = new Set(C.voluntarios(t, fecha, S.anotados).map(v => v.pubId).concat([t.resp, t.aux]));
-    let tab = 'cong';
+  // Ventana para elegir un hermano: buscador y dos pestañas (esta congregación y la otra del Salón compartido).
+  function choosePub(title, opts, onPick) {
+    const excl = opts.exclude || new Set();
+    let tab = opts.current && isExt(opts.current) ? 'otra' : 'cong';
     const cong = (data.settings && data.settings.congregationName) || 'Congregación';
-    const m = openModal(`<h3>Agregar un hermano</h3><div class="sl-seg" id="slSeg"><button type="button" data-k="cong" class="on">${esc(cong)}</button><button type="button" data-k="otra">${esc(otraLabel())}</button></div><input type="search" class="tsearch" id="slQ" placeholder="🔍 Buscar hermano" autocomplete="off"><div class="tlist" id="slL"></div><div class="tfoot"><button type="button" class="btn" data-tclose>Cancelar</button></div>`);
+    const m = openModal(`<h3>${esc(title)}</h3><div class="sl-seg" id="slSeg"><button type="button" data-k="cong">${esc(cong)}</button><button type="button" data-k="otra">${esc(otraLabel())}</button></div><input type="search" class="tsearch" id="slQ" placeholder="🔍 Buscar hermano" autocomplete="off"><div class="tlist" id="slL"></div><div class="tfoot">${opts.current ? '<button type="button" class="btn" id="slQuitar">Quitar</button>' : ''}<button type="button" class="btn" data-tclose>Cancelar</button></div>`, { cls: 'sl-chooser' });
+    const mark = (id) => id === opts.current ? ' on' : '';
     const paint = () => {
       const qn = accNorm(m.q('#slQ').value.trim());
       m.qa('#slSeg button').forEach(b => b.classList.toggle('on', b.dataset.k === tab));
       if (tab === 'cong') {
-        m.q('#slL').innerHTML = pubs().filter(p => !ya.has(p.id) && (!qn || accNorm(p.name).includes(qn))).sort((a, b) => a.name.localeCompare(b.name, 'es')).map(p => `<button type="button" class="tpick" data-id="${esc(p.id)}">${esc(p.name)}</button>`).join('') || '<div class="tempty" style="padding:12px;">No hay nadie más.</div>';
+        m.q('#slL').innerHTML = pubs().filter(p => !excl.has(p.id) && (!qn || accNorm(p.name).includes(qn))).sort((a, b) => a.name.localeCompare(b.name, 'es')).map(p => `<button type="button" class="tpick${mark(p.id)}" data-id="${esc(p.id)}">${esc(p.name)}${p.id === opts.current ? ' <span>✓</span>' : ''}</button>`).join('') || '<div class="tempty" style="padding:12px;">Nadie coincide.</div>';
       } else {
-        m.q('#slL').innerHTML = extList().filter(x => !ya.has('x:' + x.id) && (!qn || accNorm(x.nombre).includes(qn))).map(x => `<button type="button" class="tpick" data-id="x:${esc(x.id)}"><span>${esc(x.nombre)}<small>${x.cong ? 'Cong. ' + esc(x.cong) : 'Otra congregación'}${x.tel ? ' · 📱 ' + esc(x.tel) : ''}</small></span></button>`).join('') +
+        m.q('#slL').innerHTML = extList().filter(x => !excl.has('x:' + x.id) && (!qn || accNorm(x.nombre).includes(qn))).map(x => `<button type="button" class="tpick${mark('x:' + x.id)}" data-id="x:${esc(x.id)}"><span>${esc(x.nombre)}<small>${x.cong ? 'Cong. ' + esc(x.cong) : 'Otra congregación'}${x.tel ? ' · 📱 ' + esc(x.tel) : ''}</small></span>${'x:' + x.id === opts.current ? '<span>✓</span>' : ''}</button>`).join('') +
           `<button type="button" class="tpick" data-new="1" style="color:var(--accent-blue);font-weight:700;">＋ Agregar un hermano de ${esc(otraNombre() || 'la otra congregación')}</button>`;
       }
     };
-    const add = async (pid) => {
-      const vols = ((((t.ocurr || {})[fecha]) || {}).vols || []).concat(pid);
-      t.ocurr = t.ocurr || {}; t.ocurr[fecha] = Object.assign({}, t.ocurr[fecha] || {}, { vols });
-      const refs = extRefs(t); t.externos = refs;
-      if (await safe(() => sWrite(sRef('trabajos'), [[occPath(t, fecha, 'vols'), vols], [['lista', t.id, 'externos'], refs]]), 'Agregado')) { m.close(); if (openDetail) openDetail.refresh(); render(); }
-    };
-    m.q('#slSeg').addEventListener('click', (e) => { const b = e.target.closest('[data-k]'); if (b) { tab = b.dataset.k; paint(); } });
+    m.q('#slSeg').addEventListener('click', (e) => { const b = e.target.closest('[data-k]'); if (b) { tab = b.dataset.k; paint(); m.q('#slQ').focus(); } });
     m.q('#slQ').addEventListener('input', paint);
     m.q('#slL').addEventListener('click', (e) => {
       const b = e.target.closest('.tpick'); if (!b) return;
-      if (b.dataset.new) { openExterno(null, (xid) => add('x:' + xid)); return; }
-      add(b.dataset.id);
+      if (b.dataset.new) { openExterno(null, (xid) => { m.close(); onPick('x:' + xid); }); return; }
+      m.close(); onPick(b.dataset.id);
     });
+    const q = m.q('#slQuitar'); if (q) q.addEventListener('click', () => { m.close(); onPick(''); });
     paint();
+    setTimeout(() => { try { m.q('#slQ').focus(); } catch (e) { /* nada */ } }, 50);
+  }
+  function pickPub(t, fecha) {
+    const ya = new Set(C.voluntarios(t, fecha, S.anotados).map(v => v.pubId).concat([t.resp, t.aux]));
+    choosePub('Agregar un hermano', { exclude: ya }, async (pid) => {
+      if (!pid) return;
+      const vols = ((((t.ocurr || {})[fecha]) || {}).vols || []).concat(pid);
+      t.ocurr = t.ocurr || {}; t.ocurr[fecha] = Object.assign({}, t.ocurr[fecha] || {}, { vols });
+      const refs = extRefs(t); t.externos = refs;
+      if (await safe(() => sWrite(sRef('trabajos'), [[occPath(t, fecha, 'vols'), vols], [['lista', t.id, 'externos'], refs]]), 'Agregado')) { if (openDetail) openDetail.refresh(); render(); }
+    });
   }
   // Alta o edición de un hermano de otra congregación (salón compartido).
   function openExterno(id, onSaved) {

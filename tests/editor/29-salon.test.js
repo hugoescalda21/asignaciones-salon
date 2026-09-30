@@ -29,6 +29,13 @@ let ok = 0, bad = 0; const check = (l, c, x) => { if (c) { ok++; console.log('  
   const store = { docs: { 'congregations/C': JSON.parse(JSON.stringify(data)), 'congregations/C/terr/grupos': grupos }, writes: [], uploads: [] };
   const click = async (p, sel) => { await p.click(sel); await p.waitForTimeout(150); };
   const modal = (p) => p.locator('.slmodal').last();
+  // Elegir responsable o auxiliar con la ventana de búsqueda (buscando por nombre).
+  const elegir = async (p, campo, nombre, tab) => {
+    await click(p, `#${campo}Btn`);
+    if (tab) await click(p, `.sl-chooser .sl-seg [data-k="${tab}"]`);
+    await p.fill('.sl-chooser #slQ', nombre); await p.waitForTimeout(80);
+    await click(p, '.sl-chooser .tpick[data-id]');
+  };
 
   console.log('\nSuper Admin');
   let p = await open('hugo@x.com', store);
@@ -41,13 +48,19 @@ let ok = 0, bad = 0; const check = (l, c, x) => { if (c) { ok++; console.log('  
   await click(p, '#salonRoot .sl-sec [data-s="new"]');
   await p.fill('#slTit', 'Pintura de la entrada');
   await p.fill('#slFec', '2026-09-26'); await p.fill('#slHora', '09:00');
-  await p.selectOption('#slResp', 'p2');
+  await click(p, '#slRespBtn');
+  check('responsable: ventana con buscador y las dos pestañas', await p.evaluate(() => !!document.querySelector('.sl-chooser #slQ') && document.querySelectorAll('.sl-chooser .sl-seg button').length === 2 && document.querySelectorAll('.sl-chooser .tpick[data-id]').length === 16));
+  await p.fill('.sl-chooser #slQ', 'gom'); await p.waitForTimeout(80);
+  await p.screenshot({ path: path.join(SHOTS, 'salon-elegir.png') });
+  check('el buscador filtra (sin acentos)', await p.evaluate(() => { const r = [...document.querySelectorAll('.sl-chooser .tpick[data-id]')].map(b => b.textContent.trim()); return r.length === 1 && r[0] === 'Lucas Gómez'; }));
+  await click(p, '.sl-chooser .tpick[data-id="p2"]');
+  check('queda elegido en el botón', await p.evaluate(() => $('slResp').value === 'p2' && /Lucas Gómez/.test($('slRespBtn').textContent)));
   await click(p, '#slSave');
   check('sin auxiliar no deja guardar', await p.evaluate(() => /auxiliar/.test($('slErr').textContent) && !Object.keys(window.__salon.trabajos).length));
-  await p.selectOption('#slAux', 'p2');
-  await click(p, '#slSave');
-  check('responsable y auxiliar tienen que ser distintos', await p.evaluate(() => /distintos/.test($('slErr').textContent)));
-  await p.selectOption('#slAux', 'p11');
+  await click(p, '#slAuxBtn');
+  check('para auxiliar no ofrece al que ya es responsable', await p.evaluate(() => !document.querySelector('.sl-chooser .tpick[data-id="p2"]')));
+  await p.keyboard.press('Escape');
+  await elegir(p, 'slAux', 'mario');
   await p.fill('#slCupo', '3');
   await p.fill('#slMat', 'Rodillos\nLátex blanco');
   await click(p, '#slSave'); await p.waitForTimeout(200);
@@ -61,7 +74,7 @@ let ok = 0, bad = 0; const check = (l, c, x) => { if (c) { ok++; console.log('  
   await p.fill('#slTit', 'Corte de pasto');
   await click(p, '#slTipo [data-k="jardin"]');
   await p.fill('#slFec', '2026-09-24');
-  await p.selectOption('#slResp', 'p4'); await p.selectOption('#slAux', 'p8');
+  await elegir(p, 'slResp', 'bravo'); await elegir(p, 'slAux', 'pablo');
   await click(p, '#slRep [data-k="15d"]');
   await click(p, '#slSave'); await p.waitForTimeout(200);
   await click(p, '#salonRoot [data-s="mes"][data-d="1"]');
@@ -116,12 +129,13 @@ let ok = 0, bad = 0; const check = (l, c, x) => { if (c) { ok++; console.log('  
   await click(p, '#salonRoot [data-s="view"][data-k="cal"]');
   await click(p, '#salonRoot .sl-sec [data-s="new"]');
   await p.fill('#slTit', 'Arreglar canaletas'); await p.fill('#slFec', '2026-10-03');
-  await p.selectOption('#slResp', 'p3');
-  check('el selector ofrece "Paraná Sur" con Ramírez y "Agregar…"', await p.evaluate(() => { const g = [...document.querySelectorAll('#slAux optgroup')].map(o => o.label); return g.includes('Paraná Sur') && !!document.querySelector('#slAux option[value^="x:"]') && !!document.querySelector('#slAux option[value="__new"]'); }));
-  await p.selectOption('#slAux', '__new'); await p.waitForTimeout(150);
+  await elegir(p, 'slResp', 'vega');
+  await click(p, '#slAuxBtn'); await click(p, '.sl-chooser .sl-seg [data-k="otra"]');
+  check('pestaña "Paraná Sur" con Ramírez y "Agregar…"', await p.evaluate(() => /Paraná Sur/.test(document.querySelector('.sl-chooser .sl-seg [data-k="otra"]').textContent) && /Juan Ramírez/.test(document.querySelector('.sl-chooser .tlist').innerText) && !!document.querySelector('.sl-chooser .tpick[data-new]')));
+  await click(p, '.sl-chooser .tpick[data-new]'); await p.waitForTimeout(150);
   await p.fill('#slXn', 'Carlos Peralta'); await p.fill('#slXc', 'Sur');
   await click(p, '#slXs');
-  check('"Agregar…" desde el selector carga y lo deja elegido', await p.evaluate(() => { const v = document.getElementById('slAux').value; return v.startsWith('x:') && /Carlos Peralta/.test(document.getElementById('slAux').selectedOptions[0].textContent); }));
+  check('"Agregar…" desde la ventana lo carga y lo deja elegido', await p.evaluate(() => { const v = document.getElementById('slAux').value; return v.startsWith('x:') && /Carlos Peralta/.test($('slAuxBtn').textContent) && /Cong\. Sur/.test($('slAuxBtn').textContent); }));
   await click(p, '#slSave'); await p.waitForTimeout(200);
   const t3 = await p.evaluate(() => Object.values(window.__salon.trabajos).find(t => t.titulo === 'Arreglar canaletas'));
   check('el trabajo guarda nombre y congregación del de afuera, sin el teléfono', t3 && t3.aux.startsWith('x:') && t3.externos[t3.aux].nombre === 'Carlos Peralta' && t3.externos[t3.aux].cong === 'Sur' && !('tel' in t3.externos[t3.aux]), t3);

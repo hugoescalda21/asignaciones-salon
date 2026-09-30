@@ -6,6 +6,12 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Salón: buscador para elegir responsable y auxiliar — 30 sep 2026 (caché asignaciones-salon-v48)
+
+- Responsable y auxiliar ya no usan la lista desplegable del celular (con 300 hermanos no se encontraba a nadie): tocan un botón que abre la misma ventana que "＋ Agregar hermano", con **buscador** (sin importar acentos) y las pestañas de tu congregación y de la otra. Ahí mismo se agrega un hermano nuevo de la otra congregación.
+- El que ya es responsable no aparece para auxiliar (y al revés). Con "Quitar" se deja vacío.
+- Corregido: Escape en esa ventana cerraba también el formulario de abajo.
+
 ## Salón compartido: nombre de la otra congregación — 30 sep 2026 (caché asignaciones-salon-v47 y ver-salon-v40)
 
 - En **Salón → Limpieza → Salón compartido** se escribe una vez el nombre de la otra congregación (por ejemplo "Paraná Sur").
