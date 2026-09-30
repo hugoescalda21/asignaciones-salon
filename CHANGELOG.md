@@ -6,6 +6,10 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Corrección: error al abrir un trabajo del Salón — 30 sep 2026 (caché asignaciones-salon-v45)
+
+- Al abrir el detalle de un trabajo quedaba anotado "Cannot read properties of null (reading 'querySelector')" en el Registro de errores: el cambio de clase de esa ventana (sin id) hacía que la app buscara dónde poner el foco y no la encontraba. No afectaba el uso, pero ya no pasa. Prueba agregada en `29-salon`.
+
 ## Salón: calendario de trabajos y limpieza por grupos — 30 sep 2026 (caché asignaciones-salon-v44 y ver-salon-v38)
 
 - **Pestaña nueva "Salón"** (Super Admin y el rol nuevo **Admin — Salón**, que ve solo esa pestaña). Sin fichas de mantenimiento y sin conectarse con Salón al Día.

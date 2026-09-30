@@ -11,7 +11,7 @@ let ok = 0, bad = 0; const check = (l, c, x) => { if (c) { ok++; console.log('  
   const b = await launch();
   async function open(email, store) {
     const ctx = await b.newContext({ viewport: { width: 390, height: 844 } });
-    await ctx.addInitScript((d) => { localStorage.setItem('kh-schedule-data-v2', JSON.stringify(d)); localStorage.setItem('kh-welcome-salon', '1'); window.__opened = []; window.open = (u) => { window.__opened.push(u); return null; }; window.confirm = () => true; }, data);
+    await ctx.addInitScript((d) => { localStorage.setItem('kh-schedule-data-v2', JSON.stringify(d)); localStorage.setItem('kh-welcome-salon', '1'); window.__opened = []; window.open = (u) => { window.__opened.push(u); return null; }; window.confirm = () => true; window.__errs = []; window.addEventListener('error', (e) => window.__errs.push(String(e.message))); }, data);
     const p = await ctx.newPage(); p.errs = []; p.on('pageerror', e => p.errs.push(e.message));
     await p.goto(FILE); await p.waitForTimeout(700);
     await p.evaluate(async ({ store, email, mock }) => {
@@ -74,6 +74,9 @@ let ok = 0, bad = 0; const check = (l, c, x) => { if (c) { ok++; console.log('  
   await p.evaluate(() => window.__store && 0);
   await click(p, `#salonRoot .sl-ev[data-id="${tid}"]`);
   await p.waitForTimeout(150);
+  await p.waitForTimeout(100);
+  check('abrir el detalle no anota errores', await p.evaluate(() => !window.__errs.length), await p.evaluate(() => window.__errs));
+  check('una ventana sin id no rompe el foco', await p.evaluate(() => { try { focusFirstIn(''); return true; } catch (e) { return false; } }));
   const det = await modal(p).innerText();
   check('detalle: estado, responsable, auxiliar y voluntarios', /Programado/.test(det) && /Lucas Gómez/.test(det) && /Mario Díaz/.test(det) && /Voluntarios/i.test(det), det.slice(0, 400));
   await p.screenshot({ path: path.join(SHOTS, 'salon-detalle.png') });

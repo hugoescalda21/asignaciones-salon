@@ -2985,7 +2985,9 @@
     }
   });
   function focusFirstIn(id) {
-    const modalBox = $(id).querySelector('.modal') || $(id);
+    const ov = id && $(id);
+    if (!ov) return;   // ventanas sin id (las de Territorios y Salón) ponen su propio foco
+    const modalBox = ov.querySelector('.modal') || ov;
     const focusables = getFocusable(modalBox);
     if (focusables.length) focusables[0].focus();
   }

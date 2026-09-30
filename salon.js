@@ -206,7 +206,7 @@
   /* ---------- Modal ---------- */
   function openModal(html, opts) {
     const ov = document.createElement('div');
-    ov.className = 'modal-overlay tmodal slmodal';
+    ov.className = 'modal-overlay tmodal slmodal' + (opts && opts.cls ? ' ' + opts.cls : '');
     ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true');
     ov.innerHTML = `<div class="modal">${html}</div>`;
     document.body.appendChild(ov);
@@ -376,8 +376,7 @@
   }
   function openTrabajo(id, fecha) {
     const t0 = S.trabajos[id]; if (!t0) return;
-    const m = openModal(detailHTML(t0, fecha), { onClose: () => { openDetail = null; } });
-    m.el.classList.add('sl-detail');
+    const m = openModal(detailHTML(t0, fecha), { onClose: () => { openDetail = null; }, cls: 'sl-detail' });
     const cur = () => S.trabajos[id];
     openDetail = { close: m.close, refresh: () => { const t = cur(); if (!t) { m.close(); return; } const nota = m.q('#slNota'); const keep = nota ? nota.value : null; m.set(detailHTML(t, fecha)); if (keep != null && m.q('#slNota')) m.q('#slNota').value = keep; } };
     const setOcc = (k, v) => { const t = cur(); if (!t) return; t.ocurr = t.ocurr || {}; t.ocurr[fecha] = Object.assign({}, t.ocurr[fecha] || {}); if (v === undefined) delete t.ocurr[fecha][k]; else t.ocurr[fecha][k] = v; return safe(() => sWrite(sRef('trabajos'), [[occPath(t, fecha, k), v]])); };
