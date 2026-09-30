@@ -17,6 +17,7 @@ rules_version = '2';
 // "acomodadoresAdminEmails"   = Admin de Acomodadores.
 // "asignacionesAdminEmails"   = Admin de Asignaciones (Programa).
 // "territoriosAdminEmails"    = Admin de Territorios (territorios, grupos y salidas).
+// "salonAdminEmails"          = Admin del Salón (trabajos del Salón y limpieza).
 // "anunciosOnlyEmails"         = Solo anuncios (publican anuncios y nada más).
 // "anunciosEmails"             = permiso extra "Puede publicar anuncios"
 //                                para cualquiera de los tres Admin.
@@ -57,6 +58,7 @@ service cloud.firestore {
       }
       function esSoloAnuncios() { return mail() in lista('anunciosOnlyEmails'); }
       function esTerritorios() { return mail() in lista('territoriosAdminEmails'); }
+      function esSalon() { return mail() in lista('salonAdminEmails'); }
       function puedeAnuncios() { return esSuper() || esSoloAnuncios() || mail() in lista('anunciosEmails'); }
       // Qué partes del documento cambian en este guardado (primer nivel:
       // settings, publishers, weeks, anuncios, timerLog...).
@@ -68,7 +70,7 @@ service cloud.firestore {
       // listas de acceso de ESA congregación puntual (.get(..., []) por
       // si alguna lista todavía no existe).
       allow read: if request.auth != null && (
-                    esSuper() || esAdmin() || esSoloAnuncios() || esTerritorios() ||
+                    esSuper() || esAdmin() || esSoloAnuncios() || esTerritorios() || esSalon() ||
                     mail() in lista('viewerEmails')
                   );
 
@@ -83,7 +85,7 @@ service cloud.firestore {
                     esSuper() ||
                     (esAdmin() && (soloCambia(['weeks']) || (puedeAnuncios() && soloCambia(['weeks', 'anuncios'])))) ||
                     (esSoloAnuncios() && soloCambia(['anuncios'])) ||
-                    (esTerritorios() && puedeAnuncios() && soloCambia(['anuncios']))
+                    ((esTerritorios() || esSalon()) && puedeAnuncios() && soloCambia(['anuncios']))
                   );
 
       // Nunca se borra una congregación completa desde la app.
@@ -98,7 +100,7 @@ service cloud.firestore {
       function en(campo) { return request.auth.token.email in ajustes().get(campo, []); }
       allow create: if request.auth != null
                     && (en('editorEmails') || en('tecnicoAdminEmails') || en('acomodadoresAdminEmails') ||
-                        en('asignacionesAdminEmails') || en('territoriosAdminEmails') || en('anunciosOnlyEmails') || en('viewerEmails'))
+                        en('asignacionesAdminEmails') || en('territoriosAdminEmails') || en('salonAdminEmails') || en('anunciosOnlyEmails') || en('viewerEmails'))
                     && request.resource.data.keys().hasOnly(['at', 'app', 'kind', 'msg', 'where', 'role', 'device', 'online'])
                     && request.resource.data.msg is string && request.resource.data.msg.size() <= 500
                     && request.resource.data.get('where', '') is string && request.resource.data.get('where', '').size() <= 1000;
@@ -115,7 +117,7 @@ service cloud.firestore {
       function enT(c) { return request.auth.token.email in ajT().get(c, []); }
       function conAccesoT() {
         return enT('editorEmails') || enT('tecnicoAdminEmails') || enT('acomodadoresAdminEmails') ||
-               enT('asignacionesAdminEmails') || enT('territoriosAdminEmails') || enT('anunciosOnlyEmails') || enT('viewerEmails');
+               enT('asignacionesAdminEmails') || enT('territoriosAdminEmails') || enT('salonAdminEmails') || enT('anunciosOnlyEmails') || enT('viewerEmails');
       }
       function gestorT() { return enT('editorEmails') || enT('territoriosAdminEmails'); }
       function encargadoDeGrupo() {
@@ -134,7 +136,7 @@ service cloud.firestore {
       function enS(c) { return request.auth.token.email in ajS().get(c, []); }
       function conAccesoS() {
         return enS('editorEmails') || enS('tecnicoAdminEmails') || enS('acomodadoresAdminEmails') ||
-               enS('asignacionesAdminEmails') || enS('territoriosAdminEmails') || enS('anunciosOnlyEmails') || enS('viewerEmails');
+               enS('asignacionesAdminEmails') || enS('territoriosAdminEmails') || enS('salonAdminEmails') || enS('anunciosOnlyEmails') || enS('viewerEmails');
       }
       function editaGrupo() {
         let g = /databases/$(database)/documents/congregations/$(code)/terr/grupos;
@@ -154,7 +156,7 @@ service cloud.firestore {
       function gestorX() { return enX('editorEmails') || enX('territoriosAdminEmails'); }
       function conAccesoX() {
         return gestorX() || enX('tecnicoAdminEmails') || enX('acomodadoresAdminEmails') ||
-               enX('asignacionesAdminEmails') || enX('anunciosOnlyEmails') || enX('viewerEmails');
+               enX('asignacionesAdminEmails') || enX('salonAdminEmails') || enX('anunciosOnlyEmails') || enX('viewerEmails');
       }
       function avisoValido() {
         let d = request.resource.data;
@@ -166,6 +168,45 @@ service cloud.firestore {
       allow update: if request.auth != null && resource.data.email == request.auth.token.email && avisoValido();
       allow read: if request.auth != null && (gestorX() || resource.data.email == request.auth.token.email);
       allow delete: if request.auth != null && gestorX();
+    }
+
+    // Salón: trabajos de mantenimiento ("trabajos") y limpieza por grupos ("limpieza").
+    // Los lee cualquiera con acceso (los hermanos los ven en la vista); los cambian el
+    // Super Admin y el Admin del Salón.
+    match /congregations/{code}/salon/{docId} {
+      function ajL() { return get(/databases/$(database)/documents/congregations/$(code)).data.settings; }
+      function enL(c) { return request.auth.token.email in ajL().get(c, []); }
+      function conAccesoL() {
+        return enL('editorEmails') || enL('tecnicoAdminEmails') || enL('acomodadoresAdminEmails') || enL('asignacionesAdminEmails') ||
+               enL('territoriosAdminEmails') || enL('salonAdminEmails') || enL('anunciosOnlyEmails') || enL('viewerEmails');
+      }
+      allow read: if request.auth != null && conAccesoL();
+      allow write: if request.auth != null && (enL('editorEmails') || enL('salonAdminEmails')) && docId in ['trabajos', 'limpieza'];
+    }
+
+    // "Me sumo": cada hermano se anota (o se da de baja) él mismo en un trabajo del Salón, con su
+    // propio uid en el id del documento (trabajo__fecha__uid). Todos los de la congregación ven
+    // quiénes van. El Super Admin y el Admin del Salón pueden quitar a cualquiera.
+    match /congregations/{code}/salonAnotados/{aid} {
+      function ajA() { return get(/databases/$(database)/documents/congregations/$(code)).data.settings; }
+      function enA(c) { return request.auth.token.email in ajA().get(c, []); }
+      function gestorA() { return enA('editorEmails') || enA('salonAdminEmails'); }
+      function conAccesoA() {
+        return gestorA() || enA('tecnicoAdminEmails') || enA('acomodadoresAdminEmails') || enA('asignacionesAdminEmails') ||
+               enA('territoriosAdminEmails') || enA('anunciosOnlyEmails') || enA('viewerEmails');
+      }
+      function anotadoValido() {
+        let d = request.resource.data;
+        return d.keys().hasOnly(['tid', 'fecha', 'pubId', 'nombre', 'uid', 'comentario', 'at']) &&
+               d.uid == request.auth.uid && aid == d.tid + '__' + d.fecha + '__' + request.auth.uid &&
+               d.tid is string && d.tid.size() <= 40 && d.fecha is string && d.fecha.size() == 10 &&
+               d.pubId is string && d.pubId.size() <= 40 && d.nombre is string && d.nombre.size() <= 80 &&
+               d.get('comentario', '') is string && d.get('comentario', '').size() <= 80;
+      }
+      allow read: if request.auth != null && conAccesoA();
+      allow create: if request.auth != null && conAccesoA() && anotadoValido();
+      allow update: if request.auth != null && resource.data.uid == request.auth.uid && anotadoValido();
+      allow delete: if request.auth != null && (resource.data.uid == request.auth.uid || gestorA());
     }
 
     // Solicitudes de acceso — quien entra a la vista sin estar autorizado pide acceso con

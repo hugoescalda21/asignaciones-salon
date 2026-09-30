@@ -1711,6 +1711,7 @@
       const el = e.target.closest('[data-date]');
       if (!el) return;
       if (el.dataset.meeting === 'salida') { if (window.terrVer) window.terrVer.goToSalida(el.dataset.date); return; }
+      if (el.dataset.meeting === 'salon') { if (window.salonVer) window.salonVer.goTo(el.dataset.date); return; }
       openDayModal(el.dataset.date, el.dataset.meeting);
     });
   }
@@ -2377,6 +2378,8 @@
     });
     // Las salidas que conduce (las arma el encargado en Territorios) también son asignaciones suyas.
     if (window.terrVer) { try { rows.push(...window.terrVer.myConductorRows(pub, today)); } catch (e) { console.error(e); } }
+    // Los trabajos del Salón (responsable, auxiliar o voluntario) y la limpieza de su grupo.
+    if (window.salonVer) { try { rows.push(...window.salonVer.myRows(pub, today)); } catch (e) { console.error(e); } }
     if (!rows.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
     rows.sort((a, b) => a.date.localeCompare(b.date));
     renderNextHero(rows[0], pub);
@@ -2404,13 +2407,13 @@
     function groupedHTML() {
       const monthOrder = []; const byMonth = {};
       rows.forEach(r => {
-        if (!byMonth[r.month]) { byMonth[r.month] = { tecnico: [], programa: [], salida: [] }; monthOrder.push(r.month); }
+        if (!byMonth[r.month]) { byMonth[r.month] = { tecnico: [], programa: [], salida: [], salon: [] }; monthOrder.push(r.month); }
         byMonth[r.month][r.type].push(r);
       });
       let html = '';
       monthOrder.forEach((month, mi) => {
         html += `<div class="pmonth-divider"${mi === 0 ? ' style="margin-top:0; padding-top:0; border-top:none;"' : ''}>${escapeHtml(month.split(' de ')[0])}</div>`;
-        [['tecnico', 'Equipo técnico'], ['programa', 'Programa'], ['salida', 'Salidas al servicio']].forEach(([key, label]) => {
+        [['tecnico', 'Equipo técnico'], ['programa', 'Programa'], ['salida', 'Salidas al servicio'], ['salon', 'Salón del Reino']].forEach(([key, label]) => {
           const items = byMonth[month][key];
           if (!items.length) return;
           html += `<div class="ptype-label">${label}</div>` + items.map(flatRowHTML).join('');
@@ -2602,6 +2605,7 @@
       renderAnuncios();
       renderUpcoming();
       if (window.terrVer) { try { window.terrVer.onData(code); } catch (e) { console.error(e); } }
+      if (window.salonVer) { try { window.salonVer.onData(code); } catch (e) { console.error(e); } }
       if (!window.__tabInit) {
         window.__tabInit = true;
         const wanted = new URLSearchParams(location.search).get('tab') || (location.hash || '').replace('#', '');
@@ -2960,6 +2964,8 @@
 
 <script src="../mapa.js"></script>
 <script src="territorios-ver.js"></script>
+<script src="../salon-core.js"></script>
+<script src="salon-ver.js"></script>
 <script src="colores.js"></script>
 </body>
 </html>

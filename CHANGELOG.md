@@ -6,6 +6,18 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Salón: calendario de trabajos y limpieza por grupos — 30 sep 2026 (caché asignaciones-salon-v44 y ver-salon-v38)
+
+- **Pestaña nueva "Salón"** (Super Admin y el rol nuevo **Admin — Salón**, que ve solo esa pestaña). Sin fichas de mantenimiento y sin conectarse con Salón al Día.
+- **Calendario:** el mes con los trabajos de mantenimiento (pintura, reparación, jardín, limpieza profunda, otro), cada tipo con su color, y las semanas de limpieza; arriba lo de esta semana y abajo los próximos trabajos.
+- **Cada trabajo:** qué hay que hacer, tipo, día y hora, **responsable y auxiliar (obligatorios y distintos)**, cuántos voluntarios más hacen falta, si se repite (cada 15 días, cada mes, cada 3 meses), qué llevar y si se muestra en la vista. En el detalle: estado (Programado, En curso, Hecho), quiénes van (con su comentario), agregar o quitar a alguien, pedir voluntarios por WhatsApp con el link de la vista, tildar los materiales, una nota y "Suspender esta vez" en los que se repiten.
+- **Limpieza por grupos** (sin responsable ni auxiliar): después de cada reunión o un día fijo, la rotación con los grupos de Territorios, las semanas de cada mes que limpia otra congregación (no cuentan en la rotación), las tareas y cómo quedan las próximas semanas.
+- **Vista → Inicio, "En el Salón":** a qué grupo le toca limpiar (si es el suyo, con las tareas para tildar) y los trabajos con **"Me sumo"**: hoja de confirmación ("Te anotás como…", comentario opcional), "✓ Anotado" (agregar al calendario, cambiar el comentario, "Ya no puedo ir"), "Completo" cuando no hay lugar. Si el email no está vinculado, se lo explica. Los trabajos y la limpieza aparecen en "Tus asignaciones".
+- **Avisos:** al responsable y al auxiliar cuando alguien se suma o se baja; al que asignan como responsable, auxiliar o voluntario; y recordatorio de la víspera (y los demás que elija cada uno) para los trabajos y la limpieza del grupo.
+- **Copias de seguridad:** incluyen el Salón y se restaura como parte aparte ("Salón").
+- **Reglas:** `salon/{trabajos|limpieza}` los cambian el Super Admin y el Admin del Salón; `salonAnotados` cada hermano solo lo suyo (con su uid en el id). Hay que publicar reglas y funciones: `firebase deploy --only firestore:rules,functions`.
+- Archivos nuevos: `salon-core.js` (lógica compartida, con copia idéntica en `functions/`), `salon.js`, `ver/salon-ver.js`. Pruebas: `29-salon`, `30-vista-salon`, 20 reglas nuevas y 6 de funciones.
+
 ## Pruebas de las reglas de seguridad — 28 sep 2026
 
 - Nueva carpeta `push-salon-2026/pruebas-reglas`: 86 pruebas que comprueban, contra los **emuladores de Firebase** (en la PC, sin tocar la base real), quién puede ver y cambiar cada cosa: la congregación por rol, registro de errores, territorios, salidas, "Lo terminé", solicitudes de acceso, avisos push y archivos (adjuntos, fotos de territorios y copias de seguridad).

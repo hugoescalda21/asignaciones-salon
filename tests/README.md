@@ -90,6 +90,8 @@ Al final muestra una línea por archivo y el total, por ejemplo
 | `26-copias-nube` | Copias de seguridad en la nube (Super Admin): lista, hacer una ahora, descargar, restaurar por partes, importar el archivo |
 | `27-calendario-mes` | Vista: el Calendario abre en el mes de la próxima reunión y las flechas pasan de a un mes |
 | `28-colores-asignaciones` | App de asignaciones: estilos de color en Ajustes → Apariencia, predeterminado según si ya se usaba |
+| `29-salon` | Pestaña Salón: trabajos con responsable y auxiliar obligatorios, repetición, detalle, voluntarios, WhatsApp, estado; limpieza por grupos; rol Admin — Salón |
+| `30-vista-salon` | Vista: "En el Salón" con la limpieza del grupo, "Me sumo", "✓ Anotado", "Ya no puedo ir", "Completo" y email sin vincular |
 
 Las capturas de pantalla que sacan quedan en `tests/editor/capturas/`
 (no se suben a git), por si querés mirarlas.

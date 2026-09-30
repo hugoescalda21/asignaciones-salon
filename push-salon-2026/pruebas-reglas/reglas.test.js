@@ -20,12 +20,12 @@ try { require('firebase/compat/app').default.firestore.setLogLevel('silent'); } 
 
 const C = 'congregations/C';
 const S = {
-  super: 'super@x.com', tec: 'tec@x.com', aco: 'aco@x.com', asig: 'asig@x.com', terr: 'terr@x.com',
+  super: 'super@x.com', tec: 'tec@x.com', aco: 'aco@x.com', asig: 'asig@x.com', terr: 'terr@x.com', salon: 'salon@x.com',
   anun: 'anun@x.com', ver: 'ver@x.com', ver2: 'ver2@x.com', enc: 'enc@x.com', afuera: 'afuera@x.com'
 };
 const SETTINGS = {
   editorEmails: [S.super], tecnicoAdminEmails: [S.tec], acomodadoresAdminEmails: [S.aco],
-  asignacionesAdminEmails: [S.asig], territoriosAdminEmails: [S.terr], anunciosOnlyEmails: [S.anun],
+  asignacionesAdminEmails: [S.asig], territoriosAdminEmails: [S.terr], salonAdminEmails: [S.salon], anunciosOnlyEmails: [S.anun],
   anunciosEmails: [S.asig], viewerEmails: [S.ver, S.ver2, S.enc]
 };
 
@@ -60,6 +60,8 @@ const section = (t) => console.log('\n' + t);
       await f.doc(C + '/errores/e1').set({ at: 'x', app: 'ver', kind: 'error', msg: 'algo' });
       await f.doc(C + '/solicitudes/' + uid(S.afuera)).set({ email: S.afuera, name: 'Alguien Nuevo', createdAt: 'a', updatedAt: 'a', status: 'pendiente' });
       await f.doc('pushSubscriptions/tok1').set({ code: 'C', pubId: 'p1' });
+      await f.doc(C + '/salon/trabajos').set({ lista: { w1: { id: 'w1', titulo: 'Pintura', resp: 'p1', aux: 'p2' } } });
+      await f.doc(C + '/salonAnotados/w1__2026-10-10__' + uid(S.ver2)).set({ tid: 'w1', fecha: '2026-10-10', pubId: 'p3', nombre: 'Otro', uid: uid(S.ver2), comentario: '', at: 'x' });
     });
   }
   await seed();
@@ -149,6 +151,29 @@ const section = (t) => console.log('\n' + t);
   await check('el Super Admin lo rechaza', assertSucceeds(db(S.super).doc(C + '/solicitudes/' + uid(S.afuera)).update({ status: 'rechazado' })));
   await check('ya rechazado, el pedido no se puede reescribir', assertFails(db(S.afuera).doc(C + '/solicitudes/' + uid(S.afuera)).set(Object.assign(pedido(S.afuera), { createdAt: 'a' }))));
   await check('el Super Admin lo borra', assertSucceeds(db(S.super).doc(C + '/solicitudes/' + uid(S.afuera)).delete()));
+
+  section('8b) Salón: trabajos, limpieza y "Me sumo"');
+  await check('el Admin del Salón abre la congregación (para ver los hermanos)', assertSucceeds(db(S.salon).doc(C).get()));
+  await check('el Admin del Salón NO cambia las semanas', assertFails(db(S.salon).doc(C).update({ 'weeks.2026-09-21.semana.roles.sonido': 'p8' })));
+  await check('un hermano ve los trabajos', assertSucceeds(db(S.ver).doc(C + '/salon/trabajos').get()));
+  await check('alguien de afuera NO', assertFails(db(S.afuera).doc(C + '/salon/trabajos').get()));
+  await check('el Admin del Salón programa un trabajo', assertSucceeds(db(S.salon).doc(C + '/salon/trabajos').update({ 'lista.w2': { id: 'w2', titulo: 'Pasto' } })));
+  await check('el Super Admin arma la limpieza', assertSucceeds(db(S.super).doc(C + '/salon/limpieza').set({ rotacion: ['g1'] })));
+  await check('el Admin de territorios NO cambia los trabajos', assertFails(db(S.terr).doc(C + '/salon/trabajos').update({ 'lista.w3': { id: 'w3' } })));
+  await check('un hermano NO cambia los trabajos', assertFails(db(S.ver).doc(C + '/salon/trabajos').update({ 'lista.w3': { id: 'w3' } })));
+  await check('NO se crean otros documentos en salon/', assertFails(db(S.super).doc(C + '/salon/otra').set({ a: 1 })));
+  const yo = uid(S.ver), anot = (o) => Object.assign({ tid: 'w1', fecha: '2026-10-10', pubId: 'p1', nombre: 'Ver', uid: yo, comentario: 'Llevo la escalera', at: 'x' }, o || {});
+  const aRef = (u) => db(S.ver).doc(C + '/salonAnotados/w1__2026-10-10__' + u);
+  await check('un hermano se suma a un trabajo', assertSucceeds(aRef(yo).set(anot())));
+  await check('cambia su comentario', assertSucceeds(aRef(yo).set(anot({ comentario: 'Llevo pintura' }))));
+  await check('NO anota a otro (uid ajeno)', assertFails(db(S.ver).doc(C + '/salonAnotados/w1__2026-10-11__otro').set(anot({ fecha: '2026-10-11', uid: 'otro' }))));
+  await check('NO con un id que no coincide', assertFails(db(S.ver).doc(C + '/salonAnotados/w9__2026-10-10__' + yo).set(anot())));
+  await check('NO con campos de más', assertFails(db(S.ver).doc(C + '/salonAnotados/w1__2026-10-12__' + yo).set(anot({ fecha: '2026-10-12', email: S.ver }))));
+  await check('alguien de afuera NO se suma', assertFails(db(S.afuera).doc(C + '/salonAnotados/w1__2026-10-10__' + uid(S.afuera)).set(anot({ uid: uid(S.afuera) }))));
+  await check('todos ven quiénes van', assertSucceeds(db(S.ver).doc(C + '/salonAnotados/w1__2026-10-10__' + uid(S.ver2)).get()));
+  await check('NO da de baja a otro', assertFails(db(S.ver).doc(C + '/salonAnotados/w1__2026-10-10__' + uid(S.ver2)).delete()));
+  await check('"Ya no puedo ir": se da de baja él mismo', assertSucceeds(aRef(yo).delete()));
+  await check('el Admin del Salón quita a alguien', assertSucceeds(db(S.salon).doc(C + '/salonAnotados/w1__2026-10-10__' + uid(S.ver2)).delete()));
 
   section('9) Avisos push');
   await check('nadie lee los registros de celulares', assertFails(db(S.super).doc('pushSubscriptions/tok1').get()));

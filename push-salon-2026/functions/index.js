@@ -14,7 +14,9 @@ const REGION = 'southamerica-east1';
 const { roleLabel, collectNewlyAssignedIds, avisoPreview, selectNewAvisos, notificationForNewAvisos, validateReminder, reminderDocId, ROLES_MAP,
   arParts, addDaysIso, remindersDue, reminderMessage, sentReminderId, roleAreasFor, disallowedWeekChanges, guardSummary, accessRequestMessage,
   conductorAssignments, newConductors, conductorMessage, newTerritoryAssignments,
-  BACKUP_SUBS, backupName, parseBackupName, buildBackup, backupsToPrune, restorePlan, isRestoreWrite } = require('./lib');
+  BACKUP_SUBS, ALL_SUBS, backupName, parseBackupName, buildBackup, backupsToPrune, restorePlan, isRestoreWrite,
+  salonAssignments, newSalonAssignments, salonAssignMessage, anotadoMessage } = require('./lib');
+const SalonCore = require('./salon-core');
 
 // La app vive en GitHub Pages bajo /asignaciones-salon/, no en la raíz del
 // dominio: un link o ícono con "/" apunta a hugoescalda21.github.io/ y no a la app.
@@ -370,6 +372,42 @@ exports.onTerritoriosWrite = onDocumentWritten({ document: 'congregations/{code}
   return null;
 });
 
+// Salón: responsable, auxiliar o voluntario agregado a mano → aviso a ese hermano.
+exports.onSalonWrite = onDocumentWritten({ document: 'congregations/{code}/salon/{docId}', region: REGION }, async (event) => {
+  if (event.params.docId !== 'trabajos') return null;
+  const beforeDoc = event.data.before.exists ? event.data.before.data() : {};
+  const afterDoc = event.data.after.exists ? event.data.after.data() : null;
+  if (!afterDoc || isRestoreWrite(beforeDoc, afterDoc)) return null;
+  const code = event.params.code;
+  const { dateIso: hoyIso } = arParts(new Date());
+  const nuevos = newSalonAssignments(beforeDoc.lista || {}, afterDoc.lista || {}, hoyIso);
+  if (!nuevos.length) return null;
+  const cong = (await db.collection('congregations').doc(code).get()).data() || {};
+  for (const a of nuevos) {
+    const n = await sendToPubs(code, [a.pubId], salonAssignMessage(a, firstName(cong, a.pubId)), verLink(code), 'asignacion', `salon-${a.t.id}-${a.fecha}-${a.rol}`);
+    console.log('[salón]', a.rol, a.pubId, a.fecha, '· celulares:', n);
+  }
+  return null;
+});
+
+// "Me sumo" o "Ya no puedo ir" desde la vista → aviso al responsable y al auxiliar del trabajo.
+exports.onSalonAnotado = onDocumentWritten({ document: 'congregations/{code}/salonAnotados/{aid}', region: REGION }, async (event) => {
+  const before = event.data.before.exists ? event.data.before.data() : null;
+  const after = event.data.after.exists ? event.data.after.data() : null;
+  if (before && after) return null;   // solo cambió el comentario
+  const r = after || before;
+  if (!r || r._restoredAt || (after && isRestoreWrite(before || {}, after))) return null;
+  const code = event.params.code;
+  const ref = db.collection('congregations').doc(code);
+  const [trSnap, anSnap] = await Promise.all([ref.collection('salon').doc('trabajos').get(), ref.collection('salonAnotados').where('tid', '==', r.tid).get()]);
+  const t = ((trSnap.exists && trSnap.data().lista) || {})[r.tid];
+  if (!t) return null;
+  const anotados = {}; anSnap.forEach((d) => { anotados[d.id] = d.data(); });
+  const ci = SalonCore.cupoInfo(t, r.fecha, anotados);
+  await sendToPubs(code, [t.resp, t.aux].filter(pid => pid !== r.pubId), anotadoMessage(r, t, !!after, ci.van, ci.cupo), APP_BASE + 'asignaciones-salon.html', 'aviso', `anotado-${event.params.aid}`);
+  return null;
+});
+
 // "Lo terminé" desde la vista → aviso al Super Admin y a los Admin de Territorios.
 exports.onTerminado = onDocumentCreated({ document: 'congregations/{code}/terminados/{tid}', region: REGION }, async (event) => {
   const code = event.params.code;
@@ -505,6 +543,14 @@ exports.sendScheduledReminders = onSchedule({ schedule: '0,30 * * * *', timeZone
           congCache[code].__salidas = conductorAssignments(docs, hoyIso, addDaysIso(hoyIso, 2))
             .map((a) => Object.assign(a, { lugarName: lugares[a.lugar] ? lugares[a.lugar].nombre : '' }));
         } catch (e) { console.warn('[recordatorio] salidas', code, e && e.message); }
+        // Y los trabajos del Salón (responsable, auxiliar, voluntarios) y la limpieza del grupo.
+        try {
+          const ref = db.collection('congregations').doc(code);
+          const [tr, lz, an, gr] = await Promise.all([ref.collection('salon').doc('trabajos').get(), ref.collection('salon').doc('limpieza').get(), ref.collection('salonAnotados').get(), ref.collection('terr').doc('grupos').get()]);
+          const anotados = {}; an.forEach((d) => { anotados[d.id] = d.data(); });
+          const { dateIso: hoyIso } = arParts(new Date());
+          congCache[code].__salon = salonAssignments(congCache[code], (tr.exists && tr.data().lista) || {}, anotados, lz.exists ? lz.data() : {}, (gr.exists && gr.data().lista) || {}, hoyIso, addDaysIso(hoyIso, 2));
+        } catch (e) { console.warn('[recordatorio] salón', code, e && e.message); }
       }
     }
     return congCache[code];
@@ -688,7 +734,7 @@ async function snapshotCongregation(code) {
   const ref = db.collection('congregations').doc(code);
   const main = await ref.get();
   const subs = {};
-  for (const c of BACKUP_SUBS) {
+  for (const c of ALL_SUBS) {
     const qs = await ref.collection(c).get();
     subs[c] = {};
     qs.forEach((d) => { subs[c][d.id] = d.data(); });
@@ -758,14 +804,14 @@ exports.backups = onRequest({ cors: ['https://hugoescalda21.github.io'], region:
 
     if (body.action === 'get') { res.status(200).send({ backup }); return; }
     if (body.action === 'restore') {
-      const parts = (Array.isArray(body.parts) ? body.parts : []).filter(x => x === 'programa' || x === 'territorios');
+      const parts = (Array.isArray(body.parts) ? body.parts : []).filter(x => x === 'programa' || x === 'territorios' || x === 'salon');
       if (!parts.length) { res.status(400).send({ error: 'Elegí qué restaurar' }); return; }
       if (backup.code && backup.code !== code) { res.status(400).send({ error: 'Esa copia es de otra congregación' }); return; }
       // Antes de tocar nada, una copia de cómo está todo ahora (por si hay que volver atrás).
       const previa = await saveBackup(code, 'previa');
       const ref = db.collection('congregations').doc(code);
       const current = {};
-      for (const c of BACKUP_SUBS) current[c] = (await ref.collection(c).listDocuments()).map(d => d.id);
+      for (const c of ALL_SUBS) current[c] = (await ref.collection(c).listDocuments()).map(d => d.id);
       const plan = restorePlan(backup, parts, current, email, new Date().toISOString());
       if (plan.main) await ref.set(plan.main);
       let batch = db.batch(), n = 0;

@@ -243,6 +243,9 @@ function assignmentsOnDate(cong, pubId, dateIso) {
   const settings = (cong && cong.settings) || {};
   const weeks = (cong && cong.weeks) || {};
   const out = [];
+  ((cong && cong.__salon) || []).forEach((s) => {
+    if (s.pubId === pubId && s.dateIso === dateIso) out.push({ type: 'salon', labels: [s.label], timeMin: s.timeMin });
+  });
   ((cong && cong.__salidas) || []).forEach((s) => {
     if (s.pubId === pubId && s.dateIso === dateIso) out.push({ type: 'salida', labels: ['Conducir la salida' + (s.lugarName ? ' (' + s.lugarName + ')' : '')], timeMin: s.timeMin });
   });
@@ -305,7 +308,7 @@ function reminderMessage(due) {
   const time = first && first.timeMin != null ? fmtHHMM(first.timeMin) : '';
   const d = new Date(due.dateIso + 'T00:00:00Z');
   const dia = DIAS[d.getUTCDay()] + ' ' + d.getUTCDate();
-  const reunion = first && first.type === 'salida' ? 'Salida al servicio' : first && first.type === 'finde' ? 'Reunión del fin de semana' : 'Reunión entre semana';
+  const reunion = first && first.type === 'salida' ? 'Salida al servicio' : first && first.type === 'salon' ? 'Salón del Reino' : first && first.type === 'finde' ? 'Reunión del fin de semana' : 'Reunión entre semana';
   const aLas = time ? ' a las ' + time : '';
   const n = labels.length;
 
@@ -471,6 +474,8 @@ function newTerritoryAssignments(beforeList, afterList) {
    territorios y salidas. Se guardan en Storage: backups/{código}/{fecha}_{hora}-{tipo}.json
    (tipo: auto | manual | previa, la que se hace antes de restaurar). */
 const BACKUP_SUBS = ['terr', 'salidas', 'terminados'];
+const SALON_SUBS = ['salon', 'salonAnotados'];   // se restauran aparte ("Salón")
+const ALL_SUBS = BACKUP_SUBS.concat(SALON_SUBS);
 const BACKUP_KINDS = { auto: 'Automática', manual: 'Manual', previa: 'Antes de restaurar' };
 function backupName(code, when, kind) {
   const p = arParts(when);
@@ -484,7 +489,7 @@ function parseBackupName(name) {
 }
 function buildBackup(code, main, subs, when) {
   const out = { app: 'asignaciones-salon', version: 1, code, createdAt: when.toISOString(), main: main || {} };
-  BACKUP_SUBS.forEach((c) => { out[c] = (subs && subs[c]) || {}; });
+  ALL_SUBS.forEach((c) => { out[c] = (subs && subs[c]) || {}; });
   return out;
 }
 // Qué copias borrar: se guardan todas las de las últimas 8 semanas; de ahí hasta un año,
@@ -515,21 +520,68 @@ function restorePlan(backup, parts, current, email, nowIso) {
     main._restoredAt = nowIso;
     plan.main = main;
   }
-  if (parts.includes('territorios')) {
-    BACKUP_SUBS.forEach((c) => {
-      const want = backup[c] || {};
-      Object.keys(want).forEach((id) => plan.docs.push({ col: c, id, data: Object.assign({}, want[id], { _restoredAt: nowIso }) }));
-      ((current && current[c]) || []).filter(id => !(id in want)).forEach((id) => plan.docs.push({ col: c, id, data: null }));
-    });
-  }
+  const restoreSubs = (list) => list.forEach((c) => {
+    const want = backup[c] || {};
+    Object.keys(want).forEach((id) => plan.docs.push({ col: c, id, data: Object.assign({}, want[id], { _restoredAt: nowIso }) }));
+    ((current && current[c]) || []).filter(id => !(id in want)).forEach((id) => plan.docs.push({ col: c, id, data: null }));
+  });
+  if (parts.includes('territorios')) restoreSubs(BACKUP_SUBS);
+  // Las copias viejas (de antes del Salón) no traen esta parte: no se toca nada.
+  if (parts.includes('salon') && SALON_SUBS.some(c => c in backup)) restoreSubs(SALON_SUBS);
   return plan;
 }
+/* ---------- Salón: avisos y recordatorios ---------- */
+const SC = require('./salon-core');
+// Lo que tiene cada hermano en el Salón entre dos fechas (para los recordatorios): [{ pubId, dateIso, timeMin, label }]
+function salonAssignments(cong, trabajos, anotados, limpieza, grupos, fromIso, toIso) {
+  const out = [];
+  const grupoDe = (pid) => { const g = Object.values(grupos || {}).find(x => x && ((x.miembros || []).includes(pid) || x.encargado === pid || x.auxiliar === pid)); return g ? g.id : null; };
+  ((cong && cong.publishers) || []).forEach((p) => {
+    SC.asignacionesSalon(p.id, trabajos, anotados, limpieza, cong.settings, grupoDe, fromIso, toIso).forEach((a) => {
+      out.push({ pubId: p.id, dateIso: a.fecha, timeMin: a.rol === 'limpieza' ? null : parseHHMM(a.hora), label: a.rol === 'limpieza' ? 'Limpieza del Salón (tu grupo)' : a.label });
+    });
+  });
+  return out;
+}
+// Responsables, auxiliares y voluntarios agregados a mano que son nuevos en esta escritura.
+function newSalonAssignments(beforeLista, afterLista, todayIso) {
+  const out = [];
+  Object.values(afterLista || {}).forEach((t) => {
+    if (!t || !t.id) return;
+    const b = (beforeLista || {})[t.id] || {};
+    const next = SC.fechasDe(t, todayIso, SC.addDays(todayIso, 120))[0];
+    if (!next) return;
+    if (t.resp && t.resp !== b.resp) out.push({ pubId: t.resp, rol: 'responsable', t, fecha: next });
+    if (t.aux && t.aux !== b.aux) out.push({ pubId: t.aux, rol: 'auxiliar', t, fecha: next });
+    Object.keys(t.ocurr || {}).forEach((f) => {
+      if (f < todayIso) return;
+      const antes = (((b.ocurr || {})[f]) || {}).vols || [];
+      ((t.ocurr[f] || {}).vols || []).filter(pid => !antes.includes(pid)).forEach(pid => out.push({ pubId: pid, rol: 'voluntario', t, fecha: f }));
+    });
+  });
+  return out;
+}
+const DIAS_L = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+function diaTxt(iso) { const d = new Date(iso + 'T00:00:00Z'); return DIAS_L[d.getUTCDay()] + ' ' + d.getUTCDate(); }
+function salonAssignMessage(a, nombre) {
+  const quien = nombre ? `Hola ${nombre}, ` : '';
+  const que = a.rol === 'voluntario' ? 'te anotaron para' : `sos el ${a.rol} de`;
+  return { title: `${quien}${que} un trabajo en el Salón`, body: `${a.t.titulo || 'Trabajo'} · ${diaTxt(a.fecha)}${a.t.hora ? ' a las ' + a.t.hora : ''}` };
+}
+// "Me sumo" / "Ya no puedo ir" → aviso al responsable y al auxiliar.
+function anotadoMessage(r, t, alta, van, cupo) {
+  const n = r.nombre || '';
+  if (alta) return { title: `${n || 'Un hermano'} se sumó a ${t.titulo || 'un trabajo'}`, body: `${diaTxt(r.fecha)} · van ${van}${cupo ? ' de ' + cupo : ''}${r.comentario ? ' · "' + r.comentario + '"' : ''}` };
+  return { title: `${n || 'Un hermano'} ya no va a ${t.titulo || 'un trabajo'}`, body: `${diaTxt(r.fecha)} · van ${van}${cupo ? ' de ' + cupo : ''}${cupo && van < cupo ? ' · se liberó un lugar' : ''}` };
+}
+
 // ¿Esta escritura es una restauración? (los avisos de "te asignaron" no se mandan en ese caso)
 function isRestoreWrite(before, after) {
   return !!(after && after._restoredAt && (!before || before._restoredAt !== after._restoredAt));
 }
 
 module.exports = {
+  salonAssignments, newSalonAssignments, salonAssignMessage, anotadoMessage, SALON_SUBS, ALL_SUBS,
   BACKUP_SUBS, BACKUP_KINDS, backupName, parseBackupName, buildBackup, backupsToPrune, restorePlan, isRestoreWrite,
   salidaInstances, conductorAssignments, newConductors, conductorMessage, newTerritoryAssignments, mondayOfIsoLib,
   accessRequestMessage,

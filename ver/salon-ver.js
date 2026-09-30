@@ -1,0 +1,267 @@
+/* =====================================================================
+   Vista de la congregación — El Salón: trabajos y limpieza
+   ---------------------------------------------------------------------
+   Usa las variables y funciones de ver.html (data, currentUser, $,
+   escapeHtml, initFirebase, getCode, showTab, formatDate, monthKey,
+   gcalUrl, showToast, renderPersonalSummary) y salon-core.js.
+   Lee: congregations/{código}/salon/trabajos, salon/limpieza, terr/grupos,
+        y salonAnotados (quiénes se sumaron a cada trabajo).
+   Escribe solo lo suyo: su propio "Me sumo" en salonAnotados/{trabajo__fecha__uid}.
+   ===================================================================== */
+(function () {
+  'use strict';
+  const C = window.SalonCore;
+  if (!C) return;
+  const V = { code: null, unsub: [], trabajos: {}, limpieza: {}, grupos: {}, anotados: {}, started: false };
+  window.__salonVer = V;
+
+  const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+  const DIAS3 = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+  const css = `
+  #salonBox .sv-lz { border-radius: 14px; padding: 12px 14px; margin-bottom: 8px; background: var(--surface); border: 1px solid var(--line); }
+  #salonBox .sv-lz.mine { border: none; color: #fff; background: linear-gradient(135deg, #0E7490, #0891B2); }
+  #salonBox .sv-lz small { display: block; font-size: 10.5px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; opacity: .8; }
+  #salonBox .sv-lz b { display: block; font-size: 16px; margin: 2px 0; }
+  #salonBox .sv-lz p { margin: 0; font-size: 12.5px; opacity: .9; line-height: 1.45; }
+  #salonBox .sv-tareas { margin-top: 9px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,.25); }
+  #salonBox .sv-tareas label { display: flex; gap: 9px; align-items: center; font-size: 13px; padding: 4px 0; cursor: pointer; }
+  #salonBox .sv-tareas input { width: 17px; height: 17px; accent-color: #fff; }
+  #salonBox .sv-tareas label.ok span { text-decoration: line-through; opacity: .75; }
+  .sv-card { display: flex; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
+  .sv-card.mine { border: 1.5px solid var(--accent-gold, #A9822F); }
+  .sv-dt { width: 38px; flex-shrink: 0; text-align: center; font-size: 10.5px; font-weight: 700; color: var(--ink-soft); line-height: 1.15; padding-top: 2px; }
+  .sv-dt b { display: block; font-size: 18px; color: var(--ink); }
+  .sv-bar { width: 4px; border-radius: 3px; flex-shrink: 0; }
+  .sv-tx { flex: 1; min-width: 0; }
+  .sv-tx b { display: block; font-size: 14.5px; }
+  .sv-tx small { display: block; font-size: 12px; color: var(--ink-soft); line-height: 1.45; }
+  .sv-tx small em { font-style: normal; font-weight: 700; color: #B45309; }
+  .sv-act { align-self: center; flex-shrink: 0; }
+  .sv-btn { border: none; border-radius: 16px; padding: 7px 12px; font: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer; background: var(--accent-blue, #2563EB); color: #fff; white-space: nowrap; }
+  .sv-btn.ok { background: rgba(22,163,74,.14); color: #15803D; }
+  .sv-btn.full { background: var(--bg); color: var(--ink-soft); cursor: default; }
+  .sv-tag { font-size: 10.5px; font-weight: 800; border-radius: 9px; padding: 4px 8px; background: rgba(169,130,47,.2); color: var(--ink); white-space: nowrap; }
+  html.dk .sv-btn.ok { color: #86EFAC; background: rgba(34,197,94,.18); }
+  .sv-ov { position: fixed; inset: 0; background: rgba(15,23,42,.5); z-index: 60; display: flex; align-items: flex-end; justify-content: center; }
+  .sv-sheet { background: var(--surface); color: var(--ink); width: 100%; max-width: 480px; border-radius: 22px 22px 0 0; padding: 10px 18px calc(18px + env(safe-area-inset-bottom)); max-height: 92vh; overflow: auto; }
+  .sv-sheet .gr { width: 38px; height: 5px; border-radius: 5px; background: var(--line); margin: 0 auto 12px; }
+  .sv-sheet h3 { margin: 0; font-size: 19px; }
+  .sv-sheet .sub { font-size: 12.5px; color: var(--ink-soft); margin: 3px 0 12px; line-height: 1.45; }
+  .sv-box { background: var(--bg); border: 1px solid var(--line); border-radius: 14px; padding: 2px 12px; margin-bottom: 10px; }
+  .sv-box div { display: flex; gap: 9px; font-size: 13px; padding: 8px 0; border-top: 1px solid var(--line); line-height: 1.4; }
+  .sv-box div:first-child { border-top: none; }
+  .sv-box span { width: 18px; text-align: center; flex-shrink: 0; }
+  .sv-who { display: flex; align-items: center; gap: 10px; background: rgba(37,99,235,.1); border-radius: 14px; padding: 10px 12px; margin-bottom: 10px; font-size: 13.5px; }
+  .sv-av { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-blue, #2563EB); color: #fff; font-weight: 800; font-size: 12px; flex-shrink: 0; }
+  .sv-sheet input[type=text] { width: 100%; box-sizing: border-box; border: 1px solid var(--line); border-radius: 12px; padding: 11px 12px; font: inherit; font-size: 15px; background: var(--bg); color: var(--ink); margin-bottom: 12px; }
+  .sv-bb { display: block; width: 100%; text-align: center; border-radius: 14px; padding: 13px; font: inherit; font-weight: 800; font-size: 14.5px; margin-top: 8px; border: none; cursor: pointer; text-decoration: none; box-sizing: border-box; }
+  .sv-bb.p { background: var(--accent-blue, #2563EB); color: #fff; }
+  .sv-bb.o { background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--line); }
+  .sv-bb.r { background: rgba(220,38,38,.12); color: #B91C1C; }
+  html.dk .sv-bb.r { color: #FCA5A5; }
+  .sv-note { font-size: 12px; color: var(--ink-soft); text-align: center; margin-top: 10px; line-height: 1.45; }
+  `;
+  const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
+
+  const esc = (s) => escapeHtml(s == null ? '' : String(s));
+  const hoy = () => C.isoOf(new Date());
+  const pubName = (id) => { const p = ((data && data.publishers) || []).find(x => x.id === id); return p ? p.name : ''; };
+  const apellido = (id, fb) => { const n = (pubName(id) || fb || '').trim().split(/\s+/); return n[n.length - 1] || ''; };
+  const inic = (n) => String(n || '?').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+  function myPub() { if (!currentUser || !currentUser.email || !data) return null; const e = String(currentUser.email).toLowerCase(); return (data.publishers || []).find(p => p.email && String(p.email).toLowerCase() === e) || null; }
+  function grupoDe(pid) { const g = Object.values(V.grupos).find(x => x && ((x.miembros || []).includes(pid) || x.encargado === pid || x.auxiliar === pid)); return g ? g.id : null; }
+  const tipoOf = (t) => C.TIPOS[t.tipo] || C.TIPOS.otro;
+  function fmtDia(iso) { const d = new Date(iso + 'T12:00:00'); return `${DIAS[d.getDay()]} ${d.getDate()} de ${MESES[d.getMonth()]}`; }
+  function fmtCorto(iso) { const d = new Date(iso + 'T12:00:00'); return `${DIAS3[d.getDay()].toLowerCase()} ${d.getDate()}`; }
+  function cuando(iso) { const h = hoy(); return iso === h ? 'hoy' : iso === C.addDays(h, 1) ? 'mañana' : fmtDia(iso); }
+  function congName() { return (data && data.settings && data.settings.congregationName) || 'Salón del Reino'; }
+  function myAnotado(t, fecha) { return currentUser && currentUser.uid ? V.anotados[C.anotadoId(t.id, fecha, currentUser.uid)] || null : null; }
+  function voy(t, fecha, pub) { return !!myAnotado(t, fecha) || (pub && C.voluntarios(t, fecha, V.anotados).some(v => v.pubId === pub.id)); }
+
+  /* ---------- Conectarse ---------- */
+  function stop() { V.unsub.forEach(u => { try { u(); } catch (e) { /* nada */ } }); V.unsub = []; V.started = false; }
+  function start(code) {
+    if (V.started && V.code === code) return;
+    stop();
+    if (!currentUser) return;
+    V.code = code; V.started = true;
+    const c = initFirebase().collection('congregations').doc(code);
+    V.unsub.push(c.collection('salon').doc('trabajos').onSnapshot((s) => { V.trabajos = ((s.exists && s.data()) || {}).lista || {}; schedule(); }, () => {}));
+    V.unsub.push(c.collection('salon').doc('limpieza').onSnapshot((s) => { V.limpieza = (s.exists && s.data()) || {}; schedule(); }, () => {}));
+    V.unsub.push(c.collection('terr').doc('grupos').onSnapshot((s) => { V.grupos = ((s.exists && s.data()) || {}).lista || {}; schedule(); }, () => {}));
+    V.unsub.push(c.collection('salonAnotados').onSnapshot((qs) => { const o = {}; qs.forEach(d => { o[d.id] = d.data() || {}; }); V.anotados = o; schedule(); }, () => {}));
+  }
+  let queued = false;
+  function schedule() {
+    if (queued) return; queued = true;
+    setTimeout(() => {
+      queued = false;
+      try { renderBox(); } catch (e) { console.error(e); }
+      try { if (data && typeof renderPersonalSummary === 'function') renderPersonalSummary(V.code); } catch (e) { console.error(e); }
+    }, 30);
+  }
+
+  /* ---------- Inicio: "En el Salón" ---------- */
+  function ensureBox() {
+    let box = $('salonBox');
+    if (box) return box;
+    const panel = $('panel-inicio'); if (!panel) return null;
+    box = document.createElement('div'); box.id = 'salonBox';
+    const sal = $('salidasBox');
+    if (sal) panel.insertBefore(box, sal.nextSibling);
+    else panel.insertBefore(box, panel.querySelector('.sec-title') || null);
+    box.addEventListener('click', onBoxClick);
+    box.addEventListener('change', (e) => {
+      const c = e.target.closest('[data-tarea]'); if (!c) return;
+      const k = tareasKey(); const set = loadTareas(k);
+      if (c.checked) set.add(c.dataset.tarea); else set.delete(c.dataset.tarea);
+      try { localStorage.setItem(k, JSON.stringify([...set])); } catch (err) { /* sin acceso */ }
+      c.closest('label').classList.toggle('ok', c.checked);
+    });
+    return box;
+  }
+  function tareasKey() { return `salon-tareas-${V.code}-${C.mondayOf(hoy())}`; }
+  function loadTareas(k) { try { return new Set(JSON.parse(localStorage.getItem(k) || '[]')); } catch (e) { return new Set(); } }
+  function visibles() {
+    const h = hoy();
+    return C.trabajosEntre(V.trabajos, h, C.addDays(h, 21)).filter(o => !o.cancelada && o.estado !== 'hecho' && o.t.vista !== false);
+  }
+  function renderBox() {
+    const box = ensureBox(); if (!box) return;
+    const pub = myPub();
+    const h = hoy(), mon = C.mondayOf(h);
+    const tu = C.turnoLimpieza(V.limpieza, mon);
+    const occ = visibles();
+    if (!tu && !occ.length) { box.innerHTML = ''; return; }
+    let html = '<h2 class="sec-title">En el Salón</h2>';
+    if (tu) {
+      const dias = C.diasLimpieza(V.limpieza, mon, data && data.settings).filter(f => f >= h);
+      const miG = pub ? grupoDe(pub.id) : null;
+      const mine = !tu.otra && miG && tu.gid === miG;
+      const nombre = tu.otra ? 'otra congregación' : ((V.grupos[tu.gid] || {}).nombre || 'un grupo');
+      if (mine) {
+        const tareas = V.limpieza.tareas || [];
+        const done = loadTareas(tareasKey());
+        html += `<div class="sv-lz mine"><small>Limpieza · tu grupo</small><b>Le toca a tu grupo (${esc(nombre)})</b><p>${dias.length ? esc(dias.map(fmtCorto).join(' y ')) + (V.limpieza.modo === 'semana' ? '' : ', después de la reunión') : 'Esta semana'}.</p>
+          ${tareas.length ? `<div class="sv-tareas">${tareas.map(x => `<label class="${done.has(x) ? 'ok' : ''}"><input type="checkbox" data-tarea="${esc(x)}"${done.has(x) ? ' checked' : ''}><span>${esc(x)}</span></label>`).join('')}</div>` : ''}</div>`;
+      } else if (dias.length) {
+        html += `<div class="sv-lz"><small>Limpieza esta semana</small><p>Le toca a <b style="display:inline;font-size:inherit;">${esc(nombre)}</b> · ${esc(dias.map(fmtCorto).join(' y '))}</p></div>`;
+      }
+    }
+    html += occ.map(o => cardHTML(o, pub)).join('');
+    box.innerHTML = html;
+  }
+  function cardHTML(o, pub) {
+    const t = o.t, tp = tipoOf(t), d = new Date(o.fecha + 'T12:00:00');
+    const ci = C.cupoInfo(t, o.fecha, V.anotados);
+    const soy = pub && (t.resp === pub.id ? 'Sos el responsable' : t.aux === pub.id ? 'Sos el auxiliar' : '');
+    const anot = voy(t, o.fecha, pub);
+    const van = ci.vols.map(v => apellido(v.pubId, v.nombre)).filter(Boolean);
+    let act = '';
+    if (soy) act = `<span class="sv-tag">${soy}</span>`;
+    else if (anot) act = `<button type="button" class="sv-btn ok" data-sv="anotado" data-id="${esc(t.id)}" data-f="${o.fecha}">✓ Anotado</button>`;
+    else if (ci.completo) act = '<button type="button" class="sv-btn full" disabled>Completo</button>';
+    else if (ci.cupo) act = `<button type="button" class="sv-btn" data-sv="sumo" data-id="${esc(t.id)}" data-f="${o.fecha}">Me sumo</button>`;
+    return `<div class="sv-card${soy || anot ? ' mine' : ''}" id="sv-${esc(t.id)}-${o.fecha}"><span class="sv-dt">${DIAS3[d.getDay()]}<b>${d.getDate()}</b></span><span class="sv-bar" style="background:${tp.color}"></span>
+      <span class="sv-tx"><b>${tp.icon} ${esc(t.titulo)}</b><small>${t.hora ? esc(t.hora) + ' · ' : ''}${esc(apellido(t.resp))} y ${esc(apellido(t.aux))}${ci.cupo ? (ci.faltan ? ` · <em>${ci.faltan === 1 ? 'falta 1' : 'faltan ' + ci.faltan}</em>` : ' · completo') : ''}</small>${van.length ? `<small>Van: ${esc(van.join(', '))}</small>` : ''}</span>
+      <span class="sv-act">${act}</span></div>`;
+  }
+
+  /* ---------- Hojas ---------- */
+  function sheet(html) {
+    const ov = document.createElement('div'); ov.className = 'sv-ov'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true');
+    ov.innerHTML = `<div class="sv-sheet"><div class="gr"></div>${html}</div>`;
+    document.body.appendChild(ov);
+    const close = () => ov.remove();
+    ov.addEventListener('click', (e) => { if (e.target === ov || e.target.closest('[data-svclose]')) close(); });
+    return { el: ov, q: (s) => ov.querySelector(s), close, set: (h) => { ov.querySelector('.sv-sheet').innerHTML = `<div class="gr"></div>${h}`; } };
+  }
+  function datosBox(t, fecha) {
+    const tp = tipoOf(t);
+    return `<div class="sv-box"><div><span>${tp.icon}</span><b>${esc(t.titulo)}</b></div><div><span>🗓</span>${esc(fmtDia(fecha))}${t.hora ? ' · ' + esc(t.hora) : ''}</div><div><span>👤</span>Responsable: ${esc(pubName(t.resp) || '—')} · Auxiliar: ${esc(pubName(t.aux) || '—')}</div>${(t.materiales || []).length ? `<div><span>🧰</span>Qué llevar: ${esc(t.materiales.join(', '))}</div>` : ''}</div>`;
+  }
+  function gcalFor(t, fecha) { return gcalUrl(t.titulo + ' (Salón del Reino)', fecha, `Trabajo en el Salón — ${congName()}. Responsable: ${pubName(t.resp)}`, t.hora); }
+  function onBoxClick(e) {
+    const b = e.target.closest('[data-sv]'); if (!b) return;
+    const t = V.trabajos[b.dataset.id]; if (!t) return;
+    if (b.dataset.sv === 'sumo') openSumo(t, b.dataset.f);
+    else openAnotado(t, b.dataset.f);
+  }
+  function openSumo(t, fecha) {
+    const pub = myPub();
+    if (!pub) {
+      sheet(`<h3>Primero vinculá tu nombre</h3><div class="sub">Para anotarte, tu email (<b>${esc(currentUser && currentUser.email)}</b>) tiene que estar vinculado a tu nombre en la app. Pedíselo a quien administra la app.</div><button type="button" class="sv-bb o" data-svclose>Entendido</button>`);
+      return;
+    }
+    const m = sheet(`<h3>¿Te sumás a este trabajo?</h3><div class="sub">El responsable recibe el aviso al instante.</div>${datosBox(t, fecha)}
+      <div class="sv-who"><span class="sv-av">${esc(inic(pub.name))}</span><span>Te anotás como <b>${esc(pub.name)}</b></span></div>
+      <input type="text" id="svCom" maxlength="80" placeholder="Comentario (opcional): &quot;Llevo la escalera&quot;">
+      <button type="button" class="sv-bb p" id="svOk">Confirmar, me sumo</button><button type="button" class="sv-bb o" data-svclose>Cancelar</button>`);
+    m.q('#svOk').addEventListener('click', async () => {
+      const ci = C.cupoInfo(t, fecha, V.anotados);
+      if (ci.completo) { m.close(); showToast('Justo se completó: ya no quedan lugares.'); return; }
+      m.q('#svOk').disabled = true;
+      const id = C.anotadoId(t.id, fecha, currentUser.uid);
+      const doc = { tid: t.id, fecha, pubId: pub.id, nombre: pub.name, uid: currentUser.uid, comentario: m.q('#svCom').value.trim().slice(0, 80), at: new Date().toISOString() };
+      try {
+        await initFirebase().collection('congregations').doc(V.code).collection('salonAnotados').doc(id).set(doc);
+        V.anotados[id] = doc;
+        m.set(`<h3>¡Listo, te anotaste!</h3><div class="sub">${esc(t.titulo)} · ${esc(cuando(fecha))}${t.hora ? ' a las ' + esc(t.hora) : ''}. Te aparece en tus asignaciones y la víspera te llega el recordatorio.</div>
+          <a class="sv-bb p" href="${esc(gcalFor(t, fecha))}" target="_blank" rel="noopener">🗓 Agregar al calendario</a><button type="button" class="sv-bb o" data-svclose>Listo</button>`);
+        schedule();
+      } catch (e) {
+        console.error(e); m.q('#svOk').disabled = false;
+        showToast(e && e.code === 'permission-denied' ? 'No se pudo anotar: no tenés permiso.' : 'No se pudo anotar. Revisá la conexión y probá de nuevo.');
+      }
+    });
+  }
+  function openAnotado(t, fecha) {
+    const a = myAnotado(t, fecha);
+    const ref = () => initFirebase().collection('congregations').doc(V.code).collection('salonAnotados').doc(C.anotadoId(t.id, fecha, currentUser.uid));
+    const main = () => `<h3>${esc(t.titulo)}</h3><div class="sub">${esc(fmtDia(fecha))}${t.hora ? ' · ' + esc(t.hora) : ''} · estás anotado${a && a.comentario ? ` · "${esc(a.comentario)}"` : ''}</div>
+      <a class="sv-bb o" href="${esc(gcalFor(t, fecha))}" target="_blank" rel="noopener">🗓 Agregar al calendario</a>
+      ${a ? '<button type="button" class="sv-bb o" id="svEd">✏️ Cambiar mi comentario</button><button type="button" class="sv-bb r" id="svNo">Ya no puedo ir</button><div class="sv-note">Si te das de baja se libera el lugar y se avisa al responsable.</div>' : '<div class="sv-note">Te anotó el responsable. Si no podés ir, avisale a él.</div>'}`;
+    const m = sheet(main());
+    const bind = () => {
+      const ed = m.q('#svEd'), no = m.q('#svNo');
+      if (ed) ed.addEventListener('click', () => {
+        m.set(`<h3>Tu comentario</h3><div class="sub">Lo ve el responsable.</div><input type="text" id="svCom" maxlength="80" value="${esc(a.comentario || '')}" placeholder="Ej.: Llevo la escalera"><button type="button" class="sv-bb p" id="svSave">Guardar</button><button type="button" class="sv-bb o" data-svclose>Cancelar</button>`);
+        m.q('#svSave').addEventListener('click', async () => {
+          const com = m.q('#svCom').value.trim().slice(0, 80);
+          try { await ref().set({ tid: a.tid, fecha: a.fecha, pubId: a.pubId, nombre: a.nombre, uid: a.uid, comentario: com, at: a.at || new Date().toISOString() }); a.comentario = com; m.close(); showToast('Comentario guardado'); schedule(); }
+          catch (e) { console.error(e); showToast('No se pudo guardar. Probá de nuevo.'); }
+        });
+      });
+      if (no) no.addEventListener('click', () => {
+        m.set(`<h3>¿Ya no podés ir?</h3><div class="sub">Se libera tu lugar en <b>${esc(t.titulo)}</b> (${esc(fmtCorto(fecha))}) y le avisamos al responsable.</div><button type="button" class="sv-bb r" id="svBaja">Sí, darme de baja</button><button type="button" class="sv-bb o" data-svclose>No, sigo anotado</button>`);
+        m.q('#svBaja').addEventListener('click', async () => {
+          try { await ref().delete(); delete V.anotados[C.anotadoId(t.id, fecha, currentUser.uid)]; m.close(); showToast('Listo, te diste de baja'); schedule(); }
+          catch (e) { console.error(e); showToast('No se pudo. Revisá la conexión y probá de nuevo.'); }
+        });
+      });
+    };
+    bind();
+  }
+
+  /* ---------- "Tus asignaciones" ---------- */
+  function myRows(pub, todayIso) {
+    if (!pub) return [];
+    return C.asignacionesSalon(pub.id, V.trabajos, V.anotados, V.limpieza, data && data.settings, grupoDe, todayIso, C.addDays(todayIso, 56)).map(a => {
+      const { dayName, day } = formatDate(a.fecha);
+      return { dayLabel: `${dayName.slice(0, 3).toUpperCase()} ${day}`, month: monthKey(a.fecha), type: 'salon', label: a.rol === 'limpieza' ? 'Limpieza del Salón' : `${a.titulo} · ${a.quien.toLowerCase()}`, date: a.fecha, meetingType: 'salon', time: a.hora, where: 'Salón del Reino' };
+    });
+  }
+
+  window.salonVer = {
+    onData(code) { start(code); schedule(); },
+    myRows,
+    goTo(date) {
+      if (typeof showTab === 'function') showTab('inicio');
+      const el = document.querySelector(`#salonBox [id$="-${date}"]`) || $('salonBox');
+      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.style.transition = 'box-shadow .3s'; el.style.boxShadow = '0 0 0 3px rgba(37,99,235,.45)'; setTimeout(() => { el.style.boxShadow = ''; }, 1600); }
+    }
+  };
+  try { if (typeof data !== 'undefined' && data && typeof getCode === 'function' && getCode()) window.salonVer.onData(getCode()); } catch (e) { /* nada */ }
+})();

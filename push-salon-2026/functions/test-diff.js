@@ -337,7 +337,7 @@ t('copias: nombre con fecha y hora de Argentina, y se puede leer', () => {
 });
 t('copias: incluye la congregación, territorios, salidas y avisos de terminado', () => {
   const b = buildBackup('C', { publishers: [1] }, { terr: { territorios: { lista: {} } }, salidas: { g1: {} } }, new Date('2026-09-27T06:30:00Z'));
-  assert.deepStrictEqual(Object.keys(b).sort(), ['app', 'code', 'createdAt', 'main', 'salidas', 'terminados', 'terr', 'version'].sort());
+  assert.deepStrictEqual(Object.keys(b).sort(), ['app', 'code', 'createdAt', 'main', 'salidas', 'salon', 'salonAnotados', 'terminados', 'terr', 'version'].sort());
   assert.deepStrictEqual(b.terminados, {});
 });
 t('copias: se guardan 8 semanas y una por mes hasta un año', () => {
@@ -361,5 +361,50 @@ t('restaurar: no manda avisos de "te asignaron"', () => {
   assert.strictEqual(isRestoreWrite({ _restoredAt: 'A' }, { _restoredAt: 'A' }), false);
   assert.strictEqual(isRestoreWrite({}, {}), false);
 });
+
+// ---- Salón ----
+{
+  const fs = require('fs'), path = require('path');
+  const L = require('./lib');
+  t('salon-core.js: la copia de las funciones es igual a la de la app', () => {
+    assert.strictEqual(fs.readFileSync(path.join(__dirname, 'salon-core.js'), 'utf8'), fs.readFileSync(path.join(__dirname, '..', '..', 'salon-core.js'), 'utf8'));
+  });
+  const trabajos = { w1: { id: 'w1', titulo: 'Pintura', fecha: '2026-09-26', hora: '09:00', resp: 'p1', aux: 'p2', cupo: 2 },
+    w2: { id: 'w2', titulo: 'Pasto', fecha: '2026-09-24', hora: '08:00', resp: 'p3', aux: 'p4', repite: '15d' } };
+  const anotados = { 'w1__2026-09-26__u': { tid: 'w1', fecha: '2026-09-26', pubId: 'p5', nombre: 'Juan Paz', uid: 'u' } };
+  const cong = { settings: { weekdaySemana: 4, weekdayFinde: 0 }, publishers: ['p1', 'p2', 'p3', 'p5', 'p6'].map(id => ({ id, name: id })) };
+  const lz = { rotacion: ['g1'], inicio: '2026-09-21' };
+  const grupos = { g1: { id: 'g1', miembros: ['p6'] } };
+  t('salón: recordatorios de responsable, auxiliar, voluntario y limpieza', () => {
+    const a = L.salonAssignments(cong, trabajos, anotados, lz, grupos, '2026-09-24', '2026-09-27');
+    const k = a.map(x => `${x.pubId}|${x.dateIso}`).sort();
+    assert.deepStrictEqual(k, ['p1|2026-09-26', 'p2|2026-09-26', 'p3|2026-09-24', 'p5|2026-09-26', 'p6|2026-09-24', 'p6|2026-09-27']);
+    assert.ok(a.find(x => x.pubId === 'p5').label.includes('voluntario'));
+  });
+  t('salón: el recordatorio de la víspera dice "Salón del Reino"', () => {
+    const c2 = Object.assign({}, cong, { __salon: L.salonAssignments(cong, trabajos, anotados, lz, grupos, '2026-09-26', '2026-09-26') });
+    const items = L.assignmentsOnDate(c2, 'p5', '2026-09-26');
+    const m = L.reminderMessage({ kind: 'dayBefore', dateIso: '2026-09-26', items });
+    assert.ok(/Mañana/.test(m.title) && /Pintura/.test(m.title) && /Salón del Reino/.test(m.body) && /09:00/.test(m.body), JSON.stringify(m));
+  });
+  t('salón: aviso a quien asignan como responsable, auxiliar o voluntario', () => {
+    const before = { w1: Object.assign({}, trabajos.w1, { aux: 'p9' }) };
+    const after = { w1: Object.assign({}, trabajos.w1, { ocurr: { '2026-09-26': { vols: ['p7'] } } }) };
+    const n = L.newSalonAssignments(before, after, '2026-09-23').map(a => a.pubId + ':' + a.rol);
+    assert.deepStrictEqual(n, ['p2:auxiliar', 'p7:voluntario']);
+    assert.ok(/sos el auxiliar/.test(L.salonAssignMessage({ rol: 'auxiliar', t: trabajos.w1, fecha: '2026-09-26' }, 'Mario').title));
+  });
+  t('salón: aviso al responsable cuando alguien se suma o se baja', () => {
+    const r = anotados['w1__2026-09-26__u'];
+    assert.deepStrictEqual(L.anotadoMessage(Object.assign({ comentario: 'Llevo la escalera' }, r), trabajos.w1, true, 1, 2), { title: 'Juan Paz se sumó a Pintura', body: 'sábado 26 · van 1 de 2 · "Llevo la escalera"' });
+    assert.ok(/ya no va a Pintura/.test(L.anotadoMessage(r, trabajos.w1, false, 0, 2).title));
+  });
+  t('restaurar: el Salón aparte, y las copias viejas no lo tocan', () => {
+    const b = { main: {}, salon: { trabajos: { lista: {} } }, salonAnotados: {} };
+    const p = L.restorePlan(b, ['salon'], { salon: ['trabajos', 'limpieza'], salonAnotados: ['x'] }, 'h', 'A');
+    assert.deepStrictEqual(p.docs.map(d => [d.col, d.id, d.data ? 'set' : 'del']), [['salon', 'trabajos', 'set'], ['salon', 'limpieza', 'del'], ['salonAnotados', 'x', 'del']]);
+    assert.strictEqual(L.restorePlan({ main: {} }, ['salon'], { salon: ['trabajos'] }, 'h', 'A').docs.length, 0);
+  });
+}
 
 console.log('\n' + passed + ' pruebas OK' + (process.exitCode ? ' — HAY FALLAS' : ''));
