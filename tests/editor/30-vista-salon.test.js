@@ -16,6 +16,7 @@ const DOCS = {
   'congregations/C/salon/trabajos': { lista: {
     t1: { id: 't1', titulo: 'Pintura de la entrada', tipo: 'pintura', fecha: '2026-09-26', hora: '09:00', resp: 'p2', aux: 'p11', cupo: 2, repite: 'no', materiales: ['Ropa de trabajo'], vista: true },
     t2: { id: 't2', titulo: 'Arreglar la puerta', tipo: 'reparacion', fecha: '2026-09-30', hora: '18:00', resp: 'p8', aux: 'p9', cupo: 1, repite: 'no', vista: true },
+    t4: { id: 't4', titulo: 'Canaletas', tipo: 'reparacion', fecha: '2026-10-03', hora: '08:00', resp: 'p8', aux: 'x:x1', cupo: 2, vista: true, externos: { 'x:x1': { nombre: 'Juan Ramírez', cong: 'Sur' }, 'x:x2': { nombre: 'Carlos Peralta', cong: 'Sur' } }, ocurr: { '2026-10-03': { vols: ['x:x2'] } } },
     t3: { id: 't3', titulo: 'Solo para el editor', tipo: 'otro', fecha: '2026-09-27', resp: 'p8', aux: 'p9', cupo: 1, vista: false } } },
   'congregations/C/salonAnotados/t1__2026-09-26__u9': { tid: 't1', fecha: '2026-09-26', pubId: 'p13', nombre: 'Sofía Abad', uid: 'u9', comentario: '', at: 'x' },
   'congregations/C/salonAnotados/t2__2026-09-30__u8': { tid: 't2', fecha: '2026-09-30', pubId: 'p7', nombre: 'Raúl Méndez', uid: 'u8', comentario: '', at: 'x' }
@@ -69,8 +70,9 @@ function installMock(store) {
   const lz = await p.evaluate(() => { const e = document.querySelector('#salonBox .sv-lz.mine'); return e ? e.innerText.replace(/\s+/g, ' ') : ''; });
   check('limpieza: le toca a su grupo, jue 24 y dom 27, con las tareas', /Le toca a tu grupo \(Grupo 1\)/.test(lz) && /jue 24 y dom 27/.test(lz) && /Barrer y trapear/.test(lz), lz);
   let cards = await cardsOf(p);
-  check('trabajos visibles (no el que es solo para el editor)', cards.length === 2 && !cards.some(c => /Solo para el editor/.test(c)), cards);
+  check('trabajos visibles (no el que es solo para el editor)', cards.length === 3 && !cards.some(c => /Solo para el editor/.test(c)), cards);
   check('Pintura: responsable y auxiliar, falta 1, quiénes van y "Me sumo"', /Pintura de la entrada/.test(cards[0]) && /Gómez y Díaz/.test(cards[0]) && /falta 1/.test(cards[0]) && /Van: Abad/.test(cards[0]) && /Me sumo/.test(cards[0]), cards[0]);
+  check('hermanos de otra congregación: con su congregación y en "Van"', /Sosa y Ramírez \(Cong\. Sur\)/.test(cards[2]) && /Van: Peralta/.test(cards[2]) && /falta 1/.test(cards[2]), cards[2]);
   check('Arreglar la puerta: completo', /Completo/.test(cards[1]) && await p.evaluate(() => document.querySelectorAll('#salonBox .sv-btn.full[disabled]').length === 1), cards[1]);
   await p.screenshot({ path: path.join(SHOTS, 'vista-salon-inicio.png'), fullPage: true });
 

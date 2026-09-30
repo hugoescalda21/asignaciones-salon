@@ -67,8 +67,12 @@
 
   const esc = (s) => escapeHtml(s == null ? '' : String(s));
   const hoy = () => C.isoOf(new Date());
-  const pubName = (id) => { const p = ((data && data.publishers) || []).find(x => x.id === id); return p ? p.name : ''; };
-  const apellido = (id, fb) => { const n = (pubName(id) || fb || '').trim().split(/\s+/); return n[n.length - 1] || ''; };
+  // Los hermanos de otra congregación (salón compartido) vienen con id "x:…" y su nombre copiado en el trabajo.
+  const pubName = (id, t) => { if (typeof id === 'string' && id.startsWith('x:')) { const x = t && t.externos && t.externos[id]; return x ? x.nombre : ''; } const p = ((data && data.publishers) || []).find(x => x.id === id); return p ? p.name : ''; };
+  const congDe = (id, t) => { const x = typeof id === 'string' && id.startsWith('x:') && t && t.externos && t.externos[id]; return x ? (x.cong ? 'Cong. ' + x.cong : 'otra cong.') : ''; };
+  const apellido = (id, fb, t) => { const n = (pubName(id, t) || fb || '').trim().split(/\s+/); return n[n.length - 1] || ''; };
+  const quienCorto = (id, t) => { const a = apellido(id, '', t); const c = congDe(id, t); return a ? a + (c ? ` (${c})` : '') : ''; };
+  const quienLargo = (id, t) => { const n = pubName(id, t); const c = congDe(id, t); return n ? n + (c ? ` (${c})` : '') : '—'; };
   const inic = (n) => String(n || '?').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
   function myPub() { if (!currentUser || !currentUser.email || !data) return null; const e = String(currentUser.email).toLowerCase(); return (data.publishers || []).find(p => p.email && String(p.email).toLowerCase() === e) || null; }
   function grupoDe(pid) { const g = Object.values(V.grupos).find(x => x && ((x.miembros || []).includes(pid) || x.encargado === pid || x.auxiliar === pid)); return g ? g.id : null; }
@@ -158,14 +162,14 @@
     const ci = C.cupoInfo(t, o.fecha, V.anotados);
     const soy = pub && (t.resp === pub.id ? 'Sos el responsable' : t.aux === pub.id ? 'Sos el auxiliar' : '');
     const anot = voy(t, o.fecha, pub);
-    const van = ci.vols.map(v => apellido(v.pubId, v.nombre)).filter(Boolean);
+    const van = ci.vols.map(v => apellido(v.pubId, v.nombre, t)).filter(Boolean);
     let act = '';
     if (soy) act = `<span class="sv-tag">${soy}</span>`;
     else if (anot) act = `<button type="button" class="sv-btn ok" data-sv="anotado" data-id="${esc(t.id)}" data-f="${o.fecha}">✓ Anotado</button>`;
     else if (ci.completo) act = '<button type="button" class="sv-btn full" disabled>Completo</button>';
     else if (ci.cupo) act = `<button type="button" class="sv-btn" data-sv="sumo" data-id="${esc(t.id)}" data-f="${o.fecha}">Me sumo</button>`;
     return `<div class="sv-card${soy || anot ? ' mine' : ''}" id="sv-${esc(t.id)}-${o.fecha}"><span class="sv-dt">${DIAS3[d.getDay()]}<b>${d.getDate()}</b></span><span class="sv-bar" style="background:${tp.color}"></span>
-      <span class="sv-tx"><b>${tp.icon} ${esc(t.titulo)}</b><small>${t.hora ? esc(t.hora) + ' · ' : ''}${esc(apellido(t.resp))} y ${esc(apellido(t.aux))}${ci.cupo ? (ci.faltan ? ` · <em>${ci.faltan === 1 ? 'falta 1' : 'faltan ' + ci.faltan}</em>` : ' · completo') : ''}</small>${van.length ? `<small>Van: ${esc(van.join(', '))}</small>` : ''}</span>
+      <span class="sv-tx"><b>${tp.icon} ${esc(t.titulo)}</b><small>${t.hora ? esc(t.hora) + ' · ' : ''}${esc(quienCorto(t.resp, t))} y ${esc(quienCorto(t.aux, t))}${ci.cupo ? (ci.faltan ? ` · <em>${ci.faltan === 1 ? 'falta 1' : 'faltan ' + ci.faltan}</em>` : ' · completo') : ''}</small>${van.length ? `<small>Van: ${esc(van.join(', '))}</small>` : ''}</span>
       <span class="sv-act">${act}</span></div>`;
   }
 
@@ -180,9 +184,9 @@
   }
   function datosBox(t, fecha) {
     const tp = tipoOf(t);
-    return `<div class="sv-box"><div><span>${tp.icon}</span><b>${esc(t.titulo)}</b></div><div><span>🗓</span>${esc(fmtDia(fecha))}${t.hora ? ' · ' + esc(t.hora) : ''}</div><div><span>👤</span>Responsable: ${esc(pubName(t.resp) || '—')} · Auxiliar: ${esc(pubName(t.aux) || '—')}</div>${(t.materiales || []).length ? `<div><span>🧰</span>Qué llevar: ${esc(t.materiales.join(', '))}</div>` : ''}</div>`;
+    return `<div class="sv-box"><div><span>${tp.icon}</span><b>${esc(t.titulo)}</b></div><div><span>🗓</span>${esc(fmtDia(fecha))}${t.hora ? ' · ' + esc(t.hora) : ''}</div><div><span>👤</span>Responsable: ${esc(quienLargo(t.resp, t))} · Auxiliar: ${esc(quienLargo(t.aux, t))}</div>${(t.materiales || []).length ? `<div><span>🧰</span>Qué llevar: ${esc(t.materiales.join(', '))}</div>` : ''}</div>`;
   }
-  function gcalFor(t, fecha) { return gcalUrl(t.titulo + ' (Salón del Reino)', fecha, `Trabajo en el Salón — ${congName()}. Responsable: ${pubName(t.resp)}`, t.hora); }
+  function gcalFor(t, fecha) { return gcalUrl(t.titulo + ' (Salón del Reino)', fecha, `Trabajo en el Salón — ${congName()}. Responsable: ${quienLargo(t.resp, t)}`, t.hora); }
   function onBoxClick(e) {
     const b = e.target.closest('[data-sv]'); if (!b) return;
     const t = V.trabajos[b.dataset.id]; if (!t) return;

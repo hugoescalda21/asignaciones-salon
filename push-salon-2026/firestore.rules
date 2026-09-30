@@ -170,7 +170,8 @@ service cloud.firestore {
       allow delete: if request.auth != null && gestorX();
     }
 
-    // Salón: trabajos de mantenimiento ("trabajos") y limpieza por grupos ("limpieza").
+    // Salón: trabajos de mantenimiento ("trabajos"), limpieza por grupos ("limpieza") y
+    // hermanos de otra congregación que ayudan cuando el Salón es compartido ("externos").
     // Los lee cualquiera con acceso (los hermanos los ven en la vista); los cambian el
     // Super Admin y el Admin del Salón.
     match /congregations/{code}/salon/{docId} {
@@ -180,8 +181,9 @@ service cloud.firestore {
         return enL('editorEmails') || enL('tecnicoAdminEmails') || enL('acomodadoresAdminEmails') || enL('asignacionesAdminEmails') ||
                enL('territoriosAdminEmails') || enL('salonAdminEmails') || enL('anunciosOnlyEmails') || enL('viewerEmails');
       }
-      allow read: if request.auth != null && conAccesoL();
-      allow write: if request.auth != null && (enL('editorEmails') || enL('salonAdminEmails')) && docId in ['trabajos', 'limpieza'];
+      // "externos": hermanos de otra congregación (salón compartido) con su teléfono; solo los ven quienes manejan el Salón.
+      allow read: if request.auth != null && (docId == 'externos' ? (enL('editorEmails') || enL('salonAdminEmails')) : conAccesoL());
+      allow write: if request.auth != null && (enL('editorEmails') || enL('salonAdminEmails')) && docId in ['trabajos', 'limpieza', 'externos'];
     }
 
     // "Me sumo": cada hermano se anota (o se da de baja) él mismo en un trabajo del Salón, con su

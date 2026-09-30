@@ -6,6 +6,15 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Salón compartido: hermanos de otra congregación — 30 sep 2026 (caché asignaciones-salon-v46 y ver-salon-v39)
+
+- Para salones que comparten dos congregaciones cuando la otra no usa la app: en **Salón → Limpieza → Hermanos de otra congregación** se cargan con nombre, congregación y teléfono (opcional).
+- Se pueden elegir como **responsable o auxiliar** (el selector tiene el grupo "Otra congregación" y "＋ Agregar…") y como **voluntarios** ("＋ Agregar hermano" tiene las pestañas de tu congregación y de la otra).
+- En el detalle del trabajo se ven con la marca "Cong. Sur"; con teléfono cargado aparece **"💬 Avisar"**, que abre WhatsApp a su número con el trabajo. No reciben avisos de la app.
+- En la vista, los hermanos ven quiénes van de las dos congregaciones ("Sosa y Ramírez (Cong. Sur)").
+- **Datos:** la lista con teléfonos (`salon/externos`) solo la ven el Super Admin y el Admin — Salón; en cada trabajo queda solo el nombre y la congregación. Hay que publicar las reglas: `firebase deploy --only firestore:rules`.
+- Pruebas: 8 nuevas en `29-salon` y `30-vista-salon`, 4 reglas nuevas.
+
 ## Corrección: error al abrir un trabajo del Salón — 30 sep 2026 (caché asignaciones-salon-v45)
 
 - Al abrir el detalle de un trabajo quedaba anotado "Cannot read properties of null (reading 'querySelector')" en el Registro de errores: el cambio de clase de esa ventana (sin id) hacía que la app buscara dónde poner el foco y no la encontraba. No afectaba el uso, pero ya no pasa. Prueba agregada en `29-salon`.

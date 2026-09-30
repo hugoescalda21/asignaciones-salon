@@ -103,6 +103,36 @@ let ok = 0, bad = 0; const check = (l, c, x) => { if (c) { ok++; console.log('  
   const prev = await p.evaluate(() => [...document.querySelectorAll('.sl-prev div')].map(d => d.innerText.replace(/\s+/g, ' ')));
   check('así quedan: esta semana otra congregación (sem. 4), después Grupo 2', /Otra congregación/.test(prev[0]) && /Grupo 2/.test(prev[1]) && /jue 1 y dom 4/.test(prev[1]), prev);
   await p.screenshot({ path: path.join(SHOTS, 'salon-limpieza.png'), fullPage: true });
+
+  // Salón compartido: hermanos de otra congregación que no usa la app
+  await click(p, '#salonRoot [data-s="x-new"]');
+  await p.fill('#slXn', 'Juan Ramírez'); await p.fill('#slXc', 'Sur'); await p.fill('#slXt', '342 555-1234');
+  await click(p, '#slXs');
+  const ext = await p.evaluate(() => Object.values(window.__salon.externos));
+  check('lista de otra congregación en salon/externos (con teléfono)', ext.length === 1 && ext[0].nombre === 'Juan Ramírez' && ext[0].cong === 'Sur' && ext[0].tel === '342 555-1234' && /Juan Ramírez/.test(await p.evaluate(() => $('salonRoot').innerText)), ext);
+  await click(p, '#salonRoot [data-s="view"][data-k="cal"]');
+  await click(p, '#salonRoot .sl-sec [data-s="new"]');
+  await p.fill('#slTit', 'Arreglar canaletas'); await p.fill('#slFec', '2026-10-03');
+  await p.selectOption('#slResp', 'p3');
+  check('el selector ofrece "Otra congregación" con Ramírez y "Agregar…"', await p.evaluate(() => { const g = [...document.querySelectorAll('#slAux optgroup')].map(o => o.label); return g.includes('Otra congregación') && !!document.querySelector('#slAux option[value^="x:"]') && !!document.querySelector('#slAux option[value="__new"]'); }));
+  await p.selectOption('#slAux', '__new'); await p.waitForTimeout(150);
+  await p.fill('#slXn', 'Carlos Peralta'); await p.fill('#slXc', 'Sur');
+  await click(p, '#slXs');
+  check('"Agregar…" desde el selector carga y lo deja elegido', await p.evaluate(() => { const v = document.getElementById('slAux').value; return v.startsWith('x:') && /Carlos Peralta/.test(document.getElementById('slAux').selectedOptions[0].textContent); }));
+  await click(p, '#slSave'); await p.waitForTimeout(200);
+  const t3 = await p.evaluate(() => Object.values(window.__salon.trabajos).find(t => t.titulo === 'Arreglar canaletas'));
+  check('el trabajo guarda nombre y congregación del de afuera, sin el teléfono', t3 && t3.aux.startsWith('x:') && t3.externos[t3.aux].nombre === 'Carlos Peralta' && t3.externos[t3.aux].cong === 'Sur' && !('tel' in t3.externos[t3.aux]), t3);
+  await click(p, `#salonRoot .sl-ev[data-id="${t3.id}"]`);
+  check('detalle: auxiliar con la marca "Cong. Sur"', await p.evaluate(() => /Carlos Peralta\s*Cong\. Sur/.test(document.querySelector('.slmodal').innerText)));
+  await click(p, '.slmodal [data-d="agregar"]');
+  await click(p, '.slmodal:last-of-type .sl-seg [data-k="otra"]');
+  await click(p, '.slmodal:last-of-type .tpick[data-id^="x:"]');
+  await p.waitForTimeout(200);
+  check('voluntario de la otra congregación con "💬 Avisar"', await p.evaluate(() => /Juan Ramírez/.test(document.querySelector('.sl-detail').innerText) && !!document.querySelector('.sl-detail .sl-wa[data-d="avisar"]')));
+  await click(p, '.sl-detail .sl-row .sl-wa[data-d="avisar"]');
+  check('"Avisar" abre WhatsApp a su número con el trabajo', await p.evaluate(() => { const u = decodeURIComponent(window.__opened.pop() || ''); return /wa\.me\/5493425551234\?text=/.test(u) && /Arreglar canaletas/.test(u) && /uno de los voluntarios/.test(u); }));
+  await p.screenshot({ path: path.join(SHOTS, 'salon-otra-congregacion.png') });
+  await p.keyboard.press('Escape');
   await click(p, '#salonRoot [data-s="view"][data-k="cal"]');
   await p.screenshot({ path: path.join(SHOTS, 'salon-calendario.png'), fullPage: true });
   check('los 7 botones de abajo entran en el celular', await p.evaluate(() => [...document.querySelectorAll('.bottom-tabs .tab-btn:not(.hidden)')].every(b => b.scrollWidth <= b.clientWidth + 1) && document.documentElement.scrollWidth <= 390));
