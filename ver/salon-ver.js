@@ -144,7 +144,7 @@
       const dias = C.diasLimpieza(V.limpieza, mon, data && data.settings).filter(f => f >= h);
       const miG = pub ? grupoDe(pub.id) : null;
       const mine = !tu.otra && miG && tu.gid === miG;
-      const nombre = tu.otra ? 'otra congregación' : ((V.grupos[tu.gid] || {}).nombre || 'un grupo');
+      const nombre = tu.otra ? ((V.limpieza.otraNombre || '').trim() || 'otra congregación') : ((V.grupos[tu.gid] || {}).nombre || 'un grupo');
       if (mine) {
         const tareas = V.limpieza.tareas || [];
         const done = loadTareas(tareasKey());

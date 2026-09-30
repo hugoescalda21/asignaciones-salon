@@ -6,6 +6,11 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Salón compartido: nombre de la otra congregación — 30 sep 2026 (caché asignaciones-salon-v47 y ver-salon-v40)
+
+- En **Salón → Limpieza → Salón compartido** se escribe una vez el nombre de la otra congregación (por ejemplo "Paraná Sur").
+- Se usa en la limpieza ("Le toca a Paraná Sur", en la app y en la vista, en vez de "Otra congregación"), en el calendario, en el selector de responsable y auxiliar, en la pestaña de "＋ Agregar hermano" y viene ya escrito al cargar un hermano de esa congregación.
+
 ## Salón compartido: hermanos de otra congregación — 30 sep 2026 (caché asignaciones-salon-v46 y ver-salon-v39)
 
 - Para salones que comparten dos congregaciones cuando la otra no usa la app: en **Salón → Limpieza → Hermanos de otra congregación** se cargan con nombre, congregación y teléfono (opcional).

@@ -11,7 +11,8 @@
        trabajo = { id, titulo, tipo, fecha, hora, resp, aux, cupo, repite,
                    materiales: [texto], vista, notas,
                    ocurr: { fecha: { estado, nota, mats: {i: true}, vols: [pubId], cancelada } } }
-     congregations/{código}/salon/limpieza → { modo, dia, rotacion: [grupo], inicio, otra: [n], tareas: [texto] }
+     congregations/{código}/salon/limpieza → { modo, dia, rotacion: [grupo], inicio, otra: [n], otraNombre, tareas: [texto] }
+     congregations/{código}/salon/externos → { lista: {id: { id, nombre, cong, tel }} }   (hermanos de la otra congregación; solo quien maneja el Salón)
      congregations/{código}/salonAnotados/{trabajo__fecha__uid}
        → { tid, fecha, pubId, nombre, email, uid, comentario, at }   (lo escribe cada hermano desde la vista)
    ===================================================================== */

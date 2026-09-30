@@ -129,6 +129,9 @@
   const extOf = (id, t) => isExt(id) ? (S.externos[id.slice(2)] || (t && t.externos && t.externos[id]) || null) : null;
   const pubName = (id, t) => { if (isExt(id)) { const x = extOf(id, t); return x ? x.nombre : 'Hermano de otra congregación'; } const p = (data.publishers || []).find(x => x.id === id); return p ? p.name : ''; };
   const congTag = (id, t) => { const x = extOf(id, t); return isExt(id) ? ` <span class="sl-oc">${x && x.cong ? 'Cong. ' + esc(x.cong) : 'Otra cong.'}</span>` : ''; };
+  // Nombre de la otra congregación del Salón compartido (se carga una vez en Limpieza).
+  const otraNombre = () => ((S.limpieza && S.limpieza.otraNombre) || '').trim();
+  const otraLabel = () => otraNombre() || 'Otra congregación';
   const extList = () => Object.values(S.externos).filter(x => x && x.id).sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
   // Copia de nombre y congregación de los de afuera que usa un trabajo (la vista no ve la lista con teléfonos).
   function extRefs(t) {
@@ -265,7 +268,7 @@
   function limpiezaDe(monday) {
     const tu = C.turnoLimpieza(S.limpieza, monday);
     if (!tu) return null;
-    return { tu, dias: C.diasLimpieza(S.limpieza, monday, data.settings), nombre: tu.otra ? 'Otra congregación' : grupoName(tu.gid) };
+    return { tu, dias: C.diasLimpieza(S.limpieza, monday, data.settings), nombre: tu.otra ? otraLabel() : grupoName(tu.gid) };
   }
   function renderCal(v) {
     const today = hoy();
@@ -297,7 +300,7 @@
       const dots = occ.filter(o => o.fecha === f).slice(0, 3).map(o => `<i style="background:${tipoOf(o.t).color}"></i>`).join('');
       html += `<button type="button" class="sl-d${f.slice(0, 7) !== S.month ? ' out' : ''}${f === today ? ' hoy' : ''}${f === S.day ? ' sel' : ''}" data-s="day" data-f="${f}"><b>${Number(f.slice(8))}</b><span class="sl-dots">${dots}</span>${limpiezaDias[f] ? `<span class="lb" style="background:${limpiezaDias[f]}"></span>` : ''}</button>`;
     }
-    html += '</div><div class="sl-leg">' + Object.values(C.TIPOS).map(tp => `<span><i style="background:${tp.color}"></i>${tp.label}</span>`).join('') + `<span><i class="bar" style="background:${LIMPIEZA_COLOR}"></i>Limpieza</span>${(S.limpieza.otra || []).length ? `<span><i class="bar" style="background:${OTRA_COLOR}"></i>Otra congregación</span>` : ''}</div></div>`;
+    html += '</div><div class="sl-leg">' + Object.values(C.TIPOS).map(tp => `<span><i style="background:${tp.color}"></i>${tp.label}</span>`).join('') + `<span><i class="bar" style="background:${LIMPIEZA_COLOR}"></i>Limpieza</span>${(S.limpieza.otra || []).length ? `<span><i class="bar" style="background:${OTRA_COLOR}"></i>${esc(otraLabel())}</span>` : ''}</div></div>`;
     // Día elegido o próximos
     if (S.day) {
       const del = C.trabajosEntre(S.trabajos, S.day, S.day);
@@ -341,8 +344,8 @@
     const ext = extList();
     return '<option value="">Elegí…</option>' +
       `<optgroup label="${esc(cong)}">` + pubs().slice().sort((a, b) => a.name.localeCompare(b.name, 'es')).map(p => `<option value="${esc(p.id)}"${p.id === sel ? ' selected' : ''}>${esc(p.name)}</option>`).join('') + '</optgroup>' +
-      '<optgroup label="Otra congregación">' + ext.map(x => `<option value="x:${esc(x.id)}"${'x:' + x.id === sel ? ' selected' : ''}>${esc(x.nombre)}${x.cong ? ' · Cong. ' + esc(x.cong) : ''}</option>`).join('') +
-      '<option value="__new">＋ Agregar hermano de otra congregación…</option></optgroup>';
+      `<optgroup label="${esc(otraLabel())}">` + ext.map(x => `<option value="x:${esc(x.id)}"${'x:' + x.id === sel ? ' selected' : ''}>${esc(x.nombre)}${x.cong ? ' · Cong. ' + esc(x.cong) : ''}</option>`).join('') +
+      `<option value="__new">＋ Agregar hermano de ${esc(otraNombre() || 'otra congregación')}…</option></optgroup>`;
   }
   function openForm(id, fechaDefault) {
     const t = id ? S.trabajos[id] : null;
@@ -460,7 +463,7 @@
     const ya = new Set(C.voluntarios(t, fecha, S.anotados).map(v => v.pubId).concat([t.resp, t.aux]));
     let tab = 'cong';
     const cong = (data.settings && data.settings.congregationName) || 'Congregación';
-    const m = openModal(`<h3>Agregar un hermano</h3><div class="sl-seg" id="slSeg"><button type="button" data-k="cong" class="on">${esc(cong)}</button><button type="button" data-k="otra">Otra congregación</button></div><input type="search" class="tsearch" id="slQ" placeholder="🔍 Buscar hermano" autocomplete="off"><div class="tlist" id="slL"></div><div class="tfoot"><button type="button" class="btn" data-tclose>Cancelar</button></div>`);
+    const m = openModal(`<h3>Agregar un hermano</h3><div class="sl-seg" id="slSeg"><button type="button" data-k="cong" class="on">${esc(cong)}</button><button type="button" data-k="otra">${esc(otraLabel())}</button></div><input type="search" class="tsearch" id="slQ" placeholder="🔍 Buscar hermano" autocomplete="off"><div class="tlist" id="slL"></div><div class="tfoot"><button type="button" class="btn" data-tclose>Cancelar</button></div>`);
     const paint = () => {
       const qn = accNorm(m.q('#slQ').value.trim());
       m.qa('#slSeg button').forEach(b => b.classList.toggle('on', b.dataset.k === tab));
@@ -468,7 +471,7 @@
         m.q('#slL').innerHTML = pubs().filter(p => !ya.has(p.id) && (!qn || accNorm(p.name).includes(qn))).sort((a, b) => a.name.localeCompare(b.name, 'es')).map(p => `<button type="button" class="tpick" data-id="${esc(p.id)}">${esc(p.name)}</button>`).join('') || '<div class="tempty" style="padding:12px;">No hay nadie más.</div>';
       } else {
         m.q('#slL').innerHTML = extList().filter(x => !ya.has('x:' + x.id) && (!qn || accNorm(x.nombre).includes(qn))).map(x => `<button type="button" class="tpick" data-id="x:${esc(x.id)}"><span>${esc(x.nombre)}<small>${x.cong ? 'Cong. ' + esc(x.cong) : 'Otra congregación'}${x.tel ? ' · 📱 ' + esc(x.tel) : ''}</small></span></button>`).join('') +
-          '<button type="button" class="tpick" data-new="1" style="color:var(--accent-blue);font-weight:700;">＋ Agregar un hermano de la otra congregación</button>';
+          `<button type="button" class="tpick" data-new="1" style="color:var(--accent-blue);font-weight:700;">＋ Agregar un hermano de ${esc(otraNombre() || 'la otra congregación')}</button>`;
       }
     };
     const add = async (pid) => {
@@ -489,9 +492,9 @@
   // Alta o edición de un hermano de otra congregación (salón compartido).
   function openExterno(id, onSaved) {
     const x = id ? S.externos[id] : null;
-    const m = openModal(`<h3>${x ? 'Editar hermano' : 'Hermano de otra congregación'}</h3><p class="modal-sub" style="margin:0 0 10px;">Para los salones compartidos cuando la otra congregación no usa la app. Se carga una vez y queda para los próximos trabajos.</p>
+    const m = openModal(`<h3>${x ? 'Editar hermano' : 'Hermano de ' + esc(otraNombre() || 'otra congregación')}</h3><p class="modal-sub" style="margin:0 0 10px;">Para los salones compartidos cuando la otra congregación no usa la app. Se carga una vez y queda para los próximos trabajos.</p>
       <div class="tf"><label for="slXn">Nombre *</label><input id="slXn" maxlength="60" value="${esc(x ? x.nombre : '')}" placeholder="Ej.: Juan Ramírez"></div>
-      <div class="tf"><label for="slXc">Congregación</label><input id="slXc" maxlength="40" value="${esc(x ? x.cong : '')}" placeholder="Ej.: Sur"></div>
+      <div class="tf"><label for="slXc">Congregación</label><input id="slXc" maxlength="40" value="${esc(x ? x.cong : otraNombre())}" placeholder="Ej.: Paraná Sur"></div>
       <div class="tf"><label for="slXt">Teléfono (opcional)</label><input id="slXt" type="tel" maxlength="25" value="${esc(x ? x.tel || '' : '')}" placeholder="Ej.: 342 555-1234"></div>
       <div class="tnote">📱 Con el teléfono, desde cada trabajo le mandás el aviso por WhatsApp con un toque. No recibe avisos de la app. El teléfono solo lo ven el Super Admin y el Admin — Salón.</div>
       <div class="sl-err" id="slXe"></div>
@@ -546,7 +549,7 @@
     html += `<div class="tf"><span class="tlbl">Rotación de grupos</span><div class="sl-box">${rot.length ? rot.map((g, i) => `<div class="sl-rot"><span class="nn">${i + 1}</span><span class="nm">${esc(grupoName(g))}<small>${S.grupos[g].encargado ? 'Encargado: ' + esc(pubName(S.grupos[g].encargado)) : ''}</small></span><button type="button" data-s="rot-up" data-i="${i}" aria-label="Subir"${i === 0 ? ' disabled' : ''}>↑</button><button type="button" data-s="rot-down" data-i="${i}" aria-label="Bajar"${i === rot.length - 1 ? ' disabled' : ''}>↓</button><button type="button" data-s="rot-del" data-i="${i}" aria-label="Sacar de la rotación">✕</button></div>`).join('') : '<div class="sl-rot" style="color:var(--ink-soft)">Todavía no hay grupos en la rotación.</div>'}</div>
       ${sinRot.length ? `<div class="topts">${sinRot.map(g => `<button type="button" data-s="rot-add" data-g="${esc(g.id)}">+ ${esc(g.nombre)}</button>`).join('')}</div>` : ''}</div>`;
     if (rot.length) html += `<div class="tf"><label for="slIni">Le toca al primero la semana del</label><input type="date" id="slIni" value="${esc(L.inicio || C.mondayOf(hoy()))}"></div>`;
-    html += `<div class="tf"><span class="tlbl">Salón compartido (opcional)</span><p class="hint" style="margin:0 0 6px;">Marcá las semanas de cada mes que limpia la otra congregación. Esas semanas no cuentan en la rotación.</p><div class="topts">${[1, 2, 3, 4, 5].map(n => `<button type="button" data-s="otra" data-n="${n}" class="${(L.otra || []).includes(n) ? 'on' : ''}" aria-pressed="${(L.otra || []).includes(n)}">Semana ${n}</button>`).join('')}</div></div>`;
+    html += `<div class="tf"><span class="tlbl">Salón compartido (opcional)</span><label for="slOtraN" style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:600;color:var(--ink);margin:2px 0 5px;">Nombre de la otra congregación</label><input id="slOtraN" maxlength="40" value="${esc(otraNombre())}" placeholder="Ej.: Paraná Sur" style="width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:9px;padding:9px 10px;font:inherit;font-size:14px;background:var(--bg);color:var(--ink);margin-bottom:10px;"><p class="hint" style="margin:0 0 6px;">Marcá las semanas de cada mes que limpia la otra congregación. Esas semanas no cuentan en la rotación.</p><div class="topts">${[1, 2, 3, 4, 5].map(n => `<button type="button" data-s="otra" data-n="${n}" class="${(L.otra || []).includes(n) ? 'on' : ''}" aria-pressed="${(L.otra || []).includes(n)}">Semana ${n}</button>`).join('')}</div></div>`;
     const tareas = L.tareas || TAREAS_DEF;
     html += `<div class="tf"><label for="slTar">Tareas de la limpieza <small style="text-transform:none;letter-spacing:0;font-weight:400;">(una por renglón, las ven los hermanos)</small></label><textarea id="slTar" style="min-height:110px;">${esc(tareas.join('\n'))}</textarea></div>`;
     if (rot.length) {
@@ -563,7 +566,7 @@
   // Salón compartido: hermanos de la otra congregación que ayudan en los trabajos.
   function externosHTML() {
     const xs = extList();
-    return `<div class="sl-sec"><h4>Hermanos de otra congregación</h4><button type="button" class="btn" data-s="x-new">+ Agregar</button></div>
+    return `<div class="sl-sec"><h4>Hermanos de ${esc(otraNombre() || 'otra congregación')}</h4><button type="button" class="btn" data-s="x-new">+ Agregar</button></div>
       <p class="hint" style="margin:-4px 2px 8px;">Si comparten el Salón con otra congregación que no usa la app, cargá acá a sus hermanos para ponerlos de responsable, auxiliar o voluntario en los trabajos.</p>
       ${xs.length ? `<div class="sl-box">${xs.map(x => `<button type="button" class="sl-rot" data-s="x-edit" data-id="${esc(x.id)}" style="width:100%;background:none;border-left:none;border-right:none;border-bottom:none;font:inherit;color:var(--ink);text-align:left;cursor:pointer;"><span class="sl-av" style="background:${colorOf(x.nombre)}">${esc(inic(x.nombre))}</span><span class="nm">${esc(x.nombre)}<small>${x.cong ? 'Cong. ' + esc(x.cong) : 'Otra congregación'}${x.tel ? ' · 📱 ' + esc(x.tel) : ''}</small></span><span style="color:var(--ink-soft)">›</span></button>`).join('')}</div>` : ''}`;
   }
@@ -612,6 +615,7 @@
     const L = S.limpieza || {};
     if (el.id === 'slDia') saveLimpieza([[['dia'], Number(el.value)]], 'Guardado');
     else if (el.id === 'slIni' && el.value) saveLimpieza([[['inicio'], C.mondayOf(el.value)]], 'Guardado');
+    else if (el.id === 'slOtraN') saveLimpieza([[['otraNombre'], el.value.trim().slice(0, 40) || undefined]], 'Guardado');
     else if (el.id === 'slTar') saveLimpieza([[['tareas'], el.value.split('\n').map(x => x.trim()).filter(Boolean).slice(0, 30)]], 'Tareas guardadas');
   });
 

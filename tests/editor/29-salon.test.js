@@ -100,12 +100,15 @@ let ok = 0, bad = 0; const check = (l, c, x) => { if (c) { ok++; console.log('  
   check('rotación ordenada', await p.evaluate(() => JSON.stringify(window.__salon.limpieza.rotacion) === '["g2","g1","g3"]'));
   await click(p, '#salonRoot [data-s="otra"][data-n="4"]'); await p.waitForTimeout(100);
   check('semanas de la otra congregación', await p.evaluate(() => JSON.stringify(window.__salon.limpieza.otra) === '[4]'));
+  await p.fill('#slOtraN', 'Paraná Sur'); await p.dispatchEvent('#slOtraN', 'change'); await p.waitForTimeout(150);
+  check('nombre de la otra congregación guardado una vez', await p.evaluate(() => window.__salon.limpieza.otraNombre === 'Paraná Sur'));
   const prev = await p.evaluate(() => [...document.querySelectorAll('.sl-prev div')].map(d => d.innerText.replace(/\s+/g, ' ')));
-  check('así quedan: esta semana otra congregación (sem. 4), después Grupo 2', /Otra congregación/.test(prev[0]) && /Grupo 2/.test(prev[1]) && /jue 1 y dom 4/.test(prev[1]), prev);
+  check('así quedan: esta semana Paraná Sur (sem. 4), después Grupo 2', /Paraná Sur/.test(prev[0]) && /Grupo 2/.test(prev[1]) && /jue 1 y dom 4/.test(prev[1]), prev);
   await p.screenshot({ path: path.join(SHOTS, 'salon-limpieza.png'), fullPage: true });
 
   // Salón compartido: hermanos de otra congregación que no usa la app
   await click(p, '#salonRoot [data-s="x-new"]');
+  check('hermano nuevo: la congregación ya viene escrita', await p.evaluate(() => $('slXc').value === 'Paraná Sur' && /Hermano de Paraná Sur/.test(document.querySelector('.slmodal:last-of-type h3').textContent)));
   await p.fill('#slXn', 'Juan Ramírez'); await p.fill('#slXc', 'Sur'); await p.fill('#slXt', '342 555-1234');
   await click(p, '#slXs');
   const ext = await p.evaluate(() => Object.values(window.__salon.externos));
@@ -114,7 +117,7 @@ let ok = 0, bad = 0; const check = (l, c, x) => { if (c) { ok++; console.log('  
   await click(p, '#salonRoot .sl-sec [data-s="new"]');
   await p.fill('#slTit', 'Arreglar canaletas'); await p.fill('#slFec', '2026-10-03');
   await p.selectOption('#slResp', 'p3');
-  check('el selector ofrece "Otra congregación" con Ramírez y "Agregar…"', await p.evaluate(() => { const g = [...document.querySelectorAll('#slAux optgroup')].map(o => o.label); return g.includes('Otra congregación') && !!document.querySelector('#slAux option[value^="x:"]') && !!document.querySelector('#slAux option[value="__new"]'); }));
+  check('el selector ofrece "Paraná Sur" con Ramírez y "Agregar…"', await p.evaluate(() => { const g = [...document.querySelectorAll('#slAux optgroup')].map(o => o.label); return g.includes('Paraná Sur') && !!document.querySelector('#slAux option[value^="x:"]') && !!document.querySelector('#slAux option[value="__new"]'); }));
   await p.selectOption('#slAux', '__new'); await p.waitForTimeout(150);
   await p.fill('#slXn', 'Carlos Peralta'); await p.fill('#slXc', 'Sur');
   await click(p, '#slXs');
