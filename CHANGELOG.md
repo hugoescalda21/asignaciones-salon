@@ -6,6 +6,16 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Salón: limpieza semana por semana, dos limpiezas, PDF y vista para computadora — 1 oct 2026 (caché asignaciones-salon-v49 y ver-salon-v41)
+
+- **Limpieza a mano:** el mes semana por semana; tocando una semana se elige el grupo (cada uno dice hace cuánto limpió y ✨ marca el sugerido), la otra congregación o "Sin limpieza". Lo cargado a mano queda fijo. También se pueden cambiar los días solo esa semana.
+- **✨ Sugerir** completa las semanas vacías del mes, parejo (el grupo que hace más que no limpia; a igualdad, el orden de la lista), con **Deshacer**. **Copiar** trae el mes anterior a las semanas vacías.
+- **Varias limpiezas** en ⚙ Ajustes: "Después de las reuniones" y, por ejemplo, "Limpieza general" el sábado 9:00, cada una con sus tareas. Con **"La hace el mismo grupo"** (hoy) la semana tiene un grupo para las dos; si se apaga, cada una tiene su propio grupo y su renglón.
+- **📄 Compartir:** PDF de 1, 2 o 3 meses con la limpieza (semana, días, grupo), opcionalmente los trabajos del Salón y las tareas; si faltan semanas, ofrece sugerirlas antes.
+- **Vista:** el grupo ve sus limpiezas de la semana (con día, hora y sus tareas para tildar), en "Tus asignaciones" y con recordatorio de la víspera (la general, con su hora).
+- **Computadora:** el calendario del Salón ocupa el ancho (con el nombre de cada trabajo y de quién limpia en cada día) y lo de la semana va al costado; la limpieza muestra al costado el resumen de cada grupo; los ajustes en dos columnas.
+- Compatibilidad: si ya se había armado la rotación con semana de inicio, se sigue mostrando hasta que se cargue la primera semana. Funciones: hay que publicarlas (`firebase deploy --only functions`) para los recordatorios de la limpieza general.
+
 ## Salón: buscador para elegir responsable y auxiliar — 30 sep 2026 (caché asignaciones-salon-v48)
 
 - Responsable y auxiliar ya no usan la lista desplegable del celular (con 300 hermanos no se encontraba a nadie): tocan un botón que abre la misma ventana que "＋ Agregar hermano", con **buscador** (sin importar acentos) y las pestañas de tu congregación y de la otra. Ahí mismo se agrega un hermano nuevo de la otra congregación.

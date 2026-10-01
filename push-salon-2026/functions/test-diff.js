@@ -399,6 +399,12 @@ t('restaurar: no manda avisos de "te asignaron"', () => {
     assert.deepStrictEqual(L.anotadoMessage(Object.assign({ comentario: 'Llevo la escalera' }, r), trabajos.w1, true, 1, 2), { title: 'Juan Paz se sumó a Pintura', body: 'sábado 26 · van 1 de 2 · "Llevo la escalera"' });
     assert.ok(/ya no va a Pintura/.test(L.anotadoMessage(r, trabajos.w1, false, 0, 2).title));
   });
+  t('salón: dos limpiezas cargadas a mano, la general con el mismo grupo', () => {
+    const lz2 = { tipos: [{ id: 'reu', nombre: 'Después de las reuniones', modo: 'reunion' }, { id: 'gen', nombre: 'Limpieza general', modo: 'semana', dia: 6, hora: '09:00', mismoGrupo: true }], semanas: { '2026-09-21': { g: 'g1', d: { gen: ['2026-09-25'] } } } };
+    const a = L.salonAssignments(cong, {}, {}, lz2, grupos, '2026-09-21', '2026-09-27').filter(x => x.pubId === 'p6');
+    assert.deepStrictEqual(a.map(x => x.dateIso + ' ' + x.label), ['2026-09-24 Limpieza: después de las reuniones (tu grupo)', '2026-09-25 Limpieza general (tu grupo)', '2026-09-27 Limpieza: después de las reuniones (tu grupo)']);
+    assert.strictEqual(a[1].timeMin, 9 * 60); assert.strictEqual(a[0].timeMin, null);
+  });
   t('restaurar: el Salón aparte, y las copias viejas no lo tocan', () => {
     const b = { main: {}, salon: { trabajos: { lista: {} } }, salonAnotados: {} };
     const p = L.restorePlan(b, ['salon'], { salon: ['trabajos', 'limpieza'], salonAnotados: ['x'] }, 'h', 'A');

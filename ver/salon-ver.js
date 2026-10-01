@@ -25,6 +25,7 @@
   #salonBox .sv-lz small { display: block; font-size: 10.5px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; opacity: .8; }
   #salonBox .sv-lz b { display: block; font-size: 16px; margin: 2px 0; }
   #salonBox .sv-lz p { margin: 0; font-size: 12.5px; opacity: .9; line-height: 1.45; }
+  #salonBox .sv-lzt + .sv-lzt { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.25); }
   #salonBox .sv-tareas { margin-top: 9px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,.25); }
   #salonBox .sv-tareas label { display: flex; gap: 9px; align-items: center; font-size: 13px; padding: 4px 0; cursor: pointer; }
   #salonBox .sv-tareas input { width: 17px; height: 17px; accent-color: #fff; }
@@ -136,23 +137,28 @@
     const box = ensureBox(); if (!box) return;
     const pub = myPub();
     const h = hoy(), mon = C.mondayOf(h);
-    const tu = C.turnoLimpieza(V.limpieza, mon);
+    // Las limpiezas de esta semana (después de las reuniones, la general…) con quién las hace y qué días.
+    const ls = C.limpiezasSemana(V.limpieza, mon, data && data.settings)
+      .map(l => Object.assign({}, l, { dias: l.dias.filter(f => f >= h) }))
+      .filter(l => l.quien && l.quien.g !== 'nadie' && l.dias.length);
     const occ = visibles();
-    if (!tu && !occ.length) { box.innerHTML = ''; return; }
+    if (!ls.length && !occ.length) { box.innerHTML = ''; return; }
+    const otraN = (V.limpieza.otraNombre || '').trim() || 'otra congregación';
+    const nombreDe = (q) => q.g === 'otra' ? otraN : ((V.grupos[q.g] || {}).nombre || 'un grupo');
+    const cuandoL = (l) => esc(l.dias.map(fmtCorto).reduce((t, x, i, a) => t + (i === 0 ? '' : i === a.length - 1 ? ' y ' : ', ') + x, '')) + (l.tipo.modo === 'semana' ? (l.tipo.hora ? ' · ' + esc(l.tipo.hora) : '') : ', después de la reunión');
+    const miG = pub ? grupoDe(pub.id) : null;
+    const mias = ls.filter(l => miG && l.quien.g === miG);
+    const otras = ls.filter(l => !mias.includes(l));
+    const varias = C.tiposLimpieza(V.limpieza).length > 1;
     let html = '<h2 class="sec-title">En el Salón</h2>';
-    if (tu) {
-      const dias = C.diasLimpieza(V.limpieza, mon, data && data.settings).filter(f => f >= h);
-      const miG = pub ? grupoDe(pub.id) : null;
-      const mine = !tu.otra && miG && tu.gid === miG;
-      const nombre = tu.otra ? ((V.limpieza.otraNombre || '').trim() || 'otra congregación') : ((V.grupos[tu.gid] || {}).nombre || 'un grupo');
-      if (mine) {
-        const tareas = V.limpieza.tareas || [];
-        const done = loadTareas(tareasKey());
-        html += `<div class="sv-lz mine"><small>Limpieza · tu grupo</small><b>Le toca a tu grupo (${esc(nombre)})</b><p>${dias.length ? esc(dias.map(fmtCorto).join(' y ')) + (V.limpieza.modo === 'semana' ? '' : ', después de la reunión') : 'Esta semana'}.</p>
-          ${tareas.length ? `<div class="sv-tareas">${tareas.map(x => `<label class="${done.has(x) ? 'ok' : ''}"><input type="checkbox" data-tarea="${esc(x)}"${done.has(x) ? ' checked' : ''}><span>${esc(x)}</span></label>`).join('')}</div>` : ''}</div>`;
-      } else if (dias.length) {
-        html += `<div class="sv-lz"><small>Limpieza esta semana</small><p>Le toca a <b style="display:inline;font-size:inherit;">${esc(nombre)}</b> · ${esc(dias.map(fmtCorto).join(' y '))}</p></div>`;
-      }
+    if (mias.length) {
+      const done = loadTareas(tareasKey());
+      html += `<div class="sv-lz mine"><small>Limpieza · tu grupo</small><b>Le toca a tu grupo (${esc(nombreDe(mias[0].quien))})</b>` +
+        mias.map(l => `<div class="sv-lzt">${varias ? `<p><b style="display:inline;font-size:inherit;">${esc(l.tipo.nombre)}</b> · ${cuandoL(l)}</p>` : `<p>${cuandoL(l)}.</p>`}
+          ${(l.tipo.tareas || []).length ? `<div class="sv-tareas">${l.tipo.tareas.map(x => { const k = l.tipo.id + '|' + x; return `<label class="${done.has(k) ? 'ok' : ''}"><input type="checkbox" data-tarea="${esc(k)}"${done.has(k) ? ' checked' : ''}><span>${esc(x)}</span></label>`; }).join('')}</div>` : ''}</div>`).join('') + '</div>';
+    }
+    if (otras.length) {
+      html += `<div class="sv-lz"><small>Limpieza esta semana</small>${otras.map(l => `<p>${varias ? esc(l.tipo.nombre) + ': ' : 'Le toca a '}<b style="display:inline;font-size:inherit;">${esc(nombreDe(l.quien))}</b> · ${esc(l.dias.map(fmtCorto).reduce((t, x, i, a) => t + (i === 0 ? '' : i === a.length - 1 ? ' y ' : ', ') + x, ''))}${l.tipo.modo === 'semana' && l.tipo.hora ? ' · ' + esc(l.tipo.hora) : ''}</p>`).join('')}</div>`;
     }
     html += occ.map(o => cardHTML(o, pub)).join('');
     box.innerHTML = html;
@@ -254,7 +260,7 @@
     if (!pub) return [];
     return C.asignacionesSalon(pub.id, V.trabajos, V.anotados, V.limpieza, data && data.settings, grupoDe, todayIso, C.addDays(todayIso, 56)).map(a => {
       const { dayName, day } = formatDate(a.fecha);
-      return { dayLabel: `${dayName.slice(0, 3).toUpperCase()} ${day}`, month: monthKey(a.fecha), type: 'salon', label: a.rol === 'limpieza' ? 'Limpieza del Salón' : `${a.titulo} · ${a.quien.toLowerCase()}`, date: a.fecha, meetingType: 'salon', time: a.hora, where: 'Salón del Reino' };
+      return { dayLabel: `${dayName.slice(0, 3).toUpperCase()} ${day}`, month: monthKey(a.fecha), type: 'salon', label: a.rol === 'limpieza' ? a.titulo : `${a.titulo} · ${a.quien.toLowerCase()}`, date: a.fecha, meetingType: 'salon', time: a.hora, where: 'Salón del Reino' };
     });
   }
 

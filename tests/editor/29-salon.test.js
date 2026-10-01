@@ -3,14 +3,20 @@
 const { launch, FILE, SHOTS, fixture } = require('./_helper');
 const { installMock } = require('./_mock-firestore');
 const path = require('path');
+const fs = require('fs');
 const data = fixture();
 Object.assign(data.settings, { editorEmails: ['hugo@x.com'], salonAdminEmails: ['salon@x.com'], viewerEmails: ['ver@x.com'] });
 let ok = 0, bad = 0; const check = (l, c, x) => { if (c) { ok++; console.log('  ✅', l); } else { bad++; console.log('  ❌', l, x === undefined ? '' : JSON.stringify(x).slice(0, 500)); } };
 
 (async () => {
   const b = await launch();
-  async function open(email, store) {
-    const ctx = await b.newContext({ viewport: { width: 390, height: 844 } });
+  async function open(email, store, opts) {
+    const ctx = await b.newContext({ viewport: opts && opts.viewport || { width: 390, height: 844 }, acceptDownloads: true });
+    const jd = process.env.JSPDF_DIR;   // para probar el PDF sin internet (como en 22-territorios-mapa)
+    if (jd) {
+      await ctx.route(/jspdf\.umd\.min\.js/, r => r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(path.join(jd, 'jspdf.umd.min.js')) }));
+      await ctx.route(/jspdf\.plugin\.autotable\.min\.js/, r => r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(path.join(jd, 'jspdf.plugin.autotable.min.js')) }));
+    }
     await ctx.addInitScript((d) => { localStorage.setItem('kh-schedule-data-v2', JSON.stringify(d)); localStorage.setItem('kh-welcome-salon', '1'); window.__opened = []; window.open = (u) => { window.__opened.push(u); return null; }; window.confirm = () => true; window.__errs = []; window.addEventListener('error', (e) => window.__errs.push(String(e.message))); }, data);
     const p = await ctx.newPage(); p.errs = []; p.on('pageerror', e => p.errs.push(e.message));
     await p.goto(FILE); await p.waitForTimeout(700);
@@ -103,21 +109,78 @@ let ok = 0, bad = 0; const check = (l, c, x) => { if (c) { ok++; console.log('  
   check('marcar como hecho', await p.evaluate((tid) => window.__salon.trabajos[tid].ocurr['2026-09-26'].estado === 'hecho', tid));
   await p.keyboard.press('Escape');
 
-  // Limpieza por grupos
+  // Limpieza por grupos: ajustes
   await click(p, '#salonRoot [data-s="view"][data-k="limp"]');
-  check('limpieza sin responsable ni auxiliar', await p.evaluate(() => !/Responsable|Auxiliar/.test($('salonRoot').innerText)));
+  check('limpieza sin responsable ni auxiliar; mes de septiembre', await p.evaluate(() => !/Responsable|Auxiliar/.test($('salonRoot').innerText) && /septiembre 2026/i.test($('salonRoot').innerText)));
+  await click(p, '#salonRoot [data-s="lz-ajustes"]');
   await click(p, '#salonRoot [data-s="rot-add"][data-g="g2"]');
   await click(p, '#salonRoot [data-s="rot-add"][data-g="g3"]');
   await click(p, '#salonRoot [data-s="rot-add"][data-g="g1"]');
   await click(p, '#salonRoot [data-s="rot-up"][data-i="2"]');
-  check('rotación ordenada', await p.evaluate(() => JSON.stringify(window.__salon.limpieza.rotacion) === '["g2","g1","g3"]'));
+  check('orden para sugerir', await p.evaluate(() => JSON.stringify(window.__salon.limpieza.rotacion) === '["g2","g1","g3"]'));
   await click(p, '#salonRoot [data-s="otra"][data-n="4"]'); await p.waitForTimeout(100);
   check('semanas de la otra congregación', await p.evaluate(() => JSON.stringify(window.__salon.limpieza.otra) === '[4]'));
   await p.fill('#slOtraN', 'Paraná Sur'); await p.dispatchEvent('#slOtraN', 'change'); await p.waitForTimeout(150);
   check('nombre de la otra congregación guardado una vez', await p.evaluate(() => window.__salon.limpieza.otraNombre === 'Paraná Sur'));
-  const prev = await p.evaluate(() => [...document.querySelectorAll('.sl-prev div')].map(d => d.innerText.replace(/\s+/g, ' ')));
-  check('así quedan: esta semana Paraná Sur (sem. 4), después Grupo 2', /Paraná Sur/.test(prev[0]) && /Grupo 2/.test(prev[1]) && /jue 1 y dom 4/.test(prev[1]), prev);
+  await click(p, '#salonRoot [data-s="lz-tipo"][data-i="-1"]');
+  await p.fill('#lzT', 'Vidrios\nSillas a fondo\nCocina');
+  await click(p, '#lzOk'); await p.waitForTimeout(150);
+  const tps = await p.evaluate(() => window.__salon.limpieza.tipos);
+  check('dos limpiezas: después de las reuniones y la general del sábado 9:00 (mismo grupo)', tps && tps.length === 2 && tps[0].modo === 'reunion' && tps[1].nombre === 'Limpieza general' && tps[1].modo === 'semana' && tps[1].dia === 6 && tps[1].hora === '09:00' && tps[1].mismoGrupo === true && tps[1].tareas.length === 3, tps);
+  await click(p, '#salonRoot [data-s="lz-volver"]');
+
+  // El mes, semana por semana
+  const filas = () => p.evaluate(() => [...document.querySelectorAll('#salonRoot .sl-wk')].map(d => d.innerText.replace(/\s+/g, ' ')));
+  let fs1 = await filas();
+  check('cuatro semanas en septiembre; la 4 la limpia Paraná Sur', fs1.length === 4 && /Sin cargar/.test(fs1[0]) && /Paraná Sur Compartido/.test(fs1[3]), fs1);
+  await click(p, '#salonRoot .sl-wkm[data-m="2026-09-07"]');
+  check('elegir: grupos con hace cuánto limpiaron, la otra congregación y "Sin limpieza"', await p.evaluate(() => { const t = document.querySelector('.sl-chooser').innerText; return /Grupo 2/.test(t) && /Todavía no limpió/.test(t) && /Paraná Sur/.test(t) && /Sin limpieza/.test(t); }));
+  await click(p, '.sl-chooser .tpick[data-v="g3"]');
+  check('cargado a mano: Grupo 3 (sin marca de sugerido)', await p.evaluate(() => { const w = window.__salon.limpieza.semanas['2026-09-07']; return w.g === 'g3' && !w.s; }));
+  fs1 = await filas();
+  check('la semana muestra las dos limpiezas con sus días', /Grupo 3 ✓ Cargado/.test(fs1[1]) && /Reuniones jue 10 y dom 13/.test(fs1[1]) && /General sáb 12 · 09:00/.test(fs1[1]), fs1[1]);
+  await click(p, '#salonRoot [data-s="lz-sug"]'); await p.waitForTimeout(150);
+  let sem = await p.evaluate(() => window.__salon.limpieza.semanas);
+  check('Sugerir completa solo las vacías, parejo (Grupo 2 y después Grupo 1)', sem['2026-08-31'].g === 'g2' && sem['2026-08-31'].s && sem['2026-09-14'].g === 'g1' && sem['2026-09-07'].g === 'g3' && !sem['2026-09-21'], sem);
+  check('aviso con "Deshacer"', await p.evaluate(() => /Se completaron 2 semanas/.test(document.querySelector('.sl-undo').innerText)));
+  await click(p, '#salonRoot [data-s="lz-undo"]');
+  sem = await p.evaluate(() => window.__salon.limpieza.semanas);
+  check('Deshacer vuelve atrás la sugerencia', Object.keys(sem).join() === '2026-09-07', sem);
+  await click(p, '#salonRoot [data-s="lz-sug"]');
+  // Días de una semana suelta
+  await click(p, '#salonRoot .sl-wkm[data-m="2026-09-14"]');
+  await click(p, '.sl-chooser #lzDias');
+  await modal(p).locator('input[type="date"]').nth(2).fill('2026-09-18');
+  await click(p, '#lzDok');
+  check('cambiar los días solo esa semana', await p.evaluate(() => JSON.stringify(window.__salon.limpieza.semanas['2026-09-14'].d[window.__salon.limpieza.tipos[1].id]) === '["2026-09-18"]' && /General vie 18/.test(document.getElementById('lz-2026-09-14').innerText.replace(/\s+/g, ' '))));
+  // Si la general pasa a tener su propio grupo
+  await click(p, '#salonRoot [data-s="lz-ajustes"]');
+  await p.uncheck('#salonRoot [data-s="lz-mismo"][data-i="1"]'); await p.waitForTimeout(150);
+  await click(p, '#salonRoot [data-s="lz-volver"]');
+  check('con su propio grupo: un renglón aparte para elegir', await p.evaluate(() => /General Sin cargar · Elegir/.test(document.getElementById('lz-2026-09-07').innerText.replace(/\s+/g, ' '))));
+  await click(p, '#salonRoot .sl-l2b[data-m="2026-09-07"]');
+  check('no sugiere al grupo que ya tiene la otra limpieza esa semana', await p.evaluate(() => { const b = document.querySelector('.sl-chooser .tpick[data-v="g3"]'); return /ya tiene otra limpieza/.test(b.innerText) && !/✨/.test(b.innerText); }));
+  await click(p, '.sl-chooser .tpick[data-v="g2"]');
+  check('se guarda aparte', await p.evaluate(() => window.__salon.limpieza.semanas['2026-09-07'].x[window.__salon.limpieza.tipos[1].id].g === 'g2' && window.__salon.limpieza.semanas['2026-09-07'].g === 'g3'));
+  await click(p, '#salonRoot [data-s="lz-ajustes"]');
+  await p.check('#salonRoot [data-s="lz-mismo"][data-i="1"]'); await p.waitForTimeout(150);
+  await click(p, '#salonRoot [data-s="lz-volver"]');
+  // Copiar el mes anterior
+  await click(p, '#salonRoot [data-s="lz-mes"][data-d="1"]');
+  await click(p, '#salonRoot [data-s="lz-copy"]');
+  sem = await p.evaluate(() => window.__salon.limpieza.semanas);
+  check('Copiar septiembre en octubre (sin pisar la semana compartida)', sem['2026-09-28'].g === 'g2' && sem['2026-10-05'].g === 'g3' && sem['2026-10-12'].g === 'g1' && !sem['2026-10-19'] && /Se copiaron 3 semanas/.test(await p.evaluate(() => document.querySelector('.sl-undo').innerText)), sem);
   await p.screenshot({ path: path.join(SHOTS, 'salon-limpieza.png'), fullPage: true });
+  // PDF
+  if (await p.evaluate(() => !!window.jspdf)) {
+    await click(p, '#salonRoot [data-s="lz-pdf"]');
+    const [dl] = await Promise.all([p.waitForEvent('download'), p.click('#pdfOk')]);
+    const txt = fs.readFileSync(await dl.path()).toString('latin1');
+    if (process.env.PDF_OUT) fs.writeFileSync(process.env.PDF_OUT, fs.readFileSync(await dl.path()));
+    check('PDF: octubre y noviembre, con las semanas, los días y los grupos', dl.suggestedFilename() === 'Limpieza octubre 2026 - noviembre 2026.pdf' && /noviembre 2026/.test(txt) && /Grupo 3/.test(txt) && /Paran/.test(txt) && /Vidrios/.test(txt), dl.suggestedFilename());
+    check('antes del PDF, sugirió las semanas que faltaban', await p.evaluate(() => !!window.__salon.limpieza.semanas['2026-10-26'] && !!window.__salon.limpieza.semanas['2026-11-16']));
+  } else console.log('  (sin jsPDF en este entorno: se salta el PDF)');
+  await click(p, '#salonRoot [data-s="lz-ajustes"]');
 
   // Salón compartido: hermanos de otra congregación que no usa la app
   await click(p, '#salonRoot [data-s="x-new"]');
@@ -163,6 +226,18 @@ let ok = 0, bad = 0; const check = (l, c, x) => { if (c) { ok++; console.log('  
   const tabs = await p.evaluate(() => [...document.querySelectorAll('.bottom-tabs .tab-btn[data-tab]')].filter(b => !b.classList.contains('hidden')).map(b => b.dataset.tab));
   check('solo ve la pestaña Salón', JSON.stringify(tabs) === '["salon"]', tabs);
   check('abre directo en Salón', await p.evaluate(() => !$('panel-salon').classList.contains('hidden') && /Corte de pasto/.test($('salonRoot').innerText)));
+  check('sin errores', !p.errs.length, p.errs);
+  await p.context().close();
+
+  console.log('\nComputadora');
+  p = await open('hugo@x.com', store, { viewport: { width: 1280, height: 900 } });
+  await click(p, '.tabs .tab-btn[data-tab="salon"]');
+  check('calendario a la izquierda y lo de la semana a la derecha', await p.evaluate(() => { const c = document.querySelector('.a-cal').getBoundingClientRect(), h = document.querySelector('.a-rest').getBoundingClientRect(); return c.width > 450 && h.left > c.right - 2; }));
+  check('en cada día se lee el nombre del trabajo', await p.evaluate(() => { const e = document.querySelector('.sl-d[data-f="2026-09-24"] .sl-labs em'); return e && getComputedStyle(e).display !== 'none' && /Corte de pasto/.test(e.textContent); }));
+  await p.screenshot({ path: path.join(SHOTS, 'salon-pc-calendario.png') });
+  await click(p, '#salonRoot [data-s="view"][data-k="limp"]');
+  check('limpieza: semanas y, al costado, el resumen de los grupos', await p.evaluate(() => { const s = document.querySelector('.sl-lzside'); return s && getComputedStyle(s).display !== 'none' && /Grupo 2/.test(s.innerText) && s.getBoundingClientRect().left > document.querySelector('.sl-lzmain').getBoundingClientRect().right - 2; }));
+  await p.screenshot({ path: path.join(SHOTS, 'salon-pc-limpieza.png') });
   check('sin errores', !p.errs.length, p.errs);
   await p.context().close();
 

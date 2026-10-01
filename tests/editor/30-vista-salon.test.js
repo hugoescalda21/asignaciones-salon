@@ -12,7 +12,8 @@ const DOCS = {
   'congregations/C/terr/grupos': { lista: {
     g1: { id: 'g1', nombre: 'Grupo 1', encargado: 'p1', miembros: ['p1', 'p5'] },
     g2: { id: 'g2', nombre: 'Grupo 2', encargado: 'p6', miembros: ['p6', 'p7'] } } },
-  'congregations/C/salon/limpieza': { modo: 'reunion', rotacion: ['g1', 'g2'], inicio: '2026-09-21', otra: [], tareas: ['Barrer y trapear', 'Baños'] },
+  'congregations/C/salon/limpieza': { rotacion: ['g1', 'g2'], otra: [], semanas: { '2026-09-21': { g: 'g1' }, '2026-09-28': { g: 'g2' } },
+    tipos: [{ id: 'reu', nombre: 'Después de las reuniones', modo: 'reunion', tareas: ['Barrer y trapear', 'Baños'] }, { id: 'gen', nombre: 'Limpieza general', modo: 'semana', dia: 6, hora: '09:00', tareas: ['Vidrios', 'Cocina'], mismoGrupo: true }] },
   'congregations/C/salon/trabajos': { lista: {
     t1: { id: 't1', titulo: 'Pintura de la entrada', tipo: 'pintura', fecha: '2026-09-26', hora: '09:00', resp: 'p2', aux: 'p11', cupo: 2, repite: 'no', materiales: ['Ropa de trabajo'], vista: true },
     t2: { id: 't2', titulo: 'Arreglar la puerta', tipo: 'reparacion', fecha: '2026-09-30', hora: '18:00', resp: 'p8', aux: 'p9', cupo: 1, repite: 'no', vista: true },
@@ -68,7 +69,7 @@ function installMock(store) {
   console.log('\nMartín (Grupo 1: le toca limpiar esta semana)');
   let p = await open('martin@x.com');
   const lz = await p.evaluate(() => { const e = document.querySelector('#salonBox .sv-lz.mine'); return e ? e.innerText.replace(/\s+/g, ' ') : ''; });
-  check('limpieza: le toca a su grupo, jue 24 y dom 27, con las tareas', /Le toca a tu grupo \(Grupo 1\)/.test(lz) && /jue 24 y dom 27/.test(lz) && /Barrer y trapear/.test(lz), lz);
+  check('limpieza: le toca a su grupo, las dos limpiezas con sus días y tareas', /Le toca a tu grupo \(Grupo 1\)/.test(lz) && /Después de las reuniones · jue 24 y dom 27, después de la reunión/.test(lz) && /Limpieza general · sáb 26 · 09:00/.test(lz) && /Barrer y trapear/.test(lz) && /Vidrios/.test(lz), lz);
   let cards = await cardsOf(p);
   check('trabajos visibles (no el que es solo para el editor)', cards.length === 3 && !cards.some(c => /Solo para el editor/.test(c)), cards);
   check('Pintura: responsable y auxiliar, falta 1, quiénes van y "Me sumo"', /Pintura de la entrada/.test(cards[0]) && /Gómez y Díaz/.test(cards[0]) && /falta 1/.test(cards[0]) && /Van: Abad/.test(cards[0]) && /Me sumo/.test(cards[0]), cards[0]);
@@ -89,7 +90,7 @@ function installMock(store) {
   cards = await cardsOf(p);
   check('la tarjeta pasa a "✓ Anotado", completo y con su nombre en "Van"', /✓ Anotado/.test(cards[0]) && /completo/.test(cards[0]) && /Van: Abad, Ruiz/.test(cards[0]), cards[0]);
   const mine = await p.evaluate(() => (document.getElementById('nextHero') || {}).innerText + ' ' + (document.getElementById('personalSummary') || {}).innerText);
-  check('aparece en sus asignaciones (y la limpieza del grupo)', /Pintura de la entrada · voluntario/.test(mine) && /Limpieza del Salón/.test(mine), mine.replace(/\s+/g, ' ').slice(0, 400));
+  check('aparece en sus asignaciones (y la limpieza del grupo)', /Pintura de la entrada · voluntario/.test(mine) && /Limpieza: después de las reuniones/.test(mine), mine.replace(/\s+/g, ' ').slice(0, 400));
   await p.click('#salonBox [data-sv="anotado"][data-id="t1"]'); await p.waitForTimeout(120);
   check('"✓ Anotado": calendario, cambiar comentario y "Ya no puedo ir"', await p.evaluate(() => { const t = document.querySelector('.sv-sheet').innerText; return /Agregar al calendario/.test(t) && /Cambiar mi comentario/.test(t) && /Ya no puedo ir/.test(t) && /Llevo la escalera/.test(t); }));
   await p.click('#svNo'); await p.waitForTimeout(80);
@@ -101,7 +102,7 @@ function installMock(store) {
 
   console.log('\nEmail sin vincular');
   p = await open('ver@x.com');
-  check('ve a qué grupo le toca limpiar', await p.evaluate(() => /Le toca a Grupo 1/.test(document.querySelector('#salonBox .sv-lz').innerText)));
+  check('ve a qué grupo le toca limpiar', await p.evaluate(() => /Limpieza general: Grupo 1 · sáb 26 · 09:00/.test(document.querySelector('#salonBox .sv-lz').innerText)));
   await p.click('#salonBox [data-sv="sumo"][data-id="t1"]'); await p.waitForTimeout(120);
   check('"Me sumo" le pide vincular su email', await p.evaluate(() => /Primero vinculá tu nombre/.test(document.querySelector('.sv-sheet').innerText) && !window.__writes.length));
   check('sin errores', !p.errs.length, p.errs);

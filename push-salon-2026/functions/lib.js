@@ -538,7 +538,7 @@ function salonAssignments(cong, trabajos, anotados, limpieza, grupos, fromIso, t
   const grupoDe = (pid) => { const g = Object.values(grupos || {}).find(x => x && ((x.miembros || []).includes(pid) || x.encargado === pid || x.auxiliar === pid)); return g ? g.id : null; };
   ((cong && cong.publishers) || []).forEach((p) => {
     SC.asignacionesSalon(p.id, trabajos, anotados, limpieza, cong.settings, grupoDe, fromIso, toIso).forEach((a) => {
-      out.push({ pubId: p.id, dateIso: a.fecha, timeMin: a.rol === 'limpieza' ? null : parseHHMM(a.hora), label: a.rol === 'limpieza' ? 'Limpieza del Salón (tu grupo)' : a.label });
+      out.push({ pubId: p.id, dateIso: a.fecha, timeMin: a.hora ? parseHHMM(a.hora) : null, label: a.label });
     });
   });
   return out;
