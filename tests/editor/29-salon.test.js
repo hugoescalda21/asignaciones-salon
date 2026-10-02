@@ -1,4 +1,4 @@
-// Pestaña Salón: calendario de trabajos del Salón (responsable y auxiliar obligatorios, voluntarios,
+// Pestaña Mantenimiento: calendario de trabajos del Salón (responsable y auxiliar obligatorios, voluntarios,
 // repetición, estado) y limpieza por grupos. Con un Firestore simulado en memoria.
 const { launch, FILE, SHOTS, fixture } = require('./_helper');
 const { installMock } = require('./_mock-firestore');
@@ -45,7 +45,7 @@ let ok = 0, bad = 0; const check = (l, c, x) => { if (c) { ok++; console.log('  
 
   console.log('\nSuper Admin');
   let p = await open('hugo@x.com', store);
-  check('ve la pestaña Salón', await p.evaluate(() => !document.querySelector('.bottom-tabs .tab-btn[data-tab="salon"]').classList.contains('hidden')));
+  check('ve la pestaña Mantenimiento', await p.evaluate(() => !document.querySelector('.bottom-tabs .tab-btn[data-tab="salon"]').classList.contains('hidden')));
   await click(p, '.bottom-tabs .tab-btn[data-tab="salon"]');
   check('Calendario · Trabajos · Limpieza', await p.evaluate(() => [...document.querySelectorAll('#salonRoot .tseg button')].map(x => x.textContent).join(',') === 'Calendario,Trabajos,Limpieza'));
   check('muestra septiembre 2026 y explica cómo empezar', await p.evaluate(() => /septiembre 2026/i.test($('salonRoot').innerText) && /Todavía no hay trabajos programados/.test($('salonRoot').innerText)));
@@ -215,17 +215,18 @@ let ok = 0, bad = 0; const check = (l, c, x) => { if (c) { ok++; console.log('  
   await p.keyboard.press('Escape');
   await click(p, '#salonRoot [data-s="view"][data-k="cal"]');
   await p.screenshot({ path: path.join(SHOTS, 'salon-calendario.png'), fullPage: true });
+  await p.screenshot({ path: path.join(SHOTS, 'salon-barra.png'), clip: { x: 0, y: 760, width: 390, height: 84 } });
   check('los 7 botones de abajo entran en el celular', await p.evaluate(() => [...document.querySelectorAll('.bottom-tabs .tab-btn:not(.hidden)')].every(b => b.scrollWidth <= b.clientWidth + 1) && document.documentElement.scrollWidth <= 390));
   check('próximos: una vez por trabajo', await p.evaluate(() => [...document.querySelectorAll('#salonRoot .sl-ev')].filter(e => /Corte de pasto/.test(e.innerText)).length === 1));
   check('sin errores', !p.errs.length, p.errs);
   Object.assign(store, await p.evaluate(() => window.__store));
   await p.context().close();
 
-  console.log('\nAdmin — Salón');
+  console.log('\nAdmin — Mantenimiento');
   p = await open('salon@x.com', store);
   const tabs = await p.evaluate(() => [...document.querySelectorAll('.bottom-tabs .tab-btn[data-tab]')].filter(b => !b.classList.contains('hidden')).map(b => b.dataset.tab));
-  check('solo ve la pestaña Salón', JSON.stringify(tabs) === '["salon"]', tabs);
-  check('abre directo en Salón', await p.evaluate(() => !$('panel-salon').classList.contains('hidden') && /Corte de pasto/.test($('salonRoot').innerText)));
+  check('solo ve la pestaña Mantenimiento', JSON.stringify(tabs) === '["salon"]', tabs);
+  check('abre directo en Mantenimiento', await p.evaluate(() => !$('panel-salon').classList.contains('hidden') && /Corte de pasto/.test($('salonRoot').innerText)));
   check('sin errores', !p.errs.length, p.errs);
   await p.context().close();
 
@@ -243,7 +244,7 @@ let ok = 0, bad = 0; const check = (l, c, x) => { if (c) { ok++; console.log('  
 
   console.log('\nSolo ver');
   p = await open('ver@x.com', store);
-  check('no ve la pestaña Salón', await p.evaluate(() => [...document.querySelectorAll('.tab-btn[data-tab="salon"]')].every(b => b.classList.contains('hidden'))));
+  check('no ve la pestaña Mantenimiento', await p.evaluate(() => [...document.querySelectorAll('.tab-btn[data-tab="salon"]')].every(b => b.classList.contains('hidden'))));
   await p.context().close();
 
   await b.close();

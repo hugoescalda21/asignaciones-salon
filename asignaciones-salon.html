@@ -1075,9 +1075,10 @@
       padding: 9px 4px; font-size: 10.5px; border-bottom: none; border-top: 2px solid transparent;
     }
     .bottom-tabs .tab-btn.active { border-top-color: var(--accent-gold); color: var(--ink); }
-    /* Con Territorios y Salón el Super Admin tiene 7 botones: que entren todos en un celular angosto. */
+    /* Con Territorios y Mantenimiento el Super Admin tiene 7 botones: que entren todos en un celular angosto. */
     .bottom-tabs .tab-btn { min-width: 0; padding-left: 1px; padding-right: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .bottom-tabs:has(.tab-btn[data-tab="territorios"]:not(.hidden)):has(.tab-btn[data-tab="salon"]:not(.hidden)) .tab-btn { font-size: 9.5px; letter-spacing: -.02em; }
+    .bottom-tabs .tab-btn[data-tab="salon"] { white-space: normal; overflow-wrap: anywhere; line-height: 1.15; }
     .modal-overlay { padding: 0; align-items: flex-end; }
     .modal { max-width: 100%; width: 100%; max-height: 92vh; border-radius: 14px 14px 0 0; padding: 22px 18px calc(18px + env(safe-area-inset-bottom)); }
 
@@ -1317,7 +1318,7 @@
       <button class="tab-btn" data-tab="timer">Cronómetro</button>
       <button class="tab-btn" data-tab="hermanos">Hermanos</button>
       <button class="tab-btn hidden" data-tab="territorios">Territorios</button>
-      <button class="tab-btn hidden" data-tab="salon">Salón</button>
+      <button class="tab-btn hidden" data-tab="salon">Mantenimiento</button>
       <button class="tab-btn" data-tab="ajustes">Ajustes</button>
       <button class="tab-btn" id="navAnunciosBtn" type="button">📢 Anuncios</button>
     </nav>
@@ -1558,7 +1559,7 @@
             <option value="acomodadoresAdminEmails">Admin — Acomodadores</option>
             <option value="asignacionesAdminEmails">Admin — Asignaciones</option>
             <option value="territoriosAdminEmails">Admin — Territorios</option>
-            <option value="salonAdminEmails">Admin — Salón</option>
+            <option value="salonAdminEmails">Admin — Mantenimiento</option>
             <option value="anunciosOnlyEmails">Solo anuncios</option>
             <option value="viewerEmails" selected>Solo ver</option>
           </select>
@@ -1629,7 +1630,7 @@
     <details class="settings-card" id="backupCard">
       <summary><div><h3>Copia de seguridad</h3><span class="sc-sub" id="bkSub">Exportar o importar todo en un archivo</span></div><span class="chev">›</span></summary>
       <div id="bkCloud" class="hidden">
-        <p class="hint">Todos los domingos a la madrugada se guarda sola una copia de <b>todo</b>: programa, hermanos, anuncios, ajustes, territorios, salidas y el Salón. Se guardan las de las últimas 8 semanas y una por mes durante un año. Solo el Super Admin las ve.</p>
+        <p class="hint">Todos los domingos a la madrugada se guarda sola una copia de <b>todo</b>: programa, hermanos, anuncios, ajustes, territorios, salidas y mantenimiento. Se guardan las de las últimas 8 semanas y una por mes durante un año. Solo el Super Admin las ve.</p>
         <div id="bkList" class="bk-list"></div>
         <div class="settings-actions" style="margin-bottom:18px;"><button class="btn" id="bkNowBtn">Hacer una copia ahora</button></div>
         <h4 class="bk-h">En este dispositivo</h4>
@@ -1698,7 +1699,7 @@
   <button class="tab-btn" data-tab="timer"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg><br>Cronómetro</button>
   <button class="tab-btn" data-tab="hermanos"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20v-1.2a5.8 5.8 0 0 1 11.6 0V20"/><circle cx="17" cy="9" r="2.6"/><path d="M16 13.2c2.4.4 4 1.9 4 4V20h-3.2"/></svg><br>Hermanos</button>
   <button class="tab-btn hidden" data-tab="territorios"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><br>Territorios</button>
-  <button class="tab-btn hidden" data-tab="salon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 4l9 6.5"/><path d="M5 9.5V20h14V9.5"/><path d="M10 20v-5h4v5"/></svg><br>Salón</button>
+  <button class="tab-btn hidden" data-tab="salon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><br>Mante&shy;nimiento</button>
   <button class="tab-btn" data-tab="ajustes"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="6" r="2"/><line x1="11" y1="6" x2="20" y2="6"/><line x1="4" y1="6" x2="7" y2="6"/><circle cx="15" cy="12" r="2"/><line x1="17" y1="12" x2="20" y2="12"/><line x1="4" y1="12" x2="13" y2="12"/><circle cx="9" cy="18" r="2"/><line x1="11" y1="18" x2="20" y2="18"/><line x1="4" y1="18" x2="7" y2="18"/></svg><br>Ajustes</button>
   <button class="tab-btn" id="navAnunciosBtnMobile" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 6a9 9 0 0 1 0 12"/></svg><br>Anuncios</button>
 </nav>
@@ -1787,8 +1788,8 @@
         <p>Pestaña Territorios (Super Admin y Admin — Territorios). <b>Salidas:</b> el programa de cada semana: día, hora, lugar de encuentro, quién conduce y qué territorios, de cada grupo o de toda la congregación; las fijas se repiten solas, "Auto-asignar conductores" reparte parejo y "Compartir" las manda por WhatsApp. <b>Territorios:</b> cada uno con la foto de la tarjeta; el semáforo muestra los disponibles, asignados, vencidos (más de 4 meses) y los que hace más de un año no se trabajan; en cada uno se asigna a un hermano o grupo y se marca terminado, y queda el historial. <b>Grupos:</b> encargado, auxiliar, hermanos y quiénes pueden conducir. El encargado y el auxiliar de cada grupo entran a la app y ven solo las salidas de su grupo. <b>Lugares:</b> las casas, esquinas o el Salón donde se juntan.</p>
       </details>
       <details class="guide-item">
-        <summary><span class="gicon" data-icon="users"></span>Salón: trabajos y limpieza<span class="chev">›</span></summary>
-        <p>Pestaña Salón (Super Admin y Admin — Salón). <b>Calendario:</b> los trabajos de mantenimiento del mes (pintura, reparaciones, jardín, limpieza profunda…), cada tipo con su color, y las semanas de limpieza. Cada trabajo lleva <b>responsable y auxiliar</b> (obligatorios), cuántos voluntarios más hacen falta, qué llevar y si se repite (cada 15 días, cada mes o cada 3 meses). Los hermanos se anotan desde la vista con "Me sumo"; en el detalle se ve quiénes van, se agrega o quita a alguien, se piden más por WhatsApp y se marca como hecho. <b>Limpieza:</b> el mes semana por semana; tocando cada semana elegís el grupo (de Territorios, sin responsable ni auxiliar), la otra congregación o "Sin limpieza", y se pueden cambiar los días solo esa semana. "✨ Sugerir" completa las vacías con el grupo que hace más que no limpia (y se puede deshacer), "Copiar" trae el mes anterior y "📄 Compartir" arma el PDF. En ⚙ Ajustes: las limpiezas (después de las reuniones, la general…; cada una con su día, hora y tareas, y si la hace el mismo grupo), el orden para sugerir y el salón compartido. <b>Salón compartido:</b> si la otra congregación no usa la app, en Ajustes → "Hermanos de…" se cargan sus hermanos (nombre, congregación y teléfono) para ponerlos de responsable, auxiliar o voluntario; con "💬 Avisar" se les manda el trabajo por WhatsApp. En la computadora, el calendario muestra el nombre de cada trabajo y la limpieza tiene al costado el resumen de los grupos.</p>
+        <summary><span class="gicon" data-icon="users"></span>Mantenimiento: trabajos y limpieza<span class="chev">›</span></summary>
+        <p>Pestaña Mantenimiento (Super Admin y Admin — Mantenimiento). <b>Calendario:</b> los trabajos de mantenimiento del mes (pintura, reparaciones, jardín, limpieza profunda…), cada tipo con su color, y las semanas de limpieza. Cada trabajo lleva <b>responsable y auxiliar</b> (obligatorios), cuántos voluntarios más hacen falta, qué llevar y si se repite (cada 15 días, cada mes o cada 3 meses). Los hermanos se anotan desde la vista (pestaña Mantenimiento) con "Me sumo"; en el detalle se ve quiénes van, se agrega o quita a alguien, se piden más por WhatsApp y se marca como hecho. <b>Limpieza:</b> el mes semana por semana; tocando cada semana elegís el grupo (de Territorios, sin responsable ni auxiliar), la otra congregación o "Sin limpieza", y se pueden cambiar los días solo esa semana. "✨ Sugerir" completa las vacías con el grupo que hace más que no limpia (y se puede deshacer), "Copiar" trae el mes anterior y "📄 Compartir" arma el PDF. En ⚙ Ajustes: las limpiezas (después de las reuniones, la general…; cada una con su día, hora y tareas, y si la hace el mismo grupo), el orden para sugerir y el salón compartido. <b>Salón compartido:</b> si la otra congregación no usa la app, en Ajustes → "Hermanos de…" se cargan sus hermanos (nombre, congregación y teléfono) para ponerlos de responsable, auxiliar o voluntario; con "💬 Avisar" se les manda el trabajo por WhatsApp. En la computadora, el calendario muestra el nombre de cada trabajo y la limpieza tiene al costado el resumen de los grupos.</p>
       </details>
       <details class="guide-item">
         <summary><span class="gicon" data-icon="lock"></span>Quién puede entrar<span class="chev">›</span></summary>
@@ -2447,7 +2448,7 @@
     if (role === 'anuncios') { $('narrowThemeBtn').classList.remove('hidden'); setupAnunciosOnly(); return; }
     // "Admin — Territorios": solo la pestaña Territorios (y Anuncios si tiene el permiso).
     if (role === 'territorios') { if (typeof terrOnRole === 'function') terrOnRole(); return; }
-    // "Admin — Salón": solo la pestaña Salón (trabajos del Salón y limpieza).
+    // "Admin — Mantenimiento": solo la pestaña Mantenimiento (trabajos del Salón y limpieza).
     if (role === 'salon') { if (typeof salonOnRole === 'function') salonOnRole(); return; }
     const narrow = role === 'tecnico' || role === 'acomodadores' || role === 'asignaciones';
     // Pestañas principales: Cronómetro, Hermanos y Ajustes quedan solo para Super Admin.
@@ -2877,9 +2878,9 @@
       ['🗓', 'Salidas de la semana', 'Día, hora, lugar de encuentro y quién conduce. Las fijas se repiten solas; "Compartir" las manda por WhatsApp.'],
       ['🗺', 'Territorios con semáforo', 'Cargá cada uno con la foto de la tarjeta. Ves cuáles están vencidos y cuáles hace más de un año que no se trabajan.'],
       ['👥', 'Grupos', 'Cada grupo con su encargado, su auxiliar y sus hermanos. El encargado y el auxiliar pueden armar las salidas de su grupo.']] },
-    salon: { badge: 'Admin — Salón', lead: 'Vas a organizar los trabajos de mantenimiento del Salón y la limpieza por grupos.', tips: [
+    salon: { badge: 'Admin — Mantenimiento', lead: 'Vas a organizar los trabajos de mantenimiento del Salón y la limpieza por grupos.', tips: [
       ['🗓', 'Calendario de trabajos', 'Cada trabajo con su día, su responsable y su auxiliar. Si se repite (el corte de pasto, por ejemplo), aparece solo.'],
-      ['🙋', 'Voluntarios', 'Los hermanos se anotan desde la vista con "Me sumo". Vos ves quiénes van, podés agregar o quitar y pedir más por WhatsApp.'],
+      ['🙋', 'Voluntarios', 'Los hermanos se anotan desde la vista (pestaña Mantenimiento) con "Me sumo". Vos ves quiénes van, podés agregar o quitar y pedir más por WhatsApp.'],
       ['🧹', 'Limpieza', 'La rotación de los grupos (de Territorios), las semanas que limpia otra congregación y las tareas.']] },
     grupo: { badge: 'Encargado de grupo', lead: 'Acá organizás las salidas al servicio de tu grupo.', tips: [
       ['🗓', 'Salidas de la semana', 'Tocá "+ Salida" para cargar las fijas (se repiten solas) o una solo para esta semana.'],
@@ -6154,7 +6155,7 @@
     editorEmails: 'Super Admin',
     tecnicoAdminEmails: 'Admin — Equipo técnico',
     territoriosAdminEmails: 'Admin — Territorios',
-    salonAdminEmails: 'Admin — Salón',
+    salonAdminEmails: 'Admin — Mantenimiento',
     acomodadoresAdminEmails: 'Admin — Acomodadores',
     asignacionesAdminEmails: 'Admin — Asignaciones',
     anunciosOnlyEmails: 'Solo anuncios',
@@ -6174,7 +6175,7 @@
   }
 
   /* ---- Lista de Acceso: grupos por rol, buscador y filtros ---- */
-  const ROLE_SHORT = { tecnicoAdminEmails: 'Equipo técnico', acomodadoresAdminEmails: 'Acomodadores', asignacionesAdminEmails: 'Asignaciones', territoriosAdminEmails: 'Territorios', salonAdminEmails: 'Salón' };
+  const ROLE_SHORT = { tecnicoAdminEmails: 'Equipo técnico', acomodadoresAdminEmails: 'Acomodadores', asignacionesAdminEmails: 'Asignaciones', territoriosAdminEmails: 'Territorios', salonAdminEmails: 'Mantenimiento' };
   const accState = { filter: 'all', viewerOpen: false, menuEmail: null, picking: false };
   function accNorm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
   function accPubOf(email) { const e = String(email).toLowerCase(); return (data.publishers || []).find(p => p.email && String(p.email).toLowerCase() === e) || null; }
@@ -6479,7 +6480,7 @@
       <div class="bk-parts">
         <label><input type="checkbox" id="bkrProg"><span><b>Programa, hermanos, anuncios y ajustes</b><small>Todas las semanas, asignaciones, hermanos y lo que está en Ajustes.</small></span></label>
         <label><input type="checkbox" id="bkrTerr"><span><b>Territorios y salidas</b><small>Territorios con su historial, grupos, lugares, campañas y salidas.</small></span></label>
-        <label><input type="checkbox" id="bkrSalon"><span><b>Salón</b><small>Trabajos del Salón, quiénes se anotaron y la limpieza por grupos.</small></span></label>
+        <label><input type="checkbox" id="bkrSalon"><span><b>Mantenimiento</b><small>Trabajos de mantenimiento, quiénes se anotaron y la limpieza por grupos.</small></span></label>
       </div>
       <div class="bk-warn">Lo que se cambió después de esa fecha en lo que elijas se pierde. Por las dudas, antes de restaurar se guarda una copia de cómo está todo ahora ("Antes de restaurar"), así podés volver atrás. No se les manda ningún aviso a los hermanos.</div>
       <div class="modal-footer"><button type="button" class="btn" id="bkrCancel">Cancelar</button><button type="button" class="btn btn-danger" id="bkrOk" disabled>Restaurar</button></div></div>`;

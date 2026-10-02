@@ -6,6 +6,13 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Mantenimiento aparte de las reuniones — 2 oct 2026 (caché asignaciones-salon-v50 y ver-salon-v42)
+
+- **Vista:** la limpieza y los trabajos salen de Inicio y van a una pestaña nueva, **"Mantenimiento"** (ícono de herramienta, entre Calendario y Territorios): la limpieza del grupo con sus tareas, los trabajos con "Me sumo" y las próximas limpiezas. Aparece solo si la congregación cargó algo.
+- **Inicio** queda para las reuniones y las salidas: "Tu próxima asignación" y "Tus otras asignaciones" ya no traen limpieza ni trabajos. Del mantenimiento queda una sola línea ("Esta semana limpia tu grupo · …", "estás en …", "N trabajos buscan voluntarios") que lleva a la pestaña. Un puntito naranja en la pestaña avisa cuando a tu grupo le toca o estás en un trabajo.
+- **Avisos:** los recordatorios que son solo de mantenimiento y el aviso de "te asignaron un trabajo" abren directo esa pestaña (`?tab=salon` o `?tab=mantenimiento`). Hay que publicar las funciones.
+- **App de asignaciones:** la pestaña "Salón" pasa a llamarse **Mantenimiento** y el rol, **Admin — Mantenimiento** (por dentro sigue siendo el mismo, no hay que volver a asignarlo).
+
 ## Salón: limpieza semana por semana, dos limpiezas, PDF y vista para computadora — 1 oct 2026 (caché asignaciones-salon-v49 y ver-salon-v41)
 
 - **Limpieza a mano:** el mes semana por semana; tocando una semana se elige el grupo (cada uno dice hace cuánto limpió y ✨ marca el sugerido), la otra congregación o "Sin limpieza". Lo cargado a mano queda fijo. También se pueden cambiar los días solo esa semana.

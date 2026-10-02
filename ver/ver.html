@@ -2378,8 +2378,7 @@
     });
     // Las salidas que conduce (las arma el encargado en Territorios) también son asignaciones suyas.
     if (window.terrVer) { try { rows.push(...window.terrVer.myConductorRows(pub, today)); } catch (e) { console.error(e); } }
-    // Los trabajos del Salón (responsable, auxiliar o voluntario) y la limpieza de su grupo.
-    if (window.salonVer) { try { rows.push(...window.salonVer.myRows(pub, today)); } catch (e) { console.error(e); } }
+    // Lo del Salón (limpieza y trabajos) no va acá: tiene su propia pestaña "Salón".
     if (!rows.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
     rows.sort((a, b) => a.date.localeCompare(b.date));
     renderNextHero(rows[0], pub);
@@ -2566,6 +2565,7 @@
 
   function showTab(name) {
     if (name === 'anuncios') name = 'avisos';
+    if (name === 'mantenimiento') name = 'salon';
     if (!TAB_NAMES.includes(name)) name = 'inicio';
     tabScroll[currentTab] = window.scrollY;
     currentTab = name;

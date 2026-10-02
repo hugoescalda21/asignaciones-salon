@@ -1,4 +1,4 @@
-// Vista (ver/ver.html): "En el Salón" en Inicio — limpieza del grupo con sus tareas, trabajos con
+// Vista (ver/ver.html): pestaña "Mantenimiento" (aparte de las reuniones) — limpieza del grupo con sus tareas, trabajos con
 // "Me sumo", la hoja de confirmación, "✓ Anotado", "Ya no puedo ir", "Completo" y el email sin vincular.
 const path = require('path');
 const { launch, SHOTS, fixture } = require('./_helper');
@@ -68,6 +68,12 @@ function installMock(store) {
 
   console.log('\nMartín (Grupo 1: le toca limpiar esta semana)');
   let p = await open('martin@x.com');
+  const ini = await p.evaluate(() => { const t = document.getElementById('salonTeaser'); return { teaser: t && !t.classList.contains('hidden') ? t.innerText.replace(/\s+/g, ' ') : '', inicioTieneSalon: !!document.querySelector('#panel-inicio #salonBox'), resumen: (document.getElementById('nextHero').innerText + ' ' + document.getElementById('personalSummary').innerText) }; });
+  check('Inicio: sin la caja de limpieza y trabajos, y sin limpieza en "Tus asignaciones"', !ini.inicioTieneSalon && !/Limpieza/.test(ini.resumen), ini);
+  check('Inicio: una línea que lleva a Mantenimiento', /Esta semana limpia tu grupo · jue 24, sáb 26 y dom 27/.test(ini.teaser) && /2 trabajos buscan voluntarios/.test(ini.teaser), ini.teaser);
+  check('pestaña "Mantenimiento" con el puntito', await p.evaluate(() => { const b = document.querySelector('.bt-btn[data-tab="salon"]'); return b && !b.classList.contains('hidden') && /Mantenimiento/.test(b.textContent) && !b.querySelector('.bt-dot').classList.contains('hidden'); }));
+  await p.click('#salonTeaser'); await p.waitForTimeout(150);
+  check('la línea abre la pestaña Mantenimiento', await p.evaluate(() => !document.getElementById('panel-salon').classList.contains('hidden') && document.getElementById('panel-inicio').classList.contains('hidden')));
   const lz = await p.evaluate(() => { const e = document.querySelector('#salonBox .sv-lz.mine'); return e ? e.innerText.replace(/\s+/g, ' ') : ''; });
   check('limpieza: le toca a su grupo, las dos limpiezas con sus días y tareas', /Le toca a tu grupo \(Grupo 1\)/.test(lz) && /Después de las reuniones · jue 24 y dom 27, después de la reunión/.test(lz) && /Limpieza general · sáb 26 · 09:00/.test(lz) && /Barrer y trapear/.test(lz) && /Vidrios/.test(lz), lz);
   let cards = await cardsOf(p);
@@ -90,7 +96,9 @@ function installMock(store) {
   cards = await cardsOf(p);
   check('la tarjeta pasa a "✓ Anotado", completo y con su nombre en "Van"', /✓ Anotado/.test(cards[0]) && /completo/.test(cards[0]) && /Van: Abad, Ruiz/.test(cards[0]), cards[0]);
   const mine = await p.evaluate(() => (document.getElementById('nextHero') || {}).innerText + ' ' + (document.getElementById('personalSummary') || {}).innerText);
-  check('aparece en sus asignaciones (y la limpieza del grupo)', /Pintura de la entrada · voluntario/.test(mine) && /Limpieza: después de las reuniones/.test(mine), mine.replace(/\s+/g, ' ').slice(0, 400));
+  check('lo del mantenimiento no se mezcla con sus asignaciones de las reuniones', !/Pintura de la entrada|Limpieza/.test(mine), mine.replace(/\s+/g, ' ').slice(0, 400));
+  check('en Inicio, la línea dice que está anotado', await p.evaluate(() => /estás en «Pintura de la entrada» \(sáb 26\)/i.test(document.getElementById('salonTeaser').innerText)));
+  check('próximas limpiezas', await p.evaluate(() => /Próximas limpiezas/.test(document.getElementById('salonBox').innerText) && /Grupo 2/.test(document.querySelector('.sv-wks').innerText)));
   await p.click('#salonBox [data-sv="anotado"][data-id="t1"]'); await p.waitForTimeout(120);
   check('"✓ Anotado": calendario, cambiar comentario y "Ya no puedo ir"', await p.evaluate(() => { const t = document.querySelector('.sv-sheet').innerText; return /Agregar al calendario/.test(t) && /Cambiar mi comentario/.test(t) && /Ya no puedo ir/.test(t) && /Llevo la escalera/.test(t); }));
   await p.click('#svNo'); await p.waitForTimeout(80);
@@ -102,6 +110,7 @@ function installMock(store) {
 
   console.log('\nEmail sin vincular');
   p = await open('ver@x.com');
+  await p.evaluate(() => showTab('salon'));
   check('ve a qué grupo le toca limpiar', await p.evaluate(() => /Limpieza general: Grupo 1 · sáb 26 · 09:00/.test(document.querySelector('#salonBox .sv-lz').innerText)));
   await p.click('#salonBox [data-sv="sumo"][data-id="t1"]'); await p.waitForTimeout(120);
   check('"Me sumo" le pide vincular su email', await p.evaluate(() => /Primero vinculá tu nombre/.test(document.querySelector('.sv-sheet').innerText) && !window.__writes.length));

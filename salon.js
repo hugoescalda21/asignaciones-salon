@@ -892,7 +892,7 @@
      ===================================================================== */
   function render() {
     const root = $('salonRoot'); if (!root) return;
-    if (!fbDb || !accessCode || !currentUser) { root.innerHTML = '<div class="tempty">Los trabajos del Salón se guardan en la nube: conectá la app con el código de la congregación e iniciá sesión.</div>'; return; }
+    if (!fbDb || !accessCode || !currentUser) { root.innerHTML = '<div class="tempty">Los trabajos de mantenimiento se guardan en la nube: conectá la app con el código de la congregación e iniciá sesión.</div>'; return; }
     if (!access()) { root.innerHTML = '<div class="tempty">No tenés acceso al Salón.</div>'; return; }
     start();
     const views = [['cal', 'Calendario'], ['trab', 'Trabajos'], ['limp', 'Limpieza']];

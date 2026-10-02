@@ -23,7 +23,7 @@ const SalonCore = require('./salon-core');
 const APP_BASE = 'https://hugoescalda21.github.io/asignaciones-salon/';
 function verLink(code, tab) {
   let url = APP_BASE + 'ver/ver.html' + (code ? '?codigo=' + encodeURIComponent(code) : '');
-  if (tab) url += (code ? '&' : '?') + 'tab=' + encodeURIComponent(tab);   // abre directo en esa pestaña: inicio | calendario | anuncios
+  if (tab) url += (code ? '&' : '?') + 'tab=' + encodeURIComponent(tab);   // abre directo en esa pestaña: inicio | calendario | anuncios | salon (Mantenimiento)
   return url;
 }
 const BADGE_URL = APP_BASE + 'badge-icon.png';
@@ -384,7 +384,7 @@ exports.onSalonWrite = onDocumentWritten({ document: 'congregations/{code}/salon
   if (!nuevos.length) return null;
   const cong = (await db.collection('congregations').doc(code).get()).data() || {};
   for (const a of nuevos) {
-    const n = await sendToPubs(code, [a.pubId], salonAssignMessage(a, firstName(cong, a.pubId)), verLink(code), 'asignacion', `salon-${a.t.id}-${a.fecha}-${a.rol}`);
+    const n = await sendToPubs(code, [a.pubId], salonAssignMessage(a, firstName(cong, a.pubId)), verLink(code, 'salon'), 'asignacion', `salon-${a.t.id}-${a.fecha}-${a.rol}`);
     console.log('[salón]', a.rol, a.pubId, a.fecha, '· celulares:', n);
   }
   return null;
@@ -579,7 +579,8 @@ exports.sendScheduledReminders = onSchedule({ schedule: '0,30 * * * *', timeZone
         android: { priority: 'high' },
         webpush: {
           headers: { Urgency: 'high', TTL: '10800' },
-          fcmOptions: { link: verLink(sub.code) },
+          // Si todo lo que se recuerda es de mantenimiento (limpieza o trabajos), abre esa pestaña.
+          fcmOptions: { link: verLink(sub.code, due.items.every((i) => i.type === 'salon') ? 'salon' : undefined) },
           notification: { badge: BADGE_URL, vibrate: [200, 100, 200], tag: `recordatorio-${due.dateIso}-${due.kind}` }
         }
       }).then(() => { enviados++; return markSent(token, 'recordatorio'); }).catch((err) => {
