@@ -6,6 +6,10 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Corrección: calendario de Mantenimiento en la computadora — 3 oct 2026 (caché asignaciones-salon-v51)
+
+- Un trabajo con título largo ensanchaba su columna y desarmaba el calendario (los días se corrían y se pisaban con "Esta semana"). Ahora las 7 columnas son siempre iguales y el título se corta con "…" (pasando el mouse se ve completo). Prueba agregada en `29-salon`.
+
 ## Mantenimiento aparte de las reuniones — 2 oct 2026 (caché asignaciones-salon-v50 y ver-salon-v42)
 
 - **Vista:** la limpieza y los trabajos salen de Inicio y van a una pestaña nueva, **"Mantenimiento"** (ícono de herramienta, entre Calendario y Territorios): la limpieza del grupo con sus tareas, los trabajos con "Me sumo" y las próximas limpiezas. Aparece solo si la congregación cargó algo.

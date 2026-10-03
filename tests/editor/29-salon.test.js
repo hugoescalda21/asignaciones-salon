@@ -234,6 +234,10 @@ let ok = 0, bad = 0; const check = (l, c, x) => { if (c) { ok++; console.log('  
   p = await open('hugo@x.com', store, { viewport: { width: 1280, height: 900 } });
   await click(p, '.tabs .tab-btn[data-tab="salon"]');
   check('calendario a la izquierda y lo de la semana a la derecha', await p.evaluate(() => { const c = document.querySelector('.a-cal').getBoundingClientRect(), h = document.querySelector('.a-rest').getBoundingClientRect(); return c.width > 450 && h.left > c.right - 2; }));
+  await p.evaluate(() => { const t = Object.values(window.__salon.trabajos)[0]; t.titulo = 'Reparación porcelanatos baños y pérdida en mochila baño hermanos'; window.salonRender(); });
+  await p.waitForTimeout(100);
+  await p.screenshot({ path: path.join(SHOTS, 'salon-pc-largo.png') });
+  check('un título largo no deforma el calendario (7 columnas iguales, sin pisar el costado)', await p.evaluate(() => { const ds = [...document.querySelectorAll('.sl-calgrid .sl-d')].slice(0, 7).map(d => Math.round(d.getBoundingClientRect().width)); const cal = document.querySelector('.a-cal').getBoundingClientRect(), side = document.querySelector('.a-rest').getBoundingClientRect(); return Math.max(...ds) - Math.min(...ds) <= 1 && cal.right <= side.left + 1 && document.querySelector('.sl-calgrid .sl-grid').scrollWidth <= document.querySelector('.sl-calgrid .sl-grid').clientWidth + 1; }));
   check('en cada día se lee el nombre del trabajo', await p.evaluate(() => { const e = document.querySelector('.sl-d[data-f="2026-09-24"] .sl-labs em'); return e && getComputedStyle(e).display !== 'none' && /Corte de pasto/.test(e.textContent); }));
   await p.screenshot({ path: path.join(SHOTS, 'salon-pc-calendario.png') });
   await click(p, '#salonRoot [data-s="view"][data-k="limp"]');

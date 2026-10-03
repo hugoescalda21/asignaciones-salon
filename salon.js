@@ -43,7 +43,8 @@
   .sl-mnav button { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; width: 36px; height: 34px; font-size: 16px; color: var(--ink); cursor: pointer; }
   .sl-mnav .lbl { flex: 1; text-align: center; font-weight: 700; font-size: 15px; text-transform: capitalize; }
   .sl-cal { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 8px; }
-  .sl-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .sl-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
+  .sl-grid > * { min-width: 0; }
   .sl-grid .h { text-align: center; font-size: 10.5px; font-weight: 700; color: var(--ink-soft); padding: 3px 0; }
   .sl-d { border: none; background: none; border-radius: 9px; min-height: 44px; padding: 4px 0 3px; font: inherit; font-size: 13px; color: var(--ink); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; position: relative; }
   .sl-d.out { color: var(--ink-faint, #b3b3b3); }
@@ -167,12 +168,12 @@
   /* Computadora: aprovechar el ancho */
   @media (min-width: 900px) {
     .sl-calgrid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); grid-template-rows: min-content 1fr; grid-template-areas: "cal hero" "cal rest"; gap: 0 18px; align-items: start; }
-    .sl-calgrid .a-hero { grid-area: hero; } .sl-calgrid .a-cal { grid-area: cal; } .sl-calgrid .a-rest { grid-area: rest; }
+    .sl-calgrid .a-hero { grid-area: hero; } .sl-calgrid .a-cal { grid-area: cal; min-width: 0; } .sl-calgrid .a-rest { grid-area: rest; min-width: 0; }
     .sl-calgrid .sl-d { min-height: 86px; align-items: stretch; justify-content: flex-start; padding: 4px; }
     .sl-calgrid .sl-d b { align-self: flex-end; }
     .sl-calgrid .sl-dots { display: none; }
-    .sl-calgrid .sl-labs { display: flex; flex-direction: column; gap: 2px; width: 100%; }
-    .sl-labs em { font-style: normal; font-size: 10.5px; line-height: 1.25; text-align: left; padding: 2px 4px; border-radius: 5px; border-left: 3px solid var(--c); background: color-mix(in srgb, var(--c) 12%, transparent); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sl-calgrid .sl-labs { display: flex; flex-direction: column; gap: 2px; width: 100%; min-width: 0; overflow: hidden; }
+    .sl-labs em { display: block; max-width: 100%; box-sizing: border-box; font-style: normal; font-size: 10.5px; line-height: 1.25; text-align: left; padding: 2px 4px; border-radius: 5px; border-left: 3px solid var(--c); background: color-mix(in srgb, var(--c) 12%, transparent); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .sl-labs em.lz { color: var(--ink-soft); }
     .sl-calgrid .sl-d .lb { display: none; }
     .sl-lzwrap { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 18px; align-items: start; }
@@ -362,7 +363,7 @@
     for (let f = gridStart; f <= gridEnd; f = C.addDays(f, 1)) {
       const dots = occ.filter(o => o.fecha === f).slice(0, 3).map(o => `<i style="background:${tipoOf(o.t).color}"></i>`).join('');
       // En la computadora, además de los puntitos, el nombre de cada trabajo y de la limpieza.
-      const labs = occ.filter(o => o.fecha === f).slice(0, 3).map(o => `<em style="--c:${tipoOf(o.t).color}">${esc(o.t.titulo)}</em>`).join('') + (limpiezaNombre[f] ? `<em class="lz" style="--c:${limpiezaDias[f]}">🧹 ${esc(limpiezaNombre[f])}</em>` : '');
+      const labs = occ.filter(o => o.fecha === f).slice(0, 3).map(o => `<em style="--c:${tipoOf(o.t).color}" title="${esc(o.t.titulo)}">${esc(o.t.titulo)}</em>`).join('') + (limpiezaNombre[f] ? `<em class="lz" style="--c:${limpiezaDias[f]}">🧹 ${esc(limpiezaNombre[f])}</em>` : '');
       html += `<button type="button" class="sl-d${f.slice(0, 7) !== S.month ? ' out' : ''}${f === today ? ' hoy' : ''}${f === S.day ? ' sel' : ''}" data-s="day" data-f="${f}"><b>${Number(f.slice(8))}</b><span class="sl-dots">${dots}</span><span class="sl-labs">${labs}</span>${limpiezaDias[f] ? `<span class="lb" style="background:${limpiezaDias[f]}"></span>` : ''}</button>`;
     }
     html += '</div><div class="sl-leg">' + Object.values(C.TIPOS).map(tp => `<span><i style="background:${tp.color}"></i>${tp.label}</span>`).join('') + `<span><i class="bar" style="background:${LIMPIEZA_COLOR}"></i>Limpieza</span>${(S.limpieza.otra || []).length ? `<span><i class="bar" style="background:${OTRA_COLOR}"></i>${esc(otraLabel())}</span>` : ''}</div></div>`;
