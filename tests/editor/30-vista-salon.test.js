@@ -48,15 +48,15 @@ function installMock(store) {
 
 (async () => {
   const b = await launch();
-  async function open(email) {
+  async function open(email, query) {
     const ctx = await b.newContext({ viewport: { width: 390, height: 844 } });
     await ctx.route(/googleapis|tile\.openstreetmap/, r => r.abort());
     await ctx.addInitScript(() => { localStorage.setItem('welcome-seen-C', '1'); window.__opened = []; window.open = (u) => { window.__opened.push(u); return null; }; });
     const p = await ctx.newPage(); p.errs = []; p.on('pageerror', e => { if (!/firebase is not defined/.test(e.message)) p.errs.push(e.message); });
-    await p.goto(VER); await p.waitForTimeout(500);
+    await p.goto(VER + (query || '')); await p.waitForTimeout(500);
     await p.evaluate(({ store, main, email, mock }) => {
       eval('(' + mock + ')')(store);
-      data = main; currentUser = { uid: 'u-' + email, email }; currentMonday = mondayOf(new Date().toISOString().slice(0, 10));
+      data = main; currentUser = { uid: 'u-' + email, email }; currentMonday = mondayOf(new Date().toISOString().slice(0, 10)); verComoInit();
       hideInitialLoading(); $('gateView').classList.add('hidden'); $('authGateView').classList.add('hidden'); $('mainView').classList.remove('hidden');
       renderCurrent(); renderPersonalSummary('C'); renderAnuncios(); renderUpcoming();
       window.terrVer.onData('C'); window.salonVer.onData('C');
@@ -115,6 +115,25 @@ function installMock(store) {
   await p.click('#salonBox [data-sv="sumo"][data-id="t1"]'); await p.waitForTimeout(120);
   check('"Me sumo" le pide vincular su email', await p.evaluate(() => /Primero vinculá tu nombre/.test(document.querySelector('.sv-sheet').innerText) && !window.__writes.length));
   check('sin errores', !p.errs.length, p.errs);
+  await p.context().close();
+
+  console.log('\nVer como un hermano (Super Admin)');
+  p = await open('hugo@x.com', '&como=p1');
+  check('franja "Estás viendo como Martín Ruiz" con Salir', await p.evaluate(() => /Estás viendo como Martín Ruiz/.test($('verComoBar').innerText) && !!$('verComoSalir')));
+  const como = await p.evaluate(() => (document.getElementById('nextHero').innerText + ' ' + document.getElementById('personalSummary').innerText).replace(/\s+/g, ' '));
+  check('se ven las asignaciones de Martín (no las de Hugo)', /Hola, Martín/i.test(como) && /Video y Zoom/.test(como), como.slice(0, 300));
+  check('la línea de Mantenimiento es la de su grupo', await p.evaluate(() => /Esta semana limpia tu grupo/.test($('salonTeaser').innerText)));
+  await p.evaluate(() => showTab('salon')); await p.waitForTimeout(100);
+  await p.click('#salonBox [data-sv="sumo"][data-id="t1"]'); await p.waitForTimeout(120);
+  check('"Me sumo" no hace nada: solo para mirar', await p.evaluate(() => !document.querySelector('.sv-sheet') && !window.__writes.length && /solo para mirar/.test(document.getElementById('appToast').textContent)));
+  await p.click('#salonBox [data-tarea]'); await p.waitForTimeout(80);
+  check('las tareas no se tildan', await p.evaluate(() => !document.querySelector('#salonBox [data-tarea]').checked));
+  check('sin carteles de avisos ni recordatorios', await p.evaluate(() => $('pushPrompt').classList.contains('hidden') || !$('pushPrompt').innerHTML));
+  check('sin errores', !p.errs.length, p.errs);
+  await p.context().close();
+  p = await open('martin@x.com', '&como=p2');
+  const dbg = await p.evaluate(() => ({ bar: !!$('verComoBar'), como: window.__comoPubId, hero: document.getElementById('nextHero').innerText }));
+  check('un hermano común no puede ver como otro (se ignora)', !dbg.bar && !dbg.como && /Martín/i.test(dbg.hero), dbg);
   await p.context().close();
 
   await b.close();

@@ -270,7 +270,7 @@
   let queued = false;
   function onData() {
     if (queued) return; queued = true;
-    setTimeout(() => { queued = false; if (isVisible()) render(); if (openDetail) openDetail.refresh(); }, 0);
+    setTimeout(() => { queued = false; if (isVisible()) render(); if (openDetail) openDetail.refresh(); if (window.panelRefresh) window.panelRefresh(); }, 0);
   }
   function isVisible() { const p = $('panel-salon'); return p && !p.classList.contains('hidden'); }
 
@@ -941,6 +941,24 @@
     if (el.dataset && el.dataset.s === 'lz-mismo') { const ts = tipos().map(x => Object.assign({}, x)); ts[Number(el.dataset.i)].mismoGrupo = el.checked; guardarTipos(ts, el.checked ? 'La hace el mismo grupo' : 'Ahora tiene su propio grupo'); }
     else if (el.id === 'slOtraN') saveLimpieza([[['otraNombre'], el.value.trim().slice(0, 40) || undefined]], 'Guardado');
   });
+
+  // Resumen para el Panel del Super Admin (panel.js).
+  window.salonPanel = function () {
+    start();
+    const today = hoy(), mon = C.mondayOf(today);
+    const lz = limpiezaDe(mon);
+    const occ = C.trabajosEntre(S.trabajos, today, C.addDays(today, 30)).filter(o => !o.cancelada && o.estado !== 'hecho');
+    const buscan = occ.map(o => ({ o, ci: C.cupoInfo(o.t, o.fecha, S.anotados) })).filter(x => x.ci.cupo && x.ci.faltan);
+    let vacias = 0, primeraVacia = null;
+    for (let i = 0, m = mon; i < 6; i++, m = C.addDays(m, 7)) {
+      const falta = claves().some(k => !C.quienLimpia(S.limpieza, m, k));
+      if (falta) { vacias++; if (!primeraVacia) primeraVacia = m; }
+    }
+    const hayLimpieza = !!(S.limpieza && (S.limpieza.semanas || S.limpieza.inicio || S.limpieza.tipos)) && Object.keys(S.grupos).length > 0;
+    return { loaded: S.loaded.trabajos && S.loaded.limpieza && S.loaded.grupos, limpiaEsta: lz ? lz.nombre : '', trabajos: occ.length,
+      buscan: buscan.length, faltan: buscan.reduce((n, x) => n + x.ci.faltan, 0), hayLimpieza, vacias: hayLimpieza ? vacias : 0, primeraVacia };
+  };
+  window.salonGoLimpieza = function (m) { S.view = 'limp'; S.lAjustes = false; if (m) S.lMonth = C.semanaDelMes(m).mes; switchTab('salon'); };
 
   if (typeof currentUserRole !== 'undefined' && typeof applyRoleUI === 'function' && currentUser) { try { window.salonOnRole(); } catch (e) { /* nada */ } }
 })();

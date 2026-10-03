@@ -262,6 +262,7 @@
   }
   let renderQueued = false;
   function onData(name) {
+    if (window.panelRefresh) window.panelRefresh();
     if (name === 'terminados' || name === 'territorios') { updateTermBadge(); openTerminadosFromLink(); }
     if (name === 'grupos') {
       ensureTerritorios();
@@ -1195,6 +1196,23 @@
     else if (k === 'l-new') openLugar(null);
     else if (k === 'l-edit') openLugar(b.dataset.id);
   });
+
+  // Resumen para el Panel del Super Admin (panel.js).
+  window.terrPanel = function () {
+    start(); ensureTerritorios();
+    const ts = Object.values(T.territorios).filter(t => t && t.id);
+    const st = { disponible: 0, asignado: 0, vencido: 0, anio: 0 };
+    ts.forEach(t => { st[tState(t)]++; });
+    const mon = mondayLocal(hoy());
+    const sem = weekSalidas(mon).filter(x => !x.cancelada && x.fecha >= hoy());
+    return {
+      loaded: T.loaded.grupos && T.loaded.salidas && T.loaded.territorios, total: ts.length, st,
+      salidas: sem.length, sinConductor: sem.filter(x => !x.conductor).map(x => ({ fecha: x.fecha, hora: x.hora, grupo: grupoName(x.gid) })),
+      terminados: pendingTerminados().map(r => ({ id: r.id, num: (T.territorios[r.id] || {}).num, nombre: (T.territorios[r.id] || {}).nombre, quien: r.nombre || '' })),
+      grupoDe: (pid) => { const g = groupOf(pid); return g ? g.nombre : ''; }
+    };
+  };
+  window.terrGoTerminados = function () { goToTerminados(); };
 
   // Por si el rol ya se conocía cuando se cargó este archivo.
   if (typeof currentUserRole !== 'undefined' && typeof applyRoleUI === 'function' && currentUser) { try { window.terrOnRole(); } catch (e) { /* nada */ } }

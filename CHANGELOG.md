@@ -6,6 +6,14 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Panel del Super Admin y "Ver como un hermano" — 3 oct 2026 (caché asignaciones-salon-v52 y ver-salon-v43)
+
+- **Panel** (archivo nuevo `panel.js`): primera pestaña del Super Admin y con la que abre la app (en el celular, ícono ▦ arriba). Arriba, **"Para resolver"**: puestos sin asignar en las próximas reuniones (con **✨ Sugerir**, que completa como "Auto-asignar" y se puede deshacer, y "Asignar ›"), solicitudes de acceso, avisos de "Lo terminé", limpieza sin cargar, errores nuevos y copia de seguridad vieja. Si no hay nada: **"✓ Todo al día"**. Abajo, tarjetas: reuniones de las próximas 4 semanas (semáforo), hermanos y acceso, territorios, mantenimiento.
+- **Hermanos con email pero sin avisos:** en el Panel, con **"💬 Mandar link"** (WhatsApp con el link de la vista y cómo activar los avisos).
+- **Ver como un hermano:** desde el Panel o desde la ficha del hermano (pestaña Hermanos, "👁 Ver como él") se abre la vista como la ve él (`?como=`), con una franja "Estás viendo como…" y "Salir". Solo para mirar: no se anota, no se tildan tareas, no se registran avisos. Solo funciona para un Super Admin.
+- **Resumen semanal:** los lunes a las 7:50 le llega al Super Admin un aviso con lo que hay para resolver esa semana y quién limpia; abre el Panel. Hay que publicar las funciones.
+- Pruebas: `31-panel` (nueva), 7 en `30-vista-salon`, 1 en las funciones.
+
 ## Corrección: calendario de Mantenimiento en la computadora — 3 oct 2026 (caché asignaciones-salon-v51)
 
 - Un trabajo con título largo ensanchaba su columna y desarmaba el calendario (los días se corrían y se pisaban con "Esta semana"). Ahora las 7 columnas son siempre iguales y el título se corta con "…" (pasando el mouse se ve completo). Prueba agregada en `29-salon`.

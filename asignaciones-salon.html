@@ -2483,6 +2483,7 @@
     if (role === 'super') { renderSetupChecklist($('setupList'), false); startAccessRequests(); openRequestsFromLink(); }
     if (typeof terrOnRole === 'function') terrOnRole();
     if (typeof salonOnRole === 'function') salonOnRole();
+    if (typeof panelOnRole === 'function') panelOnRole();
   }
   let applyingRemoteUpdate = false; // evita que un cambio recibido de la nube dispare otro guardado
 
@@ -3030,6 +3031,7 @@
     else if (tab === 'timer') { renderWeeklyPartsGrid(); }
     else if (tab === 'territorios' && typeof terrRender === 'function') { terrRender(); }
     else if (tab === 'salon' && typeof salonRender === 'function') { salonRender(); }
+    else if (tab === 'panel' && typeof panelRender === 'function') { panelRender(); }
   }
   document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => {
     if (b.id === 'navAnunciosBtn' || b.id === 'navAnunciosBtnMobile') return;
@@ -6665,6 +6667,7 @@
       accReqUnsub = fbDb.collection('congregations').doc(accessCode).collection('solicitudes').onSnapshot((snap) => {
         accReqs = snap.docs.map(d => Object.assign({ uid: d.id }, d.data()));
         renderAccessRequests();
+        if (typeof panelRefresh === 'function') panelRefresh();
       }, (err) => { console.warn('Solicitudes de acceso', err); accReqUnsub = null; });
     } catch (e) { console.warn(e); }
   }
@@ -7752,5 +7755,6 @@
 <script src="territorios.js"></script>
 <script src="salon-core.js"></script>
 <script src="salon.js"></script>
+<script src="panel.js"></script>
 </body>
 </html>

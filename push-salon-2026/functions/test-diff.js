@@ -405,6 +405,15 @@ t('restaurar: no manda avisos de "te asignaron"', () => {
     assert.deepStrictEqual(a.map(x => x.dateIso + ' ' + x.label), ['2026-09-24 Limpieza: después de las reuniones (tu grupo)', '2026-09-25 Limpieza general (tu grupo)', '2026-09-27 Limpieza: después de las reuniones (tu grupo)']);
     assert.strictEqual(a[1].timeMin, 9 * 60); assert.strictEqual(a[0].timeMin, null);
   });
+  t('resumen semanal: puestos sin asignar, solicitudes, limpieza', () => {
+    const c = { settings: { weekdaySemana: 4, weekdayFinde: 0, micCount: 2, usherCount: 2 }, weeks: { '2026-09-21': { semana: { roles: { sonido: 'a', video: 'b', mic1: 'c', mic2: 'd', plataforma: 'e', usher1: 'f', cronometrista: 'g' } }, finde: { roles: { sonido: 'a' } } } } };
+    const m = L.resumenSemanal(c, '2026-09-21', { solicitudes: 2, limpia: 'Grupo 3' });
+    assert.strictEqual(m.title, 'Esta semana: hay 2 cosas para resolver');
+    assert.strictEqual(m.body, '7 puestos sin asignar (jue 24 y dom 27) · 2 solicitudes de acceso — Limpia: Grupo 3.');
+    const lleno = { settings: c.settings, weeks: {} };
+    assert.strictEqual(L.resumenSemanal(lleno, '2026-09-21', {}), null);
+    assert.strictEqual(L.resumenSemanal(lleno, '2026-09-21', { limpia: 'Grupo 1' }).title, 'Esta semana está todo al día');
+  });
   t('restaurar: el Salón aparte, y las copias viejas no lo tocan', () => {
     const b = { main: {}, salon: { trabajos: { lista: {} } }, salonAnotados: {} };
     const p = L.restorePlan(b, ['salon'], { salon: ['trabajos', 'limpieza'], salonAnotados: ['x'] }, 'h', 'A');

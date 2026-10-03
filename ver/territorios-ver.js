@@ -77,7 +77,7 @@
   function fmtLong(s) { const d = new Date(s + 'T12:00:00'); return d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }); }
   function agoTxt(s) { const n = daysBetween(s, hoy()); if (n <= 0) return 'hoy'; if (n === 1) return 'ayer'; if (n < 14) return `hace ${n} días`; if (n < 60) return `hace ${Math.round(n / 7)} semanas`; return `hace ${Math.round(n / 30)} meses`; }
   const pubName = (id) => { const p = ((data && data.publishers) || []).find(x => x.id === id); return p ? p.name : ''; };
-  function myPub() { if (!currentUser || !currentUser.email || !data) return null; return (data.publishers || []).find(p => p.email === currentUser.email) || null; }
+  function myPub() { if (window.viewerPub) return window.viewerPub(); if (!currentUser || !currentUser.email || !data) return null; return (data.publishers || []).find(p => p.email === currentUser.email) || null; }
   function myGroup(pub) { if (!pub) return null; return Object.values(V.grupos).find(g => (g.miembros || []).includes(pub.id) || g.encargado === pub.id || g.auxiliar === pub.id) || null; }
   const grupoName = (gid) => gid === 'congregacion' ? 'Congregación' : (V.grupos[gid] ? V.grupos[gid].nombre : 'Grupo');
   function mapsUrl(l) { return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(l.direccion || l.nombre || ''); }
@@ -293,6 +293,7 @@
     const bg = e.target.closest('[data-mt-big]');
     if (bg) { openBigMap(bg.dataset.mtBig); return; }
     const b = e.target.closest('[data-mt-done]');
+    if (b && window.__comoPubId) { if (window.verComoBloquear) window.verComoBloquear(); return; }
     if (b) openDone(b.dataset.mtDone);
   }
   function openDone(tid) {

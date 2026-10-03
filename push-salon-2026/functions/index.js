@@ -15,7 +15,7 @@ const { roleLabel, collectNewlyAssignedIds, avisoPreview, selectNewAvisos, notif
   arParts, addDaysIso, remindersDue, reminderMessage, sentReminderId, roleAreasFor, disallowedWeekChanges, guardSummary, accessRequestMessage,
   conductorAssignments, newConductors, conductorMessage, newTerritoryAssignments,
   BACKUP_SUBS, ALL_SUBS, backupName, parseBackupName, buildBackup, backupsToPrune, restorePlan, isRestoreWrite,
-  salonAssignments, newSalonAssignments, salonAssignMessage, anotadoMessage } = require('./lib');
+  salonAssignments, newSalonAssignments, salonAssignMessage, anotadoMessage, resumenSemanal } = require('./lib');
 const SalonCore = require('./salon-core');
 
 // La app vive en GitHub Pages bajo /asignaciones-salon/, no en la raíz del
@@ -761,6 +761,35 @@ async function pruneBackups(code) {
   for (const n of del) await admin.storage().bucket().file(n).delete().catch(() => {});
   return del.length;
 }
+
+// Resumen semanal: los lunes a las 7:50, al Super Admin, lo que hay para resolver esa semana (abre el Panel).
+exports.weeklySummary = onSchedule({ schedule: '50 7 * * 1', timeZone: 'America/Argentina/Buenos_Aires', region: REGION, timeoutSeconds: 300 }, async () => {
+  const { dateIso: hoyIso } = arParts(new Date());
+  const qs = await db.collection('congregations').get();
+  for (const d of qs.docs) {
+    try {
+      const cong = d.data() || {};
+      const s = cong.settings || {};
+      const supers = (s.editorEmails || []).map((e) => String(e).toLowerCase());
+      const pubIds = (cong.publishers || []).filter((p) => p.email && supers.includes(String(p.email).toLowerCase())).map((p) => p.id);
+      if (!pubIds.length) continue;
+      const ref = d.ref;
+      const [sol, ter, tr, lz, gr, an] = await Promise.all([
+        ref.collection('solicitudes').where('status', '==', 'pendiente').get(), ref.collection('terminados').get(),
+        ref.collection('salon').doc('trabajos').get(), ref.collection('salon').doc('limpieza').get(), ref.collection('terr').doc('grupos').get(), ref.collection('salonAnotados').get()]);
+      const trabajos = (tr.exists && tr.data().lista) || {}, limpieza = lz.exists ? lz.data() : {}, grupos = (gr.exists && gr.data().lista) || {};
+      const anotados = {}; an.forEach((x) => { anotados[x.id] = x.data(); });
+      const occ = SalonCore.trabajosEntre(trabajos, hoyIso, SalonCore.addDays(hoyIso, 6)).filter((o) => !o.cancelada && o.estado !== 'hecho');
+      const buscan = occ.filter((o) => { const ci = SalonCore.cupoInfo(o.t, o.fecha, anotados); return ci.cupo && !ci.completo; }).length;
+      const quien = SalonCore.limpiezasSemana(limpieza, SalonCore.mondayOf(hoyIso), s).map((l) => l.quien).filter((q) => q && q.g !== 'nadie')
+        .map((q) => (q.g === 'otra' ? (limpieza.otraNombre || 'otra congregación') : ((grupos[q.g] || {}).nombre || '')));
+      const msg = resumenSemanal(cong, hoyIso, { solicitudes: sol.size, terminados: ter.size, buscan, limpia: [...new Set(quien.filter(Boolean))].join(' y ') });
+      if (!msg) continue;
+      const n = await sendToPubs(d.id, pubIds, msg, APP_BASE + 'asignaciones-salon.html#panel', 'aviso', 'resumen-' + hoyIso);
+      console.log('[resumen]', d.id, msg.title, '· celulares:', n);
+    } catch (e) { console.error('[resumen]', d.id, e && e.message); }
+  }
+});
 
 exports.weeklyBackups = onSchedule({ schedule: '30 3 * * 0', timeZone: 'America/Argentina/Buenos_Aires', region: REGION, timeoutSeconds: 540, memory: '512MiB' }, async () => {
   const qs = await db.collection('congregations').select().get();

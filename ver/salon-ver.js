@@ -88,7 +88,7 @@
   const quienCorto = (id, t) => { const a = apellido(id, '', t); const c = congDe(id, t); return a ? a + (c ? ` (${c})` : '') : ''; };
   const quienLargo = (id, t) => { const n = pubName(id, t); const c = congDe(id, t); return n ? n + (c ? ` (${c})` : '') : '—'; };
   const inic = (n) => String(n || '?').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
-  function myPub() { if (!currentUser || !currentUser.email || !data) return null; const e = String(currentUser.email).toLowerCase(); return (data.publishers || []).find(p => p.email && String(p.email).toLowerCase() === e) || null; }
+  function myPub() { if (window.viewerPub) return window.viewerPub(); if (!currentUser || !currentUser.email || !data) return null; const e = String(currentUser.email).toLowerCase(); return (data.publishers || []).find(p => p.email && String(p.email).toLowerCase() === e) || null; }
   function grupoDe(pid) { const g = Object.values(V.grupos).find(x => x && ((x.miembros || []).includes(pid) || x.encargado === pid || x.auxiliar === pid)); return g ? g.id : null; }
   const tipoOf = (t) => C.TIPOS[t.tipo] || C.TIPOS.otro;
   function fmtDia(iso) { const d = new Date(iso + 'T12:00:00'); return `${DIAS[d.getDay()]} ${d.getDate()} de ${MESES[d.getMonth()]}`; }
@@ -160,6 +160,7 @@
     box.addEventListener('click', onBoxClick);
     box.addEventListener('change', (e) => {
       const c = e.target.closest('[data-tarea]'); if (!c) return;
+      if (window.__comoPubId) { c.checked = !c.checked; if (window.verComoBloquear) window.verComoBloquear(); return; }
       const k = tareasKey(); const set = loadTareas(k);
       if (c.checked) set.add(c.dataset.tarea); else set.delete(c.dataset.tarea);
       try { localStorage.setItem(k, JSON.stringify([...set])); } catch (err) { /* sin acceso */ }
@@ -268,6 +269,7 @@
   function gcalFor(t, fecha) { return gcalUrl(t.titulo + ' (Salón del Reino)', fecha, `Trabajo en el Salón — ${congName()}. Responsable: ${quienLargo(t.resp, t)}`, t.hora); }
   function onBoxClick(e) {
     const b = e.target.closest('[data-sv]'); if (!b) return;
+    if (window.__comoPubId) { if (window.verComoBloquear) window.verComoBloquear(); return; }
     const t = V.trabajos[b.dataset.id]; if (!t) return;
     if (b.dataset.sv === 'sumo') openSumo(t, b.dataset.f);
     else openAnotado(t, b.dataset.f);

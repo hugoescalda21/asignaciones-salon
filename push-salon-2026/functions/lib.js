@@ -575,12 +575,52 @@ function anotadoMessage(r, t, alta, van, cupo) {
   return { title: `${n || 'Un hermano'} ya no va a ${t.titulo || 'un trabajo'}`, body: `${diaTxt(r.fecha)} · van ${van}${cupo ? ' de ' + cupo : ''}${cupo && van < cupo ? ' · se liberó un lugar' : ''}` };
 }
 
+/* ---------- Resumen semanal para el Super Admin (lunes a la mañana) ---------- */
+// Puestos del Equipo técnico sin asignar en las reuniones que quedan esta semana.
+function faltantesSemana(cong, todayIso) {
+  const st = (cong && cong.settings) || {};
+  const monday = mondayOfIsoLib(todayIso);
+  const w = ((cong && cong.weeks) || {})[monday];
+  const out = [];
+  ['semana', 'finde'].forEach((type) => {
+    const fecha = meetingDateFor(monday, type, st);
+    if (fecha < todayIso) return;
+    const roles = (w && w[type] && w[type].roles) || {};
+    const keys = ['sonido', 'video'];
+    for (let i = 1; i <= (st.micCount || 2); i++) keys.push('mic' + i);
+    keys.push('plataforma');
+    for (let i = 1; i <= (st.usherCount || 2); i++) keys.push('usher' + i);
+    if (type !== 'finde') keys.push('cronometrista');
+    const n = keys.filter((k) => !roles[k]).length;
+    if (n && w) out.push({ type, fecha, n });
+  });
+  return out;
+}
+// Texto del aviso. null si no hay nada que contar.
+function resumenSemanal(cong, todayIso, extras) {
+  const x = extras || {};
+  const partes = [];
+  const falt = faltantesSemana(cong, todayIso);
+  const nF = falt.reduce((n, f) => n + f.n, 0);
+  if (nF) partes.push(`${nF} ${nF === 1 ? 'puesto sin asignar' : 'puestos sin asignar'} (${falt.map((f) => DIAS[new Date(f.fecha + 'T00:00:00Z').getUTCDay()].slice(0, 3) + ' ' + Number(f.fecha.slice(8))).join(' y ')})`);
+  if (x.solicitudes) partes.push(`${x.solicitudes} ${x.solicitudes === 1 ? 'solicitud de acceso' : 'solicitudes de acceso'}`);
+  if (x.terminados) partes.push(`${x.terminados} "Lo terminé" para confirmar`);
+  if (x.buscan) partes.push(`${x.buscan} ${x.buscan === 1 ? 'trabajo busca' : 'trabajos buscan'} voluntarios`);
+  const limpia = x.limpia ? `Limpia: ${x.limpia}.` : '';
+  if (!partes.length && !limpia) return null;
+  return {
+    title: partes.length ? `Esta semana: ${partes.length === 1 ? 'hay 1 cosa' : 'hay ' + partes.length + ' cosas'} para resolver` : 'Esta semana está todo al día',
+    body: [partes.join(' · '), limpia].filter(Boolean).join(' — ')
+  };
+}
+
 // ¿Esta escritura es una restauración? (los avisos de "te asignaron" no se mandan en ese caso)
 function isRestoreWrite(before, after) {
   return !!(after && after._restoredAt && (!before || before._restoredAt !== after._restoredAt));
 }
 
 module.exports = {
+  faltantesSemana, resumenSemanal,
   salonAssignments, newSalonAssignments, salonAssignMessage, anotadoMessage, SALON_SUBS, ALL_SUBS,
   BACKUP_SUBS, BACKUP_KINDS, backupName, parseBackupName, buildBackup, backupsToPrune, restorePlan, isRestoreWrite,
   salidaInstances, conductorAssignments, newConductors, conductorMessage, newTerritoryAssignments, mondayOfIsoLib,
