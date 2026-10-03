@@ -231,7 +231,7 @@ function installMock(store, email) {
   await v.waitForTimeout(200);
   check('"Solo ver" sin grupo sigue yendo a la vista', await v.evaluate(() => !!document.getElementById('viewerRedirect')));
   const t = await open('terr@x.com', s2);
-  check('Admin — Territorios: rol y solo su pestaña', await t.evaluate(() => currentUserRole === 'territorios' && [...document.querySelectorAll('.bottom-tabs .tab-btn[data-tab]')].filter(x => !x.classList.contains('hidden')).map(x => x.dataset.tab).join() === 'territorios' && !$('panel-territorios').classList.contains('hidden')));
+  check('Admin — Territorios: rol, solo su pestaña y arranca en su Panel', await t.evaluate(() => currentUserRole === 'territorios' && [...document.querySelectorAll('.bottom-tabs .tab-btn[data-tab]')].filter(x => !x.classList.contains('hidden')).map(x => x.dataset.tab).join() === 'territorios' && !$('panel-panel').classList.contains('hidden')));
   check('ve las 4 secciones', await t.evaluate(() => document.querySelectorAll('#terrRoot .tseg button').length === 4));
   check('sin errores (territorios)', t.errs.length === 0, t.errs);
   await b.close(); console.log(`\n${ok} OK, ${bad} fallaron`);

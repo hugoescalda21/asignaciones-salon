@@ -334,12 +334,12 @@
     viewerTimer = setTimeout(() => { if (T.waitingViewer) { T.waitingViewer = false; if (typeof goToViewerPage === 'function') goToViewerPage(); } }, 6000);
   };
   function applyTerrOnly() {
-    document.querySelectorAll('.tab-btn[data-tab]').forEach(b => b.classList.toggle('hidden', b.dataset.tab !== 'territorios'));
+    document.querySelectorAll('.tab-btn[data-tab]').forEach(b => { if (b.dataset.tab !== 'panel') b.classList.toggle('hidden', b.dataset.tab !== 'territorios'); });
     ['navAnunciosBtn', 'navAnunciosBtnMobile'].forEach(id => { const el = $(id); if (el && !(typeof canManageAnuncios === 'function' && canManageAnuncios() && currentUserRole === 'territorios')) el.classList.add('hidden'); });
     const tb = $('narrowThemeBtn'); if (tb) tb.classList.remove('hidden');
     const bb = $('backupBanner'); if (bb) bb.remove();
     const active = document.querySelector('.tab-btn.active');
-    if (!active || active.dataset.tab !== 'territorios') switchTab('territorios');
+    if (!active || (active.dataset.tab !== 'territorios' && (active.dataset.tab !== 'panel' || currentUserRole === 'grupo'))) switchTab('territorios');
     if (currentUserRole === 'grupo') T.view = 'salidas';
   }
   window.terrApplyTerrOnly = applyTerrOnly;

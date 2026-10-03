@@ -36,6 +36,7 @@
   .pn-go.pill { border-radius: 9px; padding: 5px 10px; background: color-mix(in srgb, var(--accent-gold) 14%, transparent); }
   .pn-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
   @media (min-width: 900px) { .pn-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .pn-grid .w2 { grid-column: span 2; } }
+  @media (min-width: 900px) { .pn-grid.pn-solo { grid-template-columns: minmax(0, 1fr); } .pn-grid.pn-solo .w2 { grid-column: auto; } }
   .pn-c { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 13px 14px; min-width: 0; }
   .pn-c h4 { margin: 0 0 10px; font-size: 13px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-soft); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
   .pn-c h4 .pn-go { text-transform: none; letter-spacing: 0; }
@@ -80,6 +81,18 @@
   const pubName = (id) => { const p = (data.publishers || []).find(x => x.id === id); return p ? p.name : ''; };
   const daysBetween = (a, b) => Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 86400000);
   const isSuper = () => typeof currentUserRole !== 'undefined' && currentUserRole === 'super';
+  // Qué parte del Panel ve cada uno: el Super Admin todo; cada admin, solo lo suyo.
+  //  reu: 'tec' = puestos del Equipo técnico / acomodadores (los de su rol) · 'prog' = partes del programa.
+  function alcance() {
+    const r = typeof currentUserRole !== 'undefined' ? currentUserRole : '';
+    if (r === 'super') return { reu: 'tec', terr: true, sal: true, super: true };
+    if (r === 'tecnico' || r === 'acomodadores') return { reu: 'tec' };
+    if (r === 'asignaciones') return { reu: 'prog' };
+    if (r === 'territorios') return { terr: true };
+    if (r === 'salon') return { sal: true };
+    return null;
+  }
+  const puedeVer = () => !!(alcance() && typeof currentUser !== 'undefined' && currentUser);
   const cloud = () => !!(typeof fbDb !== 'undefined' && fbDb && accessCode && currentUser);
 
   /* ---------- Reuniones ---------- */
@@ -87,7 +100,17 @@
   function faltanRoles(monday, type) {
     const w = (data.weeks || {})[monday];
     const r = (w && w[type] && w[type].roles) || {};
-    return getRoles(type).filter(x => !r[x.key]);
+    const roles = typeof rolesForCurrentUser === 'function' ? rolesForCurrentUser(type) : getRoles(type);
+    return roles.filter(x => !r[x.key]);
+  }
+  // Partes del programa sin asignar (las principales, igual que el resumen del mes): para el Admin — Asignaciones.
+  function faltanPartes(monday, type) {
+    const w = (data.weeks || {})[monday];
+    const pr = (w && w[type] && w[type].program) || {};
+    const partes = type === 'finde'
+      ? [['presidente', 'Presidente'], ['oracionInicial', 'Oración inicial'], ['oradorPublico', 'Discurso público'], ['atalayaConductor', 'Conductor de La Atalaya'], ['atalayaLector', 'Lector de La Atalaya'], ['oracionFinal', 'Oración final']]
+      : [['presidente', 'Presidente'], ['oracionInicial', 'Oración inicial'], ['tesoros', 'Tesoros'], ['perlas', 'Perlas escondidas'], ['lectura', 'Lectura'], ['oracionFinal', 'Oración final']];
+    return partes.filter(([k]) => !(pr[k] || (k === 'oradorPublico' && pr.oradorVisitante && pr.oradorVisitante.nombre))).map(([key, label]) => ({ key, label }));
   }
   function semanaVacia(monday) {
     const w = (data.weeks || {})[monday];
@@ -99,7 +122,8 @@
     for (let i = 0, m = mondayOf(today); i < 4; i++, m = shiftDate(m, 7)) {
       const tipos = ['semana', 'finde'].map(t => ({ t, fecha: dateForType(m, t) })).filter(x => x.fecha >= today || i > 0);
       const vacia = semanaVacia(m);
-      const faltan = vacia ? [] : tipos.map(x => ({ ...x, roles: faltanRoles(m, x.t) })).filter(x => x.roles.length);
+      const prog = (alcance() || {}).reu === 'prog';
+      const faltan = vacia ? [] : tipos.map(x => ({ ...x, roles: prog ? faltanPartes(m, x.t) : faltanRoles(m, x.t) })).filter(x => x.roles.length);
       out.push({ monday: m, tipos, vacia, faltan, nFaltan: faltan.reduce((n, x) => n + x.roles.length, 0) });
     }
     return out;
@@ -149,32 +173,35 @@
 
   function render() {
     const root = $('panelRoot'); if (!root) return;
+    const A = alcance(); if (!A) { root.innerHTML = ''; return; }
     cargarExtras();
     const today = hoy();
     const d = new Date(today + 'T12:00:00');
     const cong = (data.settings && data.settings.congregationName) || '';
-    const reu = reuniones();
-    const terr = window.terrPanel ? window.terrPanel() : null;
-    const sal = window.salonPanel ? window.salonPanel() : null;
-    const reqs = (typeof accReqs !== 'undefined' ? accReqs : []).filter(r => r.status !== 'rechazado');
+    const reu = A.reu ? reuniones() : [];
+    const terr = A.terr && window.terrPanel ? window.terrPanel() : null;
+    const sal = A.sal && window.salonPanel ? window.salonPanel() : null;
+    const reqs = A.super ? (typeof accReqs !== 'undefined' ? accReqs : []).filter(r => r.status !== 'rechazado') : [];
     // Lo urgente
     const urg = [];
     reu.slice(0, 2).forEach(w => w.faltan.forEach(x => {
       const dd = daysBetween(today, x.fecha);
       const cuando = dd === 0 ? ' (hoy)' : dd === 1 ? ' (mañana)' : '';
       const nom = x.roles.map(r => r.label.replace('Micrófono de pasillo', 'Micrófono').replace('Acomodador de plataforma', 'Plataforma')).join(', ');
-      urg.push(item('🎤', dd <= 3 ? 'r' : 'y', `${esc(fmtCorto(x.fecha).replace(/^./, c => c.toUpperCase()))}${cuando}: ${x.roles.length === 1 ? 'falta' : 'faltan'} ${esc(nom)}`, x.t === 'finde' ? 'Reunión del fin de semana' : 'Reunión entre semana',
-        go('sugerir', '✨ Sugerir', ` data-m="${w.monday}" data-t="${x.t}"`, true) + go('asignar', 'Asignar ›', ` data-m="${w.monday}" data-t="${x.t}"`)));
+      urg.push(item(A.reu === 'prog' ? '📖' : '🎤', dd <= 3 ? 'r' : 'y', `${esc(fmtCorto(x.fecha).replace(/^./, c => c.toUpperCase()))}${cuando}: ${x.roles.length === 1 ? 'falta' : 'faltan'} ${esc(nom)}`, x.t === 'finde' ? 'Reunión del fin de semana' : 'Reunión entre semana',
+        (A.reu === 'tec' ? go('sugerir', '✨ Sugerir', ` data-m="${w.monday}" data-t="${x.t}"`, true) : '') + go('asignar', 'Asignar ›', ` data-m="${w.monday}" data-t="${x.t}"`)));
     }));
     if (reqs.length) urg.push(item('🙋', 'y', `${reqs.length} ${reqs.length === 1 ? 'solicitud de acceso esperando' : 'solicitudes de acceso esperando'}`, esc(reqs.slice(0, 3).map(r => r.name).join(' · ')), go('solicitudes', 'Revisar ›')));
     if (terr && terr.terminados.length) urg.push(item('🗺', 'y', `${terr.terminados.length} ${terr.terminados.length === 1 ? 'aviso' : 'avisos'} de "Lo terminé" para confirmar`, esc(terr.terminados.slice(0, 2).map(t => `Territorio ${t.num}${t.nombre ? ' · ' + t.nombre : ''}${t.quien ? ' · ' + t.quien : ''}`).join(' — ')), go('terminados', 'Confirmar ›')));
+    if (terr && terr.loaded && !A.super && terr.sinConductor.length) urg.push(item('🚶', 'y', `${terr.sinConductor.length === 1 ? '1 salida' : terr.sinConductor.length + ' salidas'} de esta semana sin conductor`, esc(terr.sinConductor.slice(0, 3).map(x => `${fmtCorto(x.fecha)}${x.hora ? ' ' + x.hora : ''}${x.grupo ? ' · ' + x.grupo : ''}`).join(' — ')), go('territorios', 'Ver ›')));
+    if (sal && sal.pronto) sal.pronto.forEach(x => urg.push(item('🛠', daysBetween(today, x.fecha) <= 2 ? 'r' : 'y', `${esc(x.titulo)}: ${x.faltan === 1 ? 'falta 1 voluntario' : 'faltan ' + x.faltan + ' voluntarios'}`, esc(fmtCorto(x.fecha).replace(/^./, c => c.toUpperCase())) + ' · Trabajo de mantenimiento', go('salon', 'Ver ›'))));
     if (sal && sal.hayLimpieza && sal.vacias) urg.push(item('🧹', 'y', `Limpieza sin cargar desde la semana del ${fmtSem(sal.primeraVacia)}`, `${sal.vacias} ${sal.vacias === 1 ? 'semana vacía' : 'semanas vacías'} en las próximas 6 · "Sugerir" las completa`, go('limpieza', 'Cargar ›', ` data-m="${sal.primeraVacia}"`)));
     if (P.errN) urg.push(item('⚠️', 'y', `${P.errN >= 20 ? 'Más de 20' : P.errN} ${P.errN === 1 ? 'error nuevo' : 'errores nuevos'} en el registro`, 'En los teléfonos de los hermanos', go('errores', 'Ver ›')));
     if (P.bk && P.bk !== 'error') {
       const dias = daysBetween(P.bk.dateIso, today);
       if (dias > 7) urg.push(item('💾', 'r', `Hace ${dias} días de la última copia de seguridad`, 'La automática corre los domingos', go('backup', 'Hacer ahora ›')));
     } else if (P.bk === null) urg.push(item('💾', 'r', 'Todavía no hay copias de seguridad en la nube', 'La primera se hace sola el domingo', go('backup', 'Hacer ahora ›')));
-    let html = `<div class="pn-head"><h2>Panel<small>${esc(['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][d.getDay()])} ${d.getDate()} de ${MESES[d.getMonth()]}${cong ? ' · ' + esc(cong) : ''}</small></h2><button type="button" class="btn" data-pn="vercomo">👁 Ver como un hermano</button></div>`;
+    let html = `<div class="pn-head"><h2>Panel<small>${esc(['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][d.getDay()])} ${d.getDate()} de ${MESES[d.getMonth()]}${cong ? ' · ' + esc(cong) : ''}</small></h2>${A.super ? '<button type="button" class="btn" data-pn="vercomo">👁 Ver como un hermano</button>' : ''}</div>`;
     html += urg.length ? `<div class="pn-urg" id="pnUrg"><h3>Para resolver · ${urg.length}</h3>${urg.join('')}</div>` : '<div class="pn-urg okk" id="pnUrg"><span style="font-size:20px">✓</span>Todo al día</div>';
     // Reuniones
     const wk = reu.map(w => {
@@ -183,9 +210,11 @@
       return `<button type="button" class="${cls}" data-pn="semana" data-m="${w.monday}">Sem. ${fmtSem(w.monday)}<b>${txt}</b>${w.tipos.map(x => fmtCorto(x.fecha)).join(' · ')}</button>`;
     }).join('');
     const anuncios = (data.anuncios || []).filter(a => !(a.expiresIso && new Date(a.expiresIso).getTime() < Date.now())).length;
-    html += '<div class="pn-grid">';
-    html += `<div class="pn-c w2"><h4>Reuniones · próximas 4 semanas ${go('programa', 'Programa ›')}</h4><div class="pn-wk">${wk}</div><div class="pn-row" style="margin-top:8px"><span>Anuncios vigentes</span><b>${anuncios}</b></div></div>`;
-    // Hermanos y acceso
+    const titReu = A.super ? 'Reuniones' : A.reu === 'prog' ? 'Programa' : (typeof currentUserRole !== 'undefined' && currentUserRole === 'acomodadores') ? 'Acomodadores' : 'Equipo técnico';
+    html += `<div class="pn-grid${A.super ? '' : ' pn-solo'}">`;
+    if (A.reu) html += `<div class="pn-c w2"><h4>${titReu} · próximas 4 semanas ${go('programa', 'Programa ›')}</h4><div class="pn-wk">${wk}</div>${A.super ? `<div class="pn-row" style="margin-top:8px"><span>Anuncios vigentes</span><b>${anuncios}</b></div>` : ''}</div>`;
+    // Hermanos y acceso (solo el Super Admin)
+    if (A.super) {
     const act = pubs().filter(p => p.status !== 'no_disponible');
     const conEmail = act.filter(p => p.email);
     const devPubs = Array.isArray(P.dev) ? new Set(P.dev.map(x => x.pubId)) : null;
@@ -197,6 +226,7 @@
       ${devPubs && sinAvisos.length ? `<div class="pn-row"><span>Con email pero sin avisos</span><b class="w">${sinAvisos.length}</b></div><div class="pn-ppl" id="pnSinAvisos">${sinAvisos.slice(0, 4).map(p => `<div><span>${esc(p.name)}</span><button type="button" class="pn-wa" data-pn="wa" data-id="${esc(p.id)}">💬 Mandar link</button></div>`).join('')}${sinAvisos.length > 4 ? `<div><span class="pn-muted">y ${sinAvisos.length - 4} más</span></div>` : ''}</div>` : ''}
       <div class="pn-row"><span>Sin asignaciones hace +2 meses</span><b class="${sinAsig.length ? 'w' : ''}">${sinAsig.length}</b></div>
       ${sinAsig.length ? `<div class="pn-names">${esc(sinAsig.slice(0, 6).map(p => p.name).join(' · '))}${sinAsig.length > 6 ? ` y ${sinAsig.length - 6} más` : ''}</div>` : ''}</div>`;
+    }
     // Territorios
     if (terr) {
       html += `<div class="pn-c"><h4>Territorios ${go('territorios', 'Ver ›')}</h4>${terr.loaded ? `
@@ -212,7 +242,7 @@
         <div class="pn-row"><span>Buscan voluntarios</span><b class="${sal.buscan ? 'w' : ''}">${sal.buscan ? `${sal.buscan} · faltan ${sal.faltan}` : '0'}</b></div>
         <div class="pn-row"><span>Semanas de limpieza sin cargar</span><b class="${sal.vacias ? 'w' : ''}">${sal.hayLimpieza ? sal.vacias : '—'}</b></div>` : '<p class="pn-muted">Cargando…</p>'}</div>`;
     }
-    html += `<div class="pn-c"><h4>Ver como un hermano</h4><div class="pn-ver"><span class="ic">👁</span><p>Abrí la vista tal como la ve un hermano: sus asignaciones, su grupo, su limpieza y sus territorios. Solo para mirar: no se cambia nada.</p></div>
+    if (A.super) html += `<div class="pn-c"><h4>Ver como un hermano</h4><div class="pn-ver"><span class="ic">👁</span><p>Abrí la vista tal como la ve un hermano: sus asignaciones, su grupo, su limpieza y sus territorios. Solo para mirar: no se cambia nada.</p></div>
       <button type="button" class="btn btn-primary" data-pn="vercomo" style="width:100%;justify-content:center;margin-top:10px">Elegir hermano</button></div>`;
     html += '</div>';
     root.innerHTML = html;
@@ -319,7 +349,7 @@
     window.openPubModal = function (id) { orig(id); const v = $('pubVerComoBtn'); if (v) v.classList.toggle('hidden', !(id && isSuper() && accessCode)); };
   }
   function updateVisibility() {
-    const show = isSuper() && !!currentUser;
+    const show = puedeVer();
     document.querySelectorAll('.tab-btn[data-tab="panel"]').forEach(b => b.classList.toggle('hidden', !show));
     const pb = $('panelBtn'); if (pb) pb.classList.toggle('pn-on', show);
     if (!show && isVisible()) switchTab('programa');
@@ -327,7 +357,7 @@
   let primeraVez = true;
   window.panelOnRole = function () {
     updateVisibility();
-    if (!isSuper() || !currentUser) return;
+    if (!puedeVer()) return;
     // Al abrir la app, el Super Admin empieza por el Panel (o por donde lo lleve un link: #solicitudes, #terminados…).
     if (primeraVez) {
       primeraVez = false;

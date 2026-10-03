@@ -2447,9 +2447,9 @@
     if (!canAn) { $('anunciosModalOverlay').classList.add('hidden'); $('anMenuOverlay').classList.add('hidden'); }
     if (role === 'anuncios') { $('narrowThemeBtn').classList.remove('hidden'); setupAnunciosOnly(); return; }
     // "Admin — Territorios": solo la pestaña Territorios (y Anuncios si tiene el permiso).
-    if (role === 'territorios') { if (typeof terrOnRole === 'function') terrOnRole(); return; }
+    if (role === 'territorios') { if (typeof terrOnRole === 'function') terrOnRole(); if (typeof panelOnRole === 'function') panelOnRole(); return; }
     // "Admin — Mantenimiento": solo la pestaña Mantenimiento (trabajos del Salón y limpieza).
-    if (role === 'salon') { if (typeof salonOnRole === 'function') salonOnRole(); return; }
+    if (role === 'salon') { if (typeof salonOnRole === 'function') salonOnRole(); if (typeof panelOnRole === 'function') panelOnRole(); return; }
     const narrow = role === 'tecnico' || role === 'acomodadores' || role === 'asignaciones';
     // Pestañas principales: Cronómetro, Hermanos y Ajustes quedan solo para Super Admin.
     document.querySelectorAll('.tab-btn[data-tab="timer"], .tab-btn[data-tab="hermanos"], .tab-btn[data-tab="ajustes"]')

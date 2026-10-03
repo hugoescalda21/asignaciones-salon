@@ -285,12 +285,12 @@
     document.querySelectorAll('.tab-btn[data-tab="salon"]').forEach(b => b.classList.toggle('hidden', !show));
   }
   function applySalonOnly() {
-    document.querySelectorAll('.tab-btn[data-tab]').forEach(b => b.classList.toggle('hidden', b.dataset.tab !== 'salon'));
+    document.querySelectorAll('.tab-btn[data-tab]').forEach(b => { if (b.dataset.tab !== 'panel') b.classList.toggle('hidden', b.dataset.tab !== 'salon'); });
     ['navAnunciosBtn', 'navAnunciosBtnMobile'].forEach(id => { const el = $(id); if (el && !(typeof canManageAnuncios === 'function' && canManageAnuncios())) el.classList.add('hidden'); });
     const tb = $('narrowThemeBtn'); if (tb) tb.classList.remove('hidden');
     const bb = $('backupBanner'); if (bb) bb.remove();
     const active = document.querySelector('.tab-btn.active');
-    if (!active || active.dataset.tab !== 'salon') switchTab('salon');
+    if (!active || (active.dataset.tab !== 'salon' && active.dataset.tab !== 'panel')) switchTab('salon');
   }
   window.salonOnRole = function () {
     if (currentUser && accessCode && fbDb) start();
@@ -956,7 +956,9 @@
     }
     const hayLimpieza = !!(S.limpieza && (S.limpieza.semanas || S.limpieza.inicio || S.limpieza.tipos)) && Object.keys(S.grupos).length > 0;
     return { loaded: S.loaded.trabajos && S.loaded.limpieza && S.loaded.grupos, limpiaEsta: lz ? lz.nombre : '', trabajos: occ.length,
-      buscan: buscan.length, faltan: buscan.reduce((n, x) => n + x.ci.faltan, 0), hayLimpieza, vacias: hayLimpieza ? vacias : 0, primeraVacia };
+      buscan: buscan.length, faltan: buscan.reduce((n, x) => n + x.ci.faltan, 0), hayLimpieza, vacias: hayLimpieza ? vacias : 0, primeraVacia,
+      // Los de esta semana que todavía necesitan voluntarios (para "Para resolver" del Admin — Mantenimiento).
+      pronto: buscan.filter(x => x.o.fecha <= C.addDays(today, 7)).map(x => ({ titulo: x.o.t.titulo || 'Trabajo', fecha: x.o.fecha, faltan: x.ci.faltan })) };
   };
   window.salonGoLimpieza = function (m) { S.view = 'limp'; S.lAjustes = false; if (m) S.lMonth = C.semanaDelMes(m).mes; switchTab('salon'); };
 

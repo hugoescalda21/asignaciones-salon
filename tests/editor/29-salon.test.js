@@ -226,7 +226,7 @@ let ok = 0, bad = 0; const check = (l, c, x) => { if (c) { ok++; console.log('  
   p = await open('salon@x.com', store);
   const tabs = await p.evaluate(() => [...document.querySelectorAll('.bottom-tabs .tab-btn[data-tab]')].filter(b => !b.classList.contains('hidden')).map(b => b.dataset.tab));
   check('solo ve la pestaña Mantenimiento', JSON.stringify(tabs) === '["salon"]', tabs);
-  check('abre directo en Mantenimiento', await p.evaluate(() => !$('panel-salon').classList.contains('hidden') && /Corte de pasto/.test($('salonRoot').innerText)));
+  check('abre en su Panel y de ahí a Mantenimiento', await p.evaluate(() => !$('panel-panel').classList.contains('hidden')) && await p.evaluate(() => { switchTab('salon'); return !$('panel-salon').classList.contains('hidden') && /Corte de pasto/.test($('salonRoot').innerText); }));
   check('sin errores', !p.errs.length, p.errs);
   await p.context().close();
 

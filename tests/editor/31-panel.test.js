@@ -5,7 +5,7 @@ const path = require('path');
 const { launch, FILE, SHOTS, fixture } = require('./_helper');
 const { installMock } = require('./_mock-firestore');
 const data = fixture();
-Object.assign(data.settings, { editorEmails: ['hugo@x.com'], tecnicoAdminEmails: ['tec@x.com'], viewerEmails: ['martin@x.com'] });
+Object.assign(data.settings, { editorEmails: ['hugo@x.com'], tecnicoAdminEmails: ['tec@x.com'], acomodadoresAdminEmails: ['aco@x.com'], asignacionesAdminEmails: ['asig@x.com'], territoriosAdminEmails: ['terr@x.com'], salonAdminEmails: ['mant@x.com'], viewerEmails: ['martin@x.com'] });
 data.publishers[1].email = 'martin@x.com'; data.publishers[2].email = 'lucas@x.com'; data.publishers[3].email = 'carlos@x.com';
 let ok = 0, bad = 0; const check = (l, c, x) => { if (c) { ok++; console.log('  ✅', l); } else { bad++; console.log('  ❌', l, x === undefined ? '' : JSON.stringify(x).slice(0, 500)); } };
 
@@ -33,6 +33,7 @@ let ok = 0, bad = 0; const check = (l, c, x) => { if (c) { ok++; console.log('  
       await startSync('C');
     }, { store, email, mock: installMock.toString() });
     await p.waitForTimeout(500);
+    await p.evaluate(() => { const o = $('onboardingOverlay'); if (o) o.classList.add('hidden'); });
     return p;
   }
   const store = { docs: {
@@ -100,9 +101,80 @@ let ok = 0, bad = 0; const check = (l, c, x) => { if (c) { ok++; console.log('  
   check('sin errores', !p.errs.length, p.errs);
   await p.context().close();
 
-  console.log('\nAdmin técnico');
+  const soloLoSuyo = () => ({
+    hermanos: /Hermanos y acceso/.test($('panelRoot').textContent), vercomo: !!document.querySelector('#panelRoot [data-pn="vercomo"]'),
+    terr: /Territorios/.test($('panelRoot').textContent), mant: /Mantenimiento/.test($('panelRoot').textContent),
+    solicitud: /solicitud de acceso/.test($('panelRoot').textContent), copia: /copia de seguridad/.test($('panelRoot').textContent)
+  });
+  const nadaDelSuper = (o) => !o.hermanos && !o.vercomo && !o.solicitud && !o.copia;
+
+  console.log('\nAdmin — Equipo técnico');
   p = await open('tec@x.com', store);
-  check('no ve el Panel y sigue entrando a su parte', await p.evaluate(() => [...document.querySelectorAll('.tab-btn[data-tab="panel"]')].every(b => b.classList.contains('hidden')) && $('panel-panel').classList.contains('hidden') && getComputedStyle($('panelBtn')).display === 'none'));
+  check('ve el Panel y arranca ahí', await p.evaluate(() => !$('panel-panel').classList.contains('hidden') && !document.querySelector('.tabs .tab-btn[data-tab="panel"]').classList.contains('hidden')));
+  let t = await p.evaluate(() => $('pnUrg').innerText.replace(/\s+/g, ' '));
+  check('lo que falta de sus puestos, sin los acomodadores', /Jue 24 \(mañana\): falta Micrófono 2/.test(t) && !/Acomodador 2/.test(t), t);
+  let o = await p.evaluate(soloLoSuyo);
+  check('no ve lo del Super Admin, ni Territorios ni Mantenimiento', nadaDelSuper(o) && !o.terr && !o.mant, o);
+  check('título de la tarjeta: Equipo técnico', await p.evaluate(() => /Equipo técnico · próximas 4 semanas/.test($('panelRoot').textContent)));
+  await p.click('#pnUrg [data-pn="sugerir"][data-t="semana"]'); await p.waitForTimeout(200);
+  check('"Sugerir" completa solo su puesto', await p.evaluate(() => { const r = data.weeks['2026-09-21'].semana.roles; return !!r.mic2 && !r.usher2; }));
+  await p.evaluate(() => document.querySelector('.toast .toast-undo').click()); await p.waitForTimeout(200);
+  await p.click('#pnUrg [data-pn="asignar"][data-t="semana"]'); await p.waitForTimeout(150);
+  check('"Asignar" lo lleva a su pantalla', await p.evaluate(() => !$('panel-programa').classList.contains('hidden')));
+  check('sin errores', !p.errs.length, p.errs);
+  await p.context().close();
+
+  console.log('\nAdmin — Acomodadores');
+  p = await open('aco@x.com', store, { width: 390, height: 844 });
+  t = await p.evaluate(() => $('pnUrg').innerText.replace(/\s+/g, ' '));
+  check('solo los acomodadores', /Jue 24 \(mañana\): falta Acomodador 2/.test(t) && !/Micrófono/.test(t), t);
+  check('celular: botón del Panel arriba', await p.evaluate(() => getComputedStyle($('panelBtn')).display !== 'none'));
+  check('celular: nada se corre de costado', await p.evaluate(() => document.documentElement.scrollWidth <= 390));
+  check('sin errores', !p.errs.length, p.errs);
+  await p.context().close();
+
+  console.log('\nAdmin — Asignaciones');
+  p = await open('asig@x.com', store);
+  t = await p.evaluate(() => $('pnUrg').innerText.replace(/\s+/g, ' '));
+  check('partes del programa que faltan, sin puestos técnicos ni "Sugerir"', /Dom 27: faltan Oración inicial, Conductor de La Atalaya/.test(t) && !/Micrófono/.test(t) && await p.evaluate(() => !document.querySelector('#pnUrg [data-pn="sugerir"]')), t);
+  check('título: Programa', await p.evaluate(() => /Programa · próximas 4 semanas/.test($('panelRoot').textContent)));
+  o = await p.evaluate(soloLoSuyo);
+  check('no ve lo del Super Admin, ni Territorios ni Mantenimiento', nadaDelSuper(o) && !o.terr && !o.mant, o);
+  check('sin errores', !p.errs.length, p.errs);
+  await p.context().close();
+
+  console.log('\nAdmin — Territorios');
+  p = await open('terr@x.com', store);
+  check('ve las pestañas Panel y Territorios, y arranca en el Panel', await p.evaluate(() => [...document.querySelectorAll('.tabs .tab-btn:not(.hidden)')].map(b => b.dataset.tab).join() === 'panel,territorios' && !$('panel-panel').classList.contains('hidden')), await p.evaluate(() => [...document.querySelectorAll('.tabs .tab-btn:not(.hidden)')].map(b => b.dataset.tab).join()));
+  t = await p.evaluate(() => $('pnUrg').innerText.replace(/\s+/g, ' '));
+  check('"Lo terminé" para confirmar', /1 aviso de "Lo terminé" para confirmar/.test(t), t);
+  o = await p.evaluate(soloLoSuyo);
+  check('su tarjeta, sin Reuniones, Mantenimiento ni lo del Super Admin', o.terr && !o.mant && nadaDelSuper(o) && await p.evaluate(() => !/próximas 4 semanas/.test($('panelRoot').textContent)), o);
+  await p.evaluate(() => window.terrOnRole()); await p.waitForTimeout(100);
+  check('al cambiar los datos no lo saca del Panel', await p.evaluate(() => !$('panel-panel').classList.contains('hidden')));
+  await p.click('#pnUrg [data-pn="terminados"]'); await p.waitForTimeout(150);
+  check('"Confirmar" lo lleva a Territorios', await p.evaluate(() => !$('panel-territorios').classList.contains('hidden')));
+  check('sin errores', !p.errs.length, p.errs);
+  await p.context().close();
+
+  console.log('\nAdmin — Mantenimiento');
+  const store3 = JSON.parse(JSON.stringify(store));
+  store3.docs['congregations/C/salon/trabajos'].lista.w1.fecha = '2026-09-26';
+  p = await open('mant@x.com', store3);
+  check('ve las pestañas Panel y Mantenimiento', await p.evaluate(() => [...document.querySelectorAll('.tabs .tab-btn:not(.hidden)')].map(b => b.dataset.tab).join() === 'panel,salon'), await p.evaluate(() => [...document.querySelectorAll('.tabs .tab-btn:not(.hidden)')].map(b => b.dataset.tab).join()));
+  t = await p.evaluate(() => $('pnUrg').innerText.replace(/\s+/g, ' '));
+  check('trabajo de esta semana sin voluntarios y limpieza sin cargar', /Pintura: faltan 3 voluntarios/.test(t) && /Limpieza sin cargar/.test(t), t);
+  o = await p.evaluate(soloLoSuyo);
+  check('su tarjeta, sin Reuniones, Territorios ni lo del Super Admin', o.mant && !o.terr && nadaDelSuper(o) && await p.evaluate(() => !/próximas 4 semanas/.test($('panelRoot').textContent)), o);
+  await p.screenshot({ path: path.join(SHOTS, 'panel-mantenimiento.png'), fullPage: true });
+  await p.click('#pnUrg [data-pn="limpieza"]'); await p.waitForTimeout(150);
+  check('"Cargar" lo lleva a Limpieza', await p.evaluate(() => !$('panel-salon').classList.contains('hidden') && window.__salon.view === 'limp'));
+  check('sin errores', !p.errs.length, p.errs);
+  await p.context().close();
+
+  console.log('\nSolo ver');
+  p = await open('martin@x.com', store);
+  check('no ve el Panel', await p.evaluate(() => [...document.querySelectorAll('.tab-btn[data-tab="panel"]')].every(b => b.classList.contains('hidden'))));
   await p.context().close();
 
   await b.close();
