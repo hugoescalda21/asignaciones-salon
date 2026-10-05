@@ -20,7 +20,7 @@
   if (!C) { console.warn('salon: falta salon-core.js'); return; }
 
   const S = {
-    trabajos: {}, limpieza: {}, grupos: {}, anotados: {}, externos: {},
+    trabajos: {}, modelos: {}, limpieza: {}, grupos: {}, anotados: {}, externos: {},
     loaded: { trabajos: false, limpieza: false, grupos: false, anotados: false },
     unsub: [], code: null, started: false,
     view: 'cal', month: null, day: null
@@ -253,6 +253,11 @@
   .cr-pub.v { background: rgba(76,122,94,.1); } .cr-pub.q { background: rgba(201,138,27,.12); }
   .cr-pub .btn { white-space: nowrap; }
   .topts button:disabled { opacity: .4; cursor: not-allowed; }
+  .sl-tgr { font-size: 11.5px; font-weight: 800; letter-spacing: .05em; color: var(--c); padding: 10px 0 2px; border-top: 1px solid var(--line); }
+  .sl-box .sl-tgr:first-child { border-top: none; padding-top: 6px; }
+  .sl-aviso { background: #FEE2E2; color: #991B1B; border-radius: 10px; padding: 8px 11px; font-size: 12.5px; line-height: 1.4; margin: -4px 0 8px; }
+  html.dk .sl-aviso { background: rgba(220,38,38,.18); color: #FCA5A5; }
+  .sl-ficha { width: 100%; justify-content: center; margin: 0 0 12px; font-weight: 800; border: 1.5px solid var(--accent-blue) !important; color: var(--accent-blue) !important; background: color-mix(in srgb, var(--accent-blue) 7%, var(--surface)) !important; }
   .sl-repbox { margin-top: 10px; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
   .sl-cada { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-weight: 700; font-size: 14px; }
   .sl-cada input { width: 70px; text-align: center; border: 1px solid var(--line); border-radius: 9px; padding: 8px; font: inherit; font-size: 15px; font-weight: 800; background: var(--bg); color: var(--ink); }
@@ -338,7 +343,7 @@
     S.code = accessCode; S.started = true;
     S.loaded = { trabajos: false, limpieza: false, grupos: false, anotados: false, externos: false };
     const onErr = (k) => (err) => { S.loaded[k] = true; console.warn('salon', k, err && err.code); onData(); };
-    S.unsub.push(sRef('trabajos').onSnapshot((s) => { S.trabajos = ((s.exists && s.data()) || {}).lista || {}; S.loaded.trabajos = true; onData(); }, onErr('trabajos')));
+    S.unsub.push(sRef('trabajos').onSnapshot((s) => { const d = (s.exists && s.data()) || {}; S.trabajos = d.lista || {}; S.modelos = d.modelos || {}; S.loaded.trabajos = true; onData(); }, onErr('trabajos')));
     // Hermanos de otra congregación (salón compartido): nombre, congregación y teléfono. Solo los ven los que manejan el Salón.
     S.unsub.push(sRef('externos').onSnapshot((s) => { S.externos = ((s.exists && s.data()) || {}).lista || {}; S.loaded.externos = true; onData(); }, onErr('externos')));
     S.unsub.push(sRef('limpieza').onSnapshot((s) => { S.limpieza = (s.exists && s.data()) || {}; S.loaded.limpieza = true; onData(); }, onErr('limpieza')));
@@ -412,7 +417,7 @@
     const quien = [t.resp && apellido(t.resp, '', t), t.aux && apellido(t.aux, '', t)].filter(Boolean).join(' y ');
     return `<button type="button" class="sl-ev${o.cancelada ? ' off' : ''}" data-s="open" data-id="${esc(t.id)}" data-f="${o.fecha}">
       ${o.sinDia ? `<span class="dt q">${esc(MESES[d.getMonth()].slice(0, 3))}<b>?</b></span>` : `<span class="dt">${DIAS3[d.getDay()]}<b>${d.getDate()}</b></span>`}<span class="bar" style="background:${tp.color}"></span>
-      <span class="tx"><b>${tp.icon} ${esc(t.titulo)}</b><small>${o.sinDia ? '' : esc(t.hora || '')}${t.hora && !o.sinDia ? ' · ' : ''}${esc(quien || 'Sin responsable')}${ci.cupo ? ` · ${ci.van} de ${ci.cupo} voluntarios` : ''}${C.pasoDe(t) ? ` · 🔁 ${esc(C.repiteTxt(t).toLowerCase())}` : ''}${!o.sinDia && !o.pub && !o.cancelada && o.estado !== 'hecho' ? ' · 🔒 solo el comité' : ''}</small>${esRep(t) ? `<small class="rep">${esc(fichaTxt(t))}</small>` : ''}</span>${pill}</button>`;
+      <span class="tx"><b>${tp.icon} ${esc(t.titulo)}</b><small>${o.sinDia ? '' : esc(t.hora || '')}${t.hora && !o.sinDia ? ' · ' : ''}${esc(quien || 'Sin responsable')}${ci.cupo ? ` · ${ci.van} de ${ci.cupo} voluntarios` : ''}${C.pasoDe(t) ? ` · 🔁 ${esc(C.repiteTxt(t).toLowerCase())}` : ''}${!o.sinDia && !o.pub && !o.cancelada && o.estado !== 'hecho' ? ' · 🔒 solo el comité' : ''}</small>${fichaTxt(t) ? `<small class="rep">${esc(fichaTxt(t))}</small>` : ''}</span>${pill}</button>`;
   }
   function renderCal(v) {
     const today = hoy();
@@ -477,6 +482,14 @@
   /* =====================================================================
      TRABAJOS (lista de todos, con los que se repiten)
      ===================================================================== */
+  // Opciones del selector de ficha: las del manual por sección y las propias.
+  function fichaOpts(sel) {
+    const secs = {};
+    FM().FICHAS.forEach(x => { (secs[x.sec + ' · ' + x.cat] = secs[x.sec + ' · ' + x.cat] || []).push(x); });
+    const prop = Object.values(S.modelos || {}).filter(x => x && x.id).sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
+    return `<option value="">— Sin ficha —</option>` + Object.entries(secs).map(([k, xs]) => `<optgroup label="Manual ${esc(k)}">${xs.map(x => `<option value="${x.cod}"${sel === x.cod ? ' selected' : ''}>${x.cod} ${esc(x.nombre)}</option>`).join('')}</optgroup>`).join('')
+      + (prop.length ? `<optgroup label="Fichas propias">${prop.map(x => `<option value="p:${esc(x.id)}"${sel === 'p:' + x.id ? ' selected' : ''}>${esc(x.nombre)}</option>`).join('')}</optgroup>` : '');
+  }
   // Un trabajo pendiente (sin fecha): se abre el formulario para programarlo.
   function pendRow(t) {
     const tp = tipoOf(t);
@@ -487,7 +500,17 @@
   // Clase: 'prog' (mantenimiento programado, el de siempre) o 'rep' (reparación puntual, de una ficha o una revisión).
   const esRep = (t) => t && t.clase === 'rep';
   const claseOk = (t, k) => !k || k === 'todos' || (k === 'rep' ? esRep(t) : !esRep(t));
-  const fichaTxt = (t) => esRep(t) ? `🔧 Reparación${t.ficha ? ' · Ficha ' + t.ficha : ''}` : '';
+  // Fichas modelo: las 21 del manual (fichas-modelo.js) y las propias (guardadas en salon/trabajos → modelos).
+  const FM = () => window.FichasModelo || { FICHAS: [], EPP: {}, EPP_NOMBRE: {}, porCodigo: () => null };
+  const esGrupoTxt = (x) => { const l = [...String(x)].filter(c => /\p{L}/u.test(c)).length; return l >= 2 && x.length <= 60 && x === x.toUpperCase(); };
+  function tareasDeModelo(md) { const out = []; (md.grupos || []).forEach(g => { if (g.g) out.push(g.g); out.push(...g.i); }); return out; }
+  function modeloDe(t) {
+    const c = t && t.fichaCod; if (!c) return null;
+    if (c.startsWith('p:')) { const m = S.modelos[c.slice(2)]; return m ? { cod: c, propia: true, nombre: m.nombre, cat: 'Mantenimiento', color: m.color || tipoOf(t).color, epp: m.epp || [], aviso: [], notas: '', grupos: [{ g: '', i: m.tareas || [] }] } : null; }
+    return FM().porCodigo(c);
+  }
+  const fichaCorta = (t) => { const md = modeloDe(t); return md ? (md.propia ? md.nombre : `${md.cod} ${md.nombre}`) : (t.ficha ? 'Ficha ' + t.ficha : ''); };
+  const fichaTxt = (t) => esRep(t) ? `🔧 Reparación${fichaCorta(t) ? ' · ' + fichaCorta(t) : ''}` : (modeloDe(t) ? `📋 ${fichaCorta(t)}` : '');
   // En el calendario: lo programado, y las reparaciones solo si piden voluntarios.
   const enCalendario = (t) => !esRep(t) || Number(t.cupo) > 0;
   const pendientesDe = () => Object.values(S.trabajos).filter(t => t && t.id && (t.sinFecha || !t.fecha));
@@ -516,7 +539,7 @@
       const cuando = t.soloMes ? `Para ${mesLabel(f.slice(0, 7))} · falta el día` : `Próximo: ${fmtCorto(f)}${t.hora ? ' · ' + t.hora : ''}`;
       const tag = t.soloMes ? '<span class="cr-tag q">Falta el día</span>' : C.publicado(t, f) ? '<span class="cr-tag v">👁 En la vista</span>' : '<span class="cr-tag c">🔒 Comité</span>';
       return `<button type="button" class="sl-ev" data-s="open" data-id="${esc(t.id)}" data-f="${f}"><span class="bar" style="background:${tp.color}"></span>
-        <span class="tx"><b>${tp.icon} ${esc(t.titulo)}</b><small>${esc(cuando)} · ${esc(C.repiteTxt(t))}</small><small>Resp. ${esc(pubName(t.resp, t) || '—')} · Aux. ${esc(pubName(t.aux, t) || '—')}</small>${esRep(t) ? `<small class="rep">${esc(fichaTxt(t))}</small>` : ''}</span>${tag}</button>`;
+        <span class="tx"><b>${tp.icon} ${esc(t.titulo)}</b><small>${esc(cuando)} · ${esc(C.repiteTxt(t))}</small><small>Resp. ${esc(pubName(t.resp, t) || '—')} · Aux. ${esc(pubName(t.aux, t) || '—')}</small>${fichaTxt(t) ? `<small class="rep">${esc(fichaTxt(t))}</small>` : ''}</span>${tag}</button>`;
     }).join('');
     if (pendientes.length) html += `<div class="sl-sec" id="slPend"><h4>Pendientes (sin fecha) · ${pendientes.length}</h4></div>` + pendientes.map(pendRow).join('');
     if (hechos.length) html += `<div class="sl-sec"><h4>${S.tClase === 'rep' ? 'Hechas' : 'Hechos'} · ${hechos.length}</h4></div>` + hechos.map(o => evRow(o).replace('class="sl-ev', 'style="opacity:.75" class="sl-ev')).join('');
@@ -637,13 +660,16 @@
   }
   // PDF del cronograma: todo (para el comité) o solo lo publicado (para el tablero de anuncios).
   function openCronoPdf() {
-    const m = openModal(`<h3>PDF del cronograma</h3><p class="modal-sub" style="margin:0 0 10px;">Desde ${esc(mesLabel(S.aStart))}.</p>
-      <div class="tf"><span class="tlbl">Período</span><div class="topts" id="crMeses"><button type="button" data-k="3">3 meses</button><button type="button" data-k="6">6 meses</button><button type="button" data-k="12" class="on">12 meses</button></div></div>
-      <label class="tchk"><input type="checkbox" id="crPub"><span>Solo lo publicado <small>· para el tablero de anuncios (sin lo del comité ni lo que no tiene día)</small></span></label>
+    const m = openModal(`<h3>Compartir en PDF</h3><p class="modal-sub" style="margin:0 0 10px;">Desde ${esc(mesLabel(S.aStart))}.</p>
+      <div class="tf"><span class="tlbl">Qué</span><div class="cr-seg2" id="crQue"><button type="button" class="cr-opt on" data-q="crono"><b>📅 Cronograma</b>Una tabla con los meses.</button><button type="button" class="cr-opt" data-q="fichas"><b>📋 Fichas de trabajo</b>Una hoja por trabajo, para imprimir o mandar al comité.</button></div></div>
+      <div class="tf"><span class="tlbl">Período</span><div class="topts" id="crMeses"><button type="button" data-k="1">1 mes</button><button type="button" data-k="3">3 meses</button><button type="button" data-k="6">6 meses</button><button type="button" data-k="12" class="on">12 meses</button></div></div>
+      <label class="tchk" id="crPubRow"><input type="checkbox" id="crPub"><span>Solo lo publicado <small>· para el tablero de anuncios (sin lo del comité ni lo que no tiene día)</small></span></label>
       <div class="tfoot"><button type="button" class="btn" data-tclose>Cancelar</button><button type="button" class="btn btn-primary" id="crOk">Compartir PDF</button></div>`);
     let n = 12;
     m.q('#crMeses').addEventListener('click', (e) => { const b = e.target.closest('[data-k]'); if (!b) return; n = Number(b.dataset.k); m.qa('#crMeses button').forEach(x => x.classList.toggle('on', x === b)); });
-    m.q('#crOk').addEventListener('click', async () => { const soloPub = m.q('#crPub').checked; m.close(); await cronoPdf(n, soloPub); });
+    let que = 'crono';
+    m.q('#crQue').addEventListener('click', (e) => { const b = e.target.closest('[data-q]'); if (!b) return; que = b.dataset.q; m.qa('#crQue .cr-opt').forEach(x => x.classList.toggle('on', x === b)); m.q('#crPubRow').classList.toggle('hidden', que === 'fichas'); if (que === 'fichas' && n === 12) m.q('#crMeses [data-k="1"]').click(); });
+    m.q('#crOk').addEventListener('click', async () => { const soloPub = m.q('#crPub').checked; m.close(); if (que === 'fichas') await fichasPdf(n); else await cronoPdf(n, soloPub); });
   }
   async function cronoPdf(n, soloPub) {
     if (!window.jspdf) { showToast('No se pudo cargar el generador de PDF (revisá tu conexión)'); return; }
@@ -703,7 +729,7 @@
     const m = openModal(`<h3>${t ? 'Editar trabajo' : 'Nuevo trabajo'}</h3>
       <div class="tf"><label for="slTit">Qué hay que hacer</label><input id="slTit" maxlength="80" placeholder="Ej.: Pintura de la entrada" value="${esc(f.titulo || '')}"></div>
       <div class="tf"><span class="tlbl">Clase</span><div class="cr-seg2" id="slClase">${claseHTML()}</div></div>
-      <div class="tf${f.clase === 'rep' ? '' : ' hidden'}" id="slFichaRow"><label for="slFicha">Ficha Nº <small class="sl-opc">· opcional, para ubicarla en las fichas</small></label><input id="slFicha" maxlength="30" placeholder="Ej.: 14" value="${esc(f.ficha || '')}"></div>
+      <div class="tf" id="slFichaRow"><label for="slFicha">Ficha <small class="sl-opc">· opcional: trae las tareas, el color y la protección</small></label><select id="slFicha">${fichaOpts(f.fichaCod)}</select>${f.ficha && !f.fichaCod ? `<p class="sl-hint">Antes: Ficha Nº ${esc(f.ficha)}</p>` : ''}</div>
       <div class="tf"><span class="tlbl">Tipo</span><div class="sl-types" id="slTipo">${Object.entries(C.TIPOS).map(([k, tp]) => `<button type="button" data-k="${k}" class="${f.tipo === k ? 'on' : ''}" style="${f.tipo === k ? 'background:' + tp.color : ''}">${tp.icon} ${tp.label}</button>`).join('')}</div></div>
       <div class="tf" style="margin-bottom:8px;"><span class="tlbl">Cuándo</span><div class="topts" id="slCuando"><button type="button" data-k="dia" class="${modo === 'dia' ? 'on' : ''}">Día exacto</button><button type="button" data-k="mes" class="${modo === 'mes' ? 'on' : ''}">Solo el mes</button><button type="button" data-k="no" class="${modo === 'no' ? 'on' : ''}">Todavía no</button></div></div>
       <div class="trow2${modo === 'dia' ? '' : ' hidden'}" id="slDiaRow"><div class="tf"><label for="slFec">Día</label><input type="date" id="slFec" value="${esc(modo === 'dia' ? (f.fecha || '') : '')}"></div><div class="tf"><label for="slHora">Hora</label><input type="time" id="slHora" value="${esc(f.hora || '')}"></div></div>
@@ -718,6 +744,8 @@
           <div class="trow2"><div class="tf" style="margin-bottom:0;"><label for="slHasta">Hasta <small class="sl-opc">· opcional</small></label><input type="date" id="slHasta" value="${esc(f.hasta || '')}"></div><div class="tf" style="margin-bottom:0;"></div></div>
           <p class="sl-hint" id="slPrev"></p>
         </div></div>
+      <div class="tf"><label for="slTar">Tareas / puntos a revisar <small style="text-transform:none;letter-spacing:0;font-weight:400;">(uno por renglón · los renglones en MAYÚSCULAS son títulos de grupo)</small></label><textarea id="slTar" style="min-height:120px;" placeholder="MUROS&#10;Lijar y limpiar&#10;Pintar 2 manos&#10;AL TERMINAR&#10;Limpiar herramientas">${esc((f.tareas || []).join('\n'))}</textarea>
+        <label class="tchk${f.fichaCod ? ' hidden' : ''}" id="slPropiaRow" style="border:none;padding:6px 0 0;"><input type="checkbox" id="slPropia"><span>Guardar como ficha propia <small>· para usarla otra vez (con estas tareas)</small></span></label></div>
       <div class="tf"><label for="slMat">Qué llevar / materiales <small style="text-transform:none;letter-spacing:0;font-weight:400;">(uno por renglón)</small></label><textarea id="slMat" placeholder="Rodillos y pinceles&#10;2 latas de látex blanco">${esc((f.materiales || []).join('\n'))}</textarea></div>
       <div class="tf"><label for="slNotas">Notas</label><textarea id="slNotas" style="min-height:44px;" placeholder="Opcional">${esc(f.notas || '')}</textarea></div>
       <div class="tf"><span class="tlbl">Quién lo ve</span><div class="cr-seg2" id="slVis">${visHTML()}</div><p class="sl-hint">${t ? 'Cada fecha también se puede publicar u ocultar aparte, desde el trabajo.' : 'Lo pueden publicar más adelante, cuando lo decidan.'}</p></div>
@@ -758,7 +786,17 @@
       pintarRep();
     });
     pintarRep();
-    m.q('#slClase').addEventListener('click', (e) => { const b = e.target.closest('[data-c]'); if (!b) return; f.clase = b.dataset.c; m.q('#slClase').innerHTML = claseHTML(); m.q('#slFichaRow').classList.toggle('hidden', f.clase !== 'rep'); });
+    m.q('#slClase').addEventListener('click', (e) => { const b = e.target.closest('[data-c]'); if (!b) return; f.clase = b.dataset.c; m.q('#slClase').innerHTML = claseHTML(); });
+    // Elegir una ficha: trae sus tareas (agrupadas) y, si no había título, su nombre.
+    m.q('#slFicha').addEventListener('change', () => {
+      const c = m.q('#slFicha').value;
+      m.q('#slPropiaRow').classList.toggle('hidden', !!c);
+      if (!c) return;
+      const md = modeloDe({ fichaCod: c, tipo: f.tipo }); if (!md) return;
+      const ta = m.q('#slTar');
+      if (!ta.value.trim() || confirm('¿Reemplazar las tareas por las de la ficha?')) ta.value = tareasDeModelo(md).join('\n');
+      if (!m.q('#slTit').value.trim()) m.q('#slTit').value = md.nombre;
+    });
     m.q('#slVis').addEventListener('click', (e) => { const b = e.target.closest('[data-v]'); if (!b) return; f.vista = b.dataset.v === '1'; m.q('#slVis').innerHTML = visHTML(); });
     const pintarBtn = (sid) => {
       const v = m.q('#' + sid).value, b = m.q('#' + sid + 'Btn');
@@ -787,10 +825,19 @@
         id: (t && t.id) || newId(), titulo, tipo: f.tipo, fecha, hora: m.q('#slHora').value, resp, aux,
         cupo: Math.max(0, Math.min(30, parseInt(m.q('#slCupo').value, 10) || 0)), repite: R.on ? 'n' : 'no',
         materiales: m.q('#slMat').value.split('\n').map(x => x.trim()).filter(Boolean).slice(0, 30),
+        tareas: m.q('#slTar').value.split('\n').map(x => x.trim()).filter(Boolean).slice(0, 40),
         notas: m.q('#slNotas').value.trim(), vista: !!f.vista
       });
       if (R.on) { leerRep(); nt.cada = R.n; nt.unidad = R.u; const h = m.q('#slHasta').value; if (h) nt.hasta = h; else delete nt.hasta; } else { delete nt.cada; delete nt.unidad; delete nt.hasta; }
-      if (f.clase === 'rep') { nt.clase = 'rep'; const fi = m.q('#slFicha').value.trim(); if (fi) nt.ficha = fi; else delete nt.ficha; } else { delete nt.clase; delete nt.ficha; }
+      if (f.clase === 'rep') nt.clase = 'rep'; else delete nt.clase;
+      const fc = m.q('#slFicha').value; if (fc) { nt.fichaCod = fc; delete nt.ficha; } else delete nt.fichaCod;
+      // Ficha propia: se guarda el modelo (nombre, color del tipo y tareas) para elegirlo otra vez.
+      const extra = [];
+      if (!fc && m.q('#slPropia').checked && nt.tareas.length) {
+        const mid = newId();
+        const mod = { id: mid, nombre: titulo, color: tipoOf(nt).color, tareas: nt.tareas, creado: new Date().toISOString() };
+        extra.push([['modelos', mid], mod]); S.modelos[mid] = mod; nt.fichaCod = 'p:' + mid;
+      }
       if (modo === 'mes') nt.soloMes = true; else delete nt.soloMes;
       if (modo === 'no') { nt.sinFecha = true; delete nt.fecha; } else delete nt.sinFecha;
       if (!nt.resp) delete nt.resp;
@@ -798,7 +845,7 @@
       if (!nt.ocurr) nt.ocurr = {};
       nt.externos = extRefs(nt);
       if (!t) nt.creado = new Date().toISOString();
-      if (await safe(() => sWrite(sRef('trabajos'), [[['lista', nt.id], nt]]), t ? 'Trabajo guardado' : 'Trabajo agregado')) { S.trabajos[nt.id] = nt; m.close(); render(); }
+      if (await safe(() => sWrite(sRef('trabajos'), [[['lista', nt.id], nt]].concat(extra)), t ? 'Trabajo guardado' : 'Trabajo agregado')) { S.trabajos[nt.id] = nt; m.close(); render(); }
     });
     const del = m.q('#slDel');
     if (del) del.addEventListener('click', async () => {
@@ -836,6 +883,7 @@
       ${ci.cupo ? `<div class="tnote">Hacen falta ${ci.cupo} ${ci.cupo === 1 ? 'voluntario' : 'voluntarios'}: se piden cuando tenga el día y lo publiquen.</div>` : ''}
       ${mats.length ? `<div class="sl-sec" style="margin-top:0;"><h4>Qué llevar</h4></div><div class="tnote">${mats.map(esc).join(' · ')}</div>` : ''}
       ${t.notas ? `<div class="tnote">${esc(t.notas)}</div>` : ''}
+      <button type="button" class="btn sl-ficha" data-d="ficha">📋 Compartir ficha</button>
       <div class="tfoot"><button type="button" class="btn" data-d="editar">Editar trabajo</button><button type="button" class="btn" data-tclose>Cerrar</button></div>`;
     }
     return `<div class="sl-dhero" style="background:${tp.color}"><small>${tp.icon} ${tp.label} · ${esc(fmtDia(fecha))}${t.hora ? ' · ' + esc(t.hora) : ''}</small><b>${esc(t.titulo)}</b><p>${esRep(t) ? esc(fichaTxt(t)) + ' · ' : ''}${esc(C.repiteTxt(t))}${o.cancelada ? ' · suspendido esta vez' : ''}</p></div>${estadoVis}
@@ -844,9 +892,12 @@
       <div class="sl-sec" style="margin-top:0;"><h4>Voluntarios</h4><span style="font-size:12.5px;font-weight:700;">${ci.cupo ? `${ci.van} de ${ci.cupo}` : ci.van}</span></div>
       <div class="sl-box">${volRows}${faltan ? `<div class="sl-row"><span class="sl-av e">+</span><span class="nm" style="color:var(--ink-soft)">${ci.faltan === 1 ? 'Falta 1' : 'Faltan ' + ci.faltan}</span></div>` : ''}${!ci.vols.length && !faltan ? '<div class="sl-row" style="color:var(--ink-soft)">Sin voluntarios pedidos.</div>' : ''}</div>
       <div class="tfoot" style="margin-top:0;margin-bottom:12px;"><button type="button" class="btn" data-d="agregar">＋ Agregar hermano</button><button type="button" class="btn btn-primary" data-d="wa">Pedir por WhatsApp</button></div>
+      ${(t.tareas || []).length ? (() => { const md = modeloDe(t); const items = t.tareas.filter(x => !esGrupoTxt(x)).length; const hechas = t.tareas.filter((x, i) => !esGrupoTxt(x) && (o.tareas || {})[i]).length;
+        return `<div class="sl-sec" style="margin-top:0;"><h4>Tareas${md ? ` · <span style="color:${md.color}">${esc(md.propia ? md.nombre : md.cod)}</span>` : ''}</h4><span style="font-size:12.5px;font-weight:700;">${hechas} de ${items}</span></div>${md && (md.aviso || []).length ? `<div class="sl-aviso">⚠️ ${md.aviso.map(esc).join(' ')}</div>` : ''}<div class="sl-box">${t.tareas.map((x, i) => esGrupoTxt(x) ? `<div class="sl-tgr" style="--c:${md ? md.color : 'var(--ink-soft)'}">${esc(x)}</div>` : `<label class="tchk" style="${i === 0 ? 'border-top:none;' : ''}"><input type="checkbox" data-d="tar" data-i="${i}"${(o.tareas || {})[i] ? ' checked' : ''}><span>${esc(x)}</span></label>`).join('')}</div>`; })() : ''}
       ${mats.length ? `<div class="sl-sec" style="margin-top:0;"><h4>Qué llevar</h4></div><div class="sl-box">${mats.map((x, i) => `<label class="tchk" style="${i === 0 ? 'border-top:none;' : ''}"><input type="checkbox" data-d="mat" data-i="${i}"${(o.mats || {})[i] ? ' checked' : ''}><span>${esc(x)}</span></label>`).join('')}</div>` : ''}
       ${t.notas ? `<div class="tnote">${esc(t.notas)}</div>` : ''}
       <div class="tf"><label for="slNota">Nota de esta vez</label><textarea id="slNota" style="min-height:44px;" placeholder="Ej.: faltó comprar lija">${esc(o.nota || '')}</textarea></div>
+      <button type="button" class="btn sl-ficha" data-d="ficha">📋 Compartir ficha</button>
       <div class="tfoot">${C.pasoDe(t) ? `<button type="button" class="btn" data-d="suspender">${o.cancelada ? 'Volver a programar' : 'Suspender esta vez'}</button>` : ''}<button type="button" class="btn" data-d="editar">Editar trabajo</button><button type="button" class="btn" data-tclose>Cerrar</button></div>`;
   }
   function openTrabajo(id, fecha) {
@@ -856,10 +907,11 @@
     openDetail = { close: m.close, refresh: () => { const t = cur(); if (!t) { m.close(); return; } const nota = m.q('#slNota'); const keep = nota ? nota.value : null; m.set(detailHTML(t, fecha)); if (keep != null && m.q('#slNota')) m.q('#slNota').value = keep; } };
     const setOcc = (k, v) => { const t = cur(); if (!t) return; t.ocurr = t.ocurr || {}; t.ocurr[fecha] = Object.assign({}, t.ocurr[fecha] || {}); if (v === undefined) delete t.ocurr[fecha][k]; else t.ocurr[fecha][k] = v; return safe(() => sWrite(sRef('trabajos'), [[occPath(t, fecha, k), v]])); };
     m.el.addEventListener('change', (e) => {
-      const c = e.target.closest('[data-d="mat"]'); if (!c) return;
-      const t = cur(); const mats = Object.assign({}, ((t.ocurr || {})[fecha] || {}).mats || {});
-      if (c.checked) mats[c.dataset.i] = true; else delete mats[c.dataset.i];
-      setOcc('mats', mats);
+      const c = e.target.closest('[data-d="mat"], [data-d="tar"]'); if (!c) return;
+      const k = c.dataset.d === 'tar' ? 'tareas' : 'mats';
+      const t = cur(); const sel = Object.assign({}, ((t.ocurr || {})[fecha] || {})[k] || {});
+      if (c.checked) sel[c.dataset.i] = true; else delete sel[c.dataset.i];
+      setOcc(k, Object.keys(sel).length ? sel : undefined).then(() => { if (k === 'tareas') openDetail.refresh(); });
     });
     m.el.addEventListener('focusout', (e) => {
       if (e.target.id !== 'slNota') return;
@@ -867,7 +919,7 @@
       if (v !== ((((t.ocurr || {})[fecha]) || {}).nota || '')) setOcc('nota', v || undefined).then(ok => { if (ok) showToast('Nota guardada'); });
     });
     m.el.addEventListener('click', async (e) => {
-      const b = e.target.closest('[data-d]'); if (!b || b.dataset.d === 'mat') return;
+      const b = e.target.closest('[data-d]'); if (!b || b.dataset.d === 'mat' || b.dataset.d === 'tar') return;
       const t = cur(); if (!t) return;
       const k = b.dataset.d;
       if (k === 'estado') { await setOcc('estado', b.dataset.k === 'prog' ? undefined : b.dataset.k); showToast(b.dataset.k === 'hecho' ? '¡Trabajo hecho!' : 'Estado: ' + C.ESTADOS[b.dataset.k]); openDetail.refresh(); render(); }
@@ -890,10 +942,172 @@
         if (await setOcc('pub', t.vista === false ? undefined : false)) { showToast('Ahora lo ve solo el comité'); openDetail.refresh(); render(); }
       }
       else if (k === 'ponerdia') ponerDia(t, fecha);
+      else if (k === 'ficha') compartirFicha(t, fecha);
       else if (k === 'agregar') pickPub(t, fecha);
       else if (k === 'wa') shareWa(t, fecha);
       else if (k === 'avisar') avisarExterno(t, fecha, b.dataset.p);
     });
+  }
+  /* ---------- Ficha de trabajo (PDF de una hoja, como las fichas del manual) ---------- */
+  // Dibuja la ficha de un trabajo (esa vez) en la página actual del documento.
+  // Ficha de trabajo con el diseño de las fichas del manual: sección y color, letra, protección,
+  // advertencia, tareas agrupadas con casillas y notas; más lo de este trabajo (cuándo, quién,
+  // voluntarios, qué llevar, cómo se hizo y firma).
+  function dibujarFicha(doc, t, fecha) {
+    const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight();
+    const L = 42, R = W - 42;
+    const md = modeloDe(t), tp = tipoOf(t), o = ((t.ocurr || {})[fecha]) || {};
+    const hex = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+    const col = hex(md ? md.color : tp.color);
+    const cong = (data.settings && data.settings.congregationName) || '';
+    const ink = () => doc.setTextColor(25, 28, 33), gris = () => doc.setTextColor(110, 116, 125);
+    // --- Encabezado (como la ficha oficial)
+    const cat = md ? (md.propia ? 'MANTENIMIENTO' : md.cat.toUpperCase()) : (esRep(t) ? 'REPARACIÓN' : 'MANTENIMIENTO');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(8); gris();
+    doc.text(`FICHA DE TRABAJO  |  ${cat}`, L, 44, { charSpace: 1.2 });
+    const conBadge = md && !md.propia;
+    const maxTit = conBadge ? R - 190 - L : R - L;
+    doc.setFontSize(21); ink();
+    const tit = doc.splitTextToSize(t.titulo || (md && md.nombre) || 'Trabajo', maxTit).slice(0, 2);
+    doc.text(tit, L, 70);
+    let y = 70 + (tit.length - 1) * 24 + 14;
+    doc.setDrawColor(...col); doc.setLineWidth(2.4); doc.line(L, y, L + Math.min(maxTit, 300), y);
+    if (conBadge) {
+      doc.setFillColor(...col); doc.rect(R - 44, 26, 44, 44, 'F');
+      doc.setTextColor(255, 255, 255); doc.setFontSize(22); doc.text(md.letra, R - 22, 56, { align: 'center' });
+      doc.setTextColor(...col); doc.setFontSize(9.5);
+      const ms = `MM SECCIÓN ${md.sec}`, cs = 2.2, mw = doc.getTextWidth(ms) + cs * (ms.length - 1);
+      doc.text(ms, R - 56 - mw, 52, { charSpace: cs });
+    }
+    // Protección personal (los mismos íconos de la ficha)
+    const epp = (md && md.epp) || [];
+    if (epp.length) {
+      const sz = 30, gap = 6; let x = R - epp.length * (sz + gap) + gap;
+      epp.forEach(k => { const img = FM().EPP[k]; if (img) { try { doc.addImage(img, 'PNG', x, 80, sz, sz); } catch (e) { /* nada */ } } x += sz + gap; });
+      y = Math.max(y, 80 + sz);
+    }
+    y += 16;
+    // Advertencia
+    const aviso = (md && md.aviso) || [];
+    if (aviso.length) {
+      doc.setFontSize(9); const ln = doc.splitTextToSize(aviso.join(' '), R - L - 40);
+      const h = Math.max(30, ln.length * 11 + 10);
+      doc.setFillColor(185, 28, 28); doc.rect(L, y, 22, h, 'F');
+      doc.setTextColor(255, 255, 255); doc.setFontSize(15); doc.text('!', L + 11, y + h / 2 + 5, { align: 'center' });
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); ink(); doc.text(ln, L + 30, y + 13);
+      y += h + 14;
+    }
+    // Datos de este trabajo
+    const cuando = !fecha ? 'Sin fecha todavía' : (t.soloMes ? mesLabel(fecha.slice(0, 7)) + ' (falta el día)' : fmtDia(fecha) + (t.hora ? ' · ' + t.hora + ' h' : ''));
+    doc.autoTable({ startY: y, margin: { left: L, right: W - R }, theme: 'grid', showHead: false,
+      body: [['Cuándo', cuando, 'Frecuencia', md && !md.propia ? `${md.frec}${C.pasoDe(t) ? ' · ' + C.repiteTxt(t).toLowerCase() : ''}` : C.repiteTxt(t)], ['Responsable', pubName(t.resp, t) || '—', 'Auxiliar', pubName(t.aux, t) || '—']],
+      styles: { fontSize: 9.5, cellPadding: 5, lineColor: [215, 218, 223], textColor: [25, 28, 33] },
+      columnStyles: { 0: { fontStyle: 'bold', textColor: [110, 116, 125], cellWidth: 72 }, 2: { fontStyle: 'bold', textColor: [110, 116, 125], cellWidth: 68 } } });
+    y = doc.lastAutoTable.finalY + 18;
+    const nueva = (need) => { if (y + need > H - 50) { doc.addPage(); y = 50; doc.setFont('helvetica', 'bold'); doc.setFontSize(8); gris(); doc.text(`${(t.titulo || '').toUpperCase()} (continuación)`, L, 34, { charSpace: 1 }); } };
+    const caja = (x, yy, ok) => { doc.setDrawColor(150, 155, 162); doc.setLineWidth(0.7); doc.rect(x, yy - 8, 8.5, 8.5); if (ok) { doc.setDrawColor(22, 163, 74); doc.setLineWidth(1.5); doc.line(x + 1.6, yy - 3.6, x + 3.8, yy - 1.4); doc.line(x + 3.8, yy - 1.4, x + 7.4, yy - 6.8); } };
+    // Los grupos de la ficha van como en el manual (negrita grande); lo que agrega este trabajo, como etiqueta chica.
+    const seccion = (s) => { nueva(30); doc.setFont('helvetica', 'bold'); doc.setFontSize(12.5); ink(); doc.text(s, L, y); y += 15; doc.setFont('helvetica', 'normal'); doc.setFontSize(10); };
+    const etiqueta = (s) => { nueva(34); y += 4; doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); gris(); doc.text(s, L, y, { charSpace: 0.8 }); doc.setDrawColor(...col); doc.setLineWidth(1.2); doc.line(L, y + 5, L + 46, y + 5); y += 19; doc.setFont('helvetica', 'normal'); doc.setFontSize(10); };
+    // Tareas agrupadas
+    const tareas = t.tareas || [];
+    if (tareas.length) {
+      let primero = true;
+      tareas.forEach((x, i) => {
+        if (esGrupoTxt(x)) { y += primero ? 0 : 6; seccion(x); primero = false; return; }
+        if (primero) { seccion('TAREAS'); primero = false; }
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+        const ln = doc.splitTextToSize(x, R - L - 34);
+        nueva(ln.length * 12.5 + 4); ink();
+        caja(L + 10, y, !!(o.tareas || {})[i]); doc.text(ln, L + 28, y); y += ln.length * 12.5 + 4;
+      });
+      y += 8;
+    }
+    // Voluntarios
+    const ci = C.cupoInfo(t, fecha || '', S.anotados);
+    if (ci.cupo || ci.vols.length) {
+      etiqueta(`VOLUNTARIOS${ci.cupo ? ' (' + ci.cupo + ')' : ''}`);
+      const nombres = ci.vols.map(v => pubName(v.pubId, t) || v.nombre).filter(Boolean);
+      const n = Math.max(nombres.length, ci.cupo), colW = (R - L) / 2;
+      nueva(Math.ceil(n / 2) * 19);
+      for (let i = 0; i < n; i++) {
+        const x = L + (i % 2) * colW, yy = y + Math.floor(i / 2) * 19;
+        gris(); doc.text(`${i + 1}.`, x + 4, yy);
+        if (nombres[i]) { ink(); doc.text(nombres[i], x + 20, yy); } else { doc.setDrawColor(205, 208, 213); doc.setLineWidth(0.5); doc.line(x + 20, yy + 2, x + colW - 16, yy + 2); }
+      }
+      y += Math.ceil(n / 2) * 19 + 8;
+    }
+    if ((t.materiales || []).length) {
+      etiqueta('QUÉ LLEVAR');
+      t.materiales.forEach((x, i) => { nueva(14); ink(); caja(L + 10, y, !!(o.mats || {})[i]); doc.text(doc.splitTextToSize(x, R - L - 34), L + 28, y); y += 15; });
+      y += 6;
+    }
+    if (t.notas) { const ln = doc.splitTextToSize(t.notas, R - L); etiqueta('INDICACIONES'); nueva(ln.length * 12.5); ink(); doc.text(ln, L, y); y += ln.length * 12.5 + 8; }
+    // Cómo se hizo + firma (al pie), y las notas de la ficha
+    const notasF = md && md.notas ? md.notas : '';
+    doc.setFontSize(7.8); const nln = notasF ? doc.splitTextToSize(notasF, R - L - 40) : [];
+    const pieH = 150 + (nln.length ? nln.length * 9.5 + 10 : 0);
+    if (y + pieH > H - 24) { doc.addPage(); y = 50; }
+    y = Math.max(y + 6, H - 24 - pieH);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9); gris(); doc.text('CÓMO SE HIZO / OBSERVACIONES', L, y, { charSpace: 0.8 });
+    doc.setDrawColor(...col); doc.setLineWidth(1.2); doc.line(L, y + 5, L + 46, y + 5);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10); ink();
+    if (o.nota) doc.text(doc.splitTextToSize(o.nota, R - L), L, y + 22);
+    doc.setDrawColor(210, 213, 218); doc.setLineWidth(0.5);
+    for (let i = 0; i < 3; i++) doc.line(L, y + 26 + i * 19, R, y + 26 + i * 19);
+    y += 26 + 3 * 19 + 30;
+    doc.setDrawColor(130, 136, 145); doc.line(L, y, L + 190, y); doc.line(R - 190, y, R, y);
+    doc.setFontSize(8); gris(); doc.text('Firma del responsable', L, y + 11); doc.text('Fecha en que se hizo', R - 190, y + 11);
+    y += 28;
+    if (nln.length) {
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(7.8); ink(); doc.text('NOTAS.', L, y, { charSpace: 1 });
+      doc.setFont('helvetica', 'normal'); doc.text(nln, L + 40, y); y += nln.length * 9.5;
+    }
+    doc.setFontSize(7); doc.setTextColor(160, 165, 172);
+    doc.text(`${cong ? 'Salón del Reino · ' + cong + ' · ' : ''}Generado con Asignaciones${md && !md.propia ? ' · basada en la ficha ' + md.cod + ' del manual' : ''}`, W / 2, H - 14, { align: 'center' });
+  }
+  async function compartirPdf(doc, nombre, texto) {
+    const blob = doc.output('blob');
+    try {
+      const file = new File([blob], nombre, { type: 'application/pdf' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: nombre, text: texto }); return; }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    doc.save(nombre);
+    if (texto) { try { await navigator.clipboard.writeText(texto); showToast('PDF descargado · el mensaje quedó copiado para pegarlo en WhatsApp'); } catch (e) { /* nada */ } }
+  }
+  // Mensaje que acompaña la ficha (como el de Salón al Día).
+  function mensajeFicha(t, fecha) {
+    const ci = C.cupoInfo(t, fecha || '', S.anotados);
+    const l = [`📋 *Ficha de trabajo — ${t.titulo}*`];
+    if (fichaCorta(t)) l.push(`${esRep(t) ? '🔧 Reparación' : '📋 Ficha'}: ${fichaCorta(t)}`);
+    l.push(`👤 Responsable: ${pubName(t.resp, t) || '—'}${t.aux ? ' · Auxiliar: ' + pubName(t.aux, t) : ''}`);
+    l.push(`📅 ${!fecha ? 'Sin fecha todavía' : t.soloMes ? mesLabel(fecha.slice(0, 7)) + ' (falta el día)' : fmtDia(fecha) + (t.hora ? ' · ' + t.hora : '')}`);
+    if (ci.cupo) l.push(`🙋 Voluntarios: ${ci.van} de ${ci.cupo}`);
+    const nT = (t.tareas || []).filter(x => !esGrupoTxt(x)).length;
+    if (nT) l.push(`✅ ${nT} ${nT === 1 ? 'tarea' : 'tareas'} en la ficha`);
+    const mdl = modeloDe(t); if (mdl && (mdl.aviso || []).length) l.push(`⚠️ ${mdl.aviso[0]}`);
+    if ((t.materiales || []).length) l.push(`🧰 Qué llevar: ${t.materiales.join(', ')}`);
+    const link = vistaLink();
+    if (fecha && C.publicado(t, fecha) && ci.faltan && link) l.push(`📎 Para anotarte: ${link}`);
+    l.push('— Enviado desde Asignaciones');
+    return l.join('\n');
+  }
+  async function compartirFicha(t, fecha) {
+    if (!window.jspdf) { showToast('No se pudo cargar el generador de PDF (revisá tu conexión)'); return; }
+    const doc = new window.jspdf.jsPDF({ unit: 'pt', format: 'a4' });
+    dibujarFicha(doc, t, fecha);
+    const nombre = `Ficha - ${String(t.titulo || 'Trabajo').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\\/:*?"<>|]/g, ' ').slice(0, 60)}${fecha && !t.soloMes ? ' - ' + fecha : ''}.pdf`;
+    await compartirPdf(doc, nombre, mensajeFicha(t, fecha));
+  }
+  // Varias fichas juntas (una hoja por trabajo): lo que toca en el período, sin lo hecho ni lo suspendido.
+  async function fichasPdf(n) {
+    if (!window.jspdf) { showToast('No se pudo cargar el generador de PDF (revisá tu conexión)'); return; }
+    const c = cronograma(S.aStart, n);
+    const occ = c.occ.filter(o => !o.cancelada && o.estado !== 'hecho');
+    if (!occ.length) { showToast('No hay trabajos por hacer en ese período'); return; }
+    const doc = new window.jspdf.jsPDF({ unit: 'pt', format: 'a4' });
+    occ.forEach((o, i) => { if (i) doc.addPage(); dibujarFicha(doc, o.t, o.fecha); });
+    await compartirPdf(doc, `Fichas de trabajo ${mesLabel(c.meses[0])}${n > 1 ? ' - ' + mesLabel(c.meses[n - 1]) : ''}.pdf`, `📋 Fichas de trabajo de mantenimiento — ${mesLabel(c.meses[0])}${n > 1 ? ' a ' + mesLabel(c.meses[n - 1]) : ''} (${occ.length})`);
   }
   // Elegir varios programados y pasarlos a reparaciones de una vez (para ordenar lo que ya estaba cargado).
   function pasarAReparaciones() {

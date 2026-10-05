@@ -266,10 +266,38 @@ check('sin día: nunca publicado ni en las asignaciones', !C.publicado({ vista: 
   await click(p, '#salonRoot [data-s="t-clase"]').catch(() => {});
   await p.evaluate(() => { window.__salon.view = 'trab'; window.__salon.tClase = 'rep'; salonRender(); }); await p.waitForTimeout(80);
   await click(p, '#salonRoot .thead [data-s="new"]');
-  check('nueva desde Reparaciones: clase reparación, con Ficha Nº, y sin fecha', await p.evaluate(() => document.querySelector('#slClase .on').dataset.c === 'rep' && !$('slFichaRow').classList.contains('hidden') && document.querySelector('#slCuando .on').dataset.k === 'no'));
-  await p.fill('#slTit', 'Driver luminaria'); await p.fill('#slFicha', '21'); await click(p, '#slSave'); await p.waitForTimeout(150);
+  check('nueva desde Reparaciones: clase reparación, con selector de ficha, y sin fecha', await p.evaluate(() => document.querySelector('#slClase .on').dataset.c === 'rep' && !$('slFichaRow').classList.contains('hidden') && document.querySelector('#slCuando .on').dataset.k === 'no'));
+  check('el selector tiene las 21 fichas del manual por sección', await p.evaluate(() => document.querySelectorAll('#slFicha optgroup').length === 5 && document.querySelectorAll('#slFicha option[value^="0"]').length === 21));
+  await p.fill('#slTit', 'Driver luminaria'); await p.selectOption('#slFicha', '04.B'); await p.waitForTimeout(80);
+  check('elegir la ficha trae sus tareas agrupadas', await p.evaluate(() => /^LÁMPARAS INTERIORES\nRevise que la iluminación/.test($('slTar').value) && $('slPropiaRow').classList.contains('hidden')), await p.evaluate(() => $('slTar').value.slice(0, 80)));
+  await click(p, '#slSave'); await p.waitForTimeout(150);
   const dr = Object.values(await tr()).find(t => t.titulo === 'Driver luminaria');
-  check('se guarda con clase y ficha', dr && dr.clase === 'rep' && dr.ficha === '21' && dr.sinFecha === true, dr);
+  check('se guarda con clase y ficha', dr && dr.clase === 'rep' && dr.fichaCod === '04.B' && dr.sinFecha === true && dr.tareas[0] === 'LÁMPARAS INTERIORES', dr && dr.fichaCod);
+  check('en la lista: "Reparación · 04.B Luminarias"', await p.evaluate(() => /Reparación · 04\.B Luminarias/.test($('salonRoot').textContent)));
+  // Ficha propia
+  await click(p, '#salonRoot .thead [data-s="new"]');
+  await p.fill('#slTit', 'Pintura de rejas'); await p.fill('#slTar', 'PREPARACIÓN\nLijar el óxido\nPINTURA\n2 manos de esmalte');
+  await p.check('#slPropia'); await click(p, '#slSave'); await p.waitForTimeout(150);
+  const docT = await p.evaluate(() => window.__store.docs['congregations/C/salon/trabajos']);
+  const pr = Object.values(docT.lista).find(t => t.titulo === 'Pintura de rejas');
+  const mod = pr && pr.fichaCod && docT.modelos && docT.modelos[pr.fichaCod.slice(2)];
+  check('"Guardar como ficha propia": queda el modelo con sus tareas', !!mod && mod.nombre === 'Pintura de rejas' && mod.tareas.length === 4, docT.modelos);
+  await click(p, '#salonRoot .thead [data-s="new"]');
+  check('y aparece para elegirla la próxima vez', await p.evaluate(() => !!document.querySelector('#slFicha optgroup[label="Fichas propias"] option')));
+  await p.evaluate(() => document.querySelectorAll('.slmodal').forEach(x => x.remove()));
+  // Detalle con grupos y la ficha en PDF
+  await p.evaluate((id) => { window.__salon.trabajos[id].fecha = '2026-10-20'; delete window.__salon.trabajos[id].sinFecha; }, dr.id);
+  await p.evaluate((id) => { document.querySelectorAll('.slmodal').forEach(x => x.remove()); }, dr.id);
+  await p.evaluate((id) => { window.__salonOpen = id; }, dr.id);
+  const det = await p.evaluate((id) => { const S = window.__salon; S.view = 'trab'; salonRender(); return id; }, dr.id);
+  await click(p, `#salonRoot [data-id="${det}"]`);
+  check('detalle: grupos de la ficha y la advertencia', await p.evaluate(() => { const d = [...document.querySelectorAll('.slmodal')].pop(); return d.querySelectorAll('.sl-tgr').length === 2 && /desenergizar/.test(d.querySelector('.sl-aviso').textContent) && !d.querySelector('.sl-tgr input'); }));
+  if (await p.evaluate(() => !!window.jspdf)) {
+    const [dl] = await Promise.all([p.waitForEvent('download'), p.click('.slmodal [data-d="ficha"]')]);
+    const txt = fs.readFileSync(await dl.path()).toString('latin1');
+    check('ficha PDF con el diseño del manual: sección, grupos y notas', /MM SECCI/.test(txt) && /SISTEMAS EL/.test(txt) && /LÁMPARAS INTERIORES|L.MPARAS INTERIORES/.test(txt) && /DC-85/.test(txt) && /Driver luminaria/.test(txt), dl.suggestedFilename());
+  }
+  await p.evaluate(() => document.querySelectorAll('.slmodal').forEach(x => x.remove()));
   check('sin errores', !p.errs.length, p.errs);
   await p.context().close();
 
