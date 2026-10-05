@@ -29,6 +29,24 @@
   };
   const REPITE = { no: 'No se repite', '15d': 'Cada 15 días', mes: 'Cada mes', '2m': 'Cada 2 meses', '3m': 'Cada 3 meses', '6m': 'Cada 6 meses', anio: 'Cada año' };
   const MESES_REP = { mes: 1, '2m': 2, '3m': 3, '6m': 6, anio: 12 };
+  // Repetición libre: repite 'n' con cada (número) y unidad ('d' días, 's' semanas, 'm' meses, 'a' años).
+  // Los de antes ('15d', 'mes', '3m'…) siguen funcionando igual.
+  const UNIDADES = { d: ['día', 'días'], s: ['semana', 'semanas'], m: ['mes', 'meses'], a: ['año', 'años'] };
+  const LEGADO = { '15d': [2, 's'], mes: [1, 'm'], '2m': [2, 'm'], '3m': [3, 'm'], '6m': [6, 'm'], anio: [1, 'a'] };
+  // { n, u } de un trabajo que se repite, o null.
+  function pasoDe(t) {
+    if (!t || !t.repite || t.repite === 'no') return null;
+    if (t.repite === 'n') { const n = Math.max(1, Math.min(99, parseInt(t.cada, 10) || 1)); return UNIDADES[t.unidad] ? { n, u: t.unidad } : null; }
+    const l = LEGADO[t.repite]; return l ? { n: l[0], u: l[1] } : null;
+  }
+  // "Cada 3 meses", "Cada 15 días" (cada 2 semanas), "Cada año", "No se repite".
+  function repiteTxt(t) {
+    const p = pasoDe(t);
+    if (!p) return 'No se repite';
+    if (p.u === 's' && p.n === 2) return 'Cada 15 días';
+    if (p.n === 1) return p.u === 's' ? 'Cada semana' : `Cada ${UNIDADES[p.u][0]}`;
+    return `Cada ${p.n} ${UNIDADES[p.u][1]}`;
+  }
   const ESTADOS = { prog: 'Programado', curso: 'En curso', hecho: 'Hecho' };
 
   function pad(n) { return String(n).padStart(2, '0'); }
@@ -48,10 +66,10 @@
   function fechasDe(t, from, to) {
     if (!t || !t.fecha) return [];
     const out = [];
-    const rep = t.repite || 'no';
-    if (rep === 'no') { if (t.fecha >= from && t.fecha <= to) out.push(t.fecha); return out; }
-    for (let i = 0; i < 1000; i++) {
-      const f = rep === '15d' ? addDays(t.fecha, 14 * i) : addMonths(t.fecha, (MESES_REP[rep] || 1) * i);
+    const p = pasoDe(t);
+    if (!p) { if (t.fecha >= from && t.fecha <= to) out.push(t.fecha); return out; }
+    for (let i = 0; i < 2000; i++) {
+      const f = p.u === 'd' ? addDays(t.fecha, p.n * i) : p.u === 's' ? addDays(t.fecha, 7 * p.n * i) : addMonths(t.fecha, (p.u === 'a' ? 12 : 1) * p.n * i);
       if (f > to) break;
       if (t.hasta && f > t.hasta) break;
       if (f >= from) out.push(f);
@@ -236,7 +254,7 @@
     return out.sort((a, b) => (a.fecha + a.hora).localeCompare(b.fecha + b.hora));
   }
 
-  const api = { TIPOS, REPITE, ESTADOS, TAREAS_REU, isoOf, addDays, addMonths, mondayOf, fechasDe, publicado, trabajosEntre, anotadoId, voluntarios, cupoInfo, semanaDelMes, esOtra, turnoLimpieza, diasLimpieza,
+  const api = { TIPOS, REPITE, ESTADOS, TAREAS_REU, isoOf, addDays, addMonths, mondayOf, fechasDe, pasoDe, repiteTxt, UNIDADES, publicado, trabajosEntre, anotadoId, voluntarios, cupoInfo, semanaDelMes, esOtra, turnoLimpieza, diasLimpieza,
     tiposLimpieza, claveDe, cargado, quienLimpia, diasDe, limpiezasSemana, ultimaVez, ordenSugerido, sugerir, asignacionesSalon };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.SalonCore = api;

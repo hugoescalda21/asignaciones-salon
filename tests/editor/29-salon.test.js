@@ -83,7 +83,7 @@ let ok = 0, bad = 0; const check = (l, c, x) => { if (c) { ok++; console.log('  
   await click(p, '#slTipo [data-k="jardin"]');
   await p.fill('#slFec', '2026-09-24');
   await elegir(p, 'slResp', 'bravo'); await elegir(p, 'slAux', 'pablo');
-  await click(p, '#slRep [data-k="15d"]');
+  await click(p, '#slRep [data-k="si"]'); await click(p, '#slAtajos [data-n="2"][data-u="s"]');
   await click(p, '#slSave'); await p.waitForTimeout(200);
   await click(p, '#salonRoot [data-s="mes"][data-d="1"]');
   check('cada 15 días: aparece solo en octubre (8 y 22)', await p.evaluate(() => ['2026-10-08', '2026-10-22'].every(f => document.querySelector(`.sl-d[data-f="${f}"] .sl-dots i`)) && !document.querySelector('.sl-d[data-f="2026-10-15"] .sl-dots i')));

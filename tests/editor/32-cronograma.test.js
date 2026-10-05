@@ -119,10 +119,12 @@ check('sin día: nunca publicado ni en las asignaciones', !C.publicado({ vista: 
   await click(p, '#salonRoot .cr-head [data-s="new"]');
   check('nuevo: empieza en "Solo el comité"', await p.evaluate(() => document.querySelector('#slVis .cr-opt.on').dataset.v === '0'));
   await p.fill('#slTit', 'Pintura del frente');
-  await click(p, '#slRep [data-k="15d"]');
+  await click(p, '#slRep [data-k="si"]'); await click(p, '#slAtajos [data-n="2"][data-u="s"]');
+  check('"15 días" = cada 2 semanas', await p.evaluate(() => $('slCada').value === '2' && $('slUni').value === 's'));
   await click(p, '#slCuando [data-k="mes"]');
-  check('con "Solo el mes" no se puede "cada 15 días" ni "cada mes"', await p.evaluate(() => $('slFec').closest('.trow2').classList.contains('hidden') && document.querySelector('#slRep [data-k="15d"]').disabled && document.querySelector('#slRep [data-k="mes"]').disabled && document.querySelector('#slRep .on').dataset.k === 'no'));
-  check('repeticiones nuevas en el formulario', await p.evaluate(() => [...document.querySelectorAll('#slRep button')].map(x => x.dataset.k).join() === 'no,15d,mes,2m,3m,6m,anio'));
+  check('con "Solo el mes" no hay días ni semanas: pasa a meses', await p.evaluate(() => $('slFec').closest('.trow2').classList.contains('hidden') && $('slUni').value === 'm' && Number($('slCada').value) >= 2 && document.querySelector('#slUni option[value="d"]').disabled && document.querySelector('#slUni option[value="s"]').disabled && document.querySelector('#slAtajos [data-u="s"]').disabled));
+  check('unidades: días, semanas, meses, años', await p.evaluate(() => [...document.querySelectorAll('#slUni option')].map(x => x.value).join() === 'd,s,m,a'));
+  await click(p, '#slRep [data-k="no"]');
   await p.selectOption('#slMes', '2026-10');
   await click(p, '#slRespBtn'); await click(p, '.sl-chooser .tpick[data-id="p6"]');
   await click(p, '#slAuxBtn'); await click(p, '.sl-chooser .tpick[data-id="p8"]');
@@ -142,6 +144,25 @@ check('sin día: nunca publicado ni en las asignaciones', !C.publicado({ vista: 
   check('queda con ese día y hora, ya sin "solo el mes"', (await tr())[nuevo.id].fecha === '2026-10-17' && (await tr())[nuevo.id].hora === '08:30' && !(await tr())[nuevo.id].soloMes, (await tr())[nuevo.id]);
   check('y se abre para publicarlo', await p.evaluate(() => /Solo lo ve el comité/.test(document.querySelector('.sl-detail').innerText) && /17 de octubre/i.test(document.querySelector('.sl-detail').innerText)), await p.evaluate(() => [...document.querySelectorAll('.sl-detail')].map(x => x.innerText.slice(0, 200))));
   await p.evaluate(() => document.querySelectorAll('.slmodal').forEach(x => x.remove()));
+  // Repetición libre: cada 4 meses, hasta una fecha
+  await click(p, '#salonRoot .cr-head [data-s="new"]');
+  await p.fill('#slTit', 'Revisión de bombas de agua');
+  await p.fill('#slFec', '2026-10-10');
+  await click(p, '#slRep [data-k="si"]');
+  await p.fill('#slCada', '4'); await p.selectOption('#slUni', 'm'); await p.fill('#slHasta', '2027-12-31'); await p.waitForTimeout(80);
+  const prev = await p.evaluate(() => $('slPrev').textContent);
+  check('muestra cómo queda y las próximas fechas', /Cada 4 meses → sáb 10 oct · mié 10 feb 2027 · jue 10 jun 2027 · dom 10 oct 2027/.test(prev), prev);
+  await p.fill('#slHasta', '2026-09-01'); await click(p, '#slSave');
+  check('"Hasta" antes de la primera fecha: no deja', await p.evaluate(() => /Hasta/.test($('slErr').textContent)));
+  await p.fill('#slHasta', '2027-06-30'); await click(p, '#slSave'); await p.waitForTimeout(150);
+  const bomba = Object.values(await tr()).find(t => t.titulo === 'Revisión de bombas de agua');
+  check('se guarda cada 4 meses hasta junio 2027', bomba && bomba.repite === 'n' && bomba.cada === 4 && bomba.unidad === 'm' && bomba.hasta === '2027-06-30' && C.fechasDe(bomba, '2026-01-01', '2028-12-31').join() === '2026-10-10,2027-02-10,2027-06-10', bomba);
+  check('en el Año: oct, feb y jun', await p.evaluate((id) => [...document.querySelectorAll(`.cr-pc .cr-d[data-id="${id}"]`)].map(x => x.dataset.f).join() === '2026-10-10,2027-02-10,2027-06-10', bomba.id));
+  check('texto "Cada 4 meses" en la fila', await p.evaluate((id) => /Cada 4 meses/.test(document.querySelector(`.cr-pc .cr-nm button[data-id="${id}"]`).textContent), bomba.id));
+  await click(p, `.cr-pc .cr-nm button[data-id="${bomba.id}"]`);
+  check('al editarlo, el formulario lo muestra igual', await p.evaluate(() => document.querySelector('#slRep .on').dataset.k === 'si' && $('slCada').value === '4' && $('slUni').value === 'm' && $('slHasta').value === '2027-06-30'));
+  await p.evaluate(() => document.querySelectorAll('.slmodal').forEach(x => x.remove()));
+  check('los de antes siguen igual (cada 15 días = cada 2 semanas)', C.repiteTxt({ repite: '15d' }) === 'Cada 15 días' && C.fechasDe({ fecha: '2026-10-03', repite: '15d' }, '2026-10-01', '2026-10-31').join() === '2026-10-03,2026-10-17,2026-10-31' && C.repiteTxt({ repite: 'n', cada: 3, unidad: 's' }) === 'Cada 3 semanas' && C.repiteTxt({ repite: 'anio' }) === 'Cada año');
   // Uno que se repite: la fecha base se corre a ese día del mes
   await click(p, '.cr-pc .cr-d[data-id="w3"]');
   await click(p, '.sl-detail [data-d="ponerdia"]');
@@ -209,6 +230,46 @@ check('sin día: nunca publicado ni en las asignaciones', !C.publicado({ vista: 
   check('los del comité no cuentan como "faltan voluntarios"', !/Pintura de rejas: faltan/.test(u), u);
   await click(p, '#pnUrg [data-pn="trabajo"][data-id="w6"]');
   check('"Ver" abre el trabajo para publicarlo', await p.evaluate(() => !$('panel-salon').classList.contains('hidden') && !!document.querySelector('.sl-detail [data-d="publicar"]')));
+  check('sin errores', !p.errs.length, p.errs);
+  await p.context().close();
+
+  console.log('\nProgramados y reparaciones; lo hecho fuera del calendario');
+  const st3 = JSON.parse(JSON.stringify(store)); st3.writes = [];
+  Object.assign(st3.docs['congregations/C/salon/trabajos'].lista, {
+    r1: T({ id: 'r1', titulo: 'Cambiar picaportes', tipo: 'reparacion', clase: 'rep', ficha: '12', sinFecha: true, vista: false }),
+    r2: T({ id: 'r2', titulo: 'Arreglar poste de la reja', tipo: 'reparacion', clase: 'rep', fecha: '2026-09-20', vista: false }),
+    r3: T({ id: 'r3', titulo: 'Porcelanato baño', tipo: 'reparacion', clase: 'rep', fecha: '2026-09-21', vista: false, ocurr: { '2026-09-21': { estado: 'hecho' } } }),
+    r4: T({ id: 'r4', titulo: 'Pintar rejas (con voluntarios)', tipo: 'pintura', clase: 'rep', fecha: '2026-10-10', cupo: 4, vista: true }),
+    x1: T({ id: 'x1', titulo: 'Arreglo de canilla', tipo: 'reparacion', fecha: '2026-10-07', vista: false }),
+    h1: T({ id: 'h1', titulo: 'Limpieza de vidrios', tipo: 'profunda', fecha: '2026-09-22', vista: false, ocurr: { '2026-09-22': { estado: 'hecho' } } })
+  });
+  p = await open('hugo@x.com', st3);
+  await p.evaluate(() => { switchTab('salon'); window.__salon.view = 'cal'; window.__salon.month = '2026-09'; window.__salon.verHechos = false; salonRender(); }); await p.waitForTimeout(150);
+  check('calendario: lo hecho no aparece', await p.evaluate(() => !document.querySelector('.sl-d[data-f="2026-09-22"] .sl-dots i')));
+  await click(p, '#salonRoot [data-s="verhechos"]');
+  check('"Ver hechos": aparece en gris con ✓', await p.evaluate(() => document.querySelector('.sl-d[data-f="2026-09-22"] .sl-labs em.hecho') && /✓ Limpieza de vidrios/.test(document.querySelector('.sl-d[data-f="2026-09-22"] .sl-labs').textContent)));
+  await click(p, '#salonRoot [data-s="verhechos"]');
+  await p.evaluate(() => { window.__salon.month = '2026-10'; salonRender(); }); await p.waitForTimeout(100);
+  check('reparaciones fuera del calendario, salvo las que piden voluntarios', await p.evaluate(() => !document.querySelector('.sl-labs em[title="Arreglar poste de la reja"]') && !!document.querySelector('.sl-d[data-f="2026-10-10"] .sl-labs em[title="Pintar rejas (con voluntarios)"]') && /Reparaciones: 3/.test($('salonRoot').textContent)));
+  await click(p, '#salonRoot [data-s="verrep"]');
+  const lr = await p.evaluate(() => $('salonRoot').textContent);
+  check('"Reparaciones" en Trabajos: atrasadas, por hacer, sin fecha, hechas', await p.evaluate(() => document.querySelector('.cr-clase .on').dataset.k === 'rep') && /Atrasados · 1/.test(lr) && /Arreglar poste/.test(lr) && /Pendientes \(sin fecha\) · 1/.test(lr) && /Ficha 12/.test(lr) && /Hechas · 1/.test(lr) && !/Corte de pasto/.test(lr), lr.slice(0, 400));
+  await click(p, '#salonRoot [data-s="t-clase"][data-k="prog"]');
+  check('"Programados" deja afuera las reparaciones', await p.evaluate(() => !/Arreglar poste|Cambiar picaportes/.test($('salonRoot').textContent) && /Corte de pasto/.test($('salonRoot').textContent)));
+  await click(p, '#salonRoot [data-s="bulk-rep"]');
+  await p.check('.slmodal input[data-id="x1"]'); await click(p, '#slBulkOk'); await p.waitForTimeout(150);
+  check('"Pasar varios a reparaciones"', (await tr()).x1.clase === 'rep' && await p.evaluate(() => document.querySelector('.cr-clase .on').dataset.k === 'rep' && /Arreglo de canilla/.test($('salonRoot').textContent)));
+  await p.evaluate(() => { window.__salon.view = 'anio'; window.__salon.aClase = null; salonRender(); }); await p.waitForTimeout(100);
+  check('Año arranca en Programados (sin reparaciones)', await p.evaluate(() => document.querySelector('.cr-clase .on').dataset.k === 'prog' && !document.querySelector('.cr-pc .cr-d[data-id="r2"]') && !!document.querySelector('.cr-pc .cr-d[data-id="w1"]')));
+  await click(p, '#salonRoot [data-s="a-clase"][data-k="rep"]');
+  check('y con "Reparaciones", solo ellas', await p.evaluate(() => !!document.querySelector('.cr-pc .cr-d[data-id="r2"]') && !document.querySelector('.cr-pc .cr-d[data-id="w1"]')));
+  await click(p, '#salonRoot [data-s="t-clase"]').catch(() => {});
+  await p.evaluate(() => { window.__salon.view = 'trab'; window.__salon.tClase = 'rep'; salonRender(); }); await p.waitForTimeout(80);
+  await click(p, '#salonRoot .thead [data-s="new"]');
+  check('nueva desde Reparaciones: clase reparación, con Ficha Nº, y sin fecha', await p.evaluate(() => document.querySelector('#slClase .on').dataset.c === 'rep' && !$('slFichaRow').classList.contains('hidden') && document.querySelector('#slCuando .on').dataset.k === 'no'));
+  await p.fill('#slTit', 'Driver luminaria'); await p.fill('#slFicha', '21'); await click(p, '#slSave'); await p.waitForTimeout(150);
+  const dr = Object.values(await tr()).find(t => t.titulo === 'Driver luminaria');
+  check('se guarda con clase y ficha', dr && dr.clase === 'rep' && dr.ficha === '21' && dr.sinFecha === true, dr);
   check('sin errores', !p.errs.length, p.errs);
   await p.context().close();
 
