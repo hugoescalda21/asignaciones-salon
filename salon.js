@@ -20,7 +20,7 @@
   if (!C) { console.warn('salon: falta salon-core.js'); return; }
 
   const S = {
-    trabajos: {}, modelos: {}, limpieza: {}, grupos: {}, anotados: {}, externos: {},
+    trabajos: {}, modelos: {}, fichas: {}, limpieza: {}, grupos: {}, anotados: {}, externos: {},
     loaded: { trabajos: false, limpieza: false, grupos: false, anotados: false },
     unsub: [], code: null, started: false,
     view: 'cal', month: null, day: null
@@ -253,6 +253,13 @@
   .cr-pub.v { background: rgba(76,122,94,.1); } .cr-pub.q { background: rgba(201,138,27,.12); }
   .cr-pub .btn { white-space: nowrap; }
   .topts button:disabled { opacity: .4; cursor: not-allowed; }
+  .sl-colores { display: flex; gap: 8px; margin: 8px 0 0 26px; }
+  .sl-colores button { width: 26px; height: 26px; border-radius: 7px; border: 2px solid transparent; cursor: pointer; box-shadow: inset 0 0 0 2px rgba(255,255,255,.6); }
+  .sl-colores button.on { border-color: var(--ink); }
+  .sl-bdg { display: inline-grid; place-items: center; min-width: 13px; height: 13px; border-radius: 3px; color: #fff; font-size: 9px; font-weight: 900; margin-right: 4px; line-height: 1; padding: 0 1px; }
+  .cr-nm .sl-bdg { min-width: 15px; height: 15px; font-size: 10px; }
+  .sl-ev .tx b .sl-bdg { min-width: 16px; height: 16px; font-size: 10.5px; }
+  .sl-leg i.sq { border-radius: 2px; }
   .sl-tgr { font-size: 11.5px; font-weight: 800; letter-spacing: .05em; color: var(--c); padding: 10px 0 2px; border-top: 1px solid var(--line); }
   .sl-box .sl-tgr:first-child { border-top: none; padding-top: 6px; }
   .sl-aviso { background: #FEE2E2; color: #991B1B; border-radius: 10px; padding: 8px 11px; font-size: 12.5px; line-height: 1.4; margin: -4px 0 8px; }
@@ -343,13 +350,29 @@
     S.code = accessCode; S.started = true;
     S.loaded = { trabajos: false, limpieza: false, grupos: false, anotados: false, externos: false };
     const onErr = (k) => (err) => { S.loaded[k] = true; console.warn('salon', k, err && err.code); onData(); };
-    S.unsub.push(sRef('trabajos').onSnapshot((s) => { const d = (s.exists && s.data()) || {}; S.trabajos = d.lista || {}; S.modelos = d.modelos || {}; S.loaded.trabajos = true; onData(); }, onErr('trabajos')));
+    S.unsub.push(sRef('trabajos').onSnapshot((s) => { const d = (s.exists && s.data()) || {}; S.trabajos = d.lista || {}; S.modelos = d.modelos || {}; aplicarFichas(); S.loaded.trabajos = true; onData(); }, onErr('trabajos')));
+    // Lo que completan el responsable y el auxiliar desde el celular (vista): tareas, nota y "Terminé".
+    S.unsub.push(congRef().collection('salonFichas').onSnapshot((qs) => { const o = {}; qs.forEach(d => { o[d.id] = d.data() || {}; }); S.fichas = o; aplicarFichas(); onData(); }, () => {}));
     // Hermanos de otra congregación (salón compartido): nombre, congregación y teléfono. Solo los ven los que manejan el Salón.
     S.unsub.push(sRef('externos').onSnapshot((s) => { S.externos = ((s.exists && s.data()) || {}).lista || {}; S.loaded.externos = true; onData(); }, onErr('externos')));
     S.unsub.push(sRef('limpieza').onSnapshot((s) => { S.limpieza = (s.exists && s.data()) || {}; S.loaded.limpieza = true; onData(); }, onErr('limpieza')));
     S.unsub.push(congRef().collection('terr').doc('grupos').onSnapshot((s) => { S.grupos = ((s.exists && s.data()) || {}).lista || {}; S.loaded.grupos = true; onData(); }, onErr('grupos')));
     S.unsub.push(congRef().collection('salonAnotados').onSnapshot((qs) => { const o = {}; qs.forEach(d => { o[d.id] = d.data() || {}; }); S.anotados = o; S.loaded.anotados = true; onData(); }, onErr('anotados')));
     return true;
+  }
+  // Suma lo de la vista a cada vez del trabajo (solo en memoria): tareas tildadas, "cómo se hizo" y terminado.
+  function aplicarFichas() {
+    Object.values(S.fichas || {}).forEach(fd => {
+      const t = S.trabajos[fd.tid]; if (!t || !fd.fecha) return;
+      t.ocurr = t.ocurr || {};
+      const o = Object.assign({}, t.ocurr[fd.fecha] || {});
+      o.tareas = Object.assign({}, o.tareas || {}, fd.tareas || {});
+      o.mats = Object.assign({}, o.mats || {}, fd.mats || {});
+      if (fd.estado === 'hecho') o.estado = 'hecho';
+      else if (!o.estado && Object.keys(fd.tareas || {}).length) o.estado = 'curso';
+      o._ficha = fd;
+      t.ocurr[fd.fecha] = o;
+    });
   }
   let queued = false;
   function onData() {
@@ -416,8 +439,8 @@
     else if (ci.cupo) pill = '<span class="sl-pill ok">Completo</span>';
     const quien = [t.resp && apellido(t.resp, '', t), t.aux && apellido(t.aux, '', t)].filter(Boolean).join(' y ');
     return `<button type="button" class="sl-ev${o.cancelada ? ' off' : ''}" data-s="open" data-id="${esc(t.id)}" data-f="${o.fecha}">
-      ${o.sinDia ? `<span class="dt q">${esc(MESES[d.getMonth()].slice(0, 3))}<b>?</b></span>` : `<span class="dt">${DIAS3[d.getDay()]}<b>${d.getDate()}</b></span>`}<span class="bar" style="background:${tp.color}"></span>
-      <span class="tx"><b>${tp.icon} ${esc(t.titulo)}</b><small>${o.sinDia ? '' : esc(t.hora || '')}${t.hora && !o.sinDia ? ' · ' : ''}${esc(quien || 'Sin responsable')}${ci.cupo ? ` · ${ci.van} de ${ci.cupo} voluntarios` : ''}${C.pasoDe(t) ? ` · 🔁 ${esc(C.repiteTxt(t).toLowerCase())}` : ''}${!o.sinDia && !o.pub && !o.cancelada && o.estado !== 'hecho' ? ' · 🔒 solo el comité' : ''}</small>${fichaTxt(t) ? `<small class="rep">${esc(fichaTxt(t))}</small>` : ''}</span>${pill}</button>`;
+      ${o.sinDia ? `<span class="dt q">${esc(MESES[d.getMonth()].slice(0, 3))}<b>?</b></span>` : `<span class="dt">${DIAS3[d.getDay()]}<b>${d.getDate()}</b></span>`}<span class="bar" style="background:${colorDe(t)}"></span>
+      <span class="tx"><b>${badgeDe(t) || tp.icon + " "}${esc(t.titulo)}</b><small>${o.sinDia ? '' : esc(t.hora || '')}${t.hora && !o.sinDia ? ' · ' : ''}${esc(quien || 'Sin responsable')}${ci.cupo ? ` · ${ci.van} de ${ci.cupo} voluntarios` : ''}${C.pasoDe(t) ? ` · 🔁 ${esc(C.repiteTxt(t).toLowerCase())}` : ''}${!o.sinDia && !o.pub && !o.cancelada && o.estado !== 'hecho' ? ' · 🔒 solo el comité' : ''}</small>${fichaTxt(t) ? `<small class="rep">${esc(fichaTxt(t))}</small>` : ''}</span>${pill}</button>`;
   }
   function renderCal(v) {
     const today = hoy();
@@ -452,12 +475,20 @@
     html += `<div class="sl-mnav"><button type="button" data-s="mes" data-d="-1" aria-label="Mes anterior">‹</button><span class="lbl">${MESES[m - 1]} ${y}</span><button type="button" data-s="mes" data-d="1" aria-label="Mes siguiente">›</button>${nHechosMes || S.verHechos ? `<button type="button" class="cr-tog${S.verHechos ? ' on' : ''}" data-s="verhechos" style="width:auto;height:34px;font-size:12.5px;">✓ ${S.verHechos ? 'Ocultar' : 'Ver'} hechos${nHechosMes ? ' (' + nHechosMes + ')' : ''}</button>` : ''}</div>`;
     html += '<div class="sl-cal"><div class="sl-grid">' + ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map(x => `<span class="h">${x}</span>`).join('');
     for (let f = gridStart; f <= gridEnd; f = C.addDays(f, 1)) {
-      const dots = occ.filter(o => o.fecha === f).slice(0, 3).map(o => `<i style="background:${o.estado === 'hecho' ? '#94A3B8' : tipoOf(o.t).color}"></i>`).join('');
+      const dots = occ.filter(o => o.fecha === f).slice(0, 3).map(o => `<i style="background:${o.estado === 'hecho' ? '#94A3B8' : colorDe(o.t)}"></i>`).join('');
       // En la computadora, además de los puntitos, el nombre de cada trabajo y de la limpieza.
-      const labs = occ.filter(o => o.fecha === f).slice(0, 3).map(o => o.estado === 'hecho' ? `<em class="hecho" title="${esc(o.t.titulo)} (hecho)">✓ ${esc(o.t.titulo)}</em>` : `<em style="--c:${tipoOf(o.t).color}" title="${esc(o.t.titulo)}">${esc(o.t.titulo)}</em>`).join('') + (limpiezaNombre[f] ? `<em class="lz" style="--c:${limpiezaDias[f]}">🧹 ${esc(limpiezaNombre[f])}</em>` : '');
+      const labs = occ.filter(o => o.fecha === f).slice(0, 3).map(o => o.estado === 'hecho' ? `<em class="hecho" title="${esc(o.t.titulo)} (hecho)">✓ ${esc(o.t.titulo)}</em>` : `<em style="--c:${colorDe(o.t)}" title="${esc((modeloDe(o.t) && !modeloDe(o.t).propia ? modeloDe(o.t).cod + ' · ' : '') + o.t.titulo)}">${badgeDe(o.t)}${esc(o.t.titulo)}</em>`).join('') + (limpiezaNombre[f] ? `<em class="lz" style="--c:${limpiezaDias[f]}">🧹 ${esc(limpiezaNombre[f])}</em>` : '');
       html += `<button type="button" class="sl-d${f.slice(0, 7) !== S.month ? ' out' : ''}${f === today ? ' hoy' : ''}${f === S.day ? ' sel' : ''}" data-s="day" data-f="${f}"><b>${Number(f.slice(8))}</b><span class="sl-dots">${dots}</span><span class="sl-labs">${labs}</span>${limpiezaDias[f] ? `<span class="lb" style="background:${limpiezaDias[f]}"></span>` : ''}</button>`;
     }
-    html += '</div><div class="sl-leg">' + Object.values(C.TIPOS).map(tp => `<span><i style="background:${tp.color}"></i>${tp.label}</span>`).join('') + `<span><i class="bar" style="background:${LIMPIEZA_COLOR}"></i>Limpieza</span>${(S.limpieza.otra || []).length ? `<span><i class="bar" style="background:${OTRA_COLOR}"></i>${esc(otraLabel())}</span>` : ''}</div>${sinDiaMes.length ? `<div class="tnote" style="margin:8px 2px 2px;">📅 Este mes, sin día todavía: ${sinDiaMes.map(o => `<button type="button" class="pn-go" style="border:none;background:none;font:inherit;font-weight:800;color:var(--accent-gold-text,var(--accent-gold));cursor:pointer;padding:0;" data-s="open" data-id="${esc(o.t.id)}" data-f="${o.fecha}">${esc(o.t.titulo)}</button>`).join(', ')}</div>` : ''}</div>`;
+    // Leyenda: solo los colores que hay este mes (secciones de las fichas, fichas propias y tipos sin ficha).
+    const leg = new Map();
+    occ.filter(o => o.fecha.slice(0, 7) === S.month && o.estado !== 'hecho').forEach(o => {
+      const md = modeloDe(o.t);
+      if (md && !md.propia) leg.set('s' + md.sec, `<span><i class="sq" style="background:${md.color}"></i>${md.sec} ${esc(SECCIONES[md.sec] || md.cat)}</span>`);
+      else if (md) leg.set('p' + md.cod, `<span><i class="sq" style="background:${md.color}"></i>${esc(md.nombre)}</span>`);
+      else { const tp = tipoOf(o.t); leg.set('t' + tp.label, `<span><i style="background:${tp.color}"></i>${tp.label}</span>`); }
+    });
+    html += '</div><div class="sl-leg">' + [...leg.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(x => x[1]).join('') + `<span><i class="bar" style="background:${LIMPIEZA_COLOR}"></i>Limpieza</span>${(S.limpieza.otra || []).length ? `<span><i class="bar" style="background:${OTRA_COLOR}"></i>${esc(otraLabel())}</span>` : ''}</div>${sinDiaMes.length ? `<div class="tnote" style="margin:8px 2px 2px;">📅 Este mes, sin día todavía: ${sinDiaMes.map(o => `<button type="button" class="pn-go" style="border:none;background:none;font:inherit;font-weight:800;color:var(--accent-gold-text,var(--accent-gold));cursor:pointer;padding:0;" data-s="open" data-id="${esc(o.t.id)}" data-f="${o.fecha}">${esc(o.t.titulo)}</button>`).join(', ')}</div>` : ''}</div>`;
     html += '</div><div class="a-rest">';
     // Día elegido o próximos
     if (S.day) {
@@ -482,6 +513,8 @@
   /* =====================================================================
      TRABAJOS (lista de todos, con los que se repiten)
      ===================================================================== */
+  // Colores para las fichas propias (distintos de los de las secciones del manual).
+  const COLORES_PROPIAS = ['#DB2777', '#7C3AED', '#EA580C', '#0891B2', '#65A30D', '#475569'];
   // Opciones del selector de ficha: las del manual por sección y las propias.
   function fichaOpts(sel) {
     const secs = {};
@@ -494,8 +527,8 @@
   function pendRow(t) {
     const tp = tipoOf(t);
     const quien = t.resp || t.aux ? `Resp. ${pubName(t.resp, t) || '—'} · Aux. ${pubName(t.aux, t) || '—'}` : 'Sin responsable ni auxiliar todavía';
-    return `<button type="button" class="sl-ev" data-s="edit" data-id="${esc(t.id)}"><span class="dt"><b>—</b></span><span class="bar" style="background:${tp.color}"></span>
-      <span class="tx"><b>${tp.icon} ${esc(t.titulo)}</b><small>${esc(quien)}${C.pasoDe(t) ? ' · 🔁 ' + esc(C.repiteTxt(t).toLowerCase()) : ''}</small>${esRep(t) ? `<small class="rep">${esc(fichaTxt(t))}</small>` : ''}</span><span class="cr-tag q">Programar ›</span></button>`;
+    return `<button type="button" class="sl-ev" data-s="edit" data-id="${esc(t.id)}"><span class="dt"><b>—</b></span><span class="bar" style="background:${colorDe(t)}"></span>
+      <span class="tx"><b>${badgeDe(t) || tp.icon + " "}${esc(t.titulo)}</b><small>${esc(quien)}${C.pasoDe(t) ? ' · 🔁 ' + esc(C.repiteTxt(t).toLowerCase()) : ''}</small>${esRep(t) ? `<small class="rep">${esc(fichaTxt(t))}</small>` : ''}</span><span class="cr-tag q">Programar ›</span></button>`;
   }
   // Clase: 'prog' (mantenimiento programado, el de siempre) o 'rep' (reparación puntual, de una ficha o una revisión).
   const esRep = (t) => t && t.clase === 'rep';
@@ -510,6 +543,15 @@
     return FM().porCodigo(c);
   }
   const fichaCorta = (t) => { const md = modeloDe(t); return md ? (md.propia ? md.nombre : `${md.cod} ${md.nombre}`) : (t.ficha ? 'Ficha ' + t.ficha : ''); };
+  // Color de un trabajo: el de la sección de su ficha (02 naranja, 03 verde, 04 azul, 05 amarillo, 06 celeste)
+  // o el de la ficha propia; sin ficha, el de su tipo. Letra: la de la ficha del manual (03.F → F).
+  const colorDe = (t) => { const md = modeloDe(t); return md ? md.color : tipoOf(t).color; };
+  const SECCIONES = { '02': 'Equipos', '03': 'Edificios', '04': 'Sist. eléctricos', '05': 'Sist. electrónicos', '06': 'Sist. mecánicos' };
+  const badgeDe = (t) => { const md = modeloDe(t); return md && !md.propia ? `<span class="sl-bdg" style="background:${md.color}${md.sec === '05' ? ';color:#3A2A00' : ''}">${md.letra}</span>` : ''; };
+  const textoSobre = (hex) => { const n = parseInt(String(hex).slice(1), 16); const r = n >> 16, g = (n >> 8) & 255, b = n & 255; return (r * 299 + g * 587 + b * 114) / 1000 > 165 ? '#2A2100' : '#fff'; };
+  // Para texto sobre fondo claro: el amarillo (05) se oscurece para que se lea.
+  const tinta = (hex) => textoSobre(hex) === '#fff' ? hex : '#A16207';
+  const heroFicha = (t) => { const md = modeloDe(t); return md && !md.propia ? `Ficha ${md.cod} · ` : ''; };
   const fichaTxt = (t) => esRep(t) ? `🔧 Reparación${fichaCorta(t) ? ' · ' + fichaCorta(t) : ''}` : (modeloDe(t) ? `📋 ${fichaCorta(t)}` : '');
   // En el calendario: lo programado, y las reparaciones solo si piden voluntarios.
   const enCalendario = (t) => !esRep(t) || Number(t.cupo) > 0;
@@ -538,12 +580,12 @@
       const f = next(t), tp = tipoOf(t);
       const cuando = t.soloMes ? `Para ${mesLabel(f.slice(0, 7))} · falta el día` : `Próximo: ${fmtCorto(f)}${t.hora ? ' · ' + t.hora : ''}`;
       const tag = t.soloMes ? '<span class="cr-tag q">Falta el día</span>' : C.publicado(t, f) ? '<span class="cr-tag v">👁 En la vista</span>' : '<span class="cr-tag c">🔒 Comité</span>';
-      return `<button type="button" class="sl-ev" data-s="open" data-id="${esc(t.id)}" data-f="${f}"><span class="bar" style="background:${tp.color}"></span>
-        <span class="tx"><b>${tp.icon} ${esc(t.titulo)}</b><small>${esc(cuando)} · ${esc(C.repiteTxt(t))}</small><small>Resp. ${esc(pubName(t.resp, t) || '—')} · Aux. ${esc(pubName(t.aux, t) || '—')}</small>${fichaTxt(t) ? `<small class="rep">${esc(fichaTxt(t))}</small>` : ''}</span>${tag}</button>`;
+      return `<button type="button" class="sl-ev" data-s="open" data-id="${esc(t.id)}" data-f="${f}"><span class="bar" style="background:${colorDe(t)}"></span>
+        <span class="tx"><b>${badgeDe(t) || tp.icon + " "}${esc(t.titulo)}</b><small>${esc(cuando)} · ${esc(C.repiteTxt(t))}</small><small>Resp. ${esc(pubName(t.resp, t) || '—')} · Aux. ${esc(pubName(t.aux, t) || '—')}</small>${fichaTxt(t) ? `<small class="rep">${esc(fichaTxt(t))}</small>` : ''}</span>${tag}</button>`;
     }).join('');
     if (pendientes.length) html += `<div class="sl-sec" id="slPend"><h4>Pendientes (sin fecha) · ${pendientes.length}</h4></div>` + pendientes.map(pendRow).join('');
     if (hechos.length) html += `<div class="sl-sec"><h4>${S.tClase === 'rep' ? 'Hechas' : 'Hechos'} · ${hechos.length}</h4></div>` + hechos.map(o => evRow(o).replace('class="sl-ev', 'style="opacity:.75" class="sl-ev')).join('');
-    if (pasados.length) html += '<div class="sl-sec"><h4>Terminados</h4></div>' + pasados.map(t => `<button type="button" class="sl-ev off" data-s="edit" data-id="${esc(t.id)}"><span class="bar" style="background:${tipoOf(t).color}"></span><span class="tx"><b>${tipoOf(t).icon} ${esc(t.titulo)}</b><small>${esc(fmtCorto(t.fecha))}</small></span></button>`).join('');
+    if (pasados.length) html += '<div class="sl-sec"><h4>Terminados</h4></div>' + pasados.map(t => `<button type="button" class="sl-ev off" data-s="edit" data-id="${esc(t.id)}"><span class="bar" style="background:${colorDe(t)}"></span><span class="tx"><b>${tipoOf(t).icon} ${esc(t.titulo)}</b><small>${esc(fmtCorto(t.fecha))}</small></span></button>`).join('');
     v.innerHTML = html;
   }
 
@@ -572,13 +614,13 @@
     return o.fecha < hoy() ? 'atrasado' : 'prog';
   }
   function marca(o) {
-    const col = tipoOf(o.t).color, e = estadoDe(o);
+    const col = colorDe(o.t), e = estadoDe(o);
     const tit = `${o.t.titulo} · ${o.sinDia ? mesLabel(o.fecha.slice(0, 7)) + ' (falta el día)' : fmtDia(o.fecha)} · ${({ susp: 'suspendido', hecho: 'hecho', curso: 'en curso', atrasado: 'atrasado: ¿se hizo?', sindia: '', prog: o.pub ? 'en la vista' : 'solo el comité' })[e]}`;
     const cls = ({ sindia: ' m', susp: ' x', hecho: ' h', curso: ' cu', atrasado: ' at', prog: o.pub ? ' v' : '' })[e];
     const dia = Number(o.fecha.slice(8));
     const txt = ({ sindia: '?', hecho: '✓ ' + dia, curso: '● ' + dia, atrasado: '! ' + dia })[e] || String(dia);
     // En la vista: fondo suave del color del tipo; solo el comité: solo el borde. Lo lleno queda para hecho y en curso.
-    return `<button type="button" class="cr-d${cls}" style="border-color:${col};color:${col};${e === 'prog' && o.pub ? `background:color-mix(in srgb, ${col} 18%, var(--surface))` : ''}" data-s="${e === 'atrasado' ? 'hizo' : 'open'}" data-id="${esc(o.t.id)}" data-f="${o.fecha}" title="${esc(tit)}" aria-label="${esc(tit)}">${txt}</button>`;
+    return `<button type="button" class="cr-d${cls}" style="border-color:${col};color:${tinta(col)};${e === 'prog' && o.pub ? `background:color-mix(in srgb, ${col} 18%, var(--surface))` : ''}" data-s="${e === 'atrasado' ? 'hizo' : 'open'}" data-id="${esc(o.t.id)}" data-f="${o.fecha}" title="${esc(tit)}" aria-label="${esc(tit)}">${txt}</button>`;
   }
   // Etiqueta de la fila (o de la próxima vez de los que se repiten): atrasado, en curso o hecho.
   function tagFila(occ) {
@@ -636,7 +678,7 @@
     let g = `<div class="cr-grid"><div class="h" style="text-align:left;padding-left:12px;">Trabajo</div>` + c.meses.map(ym => `<div class="h${ym === mesHoy ? ' now' : ''}">${esc(MES3(ym))}<small>${ym.slice(0, 4)}</small></div>`).join('');
     c.filas.forEach(r => {
       const t = r.t, tp = tipoOf(t);
-      g += `<div class="cr-nm"><button type="button" data-s="edit" data-id="${esc(t.id)}" title="Editar"><b><i style="background:${tp.color}"></i>${esc(t.titulo)}</b><small>${esRep(t) ? esc(fichaTxt(t)) + ' · ' : esc(C.repiteTxt(t)) + ' · '}${esc(pubName(t.resp, t) || 'sin responsable')}</small>${tagFila(r.occ)}</button></div>`;
+      g += `<div class="cr-nm"><button type="button" data-s="edit" data-id="${esc(t.id)}" title="Editar"><b><i style="background:${colorDe(t)}"></i>${badgeDe(t)}${esc(t.titulo)}</b><small>${esRep(t) ? esc(fichaTxt(t)) + ' · ' : esc(C.repiteTxt(t)) + ' · '}${esc(pubName(t.resp, t) || 'sin responsable')}</small>${tagFila(r.occ)}</button></div>`;
       c.meses.forEach(ym => { g += `<div class="${ym === mesHoy ? 'now' : ''}">${r.ver.filter(o => o.fecha.slice(0, 7) === ym).map(marca).join('')}</div>`; });
     });
     html += `<div class="cr-pc"><div class="cr-box">${g}</div></div></div>`;
@@ -745,7 +787,8 @@
           <p class="sl-hint" id="slPrev"></p>
         </div></div>
       <div class="tf"><label for="slTar">Tareas / puntos a revisar <small style="text-transform:none;letter-spacing:0;font-weight:400;">(uno por renglón · los renglones en MAYÚSCULAS son títulos de grupo)</small></label><textarea id="slTar" style="min-height:120px;" placeholder="MUROS&#10;Lijar y limpiar&#10;Pintar 2 manos&#10;AL TERMINAR&#10;Limpiar herramientas">${esc((f.tareas || []).join('\n'))}</textarea>
-        <label class="tchk${f.fichaCod ? ' hidden' : ''}" id="slPropiaRow" style="border:none;padding:6px 0 0;"><input type="checkbox" id="slPropia"><span>Guardar como ficha propia <small>· para usarla otra vez (con estas tareas)</small></span></label></div>
+        <label class="tchk${f.fichaCod ? ' hidden' : ''}" id="slPropiaRow" style="border:none;padding:6px 0 0;"><input type="checkbox" id="slPropia"><span>Guardar como ficha propia <small>· para usarla otra vez (con estas tareas y este color)</small></span></label>
+        <div class="sl-colores hidden" id="slColores">${COLORES_PROPIAS.map((c, i) => `<button type="button" data-col="${c}" class="${i === 0 ? 'on' : ''}" style="background:${c}" aria-label="Color ${i + 1}"></button>`).join('')}</div></div>
       <div class="tf"><label for="slMat">Qué llevar / materiales <small style="text-transform:none;letter-spacing:0;font-weight:400;">(uno por renglón)</small></label><textarea id="slMat" placeholder="Rodillos y pinceles&#10;2 latas de látex blanco">${esc((f.materiales || []).join('\n'))}</textarea></div>
       <div class="tf"><label for="slNotas">Notas</label><textarea id="slNotas" style="min-height:44px;" placeholder="Opcional">${esc(f.notas || '')}</textarea></div>
       <div class="tf"><span class="tlbl">Quién lo ve</span><div class="cr-seg2" id="slVis">${visHTML()}</div><p class="sl-hint">${t ? 'Cada fecha también se puede publicar u ocultar aparte, desde el trabajo.' : 'Lo pueden publicar más adelante, cuando lo decidan.'}</p></div>
@@ -786,11 +829,13 @@
       pintarRep();
     });
     pintarRep();
+    m.q('#slPropia').addEventListener('change', () => m.q('#slColores').classList.toggle('hidden', !m.q('#slPropia').checked));
+    m.q('#slColores').addEventListener('click', (e) => { const b = e.target.closest('[data-col]'); if (!b) return; m.qa('#slColores button').forEach(x => x.classList.toggle('on', x === b)); });
     m.q('#slClase').addEventListener('click', (e) => { const b = e.target.closest('[data-c]'); if (!b) return; f.clase = b.dataset.c; m.q('#slClase').innerHTML = claseHTML(); });
     // Elegir una ficha: trae sus tareas (agrupadas) y, si no había título, su nombre.
     m.q('#slFicha').addEventListener('change', () => {
       const c = m.q('#slFicha').value;
-      m.q('#slPropiaRow').classList.toggle('hidden', !!c);
+      m.q('#slPropiaRow').classList.toggle('hidden', !!c); if (c) m.q('#slColores').classList.add('hidden');
       if (!c) return;
       const md = modeloDe({ fichaCod: c, tipo: f.tipo }); if (!md) return;
       const ta = m.q('#slTar');
@@ -835,14 +880,16 @@
       const extra = [];
       if (!fc && m.q('#slPropia').checked && nt.tareas.length) {
         const mid = newId();
-        const mod = { id: mid, nombre: titulo, color: tipoOf(nt).color, tareas: nt.tareas, creado: new Date().toISOString() };
+        const cb = m.q('#slColores button.on');
+        const mod = { id: mid, nombre: titulo, color: (cb && cb.dataset.col) || tipoOf(nt).color, tareas: nt.tareas, creado: new Date().toISOString() };
         extra.push([['modelos', mid], mod]); S.modelos[mid] = mod; nt.fichaCod = 'p:' + mid;
       }
       if (modo === 'mes') nt.soloMes = true; else delete nt.soloMes;
       if (modo === 'no') { nt.sinFecha = true; delete nt.fecha; } else delete nt.sinFecha;
       if (!nt.resp) delete nt.resp;
       if (!nt.aux) delete nt.aux;
-      if (!nt.ocurr) nt.ocurr = {};
+      // Lo que vino del celular (salonFichas) no se copia al trabajo: queda en su propio lugar.
+      nt.ocurr = JSON.parse(JSON.stringify(nt.ocurr || {}, (k, v) => k === '_ficha' ? undefined : v));
       nt.externos = extRefs(nt);
       if (!t) nt.creado = new Date().toISOString();
       if (await safe(() => sWrite(sRef('trabajos'), [[['lista', nt.id], nt]].concat(extra)), t ? 'Trabajo guardado' : 'Trabajo agregado')) { S.trabajos[nt.id] = nt; m.close(); render(); }
@@ -878,7 +925,7 @@
       : !t.resp || !t.aux ? `<div class="cr-pub q"><span><b>🙋 Falta ${!t.resp && !t.aux ? 'responsable y auxiliar' : !t.resp ? 'el responsable' : 'el auxiliar'}</b>Lo ve solo el comité. Para publicarlo hace falta elegir${!t.resp && !t.aux ? 'los' : 'lo'}.</span><button type="button" class="btn btn-primary" data-d="editar">Elegir</button></div>`
       : `<div class="cr-pub"><span><b>🔒 Solo lo ve el comité</b>Todavía no aparece en la vista${ci.cupo ? ' ni se pidieron voluntarios' : ''}. El responsable y el auxiliar sí lo ven.</span><button type="button" class="btn btn-primary" data-d="publicar">📢 Publicar</button></div>`;
     if (sinDia) {
-      return `<div class="sl-dhero" style="background:${tp.color}"><small>${tp.icon} ${tp.label} · ${esc(mesTxt)} · falta el día</small><b>${esc(t.titulo)}</b><p>${esRep(t) ? esc(fichaTxt(t)) + ' · ' : ''}${esc(C.repiteTxt(t))}</p></div>${estadoVis}
+      return `<div class="sl-dhero" style="background:${colorDe(t)};color:${textoSobre(colorDe(t))}"><small>${heroFicha(t)}${tp.icon} ${tp.label} · ${esc(mesTxt)} · falta el día</small><b>${esc(t.titulo)}</b><p>${esRep(t) ? esc(fichaTxt(t)) + ' · ' : ''}${esc(C.repiteTxt(t))}</p></div>${estadoVis}
       <div class="sl-kv" style="margin-bottom:12px;"><div><small>Responsable</small>${kv(t.resp)}</div><div><small>Auxiliar</small>${kv(t.aux)}</div></div>
       ${ci.cupo ? `<div class="tnote">Hacen falta ${ci.cupo} ${ci.cupo === 1 ? 'voluntario' : 'voluntarios'}: se piden cuando tenga el día y lo publiquen.</div>` : ''}
       ${mats.length ? `<div class="sl-sec" style="margin-top:0;"><h4>Qué llevar</h4></div><div class="tnote">${mats.map(esc).join(' · ')}</div>` : ''}
@@ -886,14 +933,16 @@
       <button type="button" class="btn sl-ficha" data-d="ficha">📋 Compartir ficha</button>
       <div class="tfoot"><button type="button" class="btn" data-d="editar">Editar trabajo</button><button type="button" class="btn" data-tclose>Cerrar</button></div>`;
     }
-    return `<div class="sl-dhero" style="background:${tp.color}"><small>${tp.icon} ${tp.label} · ${esc(fmtDia(fecha))}${t.hora ? ' · ' + esc(t.hora) : ''}</small><b>${esc(t.titulo)}</b><p>${esRep(t) ? esc(fichaTxt(t)) + ' · ' : ''}${esc(C.repiteTxt(t))}${o.cancelada ? ' · suspendido esta vez' : ''}</p></div>${estadoVis}
+    const fv = o._ficha;
+    const desdeVista = fv ? `<div class="cr-pub ${fv.estado === 'hecho' ? 'v' : ''}"><span><b>📱 ${fv.estado === 'hecho' ? '✓ Terminado por ' + esc(fv.nombre || '—') : 'En curso · ' + esc(fv.nombre || '—') + ' la va completando'}</b>${(t.tareas || []).length ? `${Object.keys(fv.tareas || {}).length} de ${(t.tareas || []).filter(x => !esGrupoTxt(x)).length} tareas tildadas desde el celular` : 'Desde el celular'}${fv.terminadoAt ? ' · ' + esc(fmtCorto(fv.terminadoAt.slice(0, 10))) + ' ' + esc(fv.terminadoAt.slice(11, 16)) : ''}${fv.nota ? `<br><i>Cómo se hizo: "${esc(fv.nota)}"</i>` : ''}</span></div>` : '';
+    return `<div class="sl-dhero" style="background:${colorDe(t)};color:${textoSobre(colorDe(t))}"><small>${heroFicha(t)}${tp.icon} ${tp.label} · ${esc(fmtDia(fecha))}${t.hora ? ' · ' + esc(t.hora) : ''}</small><b>${esc(t.titulo)}</b><p>${esRep(t) ? esc(fichaTxt(t)) + ' · ' : ''}${esc(C.repiteTxt(t))}${o.cancelada ? ' · suspendido esta vez' : ''}</p></div>${desdeVista}${estadoVis}
       <div class="sl-steps">${Object.entries(C.ESTADOS).map(([k, l]) => `<button type="button" data-d="estado" data-k="${k}" class="${estado === k ? 'on ' + k : ''}">${l}</button>`).join('')}</div>
       <div class="sl-kv" style="margin-bottom:12px;"><div><small>Responsable</small>${kv(t.resp)}</div><div><small>Auxiliar</small>${kv(t.aux)}</div></div>
       <div class="sl-sec" style="margin-top:0;"><h4>Voluntarios</h4><span style="font-size:12.5px;font-weight:700;">${ci.cupo ? `${ci.van} de ${ci.cupo}` : ci.van}</span></div>
       <div class="sl-box">${volRows}${faltan ? `<div class="sl-row"><span class="sl-av e">+</span><span class="nm" style="color:var(--ink-soft)">${ci.faltan === 1 ? 'Falta 1' : 'Faltan ' + ci.faltan}</span></div>` : ''}${!ci.vols.length && !faltan ? '<div class="sl-row" style="color:var(--ink-soft)">Sin voluntarios pedidos.</div>' : ''}</div>
       <div class="tfoot" style="margin-top:0;margin-bottom:12px;"><button type="button" class="btn" data-d="agregar">＋ Agregar hermano</button><button type="button" class="btn btn-primary" data-d="wa">Pedir por WhatsApp</button></div>
       ${(t.tareas || []).length ? (() => { const md = modeloDe(t); const items = t.tareas.filter(x => !esGrupoTxt(x)).length; const hechas = t.tareas.filter((x, i) => !esGrupoTxt(x) && (o.tareas || {})[i]).length;
-        return `<div class="sl-sec" style="margin-top:0;"><h4>Tareas${md ? ` · <span style="color:${md.color}">${esc(md.propia ? md.nombre : md.cod)}</span>` : ''}</h4><span style="font-size:12.5px;font-weight:700;">${hechas} de ${items}</span></div>${md && (md.aviso || []).length ? `<div class="sl-aviso">⚠️ ${md.aviso.map(esc).join(' ')}</div>` : ''}<div class="sl-box">${t.tareas.map((x, i) => esGrupoTxt(x) ? `<div class="sl-tgr" style="--c:${md ? md.color : 'var(--ink-soft)'}">${esc(x)}</div>` : `<label class="tchk" style="${i === 0 ? 'border-top:none;' : ''}"><input type="checkbox" data-d="tar" data-i="${i}"${(o.tareas || {})[i] ? ' checked' : ''}><span>${esc(x)}</span></label>`).join('')}</div>`; })() : ''}
+        return `<div class="sl-sec" style="margin-top:0;"><h4>Tareas${md ? ` · <span style="color:${tinta(md.color)}">${esc(md.propia ? md.nombre : md.cod)}</span>` : ''}</h4><span style="font-size:12.5px;font-weight:700;">${hechas} de ${items}</span></div>${md && (md.aviso || []).length ? `<div class="sl-aviso">⚠️ ${md.aviso.map(esc).join(' ')}</div>` : ''}<div class="sl-box">${t.tareas.map((x, i) => esGrupoTxt(x) ? `<div class="sl-tgr" style="--c:${md ? tinta(md.color) : 'var(--ink-soft)'}">${esc(x)}</div>` : `<label class="tchk" style="${i === 0 ? 'border-top:none;' : ''}"><input type="checkbox" data-d="tar" data-i="${i}"${(o.tareas || {})[i] ? ' checked' : ''}><span>${esc(x)}</span></label>`).join('')}</div>`; })() : ''}
       ${mats.length ? `<div class="sl-sec" style="margin-top:0;"><h4>Qué llevar</h4></div><div class="sl-box">${mats.map((x, i) => `<label class="tchk" style="${i === 0 ? 'border-top:none;' : ''}"><input type="checkbox" data-d="mat" data-i="${i}"${(o.mats || {})[i] ? ' checked' : ''}><span>${esc(x)}</span></label>`).join('')}</div>` : ''}
       ${t.notas ? `<div class="tnote">${esc(t.notas)}</div>` : ''}
       <div class="tf"><label for="slNota">Nota de esta vez</label><textarea id="slNota" style="min-height:44px;" placeholder="Ej.: faltó comprar lija">${esc(o.nota || '')}</textarea></div>
@@ -953,119 +1002,19 @@
   // Ficha de trabajo con el diseño de las fichas del manual: sección y color, letra, protección,
   // advertencia, tareas agrupadas con casillas y notas; más lo de este trabajo (cuándo, quién,
   // voluntarios, qué llevar, cómo se hizo y firma).
-  function dibujarFicha(doc, t, fecha) {
-    const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight();
-    const L = 42, R = W - 42;
-    const md = modeloDe(t), tp = tipoOf(t), o = ((t.ocurr || {})[fecha]) || {};
-    const hex = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
-    const col = hex(md ? md.color : tp.color);
-    const cong = (data.settings && data.settings.congregationName) || '';
-    const ink = () => doc.setTextColor(25, 28, 33), gris = () => doc.setTextColor(110, 116, 125);
-    // --- Encabezado (como la ficha oficial)
-    const cat = md ? (md.propia ? 'MANTENIMIENTO' : md.cat.toUpperCase()) : (esRep(t) ? 'REPARACIÓN' : 'MANTENIMIENTO');
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(8); gris();
-    doc.text(`FICHA DE TRABAJO  |  ${cat}`, L, 44, { charSpace: 1.2 });
-    const conBadge = md && !md.propia;
-    const maxTit = conBadge ? R - 190 - L : R - L;
-    doc.setFontSize(21); ink();
-    const tit = doc.splitTextToSize(t.titulo || (md && md.nombre) || 'Trabajo', maxTit).slice(0, 2);
-    doc.text(tit, L, 70);
-    let y = 70 + (tit.length - 1) * 24 + 14;
-    doc.setDrawColor(...col); doc.setLineWidth(2.4); doc.line(L, y, L + Math.min(maxTit, 300), y);
-    if (conBadge) {
-      doc.setFillColor(...col); doc.rect(R - 44, 26, 44, 44, 'F');
-      doc.setTextColor(255, 255, 255); doc.setFontSize(22); doc.text(md.letra, R - 22, 56, { align: 'center' });
-      doc.setTextColor(...col); doc.setFontSize(9.5);
-      const ms = `MM SECCIÓN ${md.sec}`, cs = 2.2, mw = doc.getTextWidth(ms) + cs * (ms.length - 1);
-      doc.text(ms, R - 56 - mw, 52, { charSpace: cs });
-    }
-    // Protección personal (los mismos íconos de la ficha)
-    const epp = (md && md.epp) || [];
-    if (epp.length) {
-      const sz = 30, gap = 6; let x = R - epp.length * (sz + gap) + gap;
-      epp.forEach(k => { const img = FM().EPP[k]; if (img) { try { doc.addImage(img, 'PNG', x, 80, sz, sz); } catch (e) { /* nada */ } } x += sz + gap; });
-      y = Math.max(y, 80 + sz);
-    }
-    y += 16;
-    // Advertencia
-    const aviso = (md && md.aviso) || [];
-    if (aviso.length) {
-      doc.setFontSize(9); const ln = doc.splitTextToSize(aviso.join(' '), R - L - 40);
-      const h = Math.max(30, ln.length * 11 + 10);
-      doc.setFillColor(185, 28, 28); doc.rect(L, y, 22, h, 'F');
-      doc.setTextColor(255, 255, 255); doc.setFontSize(15); doc.text('!', L + 11, y + h / 2 + 5, { align: 'center' });
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); ink(); doc.text(ln, L + 30, y + 13);
-      y += h + 14;
-    }
-    // Datos de este trabajo
-    const cuando = !fecha ? 'Sin fecha todavía' : (t.soloMes ? mesLabel(fecha.slice(0, 7)) + ' (falta el día)' : fmtDia(fecha) + (t.hora ? ' · ' + t.hora + ' h' : ''));
-    doc.autoTable({ startY: y, margin: { left: L, right: W - R }, theme: 'grid', showHead: false,
-      body: [['Cuándo', cuando, 'Frecuencia', md && !md.propia ? `${md.frec}${C.pasoDe(t) ? ' · ' + C.repiteTxt(t).toLowerCase() : ''}` : C.repiteTxt(t)], ['Responsable', pubName(t.resp, t) || '—', 'Auxiliar', pubName(t.aux, t) || '—']],
-      styles: { fontSize: 9.5, cellPadding: 5, lineColor: [215, 218, 223], textColor: [25, 28, 33] },
-      columnStyles: { 0: { fontStyle: 'bold', textColor: [110, 116, 125], cellWidth: 72 }, 2: { fontStyle: 'bold', textColor: [110, 116, 125], cellWidth: 68 } } });
-    y = doc.lastAutoTable.finalY + 18;
-    const nueva = (need) => { if (y + need > H - 50) { doc.addPage(); y = 50; doc.setFont('helvetica', 'bold'); doc.setFontSize(8); gris(); doc.text(`${(t.titulo || '').toUpperCase()} (continuación)`, L, 34, { charSpace: 1 }); } };
-    const caja = (x, yy, ok) => { doc.setDrawColor(150, 155, 162); doc.setLineWidth(0.7); doc.rect(x, yy - 8, 8.5, 8.5); if (ok) { doc.setDrawColor(22, 163, 74); doc.setLineWidth(1.5); doc.line(x + 1.6, yy - 3.6, x + 3.8, yy - 1.4); doc.line(x + 3.8, yy - 1.4, x + 7.4, yy - 6.8); } };
-    // Los grupos de la ficha van como en el manual (negrita grande); lo que agrega este trabajo, como etiqueta chica.
-    const seccion = (s) => { nueva(30); doc.setFont('helvetica', 'bold'); doc.setFontSize(12.5); ink(); doc.text(s, L, y); y += 15; doc.setFont('helvetica', 'normal'); doc.setFontSize(10); };
-    const etiqueta = (s) => { nueva(34); y += 4; doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); gris(); doc.text(s, L, y, { charSpace: 0.8 }); doc.setDrawColor(...col); doc.setLineWidth(1.2); doc.line(L, y + 5, L + 46, y + 5); y += 19; doc.setFont('helvetica', 'normal'); doc.setFontSize(10); };
-    // Tareas agrupadas
-    const tareas = t.tareas || [];
-    if (tareas.length) {
-      let primero = true;
-      tareas.forEach((x, i) => {
-        if (esGrupoTxt(x)) { y += primero ? 0 : 6; seccion(x); primero = false; return; }
-        if (primero) { seccion('TAREAS'); primero = false; }
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
-        const ln = doc.splitTextToSize(x, R - L - 34);
-        nueva(ln.length * 12.5 + 4); ink();
-        caja(L + 10, y, !!(o.tareas || {})[i]); doc.text(ln, L + 28, y); y += ln.length * 12.5 + 4;
-      });
-      y += 8;
-    }
-    // Voluntarios
+  // Datos de la ficha de un trabajo (esa vez) para el PDF (ficha-pdf.js).
+  function datosFicha(t, fecha) {
+    const md = modeloDe(t), o = ((t.ocurr || {})[fecha]) || {};
     const ci = C.cupoInfo(t, fecha || '', S.anotados);
-    if (ci.cupo || ci.vols.length) {
-      etiqueta(`VOLUNTARIOS${ci.cupo ? ' (' + ci.cupo + ')' : ''}`);
-      const nombres = ci.vols.map(v => pubName(v.pubId, t) || v.nombre).filter(Boolean);
-      const n = Math.max(nombres.length, ci.cupo), colW = (R - L) / 2;
-      nueva(Math.ceil(n / 2) * 19);
-      for (let i = 0; i < n; i++) {
-        const x = L + (i % 2) * colW, yy = y + Math.floor(i / 2) * 19;
-        gris(); doc.text(`${i + 1}.`, x + 4, yy);
-        if (nombres[i]) { ink(); doc.text(nombres[i], x + 20, yy); } else { doc.setDrawColor(205, 208, 213); doc.setLineWidth(0.5); doc.line(x + 20, yy + 2, x + colW - 16, yy + 2); }
-      }
-      y += Math.ceil(n / 2) * 19 + 8;
-    }
-    if ((t.materiales || []).length) {
-      etiqueta('QUÉ LLEVAR');
-      t.materiales.forEach((x, i) => { nueva(14); ink(); caja(L + 10, y, !!(o.mats || {})[i]); doc.text(doc.splitTextToSize(x, R - L - 34), L + 28, y); y += 15; });
-      y += 6;
-    }
-    if (t.notas) { const ln = doc.splitTextToSize(t.notas, R - L); etiqueta('INDICACIONES'); nueva(ln.length * 12.5); ink(); doc.text(ln, L, y); y += ln.length * 12.5 + 8; }
-    // Cómo se hizo + firma (al pie), y las notas de la ficha
-    const notasF = md && md.notas ? md.notas : '';
-    doc.setFontSize(7.8); const nln = notasF ? doc.splitTextToSize(notasF, R - L - 40) : [];
-    const pieH = 150 + (nln.length ? nln.length * 9.5 + 10 : 0);
-    if (y + pieH > H - 24) { doc.addPage(); y = 50; }
-    y = Math.max(y + 6, H - 24 - pieH);
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(9); gris(); doc.text('CÓMO SE HIZO / OBSERVACIONES', L, y, { charSpace: 0.8 });
-    doc.setDrawColor(...col); doc.setLineWidth(1.2); doc.line(L, y + 5, L + 46, y + 5);
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(10); ink();
-    if (o.nota) doc.text(doc.splitTextToSize(o.nota, R - L), L, y + 22);
-    doc.setDrawColor(210, 213, 218); doc.setLineWidth(0.5);
-    for (let i = 0; i < 3; i++) doc.line(L, y + 26 + i * 19, R, y + 26 + i * 19);
-    y += 26 + 3 * 19 + 30;
-    doc.setDrawColor(130, 136, 145); doc.line(L, y, L + 190, y); doc.line(R - 190, y, R, y);
-    doc.setFontSize(8); gris(); doc.text('Firma del responsable', L, y + 11); doc.text('Fecha en que se hizo', R - 190, y + 11);
-    y += 28;
-    if (nln.length) {
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(7.8); ink(); doc.text('NOTAS.', L, y, { charSpace: 1 });
-      doc.setFont('helvetica', 'normal'); doc.text(nln, L + 40, y); y += nln.length * 9.5;
-    }
-    doc.setFontSize(7); doc.setTextColor(160, 165, 172);
-    doc.text(`${cong ? 'Salón del Reino · ' + cong + ' · ' : ''}Generado con Asignaciones${md && !md.propia ? ' · basada en la ficha ' + md.cod + ' del manual' : ''}`, W / 2, H - 14, { align: 'center' });
+    return {
+      titulo: t.titulo, md, color: colorDe(t), esRep: esRep(t), cong: (data.settings && data.settings.congregationName) || '',
+      cuando: !fecha ? 'Sin fecha todavía' : (t.soloMes ? mesLabel(fecha.slice(0, 7)) + ' (falta el día)' : fmtDia(fecha) + (t.hora ? ' · ' + t.hora + ' h' : '')),
+      frecuencia: md && !md.propia ? `${md.frec}${C.pasoDe(t) ? ' · ' + C.repiteTxt(t).toLowerCase() : ''}` : C.repiteTxt(t),
+      resp: pubName(t.resp, t), aux: pubName(t.aux, t), tareas: t.tareas || [], tareasOk: o.tareas || {}, matsOk: o.mats || {},
+      voluntarios: ci.vols.map(v => pubName(v.pubId, t) || v.nombre).filter(Boolean), cupo: ci.cupo, materiales: t.materiales || [], notas: t.notas || '', nota: o.nota || (o._ficha && o._ficha.nota) || ''
+    };
   }
+  function dibujarFicha(doc, t, fecha) { window.FichaPdf.dibujar(doc, datosFicha(t, fecha)); }
   async function compartirPdf(doc, nombre, texto) {
     const blob = doc.output('blob');
     try {

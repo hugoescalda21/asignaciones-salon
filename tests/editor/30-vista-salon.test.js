@@ -1,6 +1,7 @@
 // Vista (ver/ver.html): pestaña "Mantenimiento" (aparte de las reuniones) — limpieza del grupo con sus tareas, trabajos con
 // "Me sumo", la hoja de confirmación, "✓ Anotado", "Ya no puedo ir", "Completo" y el email sin vincular.
 const path = require('path');
+const fs = require('fs');
 const { launch, SHOTS, fixture } = require('./_helper');
 const VER = 'file://' + path.resolve(__dirname, '../../ver/ver.html') + '?codigo=C';
 const data = fixture();
@@ -49,9 +50,14 @@ function installMock(store) {
 (async () => {
   const b = await launch();
   async function open(email, query, extra) {
-    const ctx = await b.newContext({ viewport: { width: 390, height: 844 } });
+    const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, acceptDownloads: true });
     await ctx.route(/googleapis|tile\.openstreetmap/, r => r.abort());
-    await ctx.addInitScript(() => { localStorage.setItem('welcome-seen-C', '1'); window.__opened = []; window.open = (u) => { window.__opened.push(u); return null; }; });
+    const jd = process.env.JSPDF_DIR;
+    if (jd) {
+      await ctx.route(/jspdf\.umd\.min\.js/, r => r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(path.join(jd, 'jspdf.umd.min.js')) }));
+      await ctx.route(/jspdf\.plugin\.autotable\.min\.js/, r => r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(path.join(jd, 'jspdf.plugin.autotable.min.js')) }));
+    }
+    await ctx.addInitScript(() => { localStorage.setItem('welcome-seen-C', '1'); window.__opened = []; window.open = (u) => { window.__opened.push(u); return null; }; window.__confirm = true; window.confirm = () => window.__confirm; });
     const p = await ctx.newPage(); p.errs = []; p.on('pageerror', e => { if (!/firebase is not defined/.test(e.message)) p.errs.push(e.message); });
     await p.goto(VER + (query || '')); await p.waitForTimeout(500);
     await p.evaluate(({ store, main, email, mock }) => {
@@ -144,6 +150,53 @@ function installMock(store) {
   await p.evaluate(() => showTab('salon')); await p.waitForTimeout(100);
   cards = await cardsOf(p);
   check('otro hermano no ve lo del comité', !cards.some(c => /Fumigación|Pintura del frente|Arreglo del portón/.test(c)) && cards.some(c => /Corte de pasto/.test(c)), cards);
+  await p.context().close();
+
+  console.log('\nFicha desde el celular (responsable, auxiliar y voluntario)');
+  const conFicha = (d) => {
+    d['congregations/C/salon/trabajos'].lista.t9 = { id: 't9', titulo: 'Limpieza de canaletas', tipo: 'profunda', fecha: '2026-09-26', hora: '08:00', resp: 'p1', aux: 'p9', cupo: 2, repite: 'no', vista: true, fichaCod: '03.F',
+      tareas: ['TECHOS', 'Revise el techo', 'Limpie la basura', 'ALEROS', 'Revise los aleros'], materiales: ['Escalera'] };
+    d['congregations/C/salonAnotados/t9__2026-09-26__u7'] = { tid: 't9', fecha: '2026-09-26', pubId: 'p13', nombre: 'Sofía Abad', uid: 'u7', comentario: '', at: 'x' };
+    return d;
+  };
+  p = await open('martin@x.com', '', conFicha);
+  await p.evaluate(() => showTab('salon')); await p.waitForTimeout(100);
+  let fc = await p.evaluate(() => { const c = document.getElementById('sv-t9-2026-09-26'); return c ? c.innerText.replace(/\s+/g, ' ') : ''; });
+  check('su trabajo con ficha: la letra F y el botón "📋 Ficha"', /F ?Limpieza de canaletas/.test(fc) && /Ficha/.test(fc) && /Sos el responsable/.test(fc), fc);
+  await p.click('#salonBox [data-sv="ficha"][data-id="t9"]'); await p.waitForTimeout(150);
+  const fh = await p.evaluate(() => document.querySelector('.sv-sheet').innerText.replace(/\s+/g, ' '));
+  check('la ficha: sección, grupos y tareas para tildar', /FICHA DE TRABAJO \| EDIFICIOS/i.test(fh) && /MM SECCIÓN 03/i.test(fh) && /TECHOS/.test(fh) && /ALEROS/.test(fh) && /0 de 3/.test(fh) && await p.evaluate(() => document.querySelectorAll('.sv-sheet input[data-ft="tareas"]:not([disabled])').length === 3), fh.slice(0, 300));
+  await p.click('.sv-sheet input[data-ft="tareas"][data-i="1"]'); await p.waitForTimeout(150);
+  let wf = await p.evaluate(() => window.__writes.filter(w => /salonFichas/.test(w[1])).pop());
+  check('tildar guarda en salonFichas (trabajo__fecha) con su nombre y email', wf && wf[1] === 'congregations/C/salonFichas/t9__2026-09-26' && wf[2].tareas[1] === true && wf[2].pubId === 'p1' && wf[2].email === 'martin@x.com' && wf[2].estado === 'curso', wf);
+  await p.fill('#svFNota', 'Falta sellar la bajada'); await p.dispatchEvent('#svFNota', 'change'); await p.waitForTimeout(100);
+  await p.evaluate(() => { window.__confirm = false; }); await p.click('#svFFin'); await p.waitForTimeout(150);
+  check('"Terminé" con tareas sin marcar pregunta antes (y si dice que no, no termina)', await p.evaluate(() => !!document.getElementById('svFFin')) && (await p.evaluate(() => window.__writes.filter(w => /salonFichas/.test(w[1])).pop()))[2].estado === 'curso');
+  await p.evaluate(() => { window.__confirm = true; }); await p.click('#svFFin'); await p.waitForTimeout(200);
+  wf = await p.evaluate(() => window.__writes.filter(w => /salonFichas/.test(w[1])).pop());
+  check('"Terminé": queda hecho, con la nota y la hora', wf[2].estado === 'hecho' && wf[2].nota === 'Falta sellar la bajada' && !!wf[2].terminadoAt && await p.evaluate(() => /¡Gracias!/.test(document.querySelector('.sv-sheet').innerText)), wf[2]);
+  await p.click('.sv-sheet [data-svclose]'); await p.waitForTimeout(150);
+  check('la tarjeta pasa a "✓ Terminado"', await p.evaluate(() => /Terminado/.test(document.getElementById('sv-t9-2026-09-26').innerText)));
+  await p.click('#salonBox [data-sv="ficha"][data-id="t9"]'); await p.waitForTimeout(150);
+  check('terminada: se ve quién la terminó y se puede volver atrás', await p.evaluate(() => /Terminado por Martín Ruiz/.test(document.querySelector('.sv-sheet').innerText) && !!document.getElementById('svFReabrir') && !document.getElementById('svFFin')));
+  if (process.env.JSPDF_DIR) {
+    const [dl] = await Promise.all([p.waitForEvent('download'), p.click('#svFPdf')]);
+    const txt = fs.readFileSync(await dl.path()).toString('latin1');
+    check('"Descargar la ficha (PDF)" desde el celular, con el diseño del manual', /^Ficha - Limpieza de canaletas - 2026-09-26\.pdf$/.test(dl.suggestedFilename()) && /MM SECCI/.test(txt) && /TECHOS/.test(txt) && /Falta sellar/.test(txt), dl.suggestedFilename());
+  }
+  check('sin errores', !p.errs.length, p.errs);
+  await p.context().close();
+  // "Tus asignaciones" → abre la ficha directo
+  p = await open('martin@x.com', '', conFicha);
+  await p.evaluate(() => window.salonVer.goTo('2026-09-26')); await p.waitForTimeout(150);
+  check('tocar la asignación abre la ficha', await p.evaluate(() => !!document.querySelector('.sv-sheet.sv-ficha') && /Limpieza de canaletas/.test(document.querySelector('.sv-sheet').innerText)));
+  await p.context().close();
+  // Otro hermano (no es responsable ni auxiliar): la ve sin poder tildar
+  p = await open('ver@x.com', '', conFicha);
+  await p.evaluate(() => showTab('salon')); await p.waitForTimeout(100);
+  await p.click('#salonBox [data-sv="ficha"][data-id="t9"]'); await p.waitForTimeout(150);
+  check('otro hermano ve la ficha, sin poder tildar ni terminar', await p.evaluate(() => document.querySelectorAll('.sv-sheet input[data-ft="tareas"][disabled]').length === 3 && !document.getElementById('svFFin') && /La completan el responsable y el auxiliar/.test(document.querySelector('.sv-sheet').innerText)));
+  check('sin errores', !p.errs.length, p.errs);
   await p.context().close();
 
   console.log('\nVer como un hermano (Super Admin)');

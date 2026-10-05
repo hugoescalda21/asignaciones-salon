@@ -15,7 +15,8 @@ const { roleLabel, collectNewlyAssignedIds, avisoPreview, selectNewAvisos, notif
   arParts, addDaysIso, remindersDue, reminderMessage, sentReminderId, roleAreasFor, disallowedWeekChanges, guardSummary, accessRequestMessage,
   conductorAssignments, newConductors, conductorMessage, newTerritoryAssignments,
   BACKUP_SUBS, ALL_SUBS, backupName, parseBackupName, buildBackup, backupsToPrune, restorePlan, isRestoreWrite,
-  salonAssignments, newSalonAssignments, salonAssignMessage, anotadoMessage, resumenSemanal, newPublished, publishedMessage } = require('./lib');
+  salonAssignments, newSalonAssignments, salonAssignMessage, anotadoMessage, resumenSemanal, newPublished, publishedMessage,
+  fichaCambio, fichaMessage, comiteIds } = require('./lib');
 const SalonCore = require('./salon-core');
 
 // La app vive en GitHub Pages bajo /asignaciones-salon/, no en la raíz del
@@ -394,6 +395,24 @@ exports.onSalonWrite = onDocumentWritten({ document: 'congregations/{code}/salon
     const n = await sendToPubs(code, ids, publishedMessage(p), verLink(code, 'salon'), 'aviso', `salon-pub-${p.t.id}-${p.fecha}`);
     console.log('[salón] publicado', p.t.id, p.fecha, '· celulares:', n);
   }
+  return null;
+});
+
+// Ficha completada desde el celular (vista) → aviso al comité de mantenimiento cuando empieza y cuando termina.
+exports.onSalonFicha = onDocumentWritten({ document: 'congregations/{code}/salonFichas/{fid}', region: REGION }, async (event) => {
+  const before = event.data.before.exists ? event.data.before.data() : null;
+  const after = event.data.after.exists ? event.data.after.data() : null;
+  if (!after || after._restoredAt || isRestoreWrite(before || {}, after)) return null;
+  const kind = fichaCambio(before, after);
+  if (!kind) return null;
+  const code = event.params.code;
+  const ref = db.collection('congregations').doc(code);
+  const [cs, ts] = await Promise.all([ref.get(), ref.collection('salon').doc('trabajos').get()]);
+  const cong = cs.data() || {};
+  const t = ((ts.exists && ts.data().lista) || {})[after.tid];
+  const ids = comiteIds(cong, after.pubId);
+  const n = await sendToPubs(code, ids, fichaMessage(kind, after, t), APP_BASE + 'asignaciones-salon.html', 'aviso', `ficha-${event.params.fid}-${kind}`);
+  console.log('[ficha]', kind, event.params.fid, '· celulares:', n);
   return null;
 });
 

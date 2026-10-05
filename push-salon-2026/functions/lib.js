@@ -474,7 +474,7 @@ function newTerritoryAssignments(beforeList, afterList) {
    territorios y salidas. Se guardan en Storage: backups/{código}/{fecha}_{hora}-{tipo}.json
    (tipo: auto | manual | previa, la que se hace antes de restaurar). */
 const BACKUP_SUBS = ['terr', 'salidas', 'terminados'];
-const SALON_SUBS = ['salon', 'salonAnotados'];   // se restauran aparte ("Salón")
+const SALON_SUBS = ['salon', 'salonAnotados', 'salonFichas'];   // se restauran aparte ("Salón")
 const ALL_SUBS = BACKUP_SUBS.concat(SALON_SUBS);
 const BACKUP_KINDS = { auto: 'Automática', manual: 'Manual', previa: 'Antes de restaurar' };
 function backupName(code, when, kind) {
@@ -582,6 +582,31 @@ function newPublished(beforeLista, afterLista, todayIso) {
 function publishedMessage(p) {
   return { title: 'Se buscan voluntarios para el Salón', body: `${p.t.titulo || 'Trabajo de mantenimiento'} · ${diaTxt(p.fecha)}${p.t.hora ? ' a las ' + p.t.hora : ''}. Si podés ir, tocá "Me sumo".` };
 }
+// Ficha completada desde el celular → aviso al comité: cuando empieza y cuando la termina.
+function fichaCambio(before, after) {
+  if (!after) return null;
+  if (after.estado === 'hecho' && (!before || before.estado !== 'hecho')) return 'termino';
+  if (!before) return 'empezo';
+  return null;
+}
+function fichaMessage(kind, f, t) {
+  const tareas = ((t && t.tareas) || []).filter((x) => !(String(x).replace(/[^\p{L}]/gu, '').length >= 2 && String(x).length <= 60 && x === String(x).toUpperCase()));
+  const n = Object.keys(f.tareas || {}).length;
+  const titulo = (t && t.titulo) || 'un trabajo';
+  if (kind === 'termino') {
+    const parts = [];
+    if (tareas.length) parts.push(`${n} de ${tareas.length} tareas`);
+    if (f.nota) parts.push(`"${String(f.nota).slice(0, 90)}"`);
+    return { title: `${f.nombre || 'El responsable'} terminó «${titulo}»`, body: parts.join(' · ') || 'Se marcó como terminado desde el celular' };
+  }
+  return { title: `${f.nombre || 'El responsable'} empezó «${titulo}»`, body: tareas.length ? `Ya tildó ${n} de ${tareas.length} tareas` : 'Lo está completando desde el celular' };
+}
+// Quiénes reciben el aviso de las fichas: Super Admin y Admin del Salón (menos quien la completó).
+function comiteIds(cong, menos) {
+  const s = (cong && cong.settings) || {};
+  const mails = [].concat(s.editorEmails || [], s.salonAdminEmails || []).map((e) => String(e).toLowerCase());
+  return ((cong && cong.publishers) || []).filter((p) => p.email && mails.includes(String(p.email).toLowerCase()) && p.id !== menos).map((p) => p.id);
+}
 const DIAS_L = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 function diaTxt(iso) { const d = new Date(iso + 'T00:00:00Z'); return DIAS_L[d.getUTCDay()] + ' ' + d.getUTCDate(); }
 function salonAssignMessage(a, nombre) {
@@ -642,7 +667,7 @@ function isRestoreWrite(before, after) {
 
 module.exports = {
   faltantesSemana, resumenSemanal,
-  salonAssignments, newSalonAssignments, salonAssignMessage, newPublished, publishedMessage, anotadoMessage, SALON_SUBS, ALL_SUBS,
+  salonAssignments, newSalonAssignments, salonAssignMessage, newPublished, publishedMessage, fichaCambio, fichaMessage, comiteIds, anotadoMessage, SALON_SUBS, ALL_SUBS,
   BACKUP_SUBS, BACKUP_KINDS, backupName, parseBackupName, buildBackup, backupsToPrune, restorePlan, isRestoreWrite,
   salidaInstances, conductorAssignments, newConductors, conductorMessage, newTerritoryAssignments, mondayOfIsoLib,
   accessRequestMessage,

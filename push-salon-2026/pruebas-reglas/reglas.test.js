@@ -178,6 +178,21 @@ const section = (t) => console.log('\n' + t);
   await check('NO da de baja a otro', assertFails(db(S.ver).doc(C + '/salonAnotados/w1__2026-10-10__' + uid(S.ver2)).delete()));
   await check('"Ya no puedo ir": se da de baja él mismo', assertSucceeds(aRef(yo).delete()));
   await check('el Admin del Salón quita a alguien', assertSucceeds(db(S.salon).doc(C + '/salonAnotados/w1__2026-10-10__' + uid(S.ver2)).delete()));
+  // Fichas desde el celular: el responsable (p1) o el auxiliar (p2) de w1 la completan
+  const fic = (o) => Object.assign({ tid: 'w1', fecha: '2026-10-10', tareas: { 1: true }, mats: {}, nota: '', estado: 'curso', pubId: 'p1', nombre: 'Ver', email: S.ver, at: 'x' }, o || {});
+  const fRef = (email, id) => db(email).doc(C + '/salonFichas/' + (id || 'w1__2026-10-10'));
+  await check('el responsable empieza la ficha desde el celular', assertSucceeds(fRef(S.ver).set(fic())));
+  await check('y la termina con su nota', assertSucceeds(fRef(S.ver).set(fic({ tareas: { 1: true, 2: true }, nota: 'Falta sellar', estado: 'hecho', terminadoAt: 'x' }))));
+  await check('el auxiliar también la puede completar', assertSucceeds(fRef(S.ver2).set(fic({ pubId: 'p2', nombre: 'Otro', email: S.ver2 }))));
+  await check('NO alguien que no es responsable ni auxiliar', assertFails(fRef(S.ver2).set(fic({ pubId: 'p7', email: S.ver2 }))));
+  await check('NO con el email de otro', assertFails(fRef(S.ver).set(fic({ email: S.ver2 }))));
+  await check('NO con un id que no coincide', assertFails(fRef(S.ver, 'w9__2026-10-10').set(fic())));
+  await check('NO con un estado raro', assertFails(fRef(S.ver).set(fic({ estado: 'aprobado' }))));
+  await check('NO con campos de más', assertFails(fRef(S.ver).set(fic({ foto: 'x' }))));
+  await check('alguien de afuera NO', assertFails(fRef(S.afuera).set(fic({ email: S.afuera }))));
+  await check('todos la ven', assertSucceeds(db(S.terr).doc(C + '/salonFichas/w1__2026-10-10').get()));
+  await check('un hermano NO la borra', assertFails(fRef(S.ver).delete()));
+  await check('el Admin del Salón la borra', assertSucceeds(fRef(S.salon).delete()));
 
   section('9) Avisos push');
   await check('nadie lee los registros de celulares', assertFails(db(S.super).doc('pushSubscriptions/tok1').get()));

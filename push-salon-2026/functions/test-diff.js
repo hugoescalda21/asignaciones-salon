@@ -337,7 +337,7 @@ t('copias: nombre con fecha y hora de Argentina, y se puede leer', () => {
 });
 t('copias: incluye la congregación, territorios, salidas y avisos de terminado', () => {
   const b = buildBackup('C', { publishers: [1] }, { terr: { territorios: { lista: {} } }, salidas: { g1: {} } }, new Date('2026-09-27T06:30:00Z'));
-  assert.deepStrictEqual(Object.keys(b).sort(), ['app', 'code', 'createdAt', 'main', 'salidas', 'salon', 'salonAnotados', 'terminados', 'terr', 'version'].sort());
+  assert.deepStrictEqual(Object.keys(b).sort(), ['app', 'code', 'createdAt', 'main', 'salidas', 'salon', 'salonAnotados', 'salonFichas', 'terminados', 'terr', 'version'].sort());
   assert.deepStrictEqual(b.terminados, {});
 });
 t('copias: se guardan 8 semanas y una por mes hasta un año', () => {
@@ -417,6 +417,19 @@ t('restaurar: no manda avisos de "te asignaron"', () => {
     const pasto = { id: 'p', titulo: 'Pasto', fecha: '2026-09-26', repite: '15d', cupo: 3, vista: true, resp: 'p2', aux: 'p3' };
     assert.deepStrictEqual(L.newPublished({}, { p: pasto }, '2026-09-23').map(x => x.fecha), ['2026-09-26'], 'los que se repiten: un solo aviso');
     assert.deepStrictEqual(L.newPublished({}, { p: Object.assign({}, pasto, { fecha: '2026-11-28' }) }, '2026-09-23'), [], 'más de 30 días: nada');
+  });
+  t('fichas desde el celular: aviso al comité al empezar y al terminar', () => {
+    const t0 = { titulo: 'Limpieza de canaletas', tareas: ['TECHOS', 'Revise el techo', 'Limpie la basura', 'ALEROS', 'Revise aleros'] };
+    const f1 = { tid: 'w1', fecha: '2026-10-17', tareas: { 1: true }, estado: 'curso', nombre: 'Carlos Vega', pubId: 'p3' };
+    assert.strictEqual(L.fichaCambio(null, f1), 'empezo');
+    assert.strictEqual(L.fichaCambio(f1, Object.assign({}, f1, { tareas: { 1: true, 2: true } })), null, 'tildar más no avisa');
+    const f2 = Object.assign({}, f1, { tareas: { 1: true, 2: true, 4: true }, estado: 'hecho', nota: 'Falta sellar la bajada' });
+    assert.strictEqual(L.fichaCambio(f1, f2), 'termino');
+    assert.strictEqual(L.fichaCambio(f2, f2), null);
+    assert.deepStrictEqual(L.fichaMessage('empezo', f1, t0), { title: 'Carlos Vega empezó «Limpieza de canaletas»', body: 'Ya tildó 1 de 3 tareas' });
+    assert.deepStrictEqual(L.fichaMessage('termino', f2, t0), { title: 'Carlos Vega terminó «Limpieza de canaletas»', body: '3 de 3 tareas · "Falta sellar la bajada"' });
+    const cong = { settings: { editorEmails: ['hugo@x.com'], salonAdminEmails: ['MANT@x.com'] }, publishers: [{ id: 'p0', email: 'hugo@x.com' }, { id: 'p3', email: 'mant@x.com' }, { id: 'p5', email: 'otro@x.com' }] };
+    assert.deepStrictEqual(L.comiteIds(cong, 'p3'), ['p0']);
   });
   t('salón: aviso al responsable cuando alguien se suma o se baja', () => {
     const r = anotados['w1__2026-09-26__u'];

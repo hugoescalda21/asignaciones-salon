@@ -12,7 +12,7 @@
   'use strict';
   const C = window.SalonCore;
   if (!C) return;
-  const V = { code: null, unsub: [], trabajos: {}, limpieza: {}, grupos: {}, anotados: {}, started: false };
+  const V = { code: null, unsub: [], trabajos: {}, limpieza: {}, grupos: {}, anotados: {}, fichas: {}, started: false };
   window.__salonVer = V;
 
   const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
@@ -75,6 +75,31 @@
   .sv-bb.o { background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--line); }
   .sv-bb.r { background: rgba(220,38,38,.12); color: #B91C1C; }
   html.dk .sv-bb.r { color: #FCA5A5; }
+  .sv-bdg { display: inline-grid; place-items: center; min-width: 16px; height: 16px; border-radius: 4px; color: #fff; font-size: 10.5px; font-weight: 900; margin-right: 5px; padding: 0 1px; vertical-align: 1px; }
+  .sv-lnk { border: none; background: none; padding: 3px 0 0; font: inherit; font-size: 12.5px; font-weight: 800; color: var(--accent-blue, #2563EB); cursor: pointer; display: block; }
+  .sv-fh { padding: 2px 0 10px; }
+  .sv-fhtop { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .sv-fhtop small { font-size: 9.5px; font-weight: 800; letter-spacing: .14em; color: var(--ink-soft); padding-top: 4px; }
+  .sv-fbadge { display: flex; align-items: center; gap: 7px; flex-shrink: 0; } .sv-fbadge em { white-space: nowrap; font-style: normal; font-size: 9px; font-weight: 800; letter-spacing: .16em; color: var(--c); }
+  .sv-fbadge b { width: 34px; height: 34px; display: grid; place-items: center; color: #fff; font-size: 19px; }
+  .sv-ficha h3 { font-size: 22px !important; margin: 4px 0 6px !important; line-height: 1.15; }
+  .sv-fline { display: block; height: 3px; width: 62%; background: var(--c); border-radius: 2px; }
+  .sv-epp { display: flex; gap: 6px; justify-content: flex-end; margin-top: 8px; } .sv-epp img { width: 32px; height: 32px; border-radius: 50%; background: #fff; }
+  html.dk .sv-epp img { filter: invert(1); background: transparent; }
+  .sv-faviso { display: flex; gap: 10px; align-items: stretch; background: rgba(220,38,38,.08); border-radius: 10px; overflow: hidden; margin-bottom: 10px; font-size: 12.5px; line-height: 1.4; }
+  .sv-faviso b { background: #B91C1C; color: #fff; width: 24px; display: grid; place-items: center; font-size: 15px; flex-shrink: 0; } .sv-faviso span { padding: 8px 10px 8px 0; }
+  .sv-fok { background: rgba(22,163,74,.12); color: #15803D; border-radius: 12px; padding: 10px 12px; font-weight: 800; font-size: 13.5px; margin-bottom: 10px; }
+  html.dk .sv-fok { color: #86EFAC; }
+  .sv-fsec { display: flex; justify-content: space-between; align-items: baseline; margin: 12px 2px 6px; } .sv-fsec b { font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); } .sv-fsec span { font-size: 12.5px; font-weight: 800; }
+  .sv-fbar { height: 6px; border-radius: 4px; background: var(--bg); overflow: hidden; margin: 0 2px 8px; } .sv-fbar i { display: block; height: 100%; }
+  .sv-flist { background: var(--bg); border: 1px solid var(--line); border-radius: 14px; padding: 4px 12px; margin-bottom: 8px; }
+  .sv-flist h4 { margin: 10px 0 2px; font-size: 13px; font-weight: 900; letter-spacing: .02em; }
+  .sv-flist label { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; line-height: 1.4; padding: 8px 0; border-top: 1px solid var(--line); cursor: pointer; }
+  .sv-flist h4 + label, .sv-flist label:first-child { border-top: none; }
+  .sv-flist input { width: 20px; height: 20px; flex-shrink: 0; margin: 0; accent-color: #16A34A; }
+  .sv-flist label.ok span { color: var(--ink-soft); text-decoration: line-through; }
+  .sv-fnota { width: 100%; box-sizing: border-box; min-height: 70px; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font: inherit; font-size: 14px; background: var(--bg); color: var(--ink); }
+  .sv-fnotas { font-size: 11px; color: var(--ink-soft); line-height: 1.45; margin-top: 12px; border-top: 1px solid var(--line); padding-top: 8px; }
   .sv-note { font-size: 12px; color: var(--ink-soft); text-align: center; margin-top: 10px; line-height: 1.45; }
   `;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
@@ -95,6 +120,15 @@
   function fmtCorto(iso) { const d = new Date(iso + 'T12:00:00'); return `${DIAS3[d.getDay()].toLowerCase()} ${d.getDate()}`; }
   function cuando(iso) { const h = hoy(); return iso === h ? 'hoy' : iso === C.addDays(h, 1) ? 'mañana' : fmtDia(iso); }
   function congName() { return (data && data.settings && data.settings.congregationName) || 'Salón del Reino'; }
+  /* ---------- Fichas (modelo del manual + lo que completan el responsable y el auxiliar) ---------- */
+  const FM = () => window.FichasModelo || { FICHAS: [], EPP: {}, EPP_NOMBRE: {}, porCodigo: () => null };
+  const esGrupoTxt = (x) => { const l = [...String(x)].filter(c => /\p{L}/u.test(c)).length; return l >= 2 && x.length <= 60 && x === x.toUpperCase(); };
+  function modeloDe(t) { const c = t && t.fichaCod; if (!c || c.startsWith('p:')) return null; return FM().porCodigo(c); }
+  const colorDe = (t) => { const md = modeloDe(t); return md ? md.color : tipoOf(t).color; };
+  const fichaId = (tid, fecha) => `${tid}__${fecha}`;
+  const fichaDoc = (t, fecha) => V.fichas[fichaId(t.id, fecha)] || null;
+  const tieneFicha = (t) => !!(modeloDe(t) || (t.tareas || []).length || (t.fichaCod || '').startsWith('p:'));
+  function terminado(t, fecha) { const f = fichaDoc(t, fecha); return !!(f && f.estado === 'hecho'); }
   function myAnotado(t, fecha) { return currentUser && currentUser.uid ? V.anotados[C.anotadoId(t.id, fecha, currentUser.uid)] || null : null; }
   function voy(t, fecha, pub) { return !!myAnotado(t, fecha) || (pub && C.voluntarios(t, fecha, V.anotados).some(v => v.pubId === pub.id)); }
 
@@ -109,6 +143,8 @@
     V.unsub.push(c.collection('salon').doc('trabajos').onSnapshot((s) => { V.trabajos = ((s.exists && s.data()) || {}).lista || {}; schedule(); }, () => {}));
     V.unsub.push(c.collection('salon').doc('limpieza').onSnapshot((s) => { V.limpieza = (s.exists && s.data()) || {}; schedule(); }, () => {}));
     V.unsub.push(c.collection('terr').doc('grupos').onSnapshot((s) => { V.grupos = ((s.exists && s.data()) || {}).lista || {}; schedule(); }, () => {}));
+    // Fichas que completan el responsable o el auxiliar desde acá (tareas tildadas, nota y "Terminé").
+    V.unsub.push(c.collection('salonFichas').onSnapshot((qs) => { const o = {}; qs.forEach(d => { o[d.id] = d.data() || {}; }); V.fichas = o; schedule(); }, () => {}));
     V.unsub.push(c.collection('salonAnotados').onSnapshot((qs) => { const o = {}; qs.forEach(d => { o[d.id] = d.data() || {}; }); V.anotados = o; schedule(); }, () => {}));
   }
   let queued = false;
@@ -173,7 +209,7 @@
   // Los publicados en la vista y, de los que son "solo del comité", los que son tuyos (responsable, auxiliar o anotado).
   function visibles(pub) {
     const h = hoy();
-    return C.trabajosEntre(V.trabajos, h, C.addDays(h, 21)).filter(o => !o.cancelada && o.estado !== 'hecho' && !o.sinDia &&
+    return C.trabajosEntre(V.trabajos, h, C.addDays(h, 21)).filter(o => !o.cancelada && o.estado !== 'hecho' && !o.sinDia && (!terminado(o.t, o.fecha) || o.fecha >= h) &&
       (o.pub || (pub && (o.t.resp === pub.id || o.t.aux === pub.id || voy(o.t, o.fecha, pub)))));
   }
   function renderBox() {
@@ -246,12 +282,14 @@
     const anot = voy(t, o.fecha, pub);
     const van = ci.vols.map(v => apellido(v.pubId, v.nombre, t)).filter(Boolean);
     let act = '';
-    if (soy) act = `<span class="sv-tag">${soy}</span>`;
+    const fd = fichaDoc(t, o.fecha), conF = tieneFicha(t);
+    if (soy && conF) act = fd && fd.estado === 'hecho' ? `<button type="button" class="sv-btn ok" data-sv="ficha" data-id="${esc(t.id)}" data-f="${o.fecha}">✓ Terminado</button>` : `<button type="button" class="sv-btn" data-sv="ficha" data-id="${esc(t.id)}" data-f="${o.fecha}">📋 Ficha</button>`;
+    else if (soy) act = `<span class="sv-tag">${soy}</span>`;
     else if (anot) act = `<button type="button" class="sv-btn ok" data-sv="anotado" data-id="${esc(t.id)}" data-f="${o.fecha}">✓ Anotado</button>`;
     else if (ci.completo) act = '<button type="button" class="sv-btn full" disabled>Completo</button>';
     else if (ci.cupo && o.pub) act = `<button type="button" class="sv-btn" data-sv="sumo" data-id="${esc(t.id)}" data-f="${o.fecha}">Me sumo</button>`;
-    return `<div class="sv-card${soy || anot ? ' mine' : ''}" id="sv-${esc(t.id)}-${o.fecha}"><span class="sv-dt">${DIAS3[d.getDay()]}<b>${d.getDate()}</b></span><span class="sv-bar" style="background:${tp.color}"></span>
-      <span class="sv-tx"><b>${tp.icon} ${esc(t.titulo)}</b><small>${t.hora ? esc(t.hora) + ' · ' : ''}${esc(quienCorto(t.resp, t))} y ${esc(quienCorto(t.aux, t))}${ci.cupo ? (ci.faltan ? ` · <em>${ci.faltan === 1 ? 'falta 1' : 'faltan ' + ci.faltan}</em>` : ' · completo') : ''}</small>${van.length ? `<small>Van: ${esc(van.join(', '))}</small>` : ''}${o.pub ? '' : '<small>🔒 Todavía no está publicado: lo ve el comité de mantenimiento y vos.</small>'}</span>
+    return `<div class="sv-card${soy || anot ? ' mine' : ''}" id="sv-${esc(t.id)}-${o.fecha}"><span class="sv-dt">${DIAS3[d.getDay()]}<b>${d.getDate()}</b></span><span class="sv-bar" style="background:${colorDe(t)}"></span>
+      <span class="sv-tx"><b>${modeloDe(t) ? `<span class="sv-bdg" style="background:${modeloDe(t).color}${modeloDe(t).sec === '05' ? ';color:#3A2A00' : ''}">${modeloDe(t).letra}</span>` : tp.icon + ' '}${esc(t.titulo)}</b><small>${t.hora ? esc(t.hora) + ' · ' : ''}${esc(quienCorto(t.resp, t))} y ${esc(quienCorto(t.aux, t))}${ci.cupo ? (ci.faltan ? ` · <em>${ci.faltan === 1 ? 'falta 1' : 'faltan ' + ci.faltan}</em>` : ' · completo') : ''}</small>${van.length ? `<small>Van: ${esc(van.join(', '))}</small>` : ''}${o.pub ? '' : '<small>🔒 Todavía no está publicado: lo ve el comité de mantenimiento y vos.</small>'}${soy && conF ? `<small>${esc(soy)}${fd && fd.tareas ? ` · ${Object.keys(fd.tareas).length} de ${(t.tareas || []).filter(x => !esGrupoTxt(x)).length} tareas` : ''}</small>` : ''}${!soy && conF ? `<button type="button" class="sv-lnk" data-sv="ficha" data-id="${esc(t.id)}" data-f="${o.fecha}">📋 Ver la ficha ›</button>` : ''}</span>
       <span class="sv-act">${act}</span></div>`;
   }
 
@@ -271,10 +309,104 @@
   function gcalFor(t, fecha) { return gcalUrl(t.titulo + ' (Salón del Reino)', fecha, `Trabajo en el Salón — ${congName()}. Responsable: ${quienLargo(t.resp, t)}`, t.hora); }
   function onBoxClick(e) {
     const b = e.target.closest('[data-sv]'); if (!b) return;
-    if (window.__comoPubId) { if (window.verComoBloquear) window.verComoBloquear(); return; }
+    if (window.__comoPubId && b.dataset.sv !== 'ficha') { if (window.verComoBloquear) window.verComoBloquear(); return; }
     const t = V.trabajos[b.dataset.id]; if (!t) return;
+    if (b.dataset.sv === 'ficha') { openFicha(t, b.dataset.f); return; }
     if (b.dataset.sv === 'sumo') openSumo(t, b.dataset.f);
     else openAnotado(t, b.dataset.f);
+  }
+  // La ficha del trabajo en el celular: con el diseño del manual. El responsable y el auxiliar tildan
+  // las tareas, escriben cómo se hizo y tocan "Terminé"; los demás la ven sin poder cambiarla.
+  function openFicha(t, fecha) {
+    const pub = myPub();
+    const soy = !!(pub && (t.resp === pub.id || t.aux === pub.id)) && !window.__comoPubId;
+    const md = modeloDe(t), col = colorDe(t);
+    const ref = () => initFirebase().collection('congregations').doc(V.code).collection('salonFichas').doc(fichaId(t.id, fecha));
+    let f = Object.assign({ tareas: {}, mats: {}, nota: '' }, JSON.parse(JSON.stringify(fichaDoc(t, fecha) || {})));
+    const hecho = () => f.estado === 'hecho';
+    const items = (t.tareas || []).filter(x => !esGrupoTxt(x)).length;
+    const puede = () => soy && !hecho();
+    const html = () => {
+      const n = Object.keys(f.tareas || {}).length;
+      const epp = (md && md.epp) || [];
+      return `<div class="sv-fh" style="--c:${col}">
+          <div class="sv-fhtop"><small>FICHA DE TRABAJO${md ? ' | ' + esc(md.cat.toUpperCase()) : ''}</small>${md ? `<span class="sv-fbadge"><em>MM SECCIÓN ${md.sec}</em><b style="background:${col}${md.sec === '05' ? ';color:#3A2A00' : ''}">${md.letra}</b></span>` : ''}</div>
+          <h3>${esc(t.titulo)}</h3><i class="sv-fline"></i>
+          ${epp.length ? `<div class="sv-epp">${epp.map(k => `<img src="${FM().EPP[k]}" alt="${esc(FM().EPP_NOMBRE[k] || k)}" title="${esc(FM().EPP_NOMBRE[k] || k)}">`).join('')}</div>` : ''}
+        </div>
+        ${md && (md.aviso || []).length ? `<div class="sv-faviso"><b>!</b><span>${md.aviso.map(esc).join(' ')}</span></div>` : ''}
+        <div class="sv-box"><div><span>🗓</span>${esc(fmtDia(fecha))}${t.hora ? ' · ' + esc(t.hora) : ''}</div><div><span>👤</span>Responsable: ${esc(quienLargo(t.resp, t))} · Auxiliar: ${esc(quienLargo(t.aux, t))}</div>${C.cupoInfo(t, fecha, V.anotados).vols.length ? `<div><span>🙋</span>Van: ${esc(C.cupoInfo(t, fecha, V.anotados).vols.map(v => pubName(v.pubId, t) || v.nombre).filter(Boolean).join(', '))}</div>` : ''}</div>
+        ${hecho() ? `<div class="sv-fok">✓ Terminado${f.nombre ? ' por ' + esc(f.nombre) : ''}${f.terminadoAt ? ' · ' + esc(fmtCorto(f.terminadoAt.slice(0, 10))) : ''}</div>` : ''}
+        ${items ? `<div class="sv-fsec"><b>Tareas</b><span>${n} de ${items}</span></div><div class="sv-fbar"><i style="width:${Math.round(n * 100 / items)}%;background:${col}"></i></div>
+          <div class="sv-flist">${(t.tareas || []).map((x, i) => esGrupoTxt(x) ? `<h4 style="color:${md && md.sec === '05' ? '#A16207' : col}">${esc(x)}</h4>` : `<label class="${(f.tareas || {})[i] ? 'ok' : ''}"><input type="checkbox" data-ft="tareas" data-i="${i}"${(f.tareas || {})[i] ? ' checked' : ''}${puede() ? '' : ' disabled'}><span>${esc(x)}</span></label>`).join('')}</div>` : ''}
+        ${(t.materiales || []).length ? `<div class="sv-fsec"><b>Qué llevar</b></div><div class="sv-flist">${t.materiales.map((x, i) => `<label class="${(f.mats || {})[i] ? 'ok' : ''}"><input type="checkbox" data-ft="mats" data-i="${i}"${(f.mats || {})[i] ? ' checked' : ''}${puede() ? '' : ' disabled'}><span>${esc(x)}</span></label>`).join('')}</div>` : ''}
+        ${t.notas ? `<div class="sv-note" style="text-align:left;margin:0 0 10px;">${esc(t.notas)}</div>` : ''}
+        ${soy || f.nota ? `<div class="sv-fsec"><b>Cómo se hizo</b></div><textarea id="svFNota" class="sv-fnota" placeholder="Ej.: se cambiaron 2 tejas; falta sellar la bajada del fondo"${puede() ? '' : ' disabled'}>${esc(f.nota || '')}</textarea>` : ''}
+        ${puede() ? '<button type="button" class="sv-bb p" id="svFFin">✓ Terminé</button>' : ''}
+        ${soy && hecho() ? '<button type="button" class="sv-bb o" id="svFReabrir">Todavía no terminé</button>' : ''}
+        <button type="button" class="sv-bb o" id="svFPdf">📄 Descargar la ficha (PDF)</button>
+        <button type="button" class="sv-bb o" data-svclose>Cerrar</button>
+        ${soy ? '<div class="sv-note">Lo que tildás se guarda solo, también sin señal. Al tocar "Terminé" le avisamos al comité de mantenimiento.</div>' : '<div class="sv-note">La completan el responsable y el auxiliar.</div>'}
+        ${md && md.notas ? `<div class="sv-fnotas"><b>NOTAS.</b> ${esc(md.notas)}</div>` : ''}`;
+    };
+    const m = sheet(html());
+    m.el.querySelector('.sv-sheet').classList.add('sv-ficha');
+    const guardar = async (extra) => {
+      if (!soy) return false;
+      Object.assign(f, extra || {});
+      const doc = { tid: t.id, fecha, tareas: f.tareas || {}, mats: f.mats || {}, nota: String(f.nota || '').slice(0, 1000), estado: f.estado || 'curso', pubId: pub.id, nombre: pub.name, email: currentUser.email, at: new Date().toISOString() };
+      if (f.terminadoAt) doc.terminadoAt = f.terminadoAt;
+      V.fichas[fichaId(t.id, fecha)] = doc;
+      try { await ref().set(doc); return true; }
+      catch (e) { console.error(e); showToast(e && e.code === 'permission-denied' ? 'No se pudo guardar: no tenés permiso.' : 'No se pudo guardar. Se reintenta cuando haya conexión.'); return false; }
+    };
+    const rebind = () => { m.set(html()); bind(); };
+    const bind = () => {
+      m.el.querySelectorAll('input[data-ft]').forEach(c => c.addEventListener('change', () => {
+        const k = c.dataset.ft; f[k] = Object.assign({}, f[k] || {});
+        if (c.checked) f[k][c.dataset.i] = true; else delete f[k][c.dataset.i];
+        c.closest('label').classList.toggle('ok', c.checked);
+        guardar(); if (k === 'tareas') { const n = Object.keys(f.tareas).length; const sp = m.el.querySelector('.sv-fsec span'); if (sp) sp.textContent = `${n} de ${items}`; const bar = m.el.querySelector('.sv-fbar i'); if (bar) bar.style.width = Math.round(n * 100 / items) + '%'; }
+      }));
+      const nota = m.q('#svFNota'); if (nota) nota.addEventListener('change', () => guardar({ nota: nota.value.trim() }));
+      const fin = m.q('#svFFin');
+      if (fin) fin.addEventListener('click', async () => {
+        if (nota) f.nota = nota.value.trim();
+        const faltan = items - Object.keys(f.tareas || {}).length;
+        if (faltan > 0 && !window.confirm(`Quedan ${faltan} ${faltan === 1 ? 'tarea' : 'tareas'} sin marcar. ¿Terminaste igual?`)) return;
+        if (await guardar({ estado: 'hecho', terminadoAt: new Date().toISOString() })) {
+          m.set(`<h3>¡Gracias!</h3><div class="sub">${esc(t.titulo)} quedó como <b>terminado</b>${items ? ` (${Object.keys(f.tareas || {}).length} de ${items} tareas)` : ''}. Le avisamos al comité de mantenimiento.</div><button type="button" class="sv-bb p" data-svclose>Listo</button>`);
+          schedule();
+        }
+      });
+      const re = m.q('#svFReabrir'); if (re) re.addEventListener('click', async () => { delete f.terminadoAt; if (await guardar({ estado: 'curso' })) { rebind(); schedule(); } });
+      const pdf = m.q('#svFPdf'); if (pdf) pdf.addEventListener('click', () => { const n = m.q('#svFNota'); if (n) f.nota = n.value.trim(); descargarFicha(t, fecha, f); });
+    };
+    bind();
+  }
+  // jsPDF se carga recién cuando hace falta (la vista no lo trae de entrada).
+  function cargarScript(src) { return new Promise((ok, mal) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = mal; document.head.appendChild(s); }); }
+  async function descargarFicha(t, fecha, f) {
+    try {
+      if (!window.jspdf) await cargarScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+      if (!window.jspdf.jsPDF.API.autoTable) await cargarScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js');
+    } catch (e) { showToast('No se pudo preparar el PDF (revisá la conexión).'); return; }
+    if (!window.FichaPdf) return;
+    const md = modeloDe(t), ci = C.cupoInfo(t, fecha, V.anotados);
+    const doc = new window.jspdf.jsPDF({ unit: 'pt', format: 'a4' });
+    window.FichaPdf.dibujar(doc, {
+      titulo: t.titulo, md, color: colorDe(t), esRep: t.clase === 'rep', cong: congName(),
+      cuando: fmtDia(fecha).replace(/^./, c => c.toUpperCase()) + (t.hora ? ' · ' + t.hora + ' h' : ''),
+      frecuencia: md ? md.frec : C.repiteTxt(t), resp: pubName(t.resp, t), aux: pubName(t.aux, t),
+      tareas: t.tareas || [], tareasOk: (f && f.tareas) || {}, matsOk: (f && f.mats) || {}, nota: (f && f.nota) || '',
+      voluntarios: ci.vols.map(v => pubName(v.pubId, t) || v.nombre).filter(Boolean), cupo: ci.cupo, materiales: t.materiales || [], notas: t.notas || ''
+    });
+    const nombre = `Ficha - ${String(t.titulo || 'Trabajo').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\\/:*?"<>|]/g, ' ').slice(0, 60)} - ${fecha}.pdf`;
+    try {
+      const file = new File([doc.output('blob')], nombre, { type: 'application/pdf' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: nombre }); return; }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    doc.save(nombre);
   }
   function openSumo(t, fecha) {
     const pub = myPub();
@@ -346,6 +478,10 @@
     myRows,
     goTo(date) {
       if (typeof showTab === 'function') showTab('salon');
+      // Si ese día tenés un trabajo con ficha (responsable o auxiliar), se abre la ficha directamente.
+      const pub = myPub();
+      const mio = pub && C.trabajosEntre(V.trabajos, date, date).find(o => !o.cancelada && (o.t.resp === pub.id || o.t.aux === pub.id) && tieneFicha(o.t));
+      if (mio) { openFicha(mio.t, date); return; }
       const el = document.querySelector(`#salonBox [id$="-${date}"]`) || $('salonBox');
       if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.style.transition = 'box-shadow .3s'; el.style.boxShadow = '0 0 0 3px rgba(37,99,235,.45)'; setTimeout(() => { el.style.boxShadow = ''; }, 1600); }
     }

@@ -211,6 +211,32 @@ service cloud.firestore {
       allow delete: if request.auth != null && (resource.data.uid == request.auth.uid || gestorA());
     }
 
+    // Fichas completadas desde el celular: el responsable o el auxiliar de ese trabajo tilda las tareas,
+    // escribe cómo se hizo y marca "Terminé" (salonFichas/{trabajo__fecha}). La ven todos los de la
+    // congregación; el Super Admin y el Admin del Salón pueden borrarla.
+    match /congregations/{code}/salonFichas/{fid} {
+      function ajF() { return get(/databases/$(database)/documents/congregations/$(code)).data.settings; }
+      function enF(c) { return request.auth.token.email in ajF().get(c, []); }
+      function gestorF() { return enF('editorEmails') || enF('salonAdminEmails'); }
+      function conAccesoF() {
+        return gestorF() || enF('tecnicoAdminEmails') || enF('acomodadoresAdminEmails') || enF('asignacionesAdminEmails') ||
+               enF('territoriosAdminEmails') || enF('anunciosOnlyEmails') || enF('viewerEmails');
+      }
+      function fichaValida() {
+        let d = request.resource.data;
+        let t = get(/databases/$(database)/documents/congregations/$(code)/salon/trabajos).data.lista.get(d.tid, {});
+        return d.keys().hasOnly(['tid', 'fecha', 'tareas', 'mats', 'nota', 'estado', 'pubId', 'nombre', 'email', 'at', 'terminadoAt']) &&
+               d.email == request.auth.token.email && fid == d.tid + '__' + d.fecha &&
+               d.tid is string && d.tid.size() <= 40 && d.fecha is string && d.fecha.size() == 10 &&
+               d.tareas is map && d.mats is map && d.nota is string && d.nota.size() <= 1000 &&
+               d.estado in ['curso', 'hecho'] && d.nombre is string && d.nombre.size() <= 80 &&
+               (gestorF() || t.get('resp', '') == d.pubId || t.get('aux', '') == d.pubId);
+      }
+      allow read: if request.auth != null && conAccesoF();
+      allow create, update: if request.auth != null && conAccesoF() && fichaValida();
+      allow delete: if request.auth != null && gestorF();
+    }
+
     // Solicitudes de acceso — quien entra a la vista sin estar autorizado pide acceso con
     // su nombre. Un pedido por cuenta (el id es su uid), siempre con SU email (el del inicio
     // de sesión) y en estado "pendiente". Mientras está pendiente puede corregir el nombre.

@@ -301,6 +301,38 @@ check('sin día: nunca publicado ni en las asignaciones', !C.publicado({ vista: 
   check('sin errores', !p.errs.length, p.errs);
   await p.context().close();
 
+  console.log('\nColores de las fichas y lo que se completa desde el celular');
+  const st4 = { docs: { 'congregations/C': JSON.parse(JSON.stringify(data)), 'congregations/C/terr/grupos': { lista: {} }, 'congregations/C/salon/limpieza': { rotacion: [], semanas: {} },
+    'congregations/C/salon/trabajos': { lista: {
+      f1: T({ id: 'f1', titulo: 'Limpieza de canaletas', tipo: 'profunda', fecha: '2026-10-03', fichaCod: '03.F', tareas: ['TECHOS', 'Revise el techo', 'Limpie la basura', 'ALEROS', 'Revise los aleros'] }),
+      f2: T({ id: 'f2', titulo: 'Audio', tipo: 'otro', fecha: '2026-10-07', fichaCod: '05.A', tareas: ['Revisar'] }),
+      f3: T({ id: 'f3', titulo: 'Pintura sin ficha', tipo: 'pintura', fecha: '2026-10-08' }) } },
+    'congregations/C/salonFichas/f1__2026-10-03': { tid: 'f1', fecha: '2026-10-03', tareas: { 1: true, 2: true, 4: true }, mats: {}, nota: 'Falta sellar la bajada', estado: 'hecho', pubId: 'p2', nombre: 'Lucas Gómez', email: 'l@x.com', at: 'x', terminadoAt: '2026-10-03T11:42:00' } }, writes: [], uploads: [] };
+  p = await open('hugo@x.com', st4);
+  await p.evaluate(() => { switchTab('salon'); window.__salon.view = 'cal'; window.__salon.month = '2026-10'; window.__salon.verHechos = true; salonRender(); }); await p.waitForTimeout(150);
+  const cc = await p.evaluate(() => ({
+    f2: (() => { const e = document.querySelector('.sl-d[data-f="2026-10-07"] .sl-labs em'); return e ? e.getAttribute('style') + '|' + e.textContent + '|' + e.title : ''; })(),
+    f3: (() => { const e = document.querySelector('.sl-d[data-f="2026-10-08"] .sl-labs em'); return e ? e.getAttribute('style') + '|' + e.textContent : ''; })(),
+    leg: document.querySelector('.sl-leg').textContent
+  }));
+  check('con ficha: color de la sección y su letra (05.A → A amarilla)', /#FBC227/i.test(cc.f2) && /^A ?Audio|\|AAudio/.test(cc.f2.split('|').slice(1).join('|')) && /05\.A/.test(cc.f2), cc.f2);
+  check('sin ficha: el color de su tipo', /#DB2777/i.test(cc.f3) && /Pintura sin ficha/.test(cc.f3), cc.f3);
+  check('leyenda con las secciones del mes y los tipos sin ficha', /05 Sist\. electrónicos/.test(cc.leg) && /Pintura/.test(cc.leg), cc.leg);
+  check('lo terminado desde el celular cuenta como hecho', await p.evaluate(() => !!document.querySelector('.sl-d[data-f="2026-10-03"] .sl-labs em.hecho')));
+  await p.evaluate(() => { window.__salon.view = 'trab'; salonRender(); }); await p.waitForTimeout(100);
+  await click(p, '#salonRoot [data-id="f1"]');
+  const dd = await p.evaluate(() => [...document.querySelectorAll('.slmodal')].pop().innerText.replace(/\s+/g, ' '));
+  check('detalle: "Terminado por Lucas Gómez", tareas tildadas y su nota', /Terminado por Lucas Gómez/.test(dd) && /3 de 3 tareas tildadas desde el celular/.test(dd) && /Falta sellar la bajada/.test(dd) && /FICHA 03\.F/i.test(dd), dd.slice(0, 300));
+  await p.evaluate(() => document.querySelectorAll('.slmodal').forEach(x => x.remove()));
+  await click(p, '#salonRoot [data-s="edit"][data-id="f1"]').catch(() => {});
+  if (await p.evaluate(() => !!document.querySelector('#slSave'))) {
+    await click(p, '#slSave'); await p.waitForTimeout(150);
+    const saved = await p.evaluate(() => window.__store.docs['congregations/C/salon/trabajos'].lista.f1);
+    check('al guardar el trabajo, lo del celular no se copia adentro', !JSON.stringify(saved).includes('_ficha'), saved && saved.ocurr);
+  }
+  check('sin errores', !p.errs.length, p.errs);
+  await p.context().close();
+
   await b.close();
   console.log(`\n${ok} OK, ${bad} fallaron`);
   process.exitCode = bad ? 1 : 0;
