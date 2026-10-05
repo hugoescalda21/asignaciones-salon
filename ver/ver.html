@@ -1195,7 +1195,12 @@
       } catch (e) { /* sin acceso al portapapeles */ }
     };
   }
-  function showAccessDenied() {
+  async function showAccessDenied() {
+    // ¿Es un voluntario del salón de otra congregación? Entonces entra solo a Mantenimiento.
+    if (!window.__extProbado && currentUser && getCode() && window.salonVer && window.salonVer.externo) {
+      window.__extProbado = true;
+      try { if (await window.salonVer.externo({ modo: 'vol', code: getCode() })) return; } catch (e) { console.warn('voluntario del salón', e); }
+    }
     hideInitialLoading();
     $('gateView').classList.add('hidden');
     $('mainView').classList.add('hidden');
@@ -2671,6 +2676,13 @@
   $('gateCodeInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('gateBtn').click(); });
 
   (async () => {
+    // Invitación a un trabajo del Salón para hermanos de otra congregación: sin cuenta ni inicio de sesión.
+    const invK = new URLSearchParams(location.search).get('inv');
+    if (invK && getCode()) {
+      const go = () => { if (window.salonVer && window.salonVer.externo) window.salonVer.externo({ modo: 'inv', code: getCode(), k: invK }); };
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
+      return;
+    }
     if (new URLSearchParams(location.search).get('codigo') && getCode()) { try { localStorage.setItem(LAST_CODE_KEY, getCode()); } catch (e) { /* sin acceso */ } }
     initFirebase();
     await initAuth();

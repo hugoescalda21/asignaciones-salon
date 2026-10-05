@@ -107,7 +107,7 @@
     const out = [];
     Object.keys(anotados || {}).forEach(id => {
       const a = anotados[id];
-      if (a && a.tid === t.id && a.fecha === fecha) out.push({ id, pubId: a.pubId, nombre: a.nombre || '', comentario: a.comentario || '', propio: true, email: a.email || '' });
+      if (a && a.tid === t.id && a.fecha === fecha) out.push({ id, pubId: a.pubId, nombre: a.nombre || '', comentario: a.comentario || '', propio: true, email: a.email || '', cong: a.cong || '', inv: a.inv || '' });
     });
     (((t.ocurr || {})[fecha] || {}).vols || []).forEach(pid => { if (!out.some(v => v.pubId === pid)) out.push({ id: null, pubId: pid, nombre: '', comentario: '', propio: false }); });
     return out;

@@ -181,9 +181,11 @@ service cloud.firestore {
         return enL('editorEmails') || enL('tecnicoAdminEmails') || enL('acomodadoresAdminEmails') || enL('asignacionesAdminEmails') ||
                enL('territoriosAdminEmails') || enL('salonAdminEmails') || enL('anunciosOnlyEmails') || enL('viewerEmails');
       }
-      // "externos": hermanos de otra congregación (salón compartido) con su teléfono; solo los ven quienes manejan el Salón.
-      allow read: if request.auth != null && (docId == 'externos' ? (enL('editorEmails') || enL('salonAdminEmails')) : conAccesoL());
-      allow write: if request.auth != null && (enL('editorEmails') || enL('salonAdminEmails')) && docId in ['trabajos', 'limpieza', 'externos'];
+      // "externos": hermanos de otra congregación (salón compartido) con su teléfono y, los voluntarios del salón, su email.
+      // "invitaciones": los enlaces para que se anoten hermanos de otra congregación sin cuenta.
+      // Solo los ven quienes manejan el Salón (la función salonExterno los lee por su cuenta).
+      allow read: if request.auth != null && (docId in ['externos', 'invitaciones'] ? (enL('editorEmails') || enL('salonAdminEmails')) : conAccesoL());
+      allow write: if request.auth != null && (enL('editorEmails') || enL('salonAdminEmails')) && docId in ['trabajos', 'limpieza', 'externos', 'invitaciones'];
     }
 
     // "Me sumo": cada hermano se anota (o se da de baja) él mismo en un trabajo del Salón, con su

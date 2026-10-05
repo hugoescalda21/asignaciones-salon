@@ -6,6 +6,16 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Hermanos de otra congregación en los trabajos — 5 oct 2026 (caché asignaciones-salon-v60 y ver-salon-v46)
+
+- **Invitación por enlace:** en el detalle de un trabajo publicado que pide voluntarios, **"🔗 Invitar a otra congregación"**: para qué congregación, cuántos lugares les dejás y si se les pide el teléfono. Se manda por WhatsApp o se copia. El hermano abre el enlace **sin cuenta**, ve solo ese trabajo y su ficha (sin poder tildarla), toca **Me anoto** con su nombre y su congregación, y queda anotado. El teléfono recuerda que se anotó (para darse de baja). El enlace sirve hasta el día del trabajo, hasta que se llenan los lugares o hasta que se anula. Se guarda en `salon/invitaciones`.
+- Quien se anota con el enlace se agrega solo a la lista de hermanos de otra congregación (si ya estaba, se reconoce por nombre y congregación). En el detalle figura con su congregación y "Se anotó con la invitación".
+- **Voluntario del salón:** en la lista de hermanos de otra congregación (Mantenimiento › Limpieza › Ajustes), cada uno puede tener **email** y la tilde **"Voluntario del salón"**. Con eso entra a la vista con su email y ve **solo Mantenimiento**: los trabajos publicados que piden voluntarios y los suyos, con "Me sumo", la ficha y los avisos (trabajo nuevo publicado y la víspera). No ve el programa, las asignaciones, los territorios, los anuncios ni los datos de los hermanos.
+- Los dos pasan por una función nueva, **salonExterno**, que solo devuelve esos trabajos (sin emails, teléfonos ni notas). No tienen acceso a la base de la congregación.
+- **Avisos:** cuando se anota alguien de otra congregación le llega al responsable, al auxiliar y al comité, con su congregación. Los voluntarios de afuera no reciben los anuncios.
+- Hay que publicar las reglas y las funciones: `firebase deploy --only firestore:rules,functions`.
+- Pruebas: `33-otra-congregacion` (nueva), 8 en las funciones, 5 en las reglas.
+
 ## Panel del Super Admin y "Ver como un hermano" — 3 oct 2026 (caché asignaciones-salon-v52 y ver-salon-v43)
 
 - **Panel** (archivo nuevo `panel.js`): primera pestaña del Super Admin y con la que abre la app (en el celular, ícono ▦ arriba). Arriba, **"Para resolver"**: puestos sin asignar en las próximas reuniones (con **✨ Sugerir**, que completa como "Auto-asignar" y se puede deshacer, y "Asignar ›"), solicitudes de acceso, avisos de "Lo terminé", limpieza sin cargar, errores nuevos y copia de seguridad vieja. Si no hay nada: **"✓ Todo al día"**. Abajo, tarjetas: reuniones de las próximas 4 semanas (semáforo), hermanos y acceso, territorios, mantenimiento.

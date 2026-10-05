@@ -12,8 +12,13 @@
   'use strict';
   const C = window.SalonCore;
   if (!C) return;
-  const V = { code: null, unsub: [], trabajos: {}, limpieza: {}, grupos: {}, anotados: {}, fichas: {}, started: false };
+  const V = { code: null, unsub: [], trabajos: {}, limpieza: {}, grupos: {}, anotados: {}, fichas: {}, started: false, occ: null };
   window.__salonVer = V;
+  // Hermanos de otra congregación: con una invitación (modo "inv", sin cuenta) o como voluntario del salón
+  // (modo "vol", entra con su email). No leen la base: todo llega por la función salonExterno.
+  const EXT = { on: false, modo: null, k: null, yo: null, res: null, timer: null };
+  window.__salonExt = EXT;
+  const EXT_URL = 'https://southamerica-east1-asignaciones-salon.cloudfunctions.net/salonExterno';
 
   const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
   const DIAS3 = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -100,6 +105,10 @@
   .sv-flist label.ok span { color: var(--ink-soft); text-decoration: line-through; }
   .sv-fnota { width: 100%; box-sizing: border-box; min-height: 70px; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font: inherit; font-size: 14px; background: var(--bg); color: var(--ink); }
   .sv-fnotas { font-size: 11px; color: var(--ink-soft); line-height: 1.45; margin-top: 12px; border-top: 1px solid var(--line); padding-top: 8px; }
+  .sv-externo .help-btn:not(.pal-btn), .sv-externo #offlineNote { display: none !important; }
+  .sv-inv #bottomTabs { display: none !important; }
+  .sv-fld { display: block; font-size: 11.5px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-soft); margin: 0 2px 4px; }
+  .sv-err { color: #B91C1C; font-size: 13px; font-weight: 700; margin: -4px 2px 10px; }
   .sv-note { font-size: 12px; color: var(--ink-soft); text-align: center; margin-top: 10px; line-height: 1.45; }
   `;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
@@ -129,7 +138,14 @@
   const fichaDoc = (t, fecha) => V.fichas[fichaId(t.id, fecha)] || null;
   const tieneFicha = (t) => !!(modeloDe(t) || (t.tareas || []).length || (t.fichaCod || '').startsWith('p:'));
   function terminado(t, fecha) { const f = fichaDoc(t, fecha); return !!(f && f.estado === 'hecho'); }
-  function myAnotado(t, fecha) { return currentUser && currentUser.uid ? V.anotados[C.anotadoId(t.id, fecha, currentUser.uid)] || null : null; }
+  function myAnotado(t, fecha) {
+    if (EXT.on) {
+      if (EXT.modo === 'vol') return EXT.yo ? V.anotados[C.anotadoId(t.id, fecha, 'x-' + EXT.yo.id.slice(2))] || null : null;
+      const g = invGuardado();
+      return g && g.tid === t.id && g.fecha === fecha && V.anotados[g.aid] ? V.anotados[g.aid] : null;
+    }
+    return currentUser && currentUser.uid ? V.anotados[C.anotadoId(t.id, fecha, currentUser.uid)] || null : null;
+  }
   function voy(t, fecha, pub) { return !!myAnotado(t, fecha) || (pub && C.voluntarios(t, fecha, V.anotados).some(v => v.pubId === pub.id)); }
 
   /* ---------- Conectarse ---------- */
@@ -209,11 +225,13 @@
   // Los publicados en la vista y, de los que son "solo del comité", los que son tuyos (responsable, auxiliar o anotado).
   function visibles(pub) {
     const h = hoy();
+    if (EXT.on) return C.trabajosEntre(V.trabajos, h, C.addDays(h, 62)).filter(o => V.occ && V.occ.has(o.t.id + '__' + o.fecha) && !o.cancelada);
     return C.trabajosEntre(V.trabajos, h, C.addDays(h, 21)).filter(o => !o.cancelada && o.estado !== 'hecho' && !o.sinDia && (!terminado(o.t, o.fecha) || o.fecha >= h) &&
       (o.pub || (pub && (o.t.resp === pub.id || o.t.aux === pub.id || voy(o.t, o.fecha, pub)))));
   }
   function renderBox() {
     const box = ensureBox(); if (!box) return;
+    if (EXT.on) { renderExt(box); return; }
     const pub = myPub();
     const h = hoy(), mon = C.mondayOf(h);
     // Las limpiezas de esta semana (después de las reuniones, la general…) con quién las hace y qué días.
@@ -280,16 +298,17 @@
     const ci = C.cupoInfo(t, o.fecha, V.anotados);
     const soy = pub && (t.resp === pub.id ? 'Sos el responsable' : t.aux === pub.id ? 'Sos el auxiliar' : '');
     const anot = voy(t, o.fecha, pub);
-    const van = ci.vols.map(v => apellido(v.pubId, v.nombre, t)).filter(Boolean);
+    const van = ci.vols.map(v => { const a = apellido(v.pubId, v.nombre, t); return a && v.cong ? `${a} (${v.cong})` : a; }).filter(Boolean);
     let act = '';
     const fd = fichaDoc(t, o.fecha), conF = tieneFicha(t);
-    if (soy && conF) act = fd && fd.estado === 'hecho' ? `<button type="button" class="sv-btn ok" data-sv="ficha" data-id="${esc(t.id)}" data-f="${o.fecha}">✓ Terminado</button>` : `<button type="button" class="sv-btn" data-sv="ficha" data-id="${esc(t.id)}" data-f="${o.fecha}">📋 Ficha</button>`;
+    const sinLugar = EXT.on && EXT.modo === 'inv' && !((EXT.res && EXT.res.lugares) > 0);
+    if (soy && conF && !EXT.on) act = fd && fd.estado === 'hecho' ? `<button type="button" class="sv-btn ok" data-sv="ficha" data-id="${esc(t.id)}" data-f="${o.fecha}">✓ Terminado</button>` : `<button type="button" class="sv-btn" data-sv="ficha" data-id="${esc(t.id)}" data-f="${o.fecha}">📋 Ficha</button>`;
     else if (soy) act = `<span class="sv-tag">${soy}</span>`;
     else if (anot) act = `<button type="button" class="sv-btn ok" data-sv="anotado" data-id="${esc(t.id)}" data-f="${o.fecha}">✓ Anotado</button>`;
-    else if (ci.completo) act = '<button type="button" class="sv-btn full" disabled>Completo</button>';
-    else if (ci.cupo && o.pub) act = `<button type="button" class="sv-btn" data-sv="sumo" data-id="${esc(t.id)}" data-f="${o.fecha}">Me sumo</button>`;
+    else if (ci.completo || (ci.cupo && sinLugar)) act = '<button type="button" class="sv-btn full" disabled>Completo</button>';
+    else if (ci.cupo && o.pub) act = `<button type="button" class="sv-btn" data-sv="sumo" data-id="${esc(t.id)}" data-f="${o.fecha}">${EXT.modo === 'inv' ? 'Me anoto' : 'Me sumo'}</button>`;
     return `<div class="sv-card${soy || anot ? ' mine' : ''}" id="sv-${esc(t.id)}-${o.fecha}"><span class="sv-dt">${DIAS3[d.getDay()]}<b>${d.getDate()}</b></span><span class="sv-bar" style="background:${colorDe(t)}"></span>
-      <span class="sv-tx"><b>${modeloDe(t) ? `<span class="sv-bdg" style="background:${modeloDe(t).color}${modeloDe(t).sec === '05' ? ';color:#3A2A00' : ''}">${modeloDe(t).letra}</span>` : tp.icon + ' '}${esc(t.titulo)}</b><small>${t.hora ? esc(t.hora) + ' · ' : ''}${esc(quienCorto(t.resp, t))} y ${esc(quienCorto(t.aux, t))}${ci.cupo ? (ci.faltan ? ` · <em>${ci.faltan === 1 ? 'falta 1' : 'faltan ' + ci.faltan}</em>` : ' · completo') : ''}</small>${van.length ? `<small>Van: ${esc(van.join(', '))}</small>` : ''}${o.pub ? '' : '<small>🔒 Todavía no está publicado: lo ve el comité de mantenimiento y vos.</small>'}${soy && conF ? `<small>${esc(soy)}${fd && fd.tareas ? ` · ${Object.keys(fd.tareas).length} de ${(t.tareas || []).filter(x => !esGrupoTxt(x)).length} tareas` : ''}</small>` : ''}${!soy && conF ? `<button type="button" class="sv-lnk" data-sv="ficha" data-id="${esc(t.id)}" data-f="${o.fecha}">📋 Ver la ficha ›</button>` : ''}</span>
+      <span class="sv-tx"><b>${modeloDe(t) ? `<span class="sv-bdg" style="background:${modeloDe(t).color}${modeloDe(t).sec === '05' ? ';color:#3A2A00' : ''}">${modeloDe(t).letra}</span>` : tp.icon + ' '}${esc(t.titulo)}</b><small>${t.hora ? esc(t.hora) + ' · ' : ''}${esc(quienCorto(t.resp, t))} y ${esc(quienCorto(t.aux, t))}${ci.cupo ? (ci.faltan ? ` · <em>${ci.faltan === 1 ? 'falta 1' : 'faltan ' + ci.faltan}</em>` : ' · completo') : ''}</small>${van.length ? `<small>Van: ${esc(van.join(', '))}</small>` : ''}${o.pub ? '' : '<small>🔒 Todavía no está publicado: lo ve el comité de mantenimiento y vos.</small>'}${soy && conF && !EXT.on ? `<small>${esc(soy)}${fd && fd.tareas ? ` · ${Object.keys(fd.tareas).length} de ${(t.tareas || []).filter(x => !esGrupoTxt(x)).length} tareas` : ''}</small>` : ''}${(!soy || EXT.on) && conF ? `<button type="button" class="sv-lnk" data-sv="ficha" data-id="${esc(t.id)}" data-f="${o.fecha}">📋 Ver la ficha ›</button>` : ''}</span>
       <span class="sv-act">${act}</span></div>`;
   }
 
@@ -319,7 +338,7 @@
   // las tareas, escriben cómo se hizo y tocan "Terminé"; los demás la ven sin poder cambiarla.
   function openFicha(t, fecha) {
     const pub = myPub();
-    const soy = !!(pub && (t.resp === pub.id || t.aux === pub.id)) && !window.__comoPubId;
+    const soy = !!(pub && (t.resp === pub.id || t.aux === pub.id)) && !window.__comoPubId && !EXT.on;
     const md = modeloDe(t), col = colorDe(t);
     const ref = () => initFirebase().collection('congregations').doc(V.code).collection('salonFichas').doc(fichaId(t.id, fecha));
     let f = Object.assign({ tareas: {}, mats: {}, nota: '' }, JSON.parse(JSON.stringify(fichaDoc(t, fecha) || {})));
@@ -409,6 +428,7 @@
     doc.save(nombre);
   }
   function openSumo(t, fecha) {
+    if (EXT.on && EXT.modo === 'inv') { openAnotoInv(t, fecha); return; }
     const pub = myPub();
     if (!pub) {
       sheet(`<h3>Primero vinculá tu nombre</h3><div class="sub">Para anotarte, tu email (<b>${esc(currentUser && currentUser.email)}</b>) tiene que estar vinculado a tu nombre en la app. Pedíselo a quien administra la app.</div><button type="button" class="sv-bb o" data-svclose>Entendido</button>`);
@@ -422,6 +442,14 @@
       const ci = C.cupoInfo(t, fecha, V.anotados);
       if (ci.completo) { m.close(); showToast('Justo se completó: ya no quedan lugares.'); return; }
       m.q('#svOk').disabled = true;
+      if (EXT.on) {
+        const r = await extApi('anotar', { tid: t.id, fecha, comentario: m.q('#svCom').value.trim().slice(0, 80) });
+        if (!r.ok) { m.q('#svOk').disabled = false; showToast((r.j && r.j.error) || 'No se pudo anotar. Revisá la conexión y probá de nuevo.'); if (r.j && r.j.completo) { m.close(); extCargar(); } return; }
+        m.set(`<h3>¡Listo, te anotaste!</h3><div class="sub">${esc(t.titulo)} · ${esc(cuando(fecha))}${t.hora ? ' a las ' + esc(t.hora) : ''}. Le avisamos al responsable y la víspera te llega el recordatorio.</div>
+          <a class="sv-bb p" href="${esc(gcalFor(t, fecha))}" target="_blank" rel="noopener">🗓 Agregar al calendario</a><button type="button" class="sv-bb o" data-svclose>Listo</button>`);
+        extCargar();
+        return;
+      }
       const id = C.anotadoId(t.id, fecha, currentUser.uid);
       const doc = { tid: t.id, fecha, pubId: pub.id, nombre: pub.name, uid: currentUser.uid, comentario: m.q('#svCom').value.trim().slice(0, 80), at: new Date().toISOString() };
       try {
@@ -441,10 +469,11 @@
     const ref = () => initFirebase().collection('congregations').doc(V.code).collection('salonAnotados').doc(C.anotadoId(t.id, fecha, currentUser.uid));
     const main = () => `<h3>${esc(t.titulo)}</h3><div class="sub">${esc(fmtDia(fecha))}${t.hora ? ' · ' + esc(t.hora) : ''} · estás anotado${a && a.comentario ? ` · "${esc(a.comentario)}"` : ''}</div>
       <a class="sv-bb o" href="${esc(gcalFor(t, fecha))}" target="_blank" rel="noopener">🗓 Agregar al calendario</a>
-      ${a ? '<button type="button" class="sv-bb o" id="svEd">✏️ Cambiar mi comentario</button><button type="button" class="sv-bb r" id="svNo">Ya no puedo ir</button><div class="sv-note">Si te das de baja se libera el lugar y se avisa al responsable.</div>' : '<div class="sv-note">Te anotó el responsable. Si no podés ir, avisale a él.</div>'}`;
+      ${a && EXT.on ? `${tieneFicha(t) ? '<button type="button" class="sv-bb o" id="svPdfX">📄 Descargar la ficha</button>' : ''}<button type="button" class="sv-bb r" id="svNo">Ya no puedo ir</button><div class="sv-note">Si te das de baja se libera el lugar y se avisa al responsable.</div>` : a ? '<button type="button" class="sv-bb o" id="svEd">✏️ Cambiar mi comentario</button><button type="button" class="sv-bb r" id="svNo">Ya no puedo ir</button><div class="sv-note">Si te das de baja se libera el lugar y se avisa al responsable.</div>' : '<div class="sv-note">Te anotó el responsable. Si no podés ir, avisale a él.</div>'}`;
     const m = sheet(main());
     const bind = () => {
-      const ed = m.q('#svEd'), no = m.q('#svNo');
+      const ed = m.q('#svEd'), no = m.q('#svNo'), px = m.q('#svPdfX');
+      if (px) px.addEventListener('click', () => descargarFicha(t, fecha, fichaDoc(t, fecha)));
       if (ed) ed.addEventListener('click', () => {
         m.set(`<h3>Tu comentario</h3><div class="sub">Lo ve el responsable.</div><input type="text" id="svCom" maxlength="80" value="${esc(a.comentario || '')}" placeholder="Ej.: Llevo la escalera"><button type="button" class="sv-bb p" id="svSave">Guardar</button><button type="button" class="sv-bb o" data-svclose>Cancelar</button>`);
         m.q('#svSave').addEventListener('click', async () => {
@@ -456,6 +485,14 @@
       if (no) no.addEventListener('click', () => {
         m.set(`<h3>¿Ya no podés ir?</h3><div class="sub">Se libera tu lugar en <b>${esc(t.titulo)}</b> (${esc(fmtCorto(fecha))}) y le avisamos al responsable.</div><button type="button" class="sv-bb r" id="svBaja">Sí, darme de baja</button><button type="button" class="sv-bb o" data-svclose>No, sigo anotado</button>`);
         m.q('#svBaja').addEventListener('click', async () => {
+          if (EXT.on) {
+            const g = invGuardado();
+            const r = await extApi('baja', EXT.modo === 'inv' ? { aid: g && g.aid, bk: g && g.bk } : { aid: C.anotadoId(t.id, fecha, 'x-' + EXT.yo.id.slice(2)) });
+            if (!r.ok) { showToast((r.j && r.j.error) || 'No se pudo. Revisá la conexión y probá de nuevo.'); return; }
+            if (EXT.modo === 'inv') { try { localStorage.removeItem(invKey()); } catch (e) { /* nada */ } }
+            m.close(); showToast('Listo, te diste de baja'); extCargar();
+            return;
+          }
           try { await ref().delete(); delete V.anotados[C.anotadoId(t.id, fecha, currentUser.uid)]; m.close(); showToast('Listo, te diste de baja'); schedule(); }
           catch (e) { console.error(e); showToast('No se pudo. Revisá la conexión y probá de nuevo.'); }
         });
@@ -464,6 +501,116 @@
     bind();
   }
 
+
+  /* ---------- Hermanos de otra congregación ---------- */
+  async function extApi(action, payload) {
+    const headers = { 'Content-Type': 'application/json' };
+    try {
+      if (EXT.modo === 'vol') headers.Authorization = 'Bearer ' + (await currentUser.getIdToken());
+      const r = await fetch(EXT_URL, { method: 'POST', headers, body: JSON.stringify(Object.assign({ code: V.code, action }, EXT.k ? { k: EXT.k } : {}, payload || {})) });
+      let j = {}; try { j = await r.json(); } catch (e) { /* sin cuerpo */ }
+      return { ok: r.ok, status: r.status, j };
+    } catch (e) { return { ok: false, status: 0, j: {} }; }
+  }
+  const invKey = () => `inv-anot-${V.code}-${EXT.k}`;
+  function invGuardado() { try { return JSON.parse(localStorage.getItem(invKey()) || 'null'); } catch (e) { return null; } }
+  function aplicarExt(j) {
+    EXT.res = j; EXT.yo = j.yo || null;
+    V.trabajos = j.trabajos || {}; V.anotados = j.anotados || {}; V.fichas = j.fichas || {};
+    V.occ = new Set((j.occ || []).map(o => o.tid + '__' + o.fecha));
+    data = { publishers: j.pubs || [], settings: { congregationName: j.cong || '' } };
+  }
+  async function extCargar() {
+    const g = EXT.modo === 'inv' ? invGuardado() : null;
+    const r = await extApi('ver', g ? { aid: g.aid } : {});
+    if (r.ok) aplicarExt(r.j);
+    else if (!EXT.res) EXT.res = { estado: 'error' };
+    schedule();
+    return r;
+  }
+  function extUI() {
+    ensureTab();
+    if (typeof hideInitialLoading === 'function') hideInitialLoading();
+    ['gateView', 'authGateView'].forEach(id => { const e = $(id); if (e) e.classList.add('hidden'); });
+    $('mainView').classList.remove('hidden');
+    document.body.classList.add('sv-externo', EXT.modo === 'inv' ? 'sv-inv' : 'sv-vol');
+    const ct = $('congTitle'); if (ct) ct.textContent = (EXT.res && EXT.res.cong) || 'Salón del Reino';
+    const tag = document.querySelector('.readonly-tag'); if (tag) tag.textContent = EXT.modo === 'inv' ? 'Invitación' : 'Voluntario' + (EXT.yo && EXT.yo.cong ? ' · Cong. ' + EXT.yo.cong : '');
+    document.querySelectorAll('.bt-btn').forEach(b => b.classList.toggle('hidden', b.dataset.tab !== 'salon'));
+    if (typeof showTab === 'function') showTab('salon');
+    // El voluntario recibe los avisos del Salón (trabajos nuevos y recordatorios): el cartel de notificaciones va arriba.
+    if (EXT.modo === 'vol' && typeof renderPushPrompt === 'function') {
+      const pp = $('pushPrompt'), panel = $('panel-salon');
+      if (pp && panel) { panel.insertBefore(pp, panel.firstChild); try { renderPushPrompt(myPub(), V.code); } catch (e) { console.error(e); } }
+    }
+  }
+  function renderExt(box) {
+    const j = EXT.res || {};
+    const pub = myPub();
+    const teaser = (ic, col, tit, txt) => `<div class="sv-teaser" style="cursor:default;border-left-color:${col};"><span class="ic">${ic}</span><span class="tx"><b>${tit}</b><small>${txt}</small></span></div>`;
+    let html = '';
+    if (EXT.modo === 'inv') {
+      if (j.estado !== 'ok') {
+        html = '<h2 class="sec-title" style="margin-top:6px;">Invitación</h2>' + (j.estado === 'error'
+          ? teaser('📶', '#B45309', 'No se pudo abrir la invitación', 'Revisá la conexión y volvé a abrir el enlace.')
+          : teaser('⏰', '#B45309', j.estado === 'anulada' ? 'Esta invitación se anuló' : 'Esta invitación ya no está activa', `${j.titulo ? esc(j.titulo) + (j.fecha ? ' · ' + esc(fmtDia(j.fecha)) : '') + '. ' : ''}Si querés colaborar, pedile un enlace nuevo a quien te lo mandó.`));
+        box.innerHTML = html; return;
+      }
+      const occ = visibles(pub);
+      const o = occ[0];
+      const mio = o && myAnotado(o.t, o.fecha);
+      html += '<h2 class="sec-title" style="margin-top:6px;">Te invitan a colaborar</h2>';
+      html += mio ? teaser('✅', '#16A34A', `Ya estás anotado${mio.nombre ? ', ' + esc(String(mio.nombre).split(' ')[0]) : ''}`, `Te esperamos${o.t.hora ? ' a las ' + esc(o.t.hora) : ''}. Si no podés ir, tocá <span style="font-weight:800">✓ Anotado</span> y "Ya no puedo ir".`)
+        : teaser('🤝', '#0E7490', `Hola${j.para ? ', hermanos de la Cong. ' + esc(j.para) : ''}`, `La Cong. ${esc(j.cong || '')} ${j.para ? 'les' : 'te'} pide ayuda para este trabajo en el Salón del Reino.${j.lugares > 0 ? ' No hace falta cuenta: tocá <span style="font-weight:800">Me anoto</span> y dejá tu nombre.' : ''}`);
+      if (o) {
+        html += cardHTML(o, pub);
+        const t = o.t;
+        html += `<div class="sv-box" style="background:var(--surface);">${(t.materiales || []).length ? `<div><span>🧰</span>Qué llevar: ${esc(t.materiales.join(', '))}</div>` : ''}<div><span>👤</span>Responsable: ${esc(quienLargo(t.resp, t))} · Auxiliar: ${esc(quienLargo(t.aux, t))}</div>${t.notas ? `<div><span>📝</span>${esc(t.notas)}</div>` : ''}</div>`;
+        if (!mio && !(j.lugares > 0)) html += teaser('🙌', '#16A34A', 'Ya se completaron los lugares', `¡Gracias igual! Si querés colaborar en otro trabajo, avisale a ${esc(pubName(t.resp, t) || 'el responsable')}.`);
+        html += `<p class="sv-empty" style="margin-top:10px;">🔒 Este enlace muestra solo este trabajo y vence el ${esc(fmtDia(o.fecha))}.</p>`;
+      }
+      box.innerHTML = html; return;
+    }
+    const occ = visibles(pub);
+    const nom = EXT.yo && EXT.yo.nombre ? String(EXT.yo.nombre).split(' ')[0] : '';
+    html += teaser('👋', '#0E7490', `Hola${nom ? ', ' + esc(nom) : ''}`, 'Sos voluntario del Salón. Acá ves los trabajos de mantenimiento que necesitan ayuda; cuando se publica uno nuevo te llega el aviso.');
+    html += '<h2 class="sec-title">Trabajos de mantenimiento</h2>' + (occ.length ? occ.map(o => cardHTML(o, pub)).join('') : '<p class="sv-empty">Por ahora no hay trabajos que busquen voluntarios. Cuando se publique uno, te avisamos.</p>');
+    box.innerHTML = html;
+  }
+  // Anotarse con la invitación: nombre, congregación, teléfono (si lo piden) y un comentario.
+  function openAnotoInv(t, fecha) {
+    const j = EXT.res || {};
+    const g = invGuardado() || {};
+    const m = sheet(`<h3>Anotate en este trabajo</h3><div class="sub">Al responsable le llega el aviso al instante.</div>${datosBox(t, fecha)}
+      <label class="sv-fld" for="svIN">Tu nombre y apellido</label><input type="text" id="svIN" maxlength="60" autocomplete="name" value="${esc(g.nombre || '')}" placeholder="Ej.: Juan Ramírez">
+      <label class="sv-fld" for="svIC">Tu congregación</label><input type="text" id="svIC" maxlength="40" value="${esc(g.cong || j.para || '')}" placeholder="Ej.: Norte">
+      ${j.tel !== false ? `<label class="sv-fld" for="svIT">Teléfono (opcional)</label><input type="text" id="svIT" inputmode="tel" maxlength="25" autocomplete="tel" value="${esc(g.tel || '')}" placeholder="Para avisarte si cambia algo">` : ''}
+      <input type="text" id="svCom" maxlength="80" placeholder="Comentario (opcional): &quot;Llevo la escalera&quot;">
+      <div class="sv-err hidden" id="svIE"></div>
+      <button type="button" class="sv-bb p" id="svOk">Confirmar, me anoto</button><button type="button" class="sv-bb o" data-svclose>Cancelar</button>`);
+    m.q('#svOk').addEventListener('click', async () => {
+      const err = (txt) => { const e = m.q('#svIE'); e.textContent = txt; e.classList.remove('hidden'); };
+      const nombre = m.q('#svIN').value.replace(/\s+/g, ' ').trim(), cong = m.q('#svIC').value.trim();
+      const tel = m.q('#svIT') ? m.q('#svIT').value.trim() : '';
+      if (nombre.length < 3 || !/\s/.test(nombre)) { err('Escribí tu nombre y apellido.'); return; }
+      if (!cong) { err('Escribí tu congregación.'); return; }
+      m.q('#svOk').disabled = true;
+      const r = await extApi('anotar', { tid: t.id, fecha, nombre, cong, tel, comentario: m.q('#svCom').value.trim().slice(0, 80) });
+      if (!r.ok) {
+        m.q('#svOk').disabled = false;
+        err((r.j && r.j.error) || 'No se pudo anotar. Revisá la conexión y probá de nuevo.');
+        if (r.j && (r.j.completo || r.j.estado)) extCargar();
+        return;
+      }
+      try { localStorage.setItem(invKey(), JSON.stringify({ aid: r.j.aid, bk: r.j.bk, tid: t.id, fecha, nombre, cong, tel })); } catch (e) { /* sin acceso */ }
+      const nom = (r.j.nombre || nombre).split(' ')[0];
+      m.set(`<h3>¡Listo, ${esc(nom)}!</h3><div class="sub">Te anotaste en <b>${esc(t.titulo)}</b> · ${esc(cuando(fecha))}${t.hora ? ' a las ' + esc(t.hora) : ''}. ${esc(pubName(t.resp, t) || 'El responsable')} ya sabe que vas. ¡Gracias por la ayuda!</div>
+        <a class="sv-bb p" href="${esc(gcalFor(t, fecha))}" target="_blank" rel="noopener">🗓 Agregar al calendario</a>${tieneFicha(t) ? '<button type="button" class="sv-bb o" id="svPdfX">📄 Descargar la ficha</button>' : ''}<button type="button" class="sv-bb o" data-svclose>Listo</button>
+        <div class="sv-note">Este teléfono recuerda que te anotaste: si volvés a abrir el enlace podés darte de baja y se libera el lugar.</div>`);
+      const px = m.q('#svPdfX'); if (px) px.addEventListener('click', () => descargarFicha(t, fecha, fichaDoc(t, fecha)));
+      extCargar();
+    });
+  }
   /* ---------- "Tus asignaciones" ---------- */
   function myRows(pub, todayIso) {
     if (!pub) return [];
@@ -474,7 +621,21 @@
   }
 
   window.salonVer = {
-    onData(code) { ensureTab(); start(code); schedule(); },
+    onData(code) { if (EXT.on) return; ensureTab(); start(code); schedule(); },
+    // Entra como hermano de otra congregación. Devuelve false si no corresponde (voluntario sin acceso).
+    async externo(cfg) {
+      EXT.modo = cfg.modo; EXT.k = cfg.k ? String(cfg.k).replace(/[^A-Za-z0-9]/g, '') : null; V.code = cfg.code;
+      const g = EXT.modo === 'inv' ? invGuardado() : null;
+      const r = await extApi('ver', g ? { aid: g.aid } : {});
+      if (EXT.modo === 'vol' && !r.ok) { EXT.modo = null; return false; }
+      stop(); EXT.on = true;
+      if (r.ok) aplicarExt(r.j); else EXT.res = { estado: 'error' };
+      extUI(); schedule();
+      // Se actualiza solo (cada minuto con la página a la vista, y al volver a ella).
+      EXT.timer = setInterval(() => { if (document.visibilityState === 'visible') extCargar(); }, 60000);
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') extCargar(); });
+      return true;
+    },
     myRows,
     goTo(date) {
       if (typeof showTab === 'function') showTab('salon');

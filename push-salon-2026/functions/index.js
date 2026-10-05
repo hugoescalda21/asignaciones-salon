@@ -16,7 +16,9 @@ const { roleLabel, collectNewlyAssignedIds, avisoPreview, selectNewAvisos, notif
   conductorAssignments, newConductors, conductorMessage, newTerritoryAssignments,
   BACKUP_SUBS, ALL_SUBS, backupName, parseBackupName, buildBackup, backupsToPrune, restorePlan, isRestoreWrite,
   salonAssignments, newSalonAssignments, salonAssignMessage, anotadoMessage, resumenSemanal, newPublished, publishedMessage,
-  fichaCambio, fichaMessage, comiteIds } = require('./lib');
+  fichaCambio, fichaMessage, comiteIds,
+  extVoluntario, extBuscar, estadoInvitacion, lugaresInvitacion, occVoluntario, proyeccionExterno, datosInvitado } = require('./lib');
+const crypto = require('crypto');
 const SalonCore = require('./salon-core');
 
 // La app vive en GitHub Pages bajo /asignaciones-salon/, no en la raíz del
@@ -51,7 +53,10 @@ async function notifyNewAvisos(code, before, after) {
   if (nuevos.length === 0) return;
   console.log('[push] avisos nuevos con notificación:', nuevos.length);
 
-  const tokensSnap = await db.collection('pushSubscriptions').where('code', '==', code).get();
+  const tokensAll = await db.collection('pushSubscriptions').where('code', '==', code).get();
+  // Los voluntarios de otra congregación ("x:…") solo reciben avisos del Salón, no los anuncios.
+  const tokensSnap = { docs: tokensAll.docs.filter((d) => !String(d.data().pubId || '').startsWith('x:')) };
+  tokensSnap.size = tokensSnap.docs.length; tokensSnap.empty = !tokensSnap.size;
   console.log('[push] avisos: celulares suscriptos en la congregación:', tokensSnap.size);
   if (tokensSnap.empty) return;
 
@@ -384,14 +389,17 @@ exports.onSalonWrite = onDocumentWritten({ document: 'congregations/{code}/salon
   const nuevos = newSalonAssignments(beforeDoc.lista || {}, afterDoc.lista || {}, hoyIso);
   const publicados = newPublished(beforeDoc.lista || {}, afterDoc.lista || {}, hoyIso);
   if (!nuevos.length && !publicados.length) return null;
-  const cong = (await db.collection('congregations').doc(code).get()).data() || {};
+  const [cs, xs] = await Promise.all([db.collection('congregations').doc(code).get(), db.collection('congregations').doc(code).collection('salon').doc('externos').get()]);
+  const cong = cs.data() || {};
+  const vols = Object.values((xs.exists && xs.data().lista) || {}).filter((x) => x && x.id && x.vol && x.email).map((x) => 'x:' + x.id);
   for (const a of nuevos) {
     const n = await sendToPubs(code, [a.pubId], salonAssignMessage(a, firstName(cong, a.pubId)), verLink(code, 'salon'), 'asignacion', `salon-${a.t.id}-${a.fecha}-${a.rol}`);
     console.log('[salón]', a.rol, a.pubId, a.fecha, '· celulares:', n);
   }
   // Publicado en la vista y pide voluntarios → aviso a todos (menos el responsable y el auxiliar, que ya saben).
   for (const p of publicados) {
-    const ids = ((cong.publishers) || []).filter((x) => x.status !== 'inactivo' && x.id !== p.t.resp && x.id !== p.t.aux).map((x) => x.id);
+    const ids = ((cong.publishers) || []).filter((x) => x.status !== 'inactivo' && x.id !== p.t.resp && x.id !== p.t.aux).map((x) => x.id)
+      .concat(vols.filter((id) => id !== p.t.resp && id !== p.t.aux));   // y los voluntarios del salón de otra congregación
     const n = await sendToPubs(code, ids, publishedMessage(p), verLink(code, 'salon'), 'aviso', `salon-pub-${p.t.id}-${p.fecha}`);
     console.log('[salón] publicado', p.t.id, p.fecha, '· celulares:', n);
   }
@@ -430,7 +438,10 @@ exports.onSalonAnotado = onDocumentWritten({ document: 'congregations/{code}/sal
   if (!t) return null;
   const anotados = {}; anSnap.forEach((d) => { anotados[d.id] = d.data(); });
   const ci = SalonCore.cupoInfo(t, r.fecha, anotados);
-  await sendToPubs(code, [t.resp, t.aux].filter(pid => pid !== r.pubId), anotadoMessage(r, t, !!after, ci.van, ci.cupo), APP_BASE + 'asignaciones-salon.html', 'aviso', `anotado-${event.params.aid}`);
+  // Si se anotó un hermano de otra congregación (con la invitación o como voluntario), también se entera el comité.
+  let ids = [t.resp, t.aux];
+  if (String(r.pubId || '').startsWith('x:')) ids = ids.concat(comiteIds((await ref.get()).data() || {}, null));
+  await sendToPubs(code, ids.filter(pid => pid !== r.pubId), anotadoMessage(r, t, !!after, ci.van, ci.cupo), APP_BASE + 'asignaciones-salon.html', 'aviso', `anotado-${event.params.aid}`);
   return null;
 });
 
@@ -572,10 +583,10 @@ exports.sendScheduledReminders = onSchedule({ schedule: '0,30 * * * *', timeZone
         // Y los trabajos del Salón (responsable, auxiliar, voluntarios) y la limpieza del grupo.
         try {
           const ref = db.collection('congregations').doc(code);
-          const [tr, lz, an, gr] = await Promise.all([ref.collection('salon').doc('trabajos').get(), ref.collection('salon').doc('limpieza').get(), ref.collection('salonAnotados').get(), ref.collection('terr').doc('grupos').get()]);
+          const [tr, lz, an, gr, xs] = await Promise.all([ref.collection('salon').doc('trabajos').get(), ref.collection('salon').doc('limpieza').get(), ref.collection('salonAnotados').get(), ref.collection('terr').doc('grupos').get(), ref.collection('salon').doc('externos').get()]);
           const anotados = {}; an.forEach((d) => { anotados[d.id] = d.data(); });
           const { dateIso: hoyIso } = arParts(new Date());
-          congCache[code].__salon = salonAssignments(congCache[code], (tr.exists && tr.data().lista) || {}, anotados, lz.exists ? lz.data() : {}, (gr.exists && gr.data().lista) || {}, hoyIso, addDaysIso(hoyIso, 2));
+          congCache[code].__salon = salonAssignments(congCache[code], (tr.exists && tr.data().lista) || {}, anotados, lz.exists ? lz.data() : {}, (gr.exists && gr.data().lista) || {}, hoyIso, addDaysIso(hoyIso, 2), (xs.exists && xs.data().lista) || {});
         } catch (e) { console.warn('[recordatorio] salón', code, e && e.message); }
       }
     }
@@ -884,6 +895,144 @@ exports.backups = onRequest({ cors: ['https://hugoescalda21.github.io'], region:
     res.status(400).send({ error: 'Acción desconocida' });
   } catch (err) {
     console.error('[copias] error:', err && err.message);
+    res.status(500).send({ error: 'Error interno' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Hermanos de otra congregación en los trabajos del Salón. No leen la base de la congregación:
+// todo pasa por acá, y solo reciben los trabajos que les tocan.
+//   · Invitación (body.k): enlace de un trabajo y un día, sin cuenta. El hermano pone su nombre y
+//     su congregación y se anota; el teléfono recuerda que se anotó (clave de baja "bk").
+//   · Voluntario del salón (Authorization: Bearer …): un hermano de la lista "externos" con email
+//     y la tilde "Voluntario del salón". Ve los trabajos publicados que piden voluntarios.
+// Acciones: ver | anotar | baja.
+const sha = (s) => crypto.createHash('sha256').update(String(s)).digest('hex');
+exports.salonExterno = onRequest({ cors: ['https://hugoescalda21.github.io'], region: REGION, maxInstances: 5 }, async (req, res) => {
+  if (req.method !== 'POST') { res.status(405).send({ error: 'Método no permitido' }); return; }
+  try {
+    const body = req.body || {};
+    const code = String(body.code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const k = String(body.k || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 40);
+    if (!code) { res.status(400).send({ error: 'Datos no válidos' }); return; }
+    const ref = db.collection('congregations').doc(code);
+    const salon = ref.collection('salon');
+    const [cs, tr, xs, iv] = await Promise.all([ref.get(), salon.doc('trabajos').get(), salon.doc('externos').get(), k ? salon.doc('invitaciones').get() : Promise.resolve(null)]);
+    if (!cs.exists) { res.status(404).send({ error: 'No existe esa congregación' }); return; }
+    const cong = cs.data() || {};
+    const congName = ((cong.settings || {}).congregationName) || '';
+    const trabajos = (tr.exists && tr.data().lista) || {};
+    const externos = (xs.exists && xs.data().lista) || {};
+    const { dateIso: hoyIso } = arParts(new Date());
+    let modo, ext = null, inv = null, email = '';
+    if (k) {
+      modo = 'inv';
+      const x = ((iv && iv.exists && iv.data().lista) || {})[k];
+      inv = x ? Object.assign({}, x, { k }) : null;
+    } else {
+      const m = String(req.get('Authorization') || '').match(/^Bearer (.+)$/);
+      if (!m) { res.status(401).send({ error: 'Falta iniciar sesión' }); return; }
+      let decoded;
+      try { decoded = await admin.auth().verifyIdToken(m[1]); } catch (e) { res.status(401).send({ error: 'Sesión vencida' }); return; }
+      email = String(decoded.email || '');
+      ext = extVoluntario(externos, email);
+      if (!ext) { res.status(403).send({ error: 'Sin acceso' }); return; }
+      modo = 'vol';
+    }
+    const action = String(body.action || 'ver');
+
+    if (action === 'ver') {
+      if (modo === 'inv') {
+        const st = estadoInvitacion(inv, trabajos, hoyIso);
+        if (st.estado !== 'ok') { res.status(200).send({ modo, cong: congName, estado: st.estado, titulo: (st.t && st.t.titulo) || '', fecha: (inv && inv.fecha) || '' }); return; }
+        const [an, fi] = await Promise.all([ref.collection('salonAnotados').where('tid', '==', inv.tid).get(), ref.collection('salonFichas').doc(inv.tid + '__' + inv.fecha).get()]);
+        const anotados = {}; an.forEach((d) => { anotados[d.id] = d.data(); });
+        const fichas = fi.exists ? { [fi.id]: fi.data() } : {};
+        // El teléfono que ya se anotó con esta invitación manda su anotación para reconocerla ("✓ Anotado").
+        const mia = body.aid && anotados[String(body.aid)];
+        const miUid = mia && mia.inv === k ? mia.uid : null;
+        const proj = proyeccionExterno([{ tid: inv.tid, fecha: inv.fecha }], trabajos, anotados, fichas, cong.publishers || [], miUid);
+        res.status(200).send(Object.assign({ modo, cong: congName, estado: 'ok', para: inv.para || '', tel: inv.tel !== false, lugares: lugaresInvitacion(inv, st.t, anotados) }, proj));
+        return;
+      }
+      const [an, fi] = await Promise.all([ref.collection('salonAnotados').get(), ref.collection('salonFichas').get()]);
+      const anotados = {}; an.forEach((d) => { anotados[d.id] = d.data(); });
+      const fichas = {}; fi.forEach((d) => { fichas[d.id] = d.data(); });
+      const occ = occVoluntario(trabajos, anotados, ext.id, hoyIso);
+      const proj = proyeccionExterno(occ, trabajos, anotados, fichas, cong.publishers || [], 'x-' + ext.id);
+      proj.pubs.push({ id: 'x:' + ext.id, name: ext.nombre || '', email });
+      res.status(200).send(Object.assign({ modo, cong: congName, estado: 'ok', yo: { id: 'x:' + ext.id, nombre: ext.nombre || '', cong: ext.cong || '' } }, proj));
+      return;
+    }
+
+    if (action === 'anotar') {
+      const tid = String(body.tid || ''), fecha = String(body.fecha || '');
+      let datos = null;
+      if (modo === 'inv') {
+        datos = datosInvitado(body);
+        if (datos.error) { res.status(400).send({ error: datos.error }); return; }
+        if (!inv || inv.tid !== tid || inv.fecha !== fecha) { res.status(400).send({ error: 'Esta invitación es para otro trabajo.' }); return; }
+      }
+      const comentario = String(body.comentario || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+      const bk = modo === 'inv' ? crypto.randomBytes(16).toString('hex') : '';
+      const out = await db.runTransaction(async (tx) => {
+        const reads = [tx.get(salon.doc('trabajos')), tx.get(ref.collection('salonAnotados').where('tid', '==', tid)), tx.get(salon.doc('externos'))];
+        if (modo === 'inv') reads.push(tx.get(salon.doc('invitaciones')));
+        const [trS, anS, xS, ivS] = await Promise.all(reads);
+        const lista = (trS.exists && trS.data().lista) || {};
+        const xl = (xS.exists && xS.data().lista) || {};
+        const anotados = {}; anS.forEach((d) => { anotados[d.id] = d.data(); });
+        const t = lista[tid];
+        if (!t) return { error: 'Ese trabajo ya no está.' };
+        let persona;
+        if (modo === 'inv') {
+          const iv2 = ((ivS && ivS.exists && ivS.data().lista) || {})[k];
+          const inv2 = iv2 ? Object.assign({}, iv2, { k }) : null;
+          const st = estadoInvitacion(inv2, lista, hoyIso);
+          if (st.estado !== 'ok') return { error: 'Esta invitación ya no está activa.', estado: st.estado };
+          if (lugaresInvitacion(inv2, t, anotados) <= 0) return { error: 'Ya se completaron los lugares.', completo: true };
+          persona = extBuscar(xl, datos.nombre, datos.cong);
+          const nueva = !persona;
+          persona = Object.assign({}, persona || { id: 'i' + crypto.randomBytes(5).toString('hex'), nombre: datos.nombre, cong: datos.cong, origen: 'invitacion' });
+          if (datos.tel && !persona.tel) persona.tel = datos.tel;
+          if (nueva || datos.tel) tx.set(salon.doc('externos'), { lista: { [persona.id]: persona } }, { merge: true });
+        } else {
+          persona = extVoluntario(xl, email);
+          if (!persona) return { error: 'Sin acceso' };
+          const o = SalonCore.trabajosEntre({ [t.id]: t }, fecha, fecha)[0];
+          if (!o || fecha < hoyIso || o.cancelada || o.estado === 'hecho' || o.sinDia || !o.pub) return { error: 'Ese trabajo ya no busca voluntarios.' };
+          if (SalonCore.cupoInfo(t, fecha, anotados).faltan <= 0) return { error: 'Ya se completaron los lugares.', completo: true };
+        }
+        const pid = 'x:' + persona.id;
+        if (t.resp === pid || t.aux === pid || SalonCore.voluntarios(t, fecha, anotados).some((v) => v.pubId === pid)) return { error: 'Ya estás anotado en este trabajo.', ya: true };
+        const aid = SalonCore.anotadoId(tid, fecha, 'x-' + persona.id);
+        const doc = { tid, fecha, pubId: pid, nombre: persona.nombre || '', uid: 'x-' + persona.id, comentario, cong: persona.cong || '', at: new Date().toISOString() };
+        if (modo === 'inv') { doc.inv = k; doc.bk = sha(bk); }
+        tx.set(ref.collection('salonAnotados').doc(aid), doc);
+        return { ok: true, aid, nombre: persona.nombre || '' };
+      });
+      if (out.error) { res.status(409).send(out); return; }
+      if (bk) out.bk = bk;
+      res.status(200).send(out);
+      return;
+    }
+
+    if (action === 'baja') {
+      const aid = String(body.aid || '').slice(0, 140);
+      if (!aid) { res.status(400).send({ error: 'Datos no válidos' }); return; }
+      const aref = ref.collection('salonAnotados').doc(aid);
+      const a = await aref.get();
+      if (!a.exists) { res.status(200).send({ ok: true }); return; }
+      const d = a.data() || {};
+      const puede = modo === 'vol' ? d.uid === 'x-' + ext.id : (d.inv === k && !!body.bk && d.bk === sha(body.bk));
+      if (!puede) { res.status(403).send({ error: 'No se puede dar de baja a otro hermano.' }); return; }
+      await aref.delete();
+      res.status(200).send({ ok: true });
+      return;
+    }
+    res.status(400).send({ error: 'Acción desconocida' });
+  } catch (err) {
+    console.error('[salonExterno] error:', err && err.message);
     res.status(500).send({ error: 'Error interno' });
   }
 });

@@ -20,7 +20,7 @@
   if (!C) { console.warn('salon: falta salon-core.js'); return; }
 
   const S = {
-    trabajos: {}, modelos: {}, fichas: {}, limpieza: {}, grupos: {}, anotados: {}, externos: {},
+    trabajos: {}, modelos: {}, fichas: {}, limpieza: {}, grupos: {}, anotados: {}, externos: {}, invit: {},
     loaded: { trabajos: false, limpieza: false, grupos: false, anotados: false },
     unsub: [], code: null, started: false,
     view: 'cal', month: null, day: null
@@ -111,6 +111,9 @@
   .sl-prev div:first-child { border-top: none; }
   .sl-prev span { width: 64px; white-space: nowrap; flex-shrink: 0; font-weight: 700; color: var(--ink-soft); }
   .sl-prev em { font-style: normal; color: var(--ink-soft); }
+  .sl-wamsg { background: #DCF8C6; color: #111; border-radius: 12px 12px 2px 12px; padding: 10px 12px; font-size: 13px; line-height: 1.45; margin: 0 0 12px 18px; box-shadow: 0 1px 2px rgba(0,0,0,.15); white-space: pre-wrap; word-break: break-word; }
+  html.dk .sl-wamsg { background: #005C4B; color: #E9EDEF; }
+  .sl-volx { color: #15803D; } html.dk .sl-volx { color: #86EFAC; }
   .sl-oc { font-size: 10px; font-weight: 800; border-radius: 7px; padding: 2px 6px; background: #FEF3C7; color: #92400E; white-space: nowrap; vertical-align: 1px; }
   html.dk .sl-oc { background: rgba(251,191,36,.18); color: #FCD34D; }
   .sl-wa { border: none; border-radius: 8px; padding: 5px 9px; font: inherit; font-size: 12px; font-weight: 800; background: #DCFCE7; color: #15803D; cursor: pointer; white-space: nowrap; text-decoration: none; }
@@ -355,6 +358,8 @@
     S.unsub.push(congRef().collection('salonFichas').onSnapshot((qs) => { const o = {}; qs.forEach(d => { o[d.id] = d.data() || {}; }); S.fichas = o; aplicarFichas(); onData(); }, () => {}));
     // Hermanos de otra congregación (salón compartido): nombre, congregación y teléfono. Solo los ven los que manejan el Salón.
     S.unsub.push(sRef('externos').onSnapshot((s) => { S.externos = ((s.exists && s.data()) || {}).lista || {}; S.loaded.externos = true; onData(); }, onErr('externos')));
+    // Invitaciones: enlaces para que hermanos de otra congregación se anoten en un trabajo sin cuenta.
+    S.unsub.push(sRef('invitaciones').onSnapshot((s) => { S.invit = ((s.exists && s.data()) || {}).lista || {}; onData(); }, () => {}));
     S.unsub.push(sRef('limpieza').onSnapshot((s) => { S.limpieza = (s.exists && s.data()) || {}; S.loaded.limpieza = true; onData(); }, onErr('limpieza')));
     S.unsub.push(congRef().collection('terr').doc('grupos').onSnapshot((s) => { S.grupos = ((s.exists && s.data()) || {}).lista || {}; S.loaded.grupos = true; onData(); }, onErr('grupos')));
     S.unsub.push(congRef().collection('salonAnotados').onSnapshot((qs) => { const o = {}; qs.forEach(d => { o[d.id] = d.data() || {}; }); S.anotados = o; S.loaded.anotados = true; onData(); }, onErr('anotados')));
@@ -911,7 +916,7 @@
     const volRows = ci.vols.map(v => {
       const n = pubName(v.pubId, t) || v.nombre || 'Hermano', x = extOf(v.pubId, t);
       const tel = x && S.externos[v.pubId.slice(2)] && S.externos[v.pubId.slice(2)].tel;
-      return `<div class="sl-row"><span class="sl-av" style="background:${colorOf(n)}">${esc(inic(n))}</span><span class="nm">${esc(n)}${congTag(v.pubId, t)}${v.comentario ? `<small>"${esc(v.comentario)}"</small>` : ''}${v.propio || isExt(v.pubId) ? '' : '<small>Agregado por el encargado</small>'}</span>${tel ? `<button type="button" class="sl-wa" data-d="avisar" data-p="${esc(v.pubId)}">💬 Avisar</button>` : ''}<button type="button" class="x" data-d="quitar" data-a="${esc(v.id || '')}" data-p="${esc(v.pubId || '')}">Quitar</button></div>`;
+      return `<div class="sl-row"><span class="sl-av" style="background:${colorOf(n)}">${esc(inic(n))}</span><span class="nm">${esc(n)}${congTag(v.pubId, t)}${v.inv ? '<small>🔗 Se anotó con la invitación</small>' : ''}${v.comentario ? `<small>"${esc(v.comentario)}"</small>` : ''}${v.propio || isExt(v.pubId) ? '' : '<small>Agregado por el encargado</small>'}</span>${tel ? `<button type="button" class="sl-wa" data-d="avisar" data-p="${esc(v.pubId)}">💬 Avisar</button>` : ''}<button type="button" class="x" data-d="quitar" data-a="${esc(v.id || '')}" data-p="${esc(v.pubId || '')}">Quitar</button></div>`;
     }).join('');
     const kv = (id) => { const tel = isExt(id) && S.externos[id.slice(2)] && S.externos[id.slice(2)].tel; return `<b>${esc(pubName(id, t) || '—')}</b>${congTag(id, t)}${tel ? `<div style="margin-top:6px;"><button type="button" class="sl-wa" data-d="avisar" data-p="${esc(id)}">💬 Avisar</button></div>` : ''}`; };
     const faltan = ci.faltan;
@@ -941,6 +946,7 @@
       <div class="sl-sec" style="margin-top:0;"><h4>Voluntarios</h4><span style="font-size:12.5px;font-weight:700;">${ci.cupo ? `${ci.van} de ${ci.cupo}` : ci.van}</span></div>
       <div class="sl-box">${volRows}${faltan ? `<div class="sl-row"><span class="sl-av e">+</span><span class="nm" style="color:var(--ink-soft)">${ci.faltan === 1 ? 'Falta 1' : 'Faltan ' + ci.faltan}</span></div>` : ''}${!ci.vols.length && !faltan ? '<div class="sl-row" style="color:var(--ink-soft)">Sin voluntarios pedidos.</div>' : ''}</div>
       <div class="tfoot" style="margin-top:0;margin-bottom:12px;"><button type="button" class="btn" data-d="agregar">＋ Agregar hermano</button><button type="button" class="btn btn-primary" data-d="wa">Pedir por WhatsApp</button></div>
+      ${invitBox(t, fecha, ci, pub, estado, o)}
       ${(t.tareas || []).length ? (() => { const md = modeloDe(t); const items = t.tareas.filter(x => !esGrupoTxt(x)).length; const hechas = t.tareas.filter((x, i) => !esGrupoTxt(x) && (o.tareas || {})[i]).length;
         return `<div class="sl-sec" style="margin-top:0;"><h4>Tareas${md ? ` · <span style="color:${tinta(md.color)}">${esc(md.propia ? md.nombre : md.cod)}</span>` : ''}</h4><span style="font-size:12.5px;font-weight:700;">${hechas} de ${items}</span></div>${md && (md.aviso || []).length ? `<div class="sl-aviso">⚠️ ${md.aviso.map(esc).join(' ')}</div>` : ''}<div class="sl-box">${t.tareas.map((x, i) => esGrupoTxt(x) ? `<div class="sl-tgr" style="--c:${md ? tinta(md.color) : 'var(--ink-soft)'}">${esc(x)}</div>` : `<label class="tchk" style="${i === 0 ? 'border-top:none;' : ''}"><input type="checkbox" data-d="tar" data-i="${i}"${(o.tareas || {})[i] ? ' checked' : ''}><span>${esc(x)}</span></label>`).join('')}</div>`; })() : ''}
       ${mats.length ? `<div class="sl-sec" style="margin-top:0;"><h4>Qué llevar</h4></div><div class="sl-box">${mats.map((x, i) => `<label class="tchk" style="${i === 0 ? 'border-top:none;' : ''}"><input type="checkbox" data-d="mat" data-i="${i}"${(o.mats || {})[i] ? ' checked' : ''}><span>${esc(x)}</span></label>`).join('')}</div>` : ''}
@@ -995,7 +1001,90 @@
       else if (k === 'agregar') pickPub(t, fecha);
       else if (k === 'wa') shareWa(t, fecha);
       else if (k === 'avisar') avisarExterno(t, fecha, b.dataset.p);
+      else if (k === 'invitar') openInvitar(t, fecha);
+      else if (k === 'inv-anular') anularInvitacion(b.dataset.k);
     });
+  }
+
+  /* ---------- Invitación para hermanos de otra congregación ----------
+     Un enlace para un trabajo y un día: el hermano lo abre (sin cuenta), ve ese trabajo y su ficha,
+     y se anota con su nombre y su congregación (la función salonExterno lo agrega a la lista de
+     hermanos de otra congregación y lo anota). Sirve hasta el día del trabajo, hasta que se llenan
+     los lugares o hasta que se anula. Se guarda en salon/invitaciones. */
+  const invDe = (t, fecha) => Object.values(S.invit || {}).find(x => x && x.tid === t.id && x.fecha === fecha && !x.anulada) || null;
+  const invUsados = (k) => Object.values(S.anotados || {}).filter(a => a && a.inv === k).length;
+  function invLink(k) { const base = vistaLink(); return base ? base + '&inv=' + encodeURIComponent(k) : ''; }
+  function invToken() { const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'; const a = new Uint8Array(12); (window.crypto || window.msCrypto).getRandomValues(a); return [...a].map(x => abc[x % abc.length]).join(''); }
+  function invitBox(t, fecha, ci, pub, estado, o) {
+    if (!ci.cupo || !pub || o.cancelada || estado === 'hecho' || fecha < hoy()) return '';
+    const inv = invDe(t, fecha);
+    if (!inv) return `<div class="cr-pub"><span><b>🔗 Invitar a otra congregación</b>Un enlace para que se anoten hermanos de otra congregación, sin cuenta. Ven solo este trabajo.</span><button type="button" class="btn btn-primary" data-d="invitar">Invitar</button></div>`;
+    const n = invUsados(inv.k);
+    return `<div class="cr-pub v"><span><b>🔗 Invitación${inv.para ? ' para la Cong. ' + esc(inv.para) : ''}</b>Activa · ${n === 1 ? 'se anotó 1' : n ? 'se anotaron ' + n : 'todavía no se anotó nadie'}${inv.lugares ? ` (de ${inv.lugares} ${inv.lugares === 1 ? 'lugar' : 'lugares'})` : ''} · vence el ${esc(fmtCorto(fecha))}. Se anotan con el enlace, sin cuenta.</span><button type="button" class="btn btn-primary" data-d="invitar">Enviar</button></div>`;
+  }
+  function invMensaje(t, fecha, para, link) {
+    const ci = C.cupoInfo(t, fecha, S.anotados);
+    const lines = [`${tipoOf(t).icon} *${t.titulo}* — Salón del Reino`, `${fmtDia(fecha).replace(/^./, c => c.toUpperCase())}${t.hora ? ' · ' + t.hora : ''}`, `Responsable: ${pubName(t.resp, t) || '—'} · Auxiliar: ${pubName(t.aux, t) || '—'}`];
+    const falta = ci.faltan ? `Hacen falta ${ci.faltan} ${ci.faltan === 1 ? 'voluntario' : 'voluntarios'} más.` : '';
+    const mats = (t.materiales || []).length ? `Qué llevar: ${t.materiales.join(', ').replace(/^./, c => c.toLowerCase())}.` : '';
+    if (falta || mats) lines.push([falta, mats].filter(Boolean).join(' '));
+    lines.push(`👉 Para anotarte: ${link}`);
+    lines.push(para ? `¡Gracias, hermanos de ${para}!` : '¡Gracias!');
+    return lines.join('\n');
+  }
+  function openInvitar(t, fecha) {
+    const ya = invDe(t, fecha);
+    const ci = C.cupoInfo(t, fecha, S.anotados);
+    const otra = otraNombre();
+    const st = { para: ya ? ya.para || '' : otra, lugares: ya ? Number(ya.lugares) || 0 : 0, tel: ya ? ya.tel !== false : true };
+    const k = ya ? ya.k : invToken();
+    const link = invLink(k);
+    const chips = (name, opts) => `<div class="topts">${opts.map(([v, l]) => `<button type="button" data-iv="${name}" data-v="${esc(String(v))}" class="${String(st[name]) === String(v) ? 'on' : ''}" aria-pressed="${String(st[name]) === String(v)}"${ya && name !== 'tel' ? ' disabled' : ''}>${esc(l)}</button>`).join('')}</div>`;
+    const lugaresOpts = [[0, `Los que falten (${ci.faltan})`]].concat([1, 2, 3, 4, 5].filter(n => n < ci.faltan).map(n => [n, String(n)]));
+    const html = () => `<h3>${ya ? 'Invitación a otra congregación' : 'Invitar a otra congregación'}</h3><p class="modal-sub" style="margin:0 0 10px;">Un enlace para que los hermanos de otra congregación se anoten en <b>este trabajo</b>, sin cuenta ni contraseña. No ven nada más de la congregación.</p>
+      <div class="tf"><label>Para</label>${chips('para', (otra ? [[otra, 'Cong. ' + otra]] : []).concat([['', 'Cualquier congregación']]))}</div>
+      <div class="tf"><label>Cuántos lugares para ellos</label>${chips('lugares', lugaresOpts)}</div>
+      <div class="tf"><label>Pedirles el teléfono</label>${chips('tel', [[true, 'Sí (opcional para ellos)'], [false, 'No']])}</div>
+      ${ya ? `<div class="tnote">Activa: ${invUsados(k) === 1 ? 'se anotó 1 hermano' : invUsados(k) ? 'se anotaron ' + invUsados(k) + ' hermanos' : 'todavía no se anotó nadie'}. Para cambiar a quién o cuántos lugares, anulala y mandá una nueva.</div>` : ''}
+      <div class="tf"><label>Así sale el mensaje</label></div>
+      <div class="sl-wamsg">${esc(invMensaje(t, fecha, st.para, link))}</div>
+      <div class="tnote">⏰ El enlace sirve solo para este día y deja de andar cuando pasa el trabajo, se completan los lugares o lo anulás. Si lo reenvían a alguien que no corresponde, lo anulás y mandás uno nuevo.</div>
+      <div class="tfoot">${ya ? '<button type="button" class="btn btn-danger" id="slIvX">Anular</button>' : ''}<button type="button" class="btn" id="slIvC">Copiar enlace</button><button type="button" class="btn btn-primary" id="slIvW">💬 Enviar por WhatsApp</button></div>`;
+    const m = openModal(html());
+    const bind = () => {
+      m.qa('[data-iv]').forEach(b => b.addEventListener('click', () => {
+        if (b.disabled) return;
+        const n = b.dataset.iv; st[n] = n === 'lugares' ? Number(b.dataset.v) : n === 'tel' ? b.dataset.v === 'true' : b.dataset.v;
+        m.set(html()); bind();
+      }));
+      const guardar = async () => {
+        const nx = Object.assign({}, ya || { k, tid: t.id, fecha, creado: new Date().toISOString(), por: (currentUser && currentUser.email) || '' }, { para: st.para, lugares: st.lugares, tel: st.tel });
+        if (ya && ya.tel === nx.tel) return true;
+        if (await safe(() => sWrite(sRef('invitaciones'), [[['lista', k], nx]]))) { S.invit[k] = nx; return true; }
+        return false;
+      };
+      m.q('#slIvC').addEventListener('click', async () => {
+        if (!(await guardar())) return;
+        try { await navigator.clipboard.writeText(invMensaje(t, fecha, st.para, link)); showToast('Mensaje con el enlace copiado'); } catch (e) { window.prompt('Copiá el enlace:', link); }
+        m.close(); if (openDetail) openDetail.refresh();
+      });
+      m.q('#slIvW').addEventListener('click', async () => {
+        const w = window.open('', '_blank');   // se abre ya (con el toque), si no el navegador lo bloquea
+        if (!(await guardar())) { if (w) w.close(); return; }
+        const url = 'https://wa.me/?text=' + encodeURIComponent(invMensaje(t, fecha, st.para, link));
+        if (w) w.location = url; else window.open(url, '_blank', 'noopener');
+        m.close(); if (openDetail) openDetail.refresh();
+      });
+      const x = m.q('#slIvX'); if (x) x.addEventListener('click', async () => { if (await anularInvitacion(k)) m.close(); });
+    };
+    bind();
+  }
+  async function anularInvitacion(k) {
+    const inv = S.invit[k]; if (!inv) return false;
+    if (!confirm('¿Anular la invitación? El enlace deja de andar. Los que ya se anotaron siguen anotados.')) return false;
+    const nx = Object.assign({}, inv, { anulada: true });
+    if (await safe(() => sWrite(sRef('invitaciones'), [[['lista', k], nx]]), 'Invitación anulada')) { S.invit[k] = nx; if (openDetail) openDetail.refresh(); return true; }
+    return false;
   }
   /* ---------- Ficha de trabajo (PDF de una hoja, como las fichas del manual) ---------- */
   // Dibuja la ficha de un trabajo (esa vez) en la página actual del documento.
@@ -1141,13 +1230,19 @@
       <div class="tf"><label for="slXn">Nombre *</label><input id="slXn" maxlength="60" value="${esc(x ? x.nombre : '')}" placeholder="Ej.: Juan Ramírez"></div>
       <div class="tf"><label for="slXc">Congregación</label><input id="slXc" maxlength="40" value="${esc(x ? x.cong : otraNombre())}" placeholder="Ej.: Paraná Sur"></div>
       <div class="tf"><label for="slXt">Teléfono (opcional)</label><input id="slXt" type="tel" maxlength="25" value="${esc(x ? x.tel || '' : '')}" placeholder="Ej.: 342 555-1234"></div>
-      <div class="tnote">📱 Con el teléfono, desde cada trabajo le mandás el aviso por WhatsApp con un toque. No recibe avisos de la app. El teléfono solo lo ven el Super Admin y el Admin — Salón.</div>
+      <div class="tf"><label for="slXm">Email (para que entre a la vista)</label><input id="slXm" type="email" maxlength="80" value="${esc(x ? x.email || '' : '')}" placeholder="Ej.: juan@gmail.com" autocomplete="off"></div>
+      <label class="sl-sw" style="margin-bottom:10px;"><span><b style="display:block">Voluntario del salón</b>Entra a la vista con ese email y ve solo los trabajos de mantenimiento publicados. Se puede anotar y le llegan los avisos.</span><input type="checkbox" id="slXv"${x && x.vol ? ' checked' : ''}></label>
+      <div class="tnote">🔒 No ve el programa, las asignaciones, los territorios ni los datos de los hermanos: solo Mantenimiento. Si deja de venir, sacás la tilde. El teléfono y el email solo los ven el Super Admin y el Admin — Salón.</div>
       <div class="sl-err" id="slXe"></div>
       <div class="tfoot">${x ? '<button type="button" class="btn btn-danger" id="slXd">Borrar</button>' : ''}<button type="button" class="btn" data-tclose>Cancelar</button><button type="button" class="btn btn-primary" id="slXs">Guardar</button></div>`);
     m.q('#slXs').addEventListener('click', async () => {
       const nombre = m.q('#slXn').value.trim();
       if (!nombre) { m.q('#slXe').textContent = 'Escribí el nombre.'; return; }
-      const nx = { id: (x && x.id) || newId(), nombre, cong: m.q('#slXc').value.trim(), tel: m.q('#slXt').value.trim() };
+      const email = m.q('#slXm').value.trim().toLowerCase(), vol = m.q('#slXv').checked;
+      if (vol && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { m.q('#slXe').textContent = 'Para que entre como voluntario, escribí su email.'; return; }
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { m.q('#slXe').textContent = 'Ese email no parece válido.'; return; }
+      const nx = Object.assign({}, x || {}, { id: (x && x.id) || newId(), nombre, cong: m.q('#slXc').value.trim(), tel: m.q('#slXt').value.trim(), email, vol });
+      if (!nx.email) delete nx.email;
       if (await safe(() => sWrite(sRef('externos'), [[['lista', nx.id], nx]]), 'Guardado')) { S.externos[nx.id] = nx; m.close(); if (onSaved) onSaved(nx.id); render(); }
     });
     const del = m.q('#slXd');
@@ -1459,8 +1554,8 @@
   function externosHTML() {
     const xs = extList();
     return `<div class="sl-sec"><h4>Hermanos de ${esc(otraNombre() || 'otra congregación')}</h4><button type="button" class="btn" data-s="x-new">+ Agregar</button></div>
-      <p class="hint" style="margin:-4px 2px 8px;">Si comparten el Salón con otra congregación que no usa la app, cargá acá a sus hermanos para ponerlos de responsable, auxiliar o voluntario en los trabajos.</p>
-      ${xs.length ? `<div class="sl-box">${xs.map(x => `<button type="button" class="sl-rot" data-s="x-edit" data-id="${esc(x.id)}" style="width:100%;background:none;border-left:none;border-right:none;border-bottom:none;font:inherit;color:var(--ink);text-align:left;cursor:pointer;"><span class="sl-av" style="background:${colorOf(x.nombre)}">${esc(inic(x.nombre))}</span><span class="nm">${esc(x.nombre)}<small>${x.cong ? 'Cong. ' + esc(x.cong) : 'Otra congregación'}${x.tel ? ' · 📱 ' + esc(x.tel) : ''}</small></span><span style="color:var(--ink-soft)">›</span></button>`).join('')}</div>` : ''}`;
+      <p class="hint" style="margin:-4px 2px 8px;">Hermanos de otra congregación que ayudan en los trabajos: para ponerlos de responsable, auxiliar o voluntario. Con su email y la tilde "Voluntario del salón" entran a la vista y ven solo Mantenimiento. Los que se anotan con una invitación se agregan solos.</p>
+      ${xs.length ? `<div class="sl-box">${xs.map(x => `<button type="button" class="sl-rot" data-s="x-edit" data-id="${esc(x.id)}" style="width:100%;background:none;border-left:none;border-right:none;border-bottom:none;font:inherit;color:var(--ink);text-align:left;cursor:pointer;"><span class="sl-av" style="background:${colorOf(x.nombre)}">${esc(inic(x.nombre))}</span><span class="nm">${esc(x.nombre)}<small>${x.cong ? 'Cong. ' + esc(x.cong) : 'Otra congregación'}${x.tel ? ' · 📱 ' + esc(x.tel) : ''}${x.vol && x.email ? ' · <b class="sl-volx">👁 Entra como voluntario</b>' : ''}${x.origen === 'invitacion' ? ' · 🔗 por invitación' : ''}</small></span><span style="color:var(--ink-soft)">›</span></button>`).join('')}</div>` : ''}`;
   }
 
   /* =====================================================================

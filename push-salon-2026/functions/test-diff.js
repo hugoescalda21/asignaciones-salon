@@ -459,4 +459,73 @@ t('restaurar: no manda avisos de "te asignaron"', () => {
   });
 }
 
+{
+  // Hermanos de otra congregación: invitación por enlace y voluntarios del salón.
+  const L = require('./lib');
+  const pubs = [{ id: 'p1', name: 'Carlos Vega', email: 'carlos@x.com', phone: '111' }, { id: 'p2', name: 'Nicolás Paz', email: 'nico@x.com' }, { id: 'p3', name: 'Martín Ruiz', email: 'mr@x.com' }, { id: 'p9', name: 'Otro Hermano', email: 'o@x.com' }];
+  const w1 = { id: 'w1', titulo: 'Canaletas', tipo: 'profunda', fecha: '2026-10-10', hora: '08:00', resp: 'p1', aux: 'p2', cupo: 3, repite: 'no', vista: true, materiales: ['Escalera'], tareas: ['Limpiar'], ocurr: { '2026-10-10': { vols: ['p3'], nota: 'interna' } }, externos: { 'x:e9': { nombre: 'Raúl Sur', cong: 'Sur', tel: '999' } } };
+  const w2 = { id: 'w2', titulo: 'Driver', tipo: 'reparacion', fecha: '2026-10-14', resp: 'p1', aux: 'p9', cupo: 0, repite: 'no', vista: false };
+  const w3 = { id: 'w3', titulo: 'Rejas', tipo: 'profunda', fecha: '2026-10-08', resp: 'p9', aux: 'x:e1', cupo: 0, repite: 'no', vista: false };
+  const trabajos = { w1, w2, w3 };
+  const externos = { e1: { id: 'e1', nombre: 'Juan Ramírez', cong: 'Norte', tel: '343', email: 'Juan.Ramirez@gmail.com', vol: true }, e2: { id: 'e2', nombre: 'Esteban Ríos', cong: 'Norte' } };
+  t('otra cong.: el voluntario entra con su email (sin importar mayúsculas), solo si tiene la tilde', () => {
+    assert.strictEqual(L.extVoluntario(externos, 'juan.ramirez@gmail.com').id, 'e1');
+    assert.strictEqual(L.extVoluntario({ e1: Object.assign({}, externos.e1, { vol: false }) }, 'juan.ramirez@gmail.com'), null);
+    assert.strictEqual(L.extVoluntario(externos, ''), null);
+    assert.strictEqual(L.extBuscar(externos, 'esteban rios', 'NORTE').id, 'e2');
+    assert.strictEqual(L.extBuscar(externos, 'Esteban Ríos', 'Sur'), null);
+  });
+  t('otra cong.: la invitación sirve hasta el día del trabajo, si sigue publicado', () => {
+    const inv = { k: 'K1', tid: 'w1', fecha: '2026-10-10', lugares: 0 };
+    assert.strictEqual(L.estadoInvitacion(inv, trabajos, '2026-10-05').estado, 'ok');
+    assert.strictEqual(L.estadoInvitacion(inv, trabajos, '2026-10-11').estado, 'vencida');
+    assert.strictEqual(L.estadoInvitacion(Object.assign({}, inv, { anulada: true }), trabajos, '2026-10-05').estado, 'anulada');
+    assert.strictEqual(L.estadoInvitacion(null, trabajos, '2026-10-05').estado, 'nohay');
+    const oculto = { w1: Object.assign({}, w1, { ocurr: { '2026-10-10': { pub: false } } }) };
+    assert.strictEqual(L.estadoInvitacion(inv, oculto, '2026-10-05').estado, 'vencida');
+    const hecho = { w1: Object.assign({}, w1, { ocurr: { '2026-10-10': { estado: 'hecho' } } }) };
+    assert.strictEqual(L.estadoInvitacion(inv, hecho, '2026-10-05').estado, 'vencida');
+  });
+  t('otra cong.: lugares de la invitación (lo que falta y el tope del comité)', () => {
+    const an = { a: { tid: 'w1', fecha: '2026-10-10', pubId: 'x:e2', inv: 'K1' } };
+    assert.strictEqual(L.lugaresInvitacion({ k: 'K1', tid: 'w1', fecha: '2026-10-10', lugares: 0 }, w1, an), 1);   // cupo 3: van Ruiz y Ríos
+    assert.strictEqual(L.lugaresInvitacion({ k: 'K1', tid: 'w1', fecha: '2026-10-10', lugares: 1 }, w1, an), 0);
+    assert.strictEqual(L.lugaresInvitacion({ k: 'K2', tid: 'w1', fecha: '2026-10-10', lugares: 1 }, w1, an), 1);
+  });
+  t('otra cong.: el voluntario ve los publicados que piden ayuda y los suyos, no los del comité', () => {
+    const occ = L.occVoluntario(trabajos, {}, 'e1', '2026-10-05');
+    assert.deepStrictEqual(occ.map(o => o.tid + ' ' + o.fecha), ['w3 2026-10-08', 'w1 2026-10-10']);
+    assert.deepStrictEqual(L.occVoluntario(trabajos, {}, 'e2', '2026-10-05').map(o => o.tid), ['w1']);
+  });
+  t('otra cong.: lo que se le manda no trae emails, teléfonos ni notas internas', () => {
+    const an = { 'w1__2026-10-10__uidX': { tid: 'w1', fecha: '2026-10-10', pubId: 'p9', nombre: 'Otro Hermano', uid: 'uidX', comentario: 'Voy', at: 'x' }, 'w1__2026-10-10__x-e1': { tid: 'w1', fecha: '2026-10-10', pubId: 'x:e1', nombre: 'Juan Ramírez', uid: 'x-e1', comentario: '', cong: 'Norte', inv: 'K1', bk: 'hash' }, 'w2__2026-10-14__u': { tid: 'w2', fecha: '2026-10-14', pubId: 'p3', uid: 'u' } };
+    const fi = { 'w1__2026-10-10': { tid: 'w1', fecha: '2026-10-10', tareas: { 0: true }, mats: {}, nota: 'ok', estado: 'curso', nombre: 'Carlos Vega', email: 'carlos@x.com', pubId: 'p1' } };
+    const p = L.proyeccionExterno([{ tid: 'w1', fecha: '2026-10-10' }], trabajos, an, fi, pubs, 'x-e1');
+    assert.deepStrictEqual(Object.keys(p.trabajos), ['w1']);
+    assert.deepStrictEqual(p.trabajos.w1.ocurr, { '2026-10-10': { vols: ['p3'] } });
+    assert.deepStrictEqual(p.trabajos.w1.externos, { 'x:e9': { nombre: 'Raúl Sur', cong: 'Sur' } });
+    assert.deepStrictEqual(p.pubs, [{ id: 'p1', name: 'Carlos Vega' }, { id: 'p2', name: 'Nicolás Paz' }, { id: 'p3', name: 'Martín Ruiz' }]);
+    const txt = JSON.stringify(p);
+    ['@', '999', '111', 'uidX', 'hash', 'interna'].forEach(x => assert.ok(!txt.includes(x), 'no debería incluir ' + x));
+    assert.deepStrictEqual(Object.keys(p.anotados).sort(), ['a0', 'w1__2026-10-10__x-e1']);
+    assert.strictEqual(p.anotados['w1__2026-10-10__x-e1'].cong, 'Norte');
+    assert.deepStrictEqual(Object.keys(p.fichas), ['w1__2026-10-10']);
+    assert.strictEqual(p.fichas['w1__2026-10-10'].email, undefined);
+  });
+  t('otra cong.: datos del invitado (nombre, congregación y teléfono)', () => {
+    assert.deepStrictEqual(L.datosInvitado({ nombre: '  Juan   Ramírez ', cong: 'Cong. Norte', tel: '343 555-1234<x>', comentario: '' }), { nombre: 'Juan Ramírez', cong: 'Norte', tel: '343 555-1234', comentario: '' });
+    assert.ok(L.datosInvitado({ nombre: 'J', cong: 'Norte' }).error);
+    assert.ok(L.datosInvitado({ nombre: 'Juan Ramírez', cong: '' }).error);
+    assert.ok(L.datosInvitado({ nombre: '1234', cong: 'Norte' }).error);
+  });
+  t('otra cong.: el aviso dice de qué congregación es', () => {
+    assert.strictEqual(L.anotadoMessage({ nombre: 'Juan Ramírez', cong: 'Norte', fecha: '2026-10-10', comentario: '' }, w1, true, 2, 3).title, 'Juan Ramírez (Cong. Norte) se sumó a Canaletas');
+  });
+  t('otra cong.: el voluntario del salón también tiene recordatorio de sus trabajos', () => {
+    const a = L.salonAssignments({ publishers: pubs }, trabajos, {}, null, {}, '2026-10-08', '2026-10-08', externos).filter(x => x.pubId === 'x:e1');
+    assert.deepStrictEqual(a.map(x => x.dateIso + ' ' + x.label), ['2026-10-08 Rejas (auxiliar)']);
+    assert.deepStrictEqual(L.salonAssignments({ publishers: pubs }, trabajos, {}, null, {}, '2026-10-08', '2026-10-08', { e2: externos.e2 }).filter(x => x.pubId.startsWith('x:')), []);
+  });
+}
+
 console.log('\n' + passed + ' pruebas OK' + (process.exitCode ? ' — HAY FALLAS' : ''));

@@ -533,8 +533,14 @@ function restorePlan(backup, parts, current, email, nowIso) {
 /* ---------- Salón: avisos y recordatorios ---------- */
 const SC = require('./salon-core');
 // Lo que tiene cada hermano en el Salón entre dos fechas (para los recordatorios): [{ pubId, dateIso, timeMin, label }]
-function salonAssignments(cong, trabajos, anotados, limpieza, grupos, fromIso, toIso) {
+function salonAssignments(cong, trabajos, anotados, limpieza, grupos, fromIso, toIso, externos) {
   const out = [];
+  // Voluntarios del salón de otra congregación (entran a la vista con su email): sus trabajos también tienen recordatorio.
+  Object.values(externos || {}).filter((x) => x && x.id && x.vol && x.email).forEach((x) => {
+    SC.asignacionesSalon('x:' + x.id, trabajos, anotados, null, null, null, fromIso, toIso).forEach((a) => {
+      out.push({ pubId: 'x:' + x.id, dateIso: a.fecha, timeMin: a.hora ? parseHHMM(a.hora) : null, label: a.label });
+    });
+  });
   const grupoDe = (pid) => { const g = Object.values(grupos || {}).find(x => x && ((x.miembros || []).includes(pid) || x.encargado === pid || x.auxiliar === pid)); return g ? g.id : null; };
   ((cong && cong.publishers) || []).forEach((p) => {
     SC.asignacionesSalon(p.id, trabajos, anotados, limpieza, cong.settings, grupoDe, fromIso, toIso).forEach((a) => {
@@ -616,7 +622,7 @@ function salonAssignMessage(a, nombre) {
 }
 // "Me sumo" / "Ya no puedo ir" → aviso al responsable y al auxiliar.
 function anotadoMessage(r, t, alta, van, cupo) {
-  const n = r.nombre || '';
+  const n = (r.nombre || '') + (r.nombre && r.cong ? ` (Cong. ${r.cong})` : '');
   if (alta) return { title: `${n || 'Un hermano'} se sumó a ${t.titulo || 'un trabajo'}`, body: `${diaTxt(r.fecha)} · van ${van}${cupo ? ' de ' + cupo : ''}${r.comentario ? ' · "' + r.comentario + '"' : ''}` };
   return { title: `${n || 'Un hermano'} ya no va a ${t.titulo || 'un trabajo'}`, body: `${diaTxt(r.fecha)} · van ${van}${cupo ? ' de ' + cupo : ''}${cupo && van < cupo ? ' · se liberó un lugar' : ''}` };
 }
@@ -665,7 +671,100 @@ function isRestoreWrite(before, after) {
   return !!(after && after._restoredAt && (!before || before._restoredAt !== after._restoredAt));
 }
 
+/* ---------- Hermanos de otra congregación: invitación por enlace y voluntarios del salón ---------- */
+const normTxt = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+// El voluntario del salón (de la lista de hermanos de otra congregación) que entra con ese email.
+function extVoluntario(externos, email) {
+  const e = normTxt(email);
+  if (!e) return null;
+  return Object.values(externos || {}).find((x) => x && x.id && x.vol && normTxt(x.email) === e) || null;
+}
+// El mismo hermano si ya estaba en la lista (mismo nombre y congregación, sin importar tildes ni mayúsculas).
+function extBuscar(externos, nombre, cong) {
+  const n = normTxt(nombre), c = normTxt(cong);
+  return Object.values(externos || {}).find((x) => x && x.id && normTxt(x.nombre) === n && normTxt(x.cong) === c) || null;
+}
+// Si la invitación sirve todavía: 'ok', 'anulada', 'vencida' (pasó el día, se suspendió, se hizo o se ocultó) o 'nohay'.
+function estadoInvitacion(inv, trabajos, hoyIso) {
+  if (!inv || !inv.tid || !inv.fecha) return { estado: 'nohay' };
+  if (inv.anulada) return { estado: 'anulada' };
+  const t = (trabajos || {})[inv.tid];
+  if (!t) return { estado: 'nohay' };
+  if (inv.fecha < hoyIso) return { estado: 'vencida', t };
+  const o = SC.trabajosEntre({ [t.id]: t }, inv.fecha, inv.fecha)[0];
+  if (!o || o.cancelada || o.estado === 'hecho' || o.sinDia || !o.pub || !(Number(t.cupo) > 0)) return { estado: 'vencida', t };
+  return { estado: 'ok', t };
+}
+// Cuántos se pueden anotar todavía con esa invitación: lo que falta del cupo, y el tope de lugares que les dejó el comité.
+function lugaresInvitacion(inv, t, anotados) {
+  const ci = SC.cupoInfo(t, inv.fecha, anotados);
+  const usados = Object.values(anotados || {}).filter((a) => a && a.inv === inv.k && a.tid === inv.tid && a.fecha === inv.fecha).length;
+  const tope = Number(inv.lugares) > 0 ? Math.max(0, Number(inv.lugares) - usados) : Infinity;
+  return Math.min(ci.faltan, tope);
+}
+// Qué trabajos ve un voluntario del salón: los publicados que piden voluntarios (próximos 60 días) y los suyos.
+function occVoluntario(trabajos, anotados, extId, hoyIso) {
+  const pid = 'x:' + extId;
+  return SC.trabajosEntre(trabajos, hoyIso, SC.addDays(hoyIso, 60))
+    .filter((o) => !o.cancelada && o.estado !== 'hecho' && !o.sinDia &&
+      ((o.pub && Number(o.t.cupo) > 0) || o.t.resp === pid || o.t.aux === pid || SC.voluntarios(o.t, o.fecha, anotados).some((v) => v.pubId === pid)))
+    .map((o) => ({ tid: o.t.id, fecha: o.fecha }));
+}
+// Lo que se manda al celular del hermano de afuera: solo esos trabajos, con los nombres que hacen falta.
+// Nada de emails, teléfonos, programa, territorios ni del resto de la congregación.
+const CAMPOS_EXT = ['id', 'titulo', 'tipo', 'clase', 'fichaCod', 'fecha', 'hora', 'repite', 'cada', 'unidad', 'hasta', 'resp', 'aux', 'cupo', 'vista', 'materiales', 'tareas', 'notas', 'soloMes'];
+function proyeccionExterno(occ, trabajos, anotados, fichas, publishers, miUid) {
+  const claves = new Set(occ.map((o) => o.tid + '__' + o.fecha));
+  const lista = {}, ids = new Set();
+  [...new Set(occ.map((o) => o.tid))].forEach((id) => {
+    const t = (trabajos || {})[id]; if (!t) return;
+    const c = {};
+    CAMPOS_EXT.forEach((k) => { if (t[k] !== undefined) c[k] = t[k]; });
+    c.ocurr = {};
+    Object.keys(t.ocurr || {}).forEach((f) => {
+      if (!claves.has(id + '__' + f)) return;
+      const o = t.ocurr[f] || {}, x = {};
+      ['estado', 'cancelada', 'pub', 'vols'].forEach((k) => { if (o[k] !== undefined) x[k] = o[k]; });
+      c.ocurr[f] = x;
+      (o.vols || []).forEach((p) => ids.add(p));
+    });
+    c.externos = {};
+    Object.keys(t.externos || {}).forEach((k) => { const x = t.externos[k] || {}; c.externos[k] = { nombre: x.nombre || '', cong: x.cong || '' }; });
+    lista[id] = c;
+    [t.resp, t.aux].forEach((p) => { if (p) ids.add(p); });
+  });
+  const an = {}; let i = 0;
+  Object.keys(anotados || {}).forEach((aid) => {
+    const a = anotados[aid];
+    if (!a || !claves.has(a.tid + '__' + a.fecha)) return;
+    const mio = !!miUid && a.uid === miUid;
+    const x = { tid: a.tid, fecha: a.fecha, pubId: a.pubId || '', nombre: a.nombre || '', comentario: a.comentario || '' };
+    if (a.cong) x.cong = a.cong;
+    if (mio) x.uid = a.uid;
+    an[mio ? aid : 'a' + (i++)] = x;
+  });
+  const fi = {};
+  Object.keys(fichas || {}).forEach((fid) => {
+    const f = fichas[fid];
+    if (!f || !claves.has(fid)) return;
+    fi[fid] = { tid: f.tid, fecha: f.fecha, tareas: f.tareas || {}, mats: f.mats || {}, nota: f.nota || '', estado: f.estado || 'curso', nombre: f.nombre || '' };
+    if (f.terminadoAt) fi[fid].terminadoAt = f.terminadoAt;
+  });
+  const pubs = (publishers || []).filter((p) => p && ids.has(p.id)).map((p) => ({ id: p.id, name: p.name || '' }));
+  return { trabajos: lista, anotados: an, fichas: fi, pubs, occ };
+}
+// Datos que escribe el hermano invitado: nombre y apellido, congregación, teléfono y comentario (opcionales).
+function datosInvitado(b) {
+  const limpio = (s, n) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim().slice(0, n);
+  const nombre = limpio(b && b.nombre, 60), cong = limpio(b && b.cong, 40).replace(/^cong(regaci[oó]n)?\.?\s+/i, '');
+  const tel = limpio(b && b.tel, 25).replace(/[^0-9+()\- ]/g, ''), comentario = limpio(b && b.comentario, 80);
+  if (nombre.length < 3 || ![...nombre].some((c) => /\p{L}/u.test(c))) return { error: 'Escribí tu nombre y apellido.' };
+  if (!cong) return { error: 'Escribí tu congregación.' };
+  return { nombre, cong, tel, comentario };
+}
+
 module.exports = {
+  normTxt, extVoluntario, extBuscar, estadoInvitacion, lugaresInvitacion, occVoluntario, proyeccionExterno, datosInvitado,
   faltantesSemana, resumenSemanal,
   salonAssignments, newSalonAssignments, salonAssignMessage, newPublished, publishedMessage, fichaCambio, fichaMessage, comiteIds, anotadoMessage, SALON_SUBS, ALL_SUBS,
   BACKUP_SUBS, BACKUP_KINDS, backupName, parseBackupName, buildBackup, backupsToPrune, restorePlan, isRestoreWrite,
