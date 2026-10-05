@@ -67,7 +67,7 @@ check('sin día: nunca publicado ni en las asignaciones', !C.publicado({ vista: 
   }));
   check('12 meses desde septiembre 2026', /Sep 2026 – Ago 2027/.test(g.rango) && g.meses === 'sep,oct,nov,dic,ene,feb,mar,abr,may,jun,jul,ago', g);
   check('una fila por trabajo, en orden', g.filas.join() === 'Corte de pasto,Revisión de matafuegos,Fumigación,Limpieza profunda', g.filas);
-  check('el corte de pasto, publicado, con sus días', g.pasto === '19v,3v,17v,31v', g.pasto);
+  check('el corte de pasto, publicado, con sus días (el 19 ya pasó sin marcar: atrasado)', g.pasto === '! 19,3v,17v,31v', g.pasto);
   check('fumigación cada 6 meses, solo el comité', g.fum === '2026-10-03c,2027-04-03c', g.fum);
   check('matafuegos sin día: "?" en octubre', g.mata === '2026-10-01?', g.mata);
   check('en la computadora se ve la grilla (no la lista)', g.visible);
@@ -85,6 +85,20 @@ check('sin día: nunca publicado ni en las asignaciones', !C.publicado({ vista: 
     if (process.env.DBG) console.log(dl.suggestedFilename(), txt.match(/\((?:[^()\\]|\\.)*\)\s*Tj/g));
     check('PDF para el tablero: solo lo publicado', /^Trabajos del Sal/.test(dl.suggestedFilename()) && /Corte de pasto/.test(txt) && !/Fumigaci/.test(txt) && !/matafuegos/.test(txt));
   } else console.log('  (sin jsPDF en este entorno: se salta el PDF)');
+
+  console.log('\nEstados: hecho, en curso, atrasado');
+  check('avance arriba: hasta hoy 0 de 1, 1 atrasado', await p.evaluate(() => /Hasta hoy: 0 de 1 hechos · 1 atrasado/.test(document.querySelector('.cr-prog').textContent)), await p.evaluate(() => document.querySelector('.cr-prog').textContent));
+  check('el atrasado tiene su etiqueta en la fila', await p.evaluate(() => /Atrasado/.test(document.querySelector('.cr-pc .cr-nm button[data-id="w1"]').textContent)));
+  await click(p, '.cr-pc .cr-d[data-id="w1"][data-f="2026-09-19"]');
+  check('tocar uno atrasado pregunta "¿Se hizo?" (los que se repiten: "Suspender esta vez", sin cambiar la fecha)', await p.evaluate(() => { const t = [...document.querySelectorAll('.slmodal')].pop().innerText; return /¿Se hizo\?/.test(t) && /Corte de pasto/.test(t) && /sábado 19 de septiembre/.test(t) && /Suspender esta vez/.test(t) && !document.querySelector('.slmodal [data-h="fecha"]'); }));
+  await click(p, '.slmodal [data-h="si"]'); await p.waitForTimeout(150);
+  check('"Sí, se hizo" lo marca hecho', (await tr()).w1.ocurr['2026-09-19'].estado === 'hecho');
+  check('y se ve verde con ✓, y el avance sube', await p.evaluate(() => { const d = document.querySelector('.cr-pc .cr-d[data-id="w1"][data-f="2026-09-19"]'); return d.classList.contains('h') && /✓ 19/.test(d.textContent) && /Hasta hoy: 1 de 1 hechos/.test(document.querySelector('.cr-prog').textContent); }));
+  await click(p, '.cr-fil [data-k="pend"]');
+  check('"Por hacer" esconde lo hecho', await p.evaluate(() => !document.querySelector('.cr-pc .cr-d[data-f="2026-09-19"]') && !!document.querySelector('.cr-pc .cr-d[data-id="w1"][data-f="2026-10-03"]')));
+  await click(p, '.cr-fil [data-k="hechos"]');
+  check('"Hechos" muestra solo lo hecho', await p.evaluate(() => document.querySelectorAll('.cr-pc .cr-d').length === 1 && document.querySelectorAll('.cr-pc .cr-nm').length === 1));
+  await click(p, '.cr-fil [data-k="todos"]');
 
   console.log('\nPublicar y ocultar');
   await click(p, '.cr-pc .cr-d[data-id="w2"][data-f="2026-10-03"]');

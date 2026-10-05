@@ -204,9 +204,29 @@
   .cr-nm b { display: block; font-size: 13px; line-height: 1.25; } .cr-nm b i { display: inline-block; width: 4px; height: 12px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
   .cr-nm small { display: block; font-size: 11.5px; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .cr-d { min-width: 22px; height: 20px; padding: 0 3px; border-radius: 6px; font: inherit; font-size: 11px; font-weight: 800; display: grid; place-items: center; border: 1.5px solid; background: var(--surface); cursor: pointer; }
-  .cr-d.v { color: #fff !important; }
+  .cr-d.v { }
   .cr-d.m { border-style: dashed; border-color: #B7791F !important; color: #8A6212 !important; background: var(--surface) !important; }
-  .cr-d.h, .cr-d.x { opacity: .45; text-decoration: line-through; }
+  .cr-d.x { opacity: .45; text-decoration: line-through; }
+  .cr-d.h { background: #16A34A !important; border-color: #16A34A !important; color: #fff !important; }
+  .cr-d.cu { background: #2563EB !important; border-color: #2563EB !important; color: #fff !important; }
+  .cr-d.at { background: #FEE2E2 !important; border-color: #DC2626 !important; color: #B91C1C !important; }
+  html.dk .cr-d.at { background: rgba(220,38,38,.18) !important; color: #FCA5A5 !important; }
+  .cr-tag.ok { background: #DCFCE7; color: #166534; } .cr-tag.cu { background: #DBEAFE; color: #1D4ED8; } .cr-tag.at { background: #FEE2E2; color: #B91C1C; }
+  html.dk .cr-tag.ok { background: rgba(34,197,94,.18); color: #86EFAC; } html.dk .cr-tag.cu { background: rgba(59,130,246,.2); color: #93C5FD; } html.dk .cr-tag.at { background: rgba(220,38,38,.2); color: #FCA5A5; }
+  .sl-pill.at { background: #FEE2E2; color: #B91C1C; } html.dk .sl-pill.at { background: rgba(220,38,38,.2); color: #FCA5A5; }
+  .cr-nm .cr-tag { display: inline-block; margin-top: 3px; }
+  .cr-top { display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; margin: 0 2px 10px; }
+  .cr-prog { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 220px; font-size: 13px; color: var(--ink-soft); }
+  .cr-prog .bar { flex: 0 0 140px; height: 8px; border-radius: 6px; background: var(--bg); overflow: hidden; border: 1px solid var(--line); }
+  .cr-prog .bar i { display: block; height: 100%; background: #16A34A; }
+  .cr-prog b { color: var(--ink); } .cr-prog b.r { color: #B91C1C; } html.dk .cr-prog b.r { color: #FCA5A5; }
+  .cr-fil { display: flex; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 2px; }
+  .cr-fil button { border: none; background: none; border-radius: 8px; padding: 6px 11px; font: inherit; font-size: 12.5px; font-weight: 700; color: var(--ink-soft); cursor: pointer; }
+  .cr-fil button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+  .cr-hizo { display: grid; gap: 8px; margin-top: 4px; }
+  .cr-hizo .btn { flex-direction: column; align-items: flex-start; justify-content: center; text-align: left; padding: 10px 14px; gap: 1px; }
+  @media (max-width: 600px) { .cr-prog .bar { flex-basis: 70px; } .cr-prog { min-width: 0; } }
+  .cr-hizo .btn small { display: block; font-weight: 400; font-size: 12px; opacity: .8; }
   .cr-m { display: block; } .cr-pc { display: none; }
   @media (min-width: 900px) { .cr-m { display: none; } .cr-pc { display: block; } }
   .cr-mes { display: flex; justify-content: space-between; align-items: center; width: 100%; border: none; background: none; font: inherit; margin: 12px 0 6px; padding: 2px; font-size: 12.5px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-soft); cursor: pointer; }
@@ -372,6 +392,7 @@
     else if (o.cancelada) pill = '<span class="sl-pill no">Suspendido</span>';
     else if (o.estado === 'hecho') pill = '<span class="sl-pill ok">Hecho</span>';
     else if (o.estado === 'curso') pill = '<span class="sl-pill curso">En curso</span>';
+    else if (o.fecha < hoy()) pill = '<span class="sl-pill at">Atrasado</span>';
     else if (ci.cupo && ci.faltan) pill = `<span class="sl-pill falta">Faltan ${ci.faltan}</span>`;
     else if (ci.cupo) pill = '<span class="sl-pill ok">Completo</span>';
     const quien = [t.resp && apellido(t.resp, '', t), t.aux && apellido(t.aux, '', t)].filter(Boolean).join(' y ');
@@ -484,11 +505,51 @@
     return { meses, from, to, occ, filas };
   }
   const MES3 = (ym) => MESES[Number(ym.slice(5, 7)) - 1].slice(0, 3);
+  // Estado de esa vez: hecho, en curso, atrasado (ya pasó y no se marcó hecho), sin día, suspendido o por hacer.
+  function estadoDe(o) {
+    if (o.cancelada) return 'susp';
+    if (o.estado === 'hecho') return 'hecho';
+    if (o.estado === 'curso') return 'curso';
+    if (o.sinDia) return 'sindia';
+    return o.fecha < hoy() ? 'atrasado' : 'prog';
+  }
   function marca(o) {
-    const col = tipoOf(o.t).color;
-    const tit = `${o.t.titulo} · ${o.sinDia ? mesLabel(o.fecha.slice(0, 7)) + ' (falta el día)' : fmtDia(o.fecha)}${o.cancelada ? ' · suspendido' : o.estado === 'hecho' ? ' · hecho' : o.sinDia ? '' : o.pub ? ' · en la vista' : ' · solo el comité'}`;
-    const cls = o.sinDia ? ' m' : (o.pub && !o.cancelada ? ' v' : '') + (o.cancelada ? ' x' : o.estado === 'hecho' ? ' h' : '');
-    return `<button type="button" class="cr-d${cls}" style="border-color:${col};${o.pub && !o.sinDia && !o.cancelada ? 'background:' + col : 'color:' + col}" data-s="open" data-id="${esc(o.t.id)}" data-f="${o.fecha}" title="${esc(tit)}" aria-label="${esc(tit)}">${o.sinDia ? '?' : Number(o.fecha.slice(8))}</button>`;
+    const col = tipoOf(o.t).color, e = estadoDe(o);
+    const tit = `${o.t.titulo} · ${o.sinDia ? mesLabel(o.fecha.slice(0, 7)) + ' (falta el día)' : fmtDia(o.fecha)} · ${({ susp: 'suspendido', hecho: 'hecho', curso: 'en curso', atrasado: 'atrasado: ¿se hizo?', sindia: '', prog: o.pub ? 'en la vista' : 'solo el comité' })[e]}`;
+    const cls = ({ sindia: ' m', susp: ' x', hecho: ' h', curso: ' cu', atrasado: ' at', prog: o.pub ? ' v' : '' })[e];
+    const dia = Number(o.fecha.slice(8));
+    const txt = ({ sindia: '?', hecho: '✓ ' + dia, curso: '● ' + dia, atrasado: '! ' + dia })[e] || String(dia);
+    // En la vista: fondo suave del color del tipo; solo el comité: solo el borde. Lo lleno queda para hecho y en curso.
+    return `<button type="button" class="cr-d${cls}" style="border-color:${col};color:${col};${e === 'prog' && o.pub ? `background:color-mix(in srgb, ${col} 18%, var(--surface))` : ''}" data-s="${e === 'atrasado' ? 'hizo' : 'open'}" data-id="${esc(o.t.id)}" data-f="${o.fecha}" title="${esc(tit)}" aria-label="${esc(tit)}">${txt}</button>`;
+  }
+  // Etiqueta de la fila (o de la próxima vez de los que se repiten): atrasado, en curso o hecho.
+  function tagFila(occ) {
+    if (occ.some(o => estadoDe(o) === 'atrasado')) return '<span class="cr-tag at">! Atrasado</span>';
+    if (occ.some(o => estadoDe(o) === 'curso')) return '<span class="cr-tag cu">● En curso</span>';
+    const vivas = occ.filter(o => !o.cancelada);
+    if (vivas.length && vivas.every(o => o.estado === 'hecho')) return '<span class="cr-tag ok">✓ Hecho</span>';
+    return '';
+  }
+  const pasaFiltro = (o) => !S.aFiltro || S.aFiltro === 'todos' ? true : S.aFiltro === 'hechos' ? o.estado === 'hecho' && !o.cancelada : o.estado !== 'hecho' && !o.cancelada;
+  // Una fecha que ya pasó y no se marcó: "¿Se hizo?" (sí / cambiar la fecha / suspender / ver el detalle).
+  function seHizo(id, fecha) {
+    const t = S.trabajos[id]; if (!t) return;
+    const rep = t.repite && t.repite !== 'no';
+    const m = openModal(`<h3>¿Se hizo?</h3><p class="modal-sub" style="margin:0 0 10px;"><b>${esc(t.titulo)}</b><br>Era para el ${esc(fmtDia(fecha).toLowerCase())}${t.hora ? ' · ' + esc(t.hora) : ''}.</p>
+      <div class="cr-hizo"><button type="button" class="btn btn-primary" data-h="si">✓ Sí, se hizo<small>Queda marcado como hecho</small></button>
+      ${rep ? '' : '<button type="button" class="btn" data-h="fecha">📅 Cambiar la fecha<small>Todavía no se hizo: elegí otro día</small></button>'}
+      <button type="button" class="btn" data-h="susp">⏸ Suspender${rep ? ' esta vez' : ''}<small>${rep ? 'No se hizo esta vez; las próximas siguen igual' : 'No se va a hacer'}</small></button>
+      <button type="button" class="btn" data-h="ver">Ver el detalle</button></div>
+      <div class="tfoot"><button type="button" class="btn" data-tclose>Cerrar</button></div>`);
+    const put = (k, v, msg) => safe(() => sWrite(sRef('trabajos'), [[occPath(t, fecha, k), v]]), msg).then(ok => { if (ok) { t.ocurr = t.ocurr || {}; t.ocurr[fecha] = Object.assign({}, t.ocurr[fecha] || {}, { [k]: v }); render(); } return ok; });
+    m.el.addEventListener('click', async (e) => {
+      const b = e.target.closest('[data-h]'); if (!b) return;
+      const k = b.dataset.h;
+      if (k === 'si') { if (await put('estado', 'hecho', '¡Trabajo hecho!')) m.close(); }
+      else if (k === 'susp') { if (await put('cancelada', true, rep ? 'Suspendido esta vez' : 'Suspendido')) m.close(); }
+      else if (k === 'fecha') { m.close(); openForm(id); }
+      else if (k === 'ver') { m.close(); openTrabajo(id, fecha); }
+    });
   }
   function renderAnio(v) {
     const today = hoy(), mesHoy = today.slice(0, 7);
@@ -498,25 +559,41 @@
     const pend = pendientesDe();
     const sinf = pend.length ? `<div class="cr-sinf"><div class="sl-sec" style="margin-top:0;"><h4>Sin fecha · ${pend.length}</h4></div>${pend.map(pendRow).join('')}</div>` : '';
     let html = `<div class="cr-head"><h3>Cronograma<small>${esc(rango)} · ${c.filas.length} ${c.filas.length === 1 ? 'trabajo' : 'trabajos'}${pend.length ? ` · ${pend.length} sin fecha` : ''}</small></h3><div class="cr-nav"><button type="button" data-s="a-mes" data-d="-12" aria-label="12 meses antes">‹</button><button type="button" data-s="a-mes" data-d="12" aria-label="12 meses después">›</button></div><button type="button" class="btn" data-s="a-pdf">📄 PDF</button><button type="button" class="btn btn-primary" data-s="new">+ Trabajo</button></div>
-      <div class="cr-leg"><span><i style="background:#16A34A"></i>En la vista (lo ven todos)</span><span><i style="border:1.5px solid #16A34A"></i>Solo el comité</span><span><i style="border:1.5px dashed #B7791F"></i>Falta poner el día</span></div>`;
+      <div class="cr-leg"><span><i style="background:#E2E8F0;border:1.5px solid #64748B"></i>En la vista</span><span><i style="border:1.5px solid #64748B"></i>Solo el comité</span><span><i style="border:1.5px dashed #B7791F"></i>Falta el día</span><span><i style="background:#16A34A"></i>✓ Hecho</span><span><i style="background:#2563EB"></i>● En curso</span><span><i style="background:#FEE2E2;border:1.5px solid #DC2626"></i>! Atrasado</span></div>`;
+    // Avance: cuántas veces ya se hicieron de las que tocaban en estos 12 meses, y cuántas están atrasadas.
+    // Hasta hoy: de lo que ya tocaba, cuánto se hizo y cuánto está atrasado; y cuánto falta en el resto del período.
+    const vivas = c.occ.filter(o => !o.cancelada && !o.sinDia && o.fecha <= today);
+    const nHechos = vivas.filter(o => o.estado === 'hecho').length, nAtr = vivas.filter(o => estadoDe(o) === 'atrasado').length;
+    const nVienen = c.occ.filter(o => !o.cancelada && (o.sinDia || o.fecha > today) && o.estado !== 'hecho').length;
+    if (!S.aFiltro) S.aFiltro = 'todos';
+    const top = c.occ.length ? `<div class="cr-top"><div class="cr-prog">${vivas.length ? `<span class="bar"><i style="width:${Math.round(nHechos * 100 / vivas.length)}%"></i></span><span>Hasta hoy: <b>${nHechos} de ${vivas.length}</b> hechos${nAtr ? ` · <b class="r">${nAtr} ${nAtr === 1 ? 'atrasado' : 'atrasados'}</b>` : ''} · ${nVienen} por venir</span>` : `<span>${nVienen} por venir</span>`}</div>
+      <div class="cr-fil" role="tablist">${[['todos', 'Todos'], ['pend', 'Por hacer'], ['hechos', 'Hechos']].map(([k, l]) => `<button type="button" class="${S.aFiltro === k ? 'on' : ''}" data-s="a-fil" data-k="${k}">${l}</button>`).join('')}</div></div>` : '';
+    html += top;
+    c.filas = c.filas.map(r => ({ t: r.t, occ: r.occ, ver: r.occ.filter(pasaFiltro) })).filter(r => r.ver.length);
+    c.occ = c.occ.filter(pasaFiltro);
     if (!c.filas.length) { v.innerHTML = html + '<div class="tempty">No hay trabajos con fecha en estos 12 meses.<br>Con "+ Trabajo" cargás lo que hay que hacer: con el día, solo el mes, o "Todavía no" para dejarlo pendiente. Los que se repiten (cada 3 meses, cada año…) aparecen solos.</div>' + sinf; return; }
     // Computadora: una fila por trabajo y los 12 meses en columnas.
     let g = `<div class="cr-grid"><div class="h" style="text-align:left;padding-left:12px;">Trabajo</div>` + c.meses.map(ym => `<div class="h${ym === mesHoy ? ' now' : ''}">${esc(MES3(ym))}<small>${ym.slice(0, 4)}</small></div>`).join('');
     c.filas.forEach(r => {
       const t = r.t, tp = tipoOf(t);
-      g += `<div class="cr-nm"><button type="button" data-s="edit" data-id="${esc(t.id)}" title="Editar"><b><i style="background:${tp.color}"></i>${esc(t.titulo)}</b><small>${esc(C.REPITE[t.repite || 'no'])} · ${esc(pubName(t.resp, t) || 'sin responsable')}</small></button></div>`;
-      c.meses.forEach(ym => { g += `<div class="${ym === mesHoy ? 'now' : ''}">${r.occ.filter(o => o.fecha.slice(0, 7) === ym).map(marca).join('')}</div>`; });
+      g += `<div class="cr-nm"><button type="button" data-s="edit" data-id="${esc(t.id)}" title="Editar"><b><i style="background:${tp.color}"></i>${esc(t.titulo)}</b><small>${esc(C.REPITE[t.repite || 'no'])} · ${esc(pubName(t.resp, t) || 'sin responsable')}</small>${tagFila(r.occ)}</button></div>`;
+      c.meses.forEach(ym => { g += `<div class="${ym === mesHoy ? 'now' : ''}">${r.ver.filter(o => o.fecha.slice(0, 7) === ym).map(marca).join('')}</div>`; });
     });
     html += `<div class="cr-pc"><div class="cr-box">${g}</div></div></div>`;
     // Celular: lista por mes (los 3 primeros abiertos; los demás se abren tocando el mes).
     if (!S.aOpen) S.aOpen = {};
     html += '<div class="cr-m">' + c.meses.map((ym, i) => {
-      const items = c.occ.filter(o => o.fecha.slice(0, 7) === ym).sort((a, b) => (a.sinDia - b.sinDia) || a.fecha.localeCompare(b.fecha));
+      // Los hechos van al final del mes.
+      const items = c.occ.filter(o => o.fecha.slice(0, 7) === ym).sort((a, b) => ((a.estado === 'hecho') - (b.estado === 'hecho')) || (a.sinDia - b.sinDia) || a.fecha.localeCompare(b.fecha));
       const abierto = S.aOpen[ym] != null ? S.aOpen[ym] : i < 3;
       return `<button type="button" class="cr-mes${ym === mesHoy ? ' now' : ''}" data-s="a-tog" data-m="${ym}" aria-expanded="${abierto}"><span>${esc(mesLabel(ym))}</span><span>${items.length}${abierto ? '' : ' ›'}</span></button>` +
         (abierto ? (items.length ? items.map(o => {
-          const tag = o.sinDia ? '' : o.cancelada ? '' : o.estado === 'hecho' ? '<span class="cr-tag c">✓ Hecho</span>' : o.pub ? '<span class="cr-tag v">👁 En la vista</span>' : '<span class="cr-tag c">🔒 Comité</span>';
-          return evRow(o).replace(' · 🔒 solo el comité', '').replace(/<\/button>$/, tag + '</button>').replace(/<span class="sl-pill[^"]*">[^<]*<\/span>/, '');
+          const e = estadoDe(o);
+          const tag = ({ sindia: '', susp: '<span class="cr-tag c">Suspendido</span>', hecho: '<span class="cr-tag ok">✓ Hecho</span>', curso: '<span class="cr-tag cu">● En curso</span>', atrasado: '<span class="cr-tag at">! Atrasado</span>' })[e] ?? (o.pub ? '<span class="cr-tag v">👁 En la vista</span>' : '<span class="cr-tag c">🔒 Comité</span>');
+          let row = evRow(o).replace(' · 🔒 solo el comité', '').replace(/<\/button>$/, tag + '</button>').replace(/<span class="sl-pill[^"]*">[^<]*<\/span>/, '');
+          if (e === 'atrasado') row = row.replace('data-s="open"', 'data-s="hizo"');
+          if (e === 'hecho') row = row.replace('class="sl-ev', 'style="opacity:.7" class="sl-ev');
+          return row;
         }).join('') : '<div class="tempty" style="padding:8px;">Nada programado.</div>') : '');
     }).join('') + '</div>';
     v.innerHTML = html + sinf;
@@ -1168,6 +1245,8 @@
     else if (k === 'a-mes') { S.aStart = shiftYm(S.aStart || hoy().slice(0, 7), Number(b.dataset.d)); S.aOpen = {}; render(); }
     else if (k === 'a-tog') { if (!S.aOpen) S.aOpen = {}; S.aOpen[b.dataset.m] = b.getAttribute('aria-expanded') !== 'true'; render(); }
     else if (k === 'a-pdf') openCronoPdf();
+    else if (k === 'a-fil') { S.aFiltro = b.dataset.k; render(); }
+    else if (k === 'hizo') seHizo(b.dataset.id, b.dataset.f);
     else if (k === 'pend') { S.view = 'trab'; render(); setTimeout(() => { const e = $('slPend'); if (e) e.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50); }
     else if (k === 'lz-ajustes') { S.lAjustes = true; render(); }
     else if (k === 'lz-volver') { S.lAjustes = false; render(); }
