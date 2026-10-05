@@ -225,7 +225,7 @@
   // Los publicados en la vista y, de los que son "solo del comité", los que son tuyos (responsable, auxiliar o anotado).
   function visibles(pub) {
     const h = hoy();
-    if (EXT.on) return C.trabajosEntre(V.trabajos, h, C.addDays(h, 62)).filter(o => V.occ && V.occ.has(o.t.id + '__' + o.fecha) && !o.cancelada);
+    if (EXT.on) return C.trabajosEntre(V.trabajos, C.addDays(h, -31), C.addDays(h, 95)).filter(o => V.occ && V.occ.has(o.t.id + '__' + o.fecha) && !o.cancelada);
     return C.trabajosEntre(V.trabajos, h, C.addDays(h, 21)).filter(o => !o.cancelada && o.estado !== 'hecho' && !o.sinDia && (!terminado(o.t, o.fecha) || o.fecha >= h) &&
       (o.pub || (pub && (o.t.resp === pub.id || o.t.aux === pub.id || voy(o.t, o.fecha, pub)))));
   }
@@ -300,15 +300,17 @@
     const anot = voy(t, o.fecha, pub);
     const van = ci.vols.map(v => { const a = apellido(v.pubId, v.nombre, t); return a && v.cong ? `${a} (${v.cong})` : a; }).filter(Boolean);
     let act = '';
-    const fd = fichaDoc(t, o.fecha), conF = tieneFicha(t);
+    // El comité de otra congregación puede marcar cualquier trabajo (aunque no tenga tareas) con "Terminé".
+    const fd = fichaDoc(t, o.fecha), conF = tieneFicha(t) || !!(EXT.on && EXT.yo && EXT.yo.comite);
     const sinLugar = EXT.on && EXT.modo === 'inv' && !((EXT.res && EXT.res.lugares) > 0);
-    if (soy && conF && !EXT.on) act = fd && fd.estado === 'hecho' ? `<button type="button" class="sv-btn ok" data-sv="ficha" data-id="${esc(t.id)}" data-f="${o.fecha}">✓ Terminado</button>` : `<button type="button" class="sv-btn" data-sv="ficha" data-id="${esc(t.id)}" data-f="${o.fecha}">📋 Ficha</button>`;
+    const fichaYo = conF && (EXT.on ? puedeFichaE(t) : !!soy);
+    if (fichaYo) act = fd && fd.estado === 'hecho' ? `<button type="button" class="sv-btn ok" data-sv="ficha" data-id="${esc(t.id)}" data-f="${o.fecha}">✓ Terminado</button>` : `<button type="button" class="sv-btn" data-sv="ficha" data-id="${esc(t.id)}" data-f="${o.fecha}">📋 Ficha</button>`;
     else if (soy) act = `<span class="sv-tag">${soy}</span>`;
     else if (anot) act = `<button type="button" class="sv-btn ok" data-sv="anotado" data-id="${esc(t.id)}" data-f="${o.fecha}">✓ Anotado</button>`;
     else if (ci.completo || (ci.cupo && sinLugar)) act = '<button type="button" class="sv-btn full" disabled>Completo</button>';
     else if (ci.cupo && o.pub) act = `<button type="button" class="sv-btn" data-sv="sumo" data-id="${esc(t.id)}" data-f="${o.fecha}">${EXT.modo === 'inv' ? 'Me anoto' : 'Me sumo'}</button>`;
     return `<div class="sv-card${soy || anot ? ' mine' : ''}" id="sv-${esc(t.id)}-${o.fecha}"><span class="sv-dt">${DIAS3[d.getDay()]}<b>${d.getDate()}</b></span><span class="sv-bar" style="background:${colorDe(t)}"></span>
-      <span class="sv-tx"><b>${modeloDe(t) ? `<span class="sv-bdg" style="background:${modeloDe(t).color}${modeloDe(t).sec === '05' ? ';color:#3A2A00' : ''}">${modeloDe(t).letra}</span>` : tp.icon + ' '}${esc(t.titulo)}</b><small>${t.hora ? esc(t.hora) + ' · ' : ''}${esc(quienCorto(t.resp, t))} y ${esc(quienCorto(t.aux, t))}${ci.cupo ? (ci.faltan ? ` · <em>${ci.faltan === 1 ? 'falta 1' : 'faltan ' + ci.faltan}</em>` : ' · completo') : ''}</small>${van.length ? `<small>Van: ${esc(van.join(', '))}</small>` : ''}${o.pub ? '' : '<small>🔒 Todavía no está publicado: lo ve el comité de mantenimiento y vos.</small>'}${soy && conF && !EXT.on ? `<small>${esc(soy)}${fd && fd.tareas ? ` · ${Object.keys(fd.tareas).length} de ${(t.tareas || []).filter(x => !esGrupoTxt(x)).length} tareas` : ''}</small>` : ''}${(!soy || EXT.on) && conF ? `<button type="button" class="sv-lnk" data-sv="ficha" data-id="${esc(t.id)}" data-f="${o.fecha}">📋 Ver la ficha ›</button>` : ''}</span>
+      <span class="sv-tx"><b>${modeloDe(t) ? `<span class="sv-bdg" style="background:${modeloDe(t).color}${modeloDe(t).sec === '05' ? ';color:#3A2A00' : ''}">${modeloDe(t).letra}</span>` : tp.icon + ' '}${esc(t.titulo)}</b><small>${t.hora ? esc(t.hora) + ' · ' : ''}${esc(quienCorto(t.resp, t))} y ${esc(quienCorto(t.aux, t))}${ci.cupo ? (ci.faltan ? ` · <em>${ci.faltan === 1 ? 'falta 1' : 'faltan ' + ci.faltan}</em>` : ' · completo') : ''}</small>${van.length ? `<small>Van: ${esc(van.join(', '))}</small>` : ''}${o.pub ? '' : EXT.on && EXT.yo && EXT.yo.comite ? '<small>🔒 Solo lo ve el comité</small>' : '<small>🔒 Todavía no está publicado: lo ve el comité de mantenimiento y vos.</small>'}${fichaYo && soy ? `<small>${esc(soy)}${fd && fd.tareas ? ` · ${Object.keys(fd.tareas).length} de ${(t.tareas || []).filter(x => !esGrupoTxt(x)).length} tareas` : ''}</small>` : ''}${!fichaYo && conF ? `<button type="button" class="sv-lnk" data-sv="ficha" data-id="${esc(t.id)}" data-f="${o.fecha}">📋 Ver la ficha ›</button>` : ''}</span>
       <span class="sv-act">${act}</span></div>`;
   }
 
@@ -338,7 +340,7 @@
   // las tareas, escriben cómo se hizo y tocan "Terminé"; los demás la ven sin poder cambiarla.
   function openFicha(t, fecha) {
     const pub = myPub();
-    const soy = !!(pub && (t.resp === pub.id || t.aux === pub.id)) && !window.__comoPubId && !EXT.on;
+    const soy = EXT.on ? puedeFichaE(t) : !!(pub && (t.resp === pub.id || t.aux === pub.id)) && !window.__comoPubId;
     const md = modeloDe(t), col = colorDe(t);
     const ref = () => initFirebase().collection('congregations').doc(V.code).collection('salonFichas').doc(fichaId(t.id, fecha));
     let f = Object.assign({ tareas: {}, mats: {}, nota: '' }, JSON.parse(JSON.stringify(fichaDoc(t, fecha) || {})));
@@ -365,7 +367,7 @@
         ${soy && hecho() ? '<button type="button" class="sv-bb o" id="svFReabrir">Todavía no terminé</button>' : ''}
         <button type="button" class="sv-bb o" id="svFPdf">📄 Descargar la ficha (PDF)</button>
         <button type="button" class="sv-bb o" data-svclose>Cerrar</button>
-        ${soy ? '<div class="sv-note">Lo que tildás se guarda solo, también sin señal. Al tocar "Terminé" le avisamos al comité de mantenimiento.</div>' : '<div class="sv-note">La completan el responsable y el auxiliar.</div>'}
+        ${soy ? `<div class="sv-note">Lo que tildás se guarda solo${EXT.on ? '' : ', también sin señal'}. Al tocar "Terminé" le avisamos al comité de mantenimiento.</div>` : '<div class="sv-note">La completan el responsable y el auxiliar.</div>'}
         ${md && md.notas ? `<div class="sv-fnotas"><b>NOTAS.</b> ${esc(md.notas)}</div>` : ''}`;
     };
     const m = sheet(html());
@@ -376,6 +378,11 @@
       const doc = { tid: t.id, fecha, tareas: f.tareas || {}, mats: f.mats || {}, nota: String(f.nota || '').slice(0, 1000), estado: f.estado || 'curso', pubId: pub.id, nombre: pub.name, email: currentUser.email, at: new Date().toISOString() };
       if (f.terminadoAt) doc.terminadoAt = f.terminadoAt;
       V.fichas[fichaId(t.id, fecha)] = doc;
+      if (EXT.on) {   // hermano de otra congregación: lo guarda la función
+        const r = await extApi('ficha', { tid: t.id, fecha, tareas: doc.tareas, mats: doc.mats, nota: doc.nota, estado: doc.estado, terminadoAt: doc.terminadoAt });
+        if (!r.ok) showToast((r.j && r.j.error) || 'No se pudo guardar. Revisá la conexión y probá de nuevo.');
+        return r.ok;
+      }
       try { await ref().set(doc); return true; }
       catch (e) { console.error(e); showToast(e && e.code === 'permission-denied' ? 'No se pudo guardar: no tenés permiso.' : 'No se pudo guardar. Se reintenta cuando haya conexión.'); return false; }
     };
@@ -513,6 +520,8 @@
     } catch (e) { return { ok: false, status: 0, j: {} }; }
   }
   const invKey = () => `inv-anot-${V.code}-${EXT.k}`;
+  // Hermano de afuera que completa la ficha: del comité, o responsable o auxiliar de ese trabajo.
+  function puedeFichaE(t) { return !!(EXT.on && EXT.modo === 'vol' && EXT.yo && (EXT.yo.comite || t.resp === EXT.yo.id || t.aux === EXT.yo.id)); }
   function invGuardado() { try { return JSON.parse(localStorage.getItem(invKey()) || 'null'); } catch (e) { return null; } }
   function aplicarExt(j) {
     EXT.res = j; EXT.yo = j.yo || null;
@@ -535,7 +544,7 @@
     $('mainView').classList.remove('hidden');
     document.body.classList.add('sv-externo', EXT.modo === 'inv' ? 'sv-inv' : 'sv-vol');
     const ct = $('congTitle'); if (ct) ct.textContent = (EXT.res && EXT.res.cong) || 'Salón del Reino';
-    const tag = document.querySelector('.readonly-tag'); if (tag) tag.textContent = EXT.modo === 'inv' ? 'Invitación' : 'Voluntario' + (EXT.yo && EXT.yo.cong ? ' · Cong. ' + EXT.yo.cong : '');
+    const tag = document.querySelector('.readonly-tag'); if (tag) tag.textContent = EXT.modo === 'inv' ? 'Invitación' : (EXT.yo && EXT.yo.comite ? 'Comité' : 'Voluntario') + (EXT.yo && EXT.yo.cong ? ' · Cong. ' + EXT.yo.cong : '');
     document.querySelectorAll('.bt-btn').forEach(b => b.classList.toggle('hidden', b.dataset.tab !== 'salon'));
     if (typeof showTab === 'function') showTab('salon');
     // El voluntario recibe los avisos del Salón (trabajos nuevos y recordatorios): el cartel de notificaciones va arriba.
@@ -573,6 +582,17 @@
     }
     const occ = visibles(pub);
     const nom = EXT.yo && EXT.yo.nombre ? String(EXT.yo.nombre).split(' ')[0] : '';
+    if (EXT.yo && EXT.yo.comite) {
+      const h = hoy();
+      const hecho = (o) => o.estado === 'hecho' || terminado(o.t, o.fecha);
+      const atr = occ.filter(o => o.fecha < h && !hecho(o)), prox = occ.filter(o => o.fecha >= h && !hecho(o)), hechos = occ.filter(hecho).reverse();
+      html += teaser('🛠', '#0E7490', `Hola${nom ? ', ' + esc(nom) : ''}`, 'Sos del comité de mantenimiento. Acá ves todos los trabajos (también los que ve solo el comité), completás las fichas y te llegan los avisos del comité.');
+      if (atr.length) html += '<h2 class="sec-title">⚠ Atrasados</h2>' + atr.map(o => cardHTML(o, pub)).join('');
+      html += '<h2 class="sec-title">Próximos trabajos</h2>' + (prox.length ? prox.map(o => cardHTML(o, pub)).join('') : '<p class="sv-empty">No hay trabajos programados en los próximos tres meses.</p>');
+      if (hechos.length) html += '<h2 class="sec-title">✓ Hechos (últimas dos semanas)</h2>' + hechos.map(o => cardHTML(o, pub)).join('');
+      box.innerHTML = html;
+      return;
+    }
     html += teaser('👋', '#0E7490', `Hola${nom ? ', ' + esc(nom) : ''}`, 'Sos voluntario del Salón. Acá ves los trabajos de mantenimiento que necesitan ayuda; cuando se publica uno nuevo te llega el aviso.');
     html += '<h2 class="sec-title">Trabajos de mantenimiento</h2>' + (occ.length ? occ.map(o => cardHTML(o, pub)).join('') : '<p class="sv-empty">Por ahora no hay trabajos que busquen voluntarios. Cuando se publique uno, te avisamos.</p>');
     box.innerHTML = html;

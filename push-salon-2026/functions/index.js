@@ -17,7 +17,7 @@ const { roleLabel, collectNewlyAssignedIds, avisoPreview, selectNewAvisos, notif
   BACKUP_SUBS, ALL_SUBS, backupName, parseBackupName, buildBackup, backupsToPrune, restorePlan, isRestoreWrite,
   salonAssignments, newSalonAssignments, salonAssignMessage, anotadoMessage, resumenSemanal, newPublished, publishedMessage,
   fichaCambio, fichaMessage, comiteIds,
-  extVoluntario, extBuscar, estadoInvitacion, lugaresInvitacion, occVoluntario, proyeccionExterno, datosInvitado } = require('./lib');
+  occComite, puedeFichaExt, fichaDeExt, extVoluntario, extBuscar, estadoInvitacion, lugaresInvitacion, occVoluntario, proyeccionExterno, datosInvitado } = require('./lib');
 const crypto = require('crypto');
 const SalonCore = require('./salon-core');
 
@@ -391,7 +391,7 @@ exports.onSalonWrite = onDocumentWritten({ document: 'congregations/{code}/salon
   if (!nuevos.length && !publicados.length) return null;
   const [cs, xs] = await Promise.all([db.collection('congregations').doc(code).get(), db.collection('congregations').doc(code).collection('salon').doc('externos').get()]);
   const cong = cs.data() || {};
-  const vols = Object.values((xs.exists && xs.data().lista) || {}).filter((x) => x && x.id && x.vol && x.email).map((x) => 'x:' + x.id);
+  const vols = Object.values((xs.exists && xs.data().lista) || {}).filter((x) => x && x.id && (x.vol || x.comite) && x.email).map((x) => 'x:' + x.id);
   for (const a of nuevos) {
     const n = await sendToPubs(code, [a.pubId], salonAssignMessage(a, firstName(cong, a.pubId)), verLink(code, 'salon'), 'asignacion', `salon-${a.t.id}-${a.fecha}-${a.rol}`);
     console.log('[salón]', a.rol, a.pubId, a.fecha, '· celulares:', n);
@@ -415,10 +415,10 @@ exports.onSalonFicha = onDocumentWritten({ document: 'congregations/{code}/salon
   if (!kind) return null;
   const code = event.params.code;
   const ref = db.collection('congregations').doc(code);
-  const [cs, ts] = await Promise.all([ref.get(), ref.collection('salon').doc('trabajos').get()]);
+  const [cs, ts, xs] = await Promise.all([ref.get(), ref.collection('salon').doc('trabajos').get(), ref.collection('salon').doc('externos').get()]);
   const cong = cs.data() || {};
   const t = ((ts.exists && ts.data().lista) || {})[after.tid];
-  const ids = comiteIds(cong, after.pubId);
+  const ids = comiteIds(cong, after.pubId, (xs.exists && xs.data().lista) || {});
   const n = await sendToPubs(code, ids, fichaMessage(kind, after, t), APP_BASE + 'asignaciones-salon.html', 'aviso', `ficha-${event.params.fid}-${kind}`);
   console.log('[ficha]', kind, event.params.fid, '· celulares:', n);
   return null;
@@ -440,7 +440,10 @@ exports.onSalonAnotado = onDocumentWritten({ document: 'congregations/{code}/sal
   const ci = SalonCore.cupoInfo(t, r.fecha, anotados);
   // Si se anotó un hermano de otra congregación (con la invitación o como voluntario), también se entera el comité.
   let ids = [t.resp, t.aux];
-  if (String(r.pubId || '').startsWith('x:')) ids = ids.concat(comiteIds((await ref.get()).data() || {}, null));
+  if (String(r.pubId || '').startsWith('x:')) {
+    const [cs, xs] = await Promise.all([ref.get(), ref.collection('salon').doc('externos').get()]);
+    ids = ids.concat(comiteIds(cs.data() || {}, null, (xs.exists && xs.data().lista) || {}));
+  }
   await sendToPubs(code, ids.filter(pid => pid !== r.pubId), anotadoMessage(r, t, !!after, ci.van, ci.cupo), APP_BASE + 'asignaciones-salon.html', 'aviso', `anotado-${event.params.aid}`);
   return null;
 });
@@ -958,10 +961,12 @@ exports.salonExterno = onRequest({ cors: ['https://hugoescalda21.github.io'], re
       const [an, fi] = await Promise.all([ref.collection('salonAnotados').get(), ref.collection('salonFichas').get()]);
       const anotados = {}; an.forEach((d) => { anotados[d.id] = d.data(); });
       const fichas = {}; fi.forEach((d) => { fichas[d.id] = d.data(); });
-      const occ = occVoluntario(trabajos, anotados, ext.id, hoyIso);
-      const proj = proyeccionExterno(occ, trabajos, anotados, fichas, cong.publishers || [], 'x-' + ext.id);
-      proj.pubs.push({ id: 'x:' + ext.id, name: ext.nombre || '', email });
-      res.status(200).send(Object.assign({ modo, cong: congName, estado: 'ok', yo: { id: 'x:' + ext.id, nombre: ext.nombre || '', cong: ext.cong || '' } }, proj));
+      // Del comité: todo el cronograma. Voluntario: lo publicado que pide ayuda y lo suyo.
+      const occ = ext.comite ? occComite(trabajos, hoyIso) : occVoluntario(trabajos, anotados, ext.id, hoyIso);
+      const proj = proyeccionExterno(occ, trabajos, anotados, fichas, cong.publishers || [], 'x-' + ext.id, !!ext.comite);
+      if (!proj.pubs.some((p) => p.id === 'x:' + ext.id)) proj.pubs.push({ id: 'x:' + ext.id, name: ext.nombre || '', email });
+      else proj.pubs.forEach((p) => { if (p.id === 'x:' + ext.id) p.email = email; });
+      res.status(200).send(Object.assign({ modo, cong: congName, estado: 'ok', yo: { id: 'x:' + ext.id, nombre: ext.nombre || '', cong: ext.cong || '', comite: !!ext.comite } }, proj));
       return;
     }
 
@@ -1014,6 +1019,19 @@ exports.salonExterno = onRequest({ cors: ['https://hugoescalda21.github.io'], re
       if (out.error) { res.status(409).send(out); return; }
       if (bk) out.bk = bk;
       res.status(200).send(out);
+      return;
+    }
+
+    // Ficha completada desde el celular por un hermano de afuera: del comité, o responsable o auxiliar de ese trabajo.
+    if (action === 'ficha') {
+      if (modo !== 'vol') { res.status(403).send({ error: 'Sin permiso' }); return; }
+      const t = trabajos[String(body.tid || '')];
+      const fecha = String(body.fecha || '');
+      if (!t || !SalonCore.trabajosEntre({ [t.id]: t }, fecha, fecha).length) { res.status(404).send({ error: 'Ese trabajo ya no está.' }); return; }
+      if (!puedeFichaExt(ext, t)) { res.status(403).send({ error: 'La completan el responsable, el auxiliar y el comité.' }); return; }
+      const d = fichaDeExt(body, ext, email, new Date().toISOString());
+      await ref.collection('salonFichas').doc(t.id + '__' + fecha).set(d);
+      res.status(200).send({ ok: true });
       return;
     }
 

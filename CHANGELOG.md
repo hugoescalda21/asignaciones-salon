@@ -6,6 +6,15 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Comité de mantenimiento con hermanos de otra congregación — 5 oct 2026 (caché asignaciones-salon-v61 y ver-salon-v47)
+
+- En la lista de hermanos de otra congregación, la tilde nueva **"Integrante del comité de mantenimiento"** (con su email). Entra a la vista y ve **solo Mantenimiento**, pero con todo el cronograma: atrasados, próximos (también los que ve solo el comité) y los hechos de las últimas dos semanas.
+- Completa la ficha de cualquier trabajo (también los que no tienen tareas) y marca **Terminé**: queda hecho en la app, con su nombre. Le llegan los avisos del comité (fichas que empiezan o terminan, quién se anota de otra congregación).
+- Crear y editar trabajos sigue siendo solo para los de la congregación. No ve nada más de la congregación.
+- Ahora también un voluntario de afuera que es **responsable o auxiliar** de un trabajo puede completar su ficha desde el celular.
+- Hay que publicar las funciones: `firebase deploy --only functions`.
+- Pruebas: 8 más en `33-otra-congregacion`, 3 en las funciones.
+
 ## Hermanos de otra congregación en los trabajos — 5 oct 2026 (caché asignaciones-salon-v60 y ver-salon-v46)
 
 - **Invitación por enlace:** en el detalle de un trabajo publicado que pide voluntarios, **"🔗 Invitar a otra congregación"**: para qué congregación, cuántos lugares les dejás y si se les pide el teléfono. Se manda por WhatsApp o se copia. El hermano abre el enlace **sin cuenta**, ve solo ese trabajo y su ficha (sin poder tildarla), toca **Me anoto** con su nombre y su congregación, y queda anotado. El teléfono recuerda que se anotó (para darse de baja). El enlace sirve hasta el día del trabajo, hasta que se llenan los lugares o hasta que se anula. Se guarda en `salon/invitaciones`.

@@ -17,7 +17,7 @@ let ok = 0, bad = 0; const check = (l, c, x) => { if (c) { ok++; console.log('  
 const W1 = { id: 'w1', titulo: 'Limpieza de canaletas', tipo: 'profunda', fecha: '2026-09-26', hora: '08:00', resp: 'p3', aux: 'p9', cupo: 3, repite: 'no', vista: true, fichaCod: '03.F', tareas: ['TECHOS', 'Limpiar la basura'], materiales: ['Escalera larga'] };
 const W2 = { id: 'w2', titulo: 'Driver de emergencia', tipo: 'reparacion', fecha: '2026-09-30', hora: '18:30', resp: 'p3', aux: 'p4', cupo: 2, repite: 'no', vista: false };
 const W3 = { id: 'w3', titulo: 'Pintura de rejas', tipo: 'pintura', fecha: '2026-10-03', hora: '09:00', resp: 'p4', aux: 'p6', cupo: 2, repite: 'no', vista: true };
-const EXT = { e1: { id: 'e1', nombre: 'Juan Ramírez', cong: 'Norte', tel: '343 555-1234', email: 'juan@gmail.com', vol: true }, e2: { id: 'e2', nombre: 'Esteban Ríos', cong: 'Norte' } };
+const EXT = { e5: { id: 'e5', nombre: 'Pedro Sur', cong: 'Norte', email: 'pedro@gmail.com', vol: true, comite: true }, e1: { id: 'e1', nombre: 'Juan Ramírez', cong: 'Norte', tel: '343 555-1234', email: 'juan@gmail.com', vol: true }, e2: { id: 'e2', nombre: 'Esteban Ríos', cong: 'Norte' } };
 
 (async () => {
   const b = await launch();
@@ -81,7 +81,11 @@ const EXT = { e1: { id: 'e1', nombre: 'Juan Ramírez', cong: 'Norte', tel: '343 
   await p.fill('.slmodal:last-child #slXm', '  Esteban.Rios@Gmail.com ');
   await click(p, '.slmodal:last-child #slXs');
   const e2 = await p.evaluate(() => window.__salon.externos.e2);
-  check('se guarda el email (en minúsculas) y la tilde, sin perder lo demás', e2 && e2.email === 'esteban.rios@gmail.com' && e2.vol === true && e2.cong === 'Norte' && e2.nombre === 'Esteban Ríos', e2);
+  check('se guarda el email (en minúsculas) y la tilde, sin perder lo demás', e2 && e2.email === 'esteban.rios@gmail.com' && e2.vol === true && e2.cong === 'Norte' && e2.nombre === 'Esteban Ríos' && !e2.comite, e2);
+  await click(p, '#salonRoot [data-s="x-edit"][data-id="e2"]');
+  await click(p, '.slmodal:last-child #slXk');
+  await click(p, '.slmodal:last-child #slXs');
+  check('"Integrante del comité": se guarda y en la lista dice "Comité"', await p.evaluate(() => window.__salon.externos.e2.comite === true) && /Esteban Ríos Cong\. Norte · 🛠 Comité/.test(await p.evaluate(() => $('salonRoot').innerText.replace(/\s+/g, ' '))));
   check('editor sin errores', !p.errs.length, p.errs);
   await ctx.close();
 
@@ -106,10 +110,10 @@ const EXT = { e1: { id: 'e1', nombre: 'Juan Ramírez', cong: 'Norte', tel: '343 
           const proj = L.proyeccionExterno([{ tid: inv.tid, fecha: inv.fecha }], st.trabajos, st.anotados, st.fichas, pubs, mia && mia.inv === inv.k ? mia.uid : null);
           return [200, Object.assign({ modo, cong: 'San Agustín', estado: 'ok', para: inv.para || '', tel: inv.tel !== false, lugares: L.lugaresInvitacion(inv, e.t, st.anotados) }, proj)];
         }
-        const occ = L.occVoluntario(st.trabajos, st.anotados, ext.id, HOY_ISO);
-        const proj = L.proyeccionExterno(occ, st.trabajos, st.anotados, st.fichas, pubs, 'x-' + ext.id);
+        const occ = ext.comite ? L.occComite(st.trabajos, HOY_ISO) : L.occVoluntario(st.trabajos, st.anotados, ext.id, HOY_ISO);
+        const proj = L.proyeccionExterno(occ, st.trabajos, st.anotados, st.fichas, pubs, 'x-' + ext.id, !!ext.comite);
         proj.pubs.push({ id: 'x:' + ext.id, name: ext.nombre, email: ext.email });
-        return [200, Object.assign({ modo, cong: 'San Agustín', estado: 'ok', yo: { id: 'x:' + ext.id, nombre: ext.nombre, cong: ext.cong } }, proj)];
+        return [200, Object.assign({ modo, cong: 'San Agustín', estado: 'ok', yo: { id: 'x:' + ext.id, nombre: ext.nombre, cong: ext.cong, comite: !!ext.comite } }, proj)];
       }
       if (body.action === 'anotar') {
         const t = st.trabajos[body.tid]; let persona;
@@ -128,6 +132,12 @@ const EXT = { e1: { id: 'e1', nombre: 'Juan Ramírez', cong: 'Norte', tel: '343 
         const bk = modo === 'inv' ? 'secreto' + Object.keys(st.anotados).length : '';
         st.anotados[aid] = Object.assign({ tid: body.tid, fecha: body.fecha, pubId: 'x:' + persona.id, nombre: persona.nombre, uid: 'x-' + persona.id, comentario: body.comentario || '', cong: persona.cong, at: 'x' }, modo === 'inv' ? { inv: body.k, bk: sha(bk) } : {});
         return [200, Object.assign({ ok: true, aid, nombre: persona.nombre }, bk ? { bk } : {})];
+      }
+      if (body.action === 'ficha') {
+        const t = st.trabajos[body.tid];
+        if (modo !== 'vol' || !L.puedeFichaExt(ext, t)) return [403, { error: 'La completan el responsable, el auxiliar y el comité.' }];
+        st.fichas[body.tid + '__' + body.fecha] = L.fichaDeExt(body, ext, ext.email, '2026-09-23T12:00:00Z');
+        return [200, { ok: true }];
       }
       if (body.action === 'baja') {
         const a = st.anotados[body.aid]; if (!a) return [200, { ok: true }];
@@ -182,6 +192,8 @@ const EXT = { e1: { id: 'e1', nombre: 'Juan Ramírez', cong: 'Norte', tel: '343 
   t = await boxTxt(p);
   check('ahora "✓ Anotado", "Ya estás anotado, Juan" y va con su congregación', /✓ Anotado/.test(t) && /Ya estás anotado, Juan/.test(t) && /Van: Ruiz, Ramírez \(Norte\)/.test(t), t);
   const ctxI = p.context();
+  // (con archivos locales, Chromium a veces tarda en guardar el localStorage: se espera un poco antes de recargar)
+  await p.waitForFunction(() => !!localStorage.getItem('inv-anot-C-K1')); await p.waitForTimeout(1500);
   await p.reload(); await p.waitForTimeout(500);
   await p.waitForSelector('#salonBox .sv-teaser', { timeout: 5000 }).catch(() => {});
   t = await boxTxt(p);
@@ -233,6 +245,30 @@ const EXT = { e1: { id: 'e1', nombre: 'Juan Ramírez', cong: 'Norte', tel: '343 
   await click(p, '#svNo'); await click(p, '#svBaja'); await p.waitForTimeout(300);
   check('"Ya no puedo ir": se da de baja', !srv.anotados['w3__2026-10-03__x-e1']);
   check('vista del voluntario sin errores', !p.errs.length, p.errs);
+  await p.context().close();
+
+  console.log('\nVista: integrante del comité de otra congregación');
+  srv = server();
+  srv.trabajos.w0 = { id: 'w0', titulo: 'Revisar matafuegos', tipo: 'revision', fecha: '2026-09-18', resp: 'p3', aux: 'p4', repite: 'no', vista: false };
+  p = await entrarComo('pedro@gmail.com');
+  t = await boxTxt(p);
+  check('entra como "Comité · Cong. Norte" y ve todo: atrasados, próximos y lo que ve solo el comité', await p.evaluate(() => document.querySelector('.readonly-tag').textContent) === 'Comité · Cong. Norte' && /Sos del comité de mantenimiento/.test(t) && /Atrasados Mié 17|Atrasados .*Revisar matafuegos/.test(t) && /Driver de emergencia/.test(t) && /Solo lo ve el comité/.test(t) && /Pintura de rejas/.test(t), t);
+  await p.screenshot({ path: path.join(SHOTS, 'otra-cong-comite.png'), fullPage: true });
+  check('cada trabajo tiene "📋 Ficha" para completarla (también los que no tienen tareas)', await p.evaluate(() => !!document.querySelector('#sv-w1-2026-09-26 .sv-act [data-sv="ficha"]') && !!document.querySelector('#sv-w0-2026-09-18 .sv-act [data-sv="ficha"]')));
+  await click(p, '#sv-w1-2026-09-26 .sv-act [data-sv="ficha"]');
+  check('la ficha se puede tildar', await p.evaluate(() => [...document.querySelectorAll('.sv-sheet input[type=checkbox]')].some(x => !x.disabled)) && /Terminé/.test(await sheetTxt(p)));
+  await p.click('.sv-sheet input[data-ft="tareas"][data-i="1"]'); await p.waitForTimeout(300);
+  check('lo tildado se guarda por la función, con su nombre', srv.fichas['w1__2026-09-26'] && srv.fichas['w1__2026-09-26'].tareas[1] === true && srv.fichas['w1__2026-09-26'].pubId === 'x:e5' && srv.fichas['w1__2026-09-26'].nombre === 'Pedro Sur', srv.fichas);
+  await p.fill('#svFNota', 'Se limpió todo'); await click(p, '#svFFin'); await p.waitForTimeout(400);
+  check('"Terminé": queda hecho y pasa a "Hechos"', srv.fichas['w1__2026-09-26'].estado === 'hecho' && srv.fichas['w1__2026-09-26'].nota === 'Se limpió todo' && /¡Gracias!/.test(await sheetTxt(p)), srv.fichas);
+  await p.evaluate(() => document.querySelectorAll('.sv-ov').forEach(x => x.remove()));
+  await p.waitForTimeout(300);
+  check('vista del comité sin errores', !p.errs.length, p.errs);
+  await p.context().close();
+  srv = server();
+  p = await entrarComo('juan@gmail.com');
+  await click(p, '#salonBox [data-sv="ficha"][data-id="w1"]');
+  check('el voluntario (que no es responsable) ve la ficha sin poder tildarla', await p.evaluate(() => [...document.querySelectorAll('.sv-sheet input[type=checkbox]')].every(x => x.disabled)));
   await p.context().close();
   p = await entrarComo('otro@gmail.com');
   check('alguien que no está en la lista: la pantalla de siempre para pedir acceso', await p.evaluate(() => !$('authGateView').classList.contains('hidden') && !$('authStepDenied').classList.contains('hidden') && $('mainView').classList.contains('hidden')));

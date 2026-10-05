@@ -536,7 +536,7 @@ const SC = require('./salon-core');
 function salonAssignments(cong, trabajos, anotados, limpieza, grupos, fromIso, toIso, externos) {
   const out = [];
   // Voluntarios del salón de otra congregación (entran a la vista con su email): sus trabajos también tienen recordatorio.
-  Object.values(externos || {}).filter((x) => x && x.id && x.vol && x.email).forEach((x) => {
+  Object.values(externos || {}).filter((x) => x && x.id && (x.vol || x.comite) && x.email).forEach((x) => {
     SC.asignacionesSalon('x:' + x.id, trabajos, anotados, null, null, null, fromIso, toIso).forEach((a) => {
       out.push({ pubId: 'x:' + x.id, dateIso: a.fecha, timeMin: a.hora ? parseHHMM(a.hora) : null, label: a.label });
     });
@@ -607,11 +607,14 @@ function fichaMessage(kind, f, t) {
   }
   return { title: `${f.nombre || 'El responsable'} empezó «${titulo}»`, body: tareas.length ? `Ya tildó ${n} de ${tareas.length} tareas` : 'Lo está completando desde el celular' };
 }
-// Quiénes reciben el aviso de las fichas: Super Admin y Admin del Salón (menos quien la completó).
-function comiteIds(cong, menos) {
+// Quiénes reciben el aviso de las fichas: Super Admin, Admin del Salón y los integrantes del comité
+// que son de otra congregación (menos quien la completó).
+function comiteIds(cong, menos, externos) {
   const s = (cong && cong.settings) || {};
   const mails = [].concat(s.editorEmails || [], s.salonAdminEmails || []).map((e) => String(e).toLowerCase());
-  return ((cong && cong.publishers) || []).filter((p) => p.email && mails.includes(String(p.email).toLowerCase()) && p.id !== menos).map((p) => p.id);
+  const ids = ((cong && cong.publishers) || []).filter((p) => p.email && mails.includes(String(p.email).toLowerCase()) && p.id !== menos).map((p) => p.id);
+  Object.values(externos || {}).forEach((x) => { if (x && x.id && x.comite && x.email && 'x:' + x.id !== menos) ids.push('x:' + x.id); });
+  return ids;
 }
 const DIAS_L = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 function diaTxt(iso) { const d = new Date(iso + 'T00:00:00Z'); return DIAS_L[d.getUTCDay()] + ' ' + d.getUTCDate(); }
@@ -677,7 +680,7 @@ const normTxt = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').
 function extVoluntario(externos, email) {
   const e = normTxt(email);
   if (!e) return null;
-  return Object.values(externos || {}).find((x) => x && x.id && x.vol && normTxt(x.email) === e) || null;
+  return Object.values(externos || {}).find((x) => x && x.id && (x.vol || x.comite) && normTxt(x.email) === e) || null;
 }
 // El mismo hermano si ya estaba en la lista (mismo nombre y congregación, sin importar tildes ni mayúsculas).
 function extBuscar(externos, nombre, cong) {
@@ -710,10 +713,33 @@ function occVoluntario(trabajos, anotados, extId, hoyIso) {
       ((o.pub && Number(o.t.cupo) > 0) || o.t.resp === pid || o.t.aux === pid || SC.voluntarios(o.t, o.fecha, anotados).some((v) => v.pubId === pid)))
     .map((o) => ({ tid: o.t.id, fecha: o.fecha }));
 }
+// Qué ve un integrante del comité de otra congregación: todo el cronograma (también lo que ve solo el comité),
+// desde un mes atrás hasta tres meses adelante. Los ya hechos, solo los de las últimas dos semanas.
+function occComite(trabajos, hoyIso) {
+  const desde = SC.addDays(hoyIso, -30), hechosDesde = SC.addDays(hoyIso, -14);
+  return SC.trabajosEntre(trabajos, desde, SC.addDays(hoyIso, 90))
+    .filter((o) => !o.cancelada && !o.sinDia && (o.estado !== 'hecho' || o.fecha >= hechosDesde))
+    .map((o) => ({ tid: o.t.id, fecha: o.fecha }));
+}
+// Si ese hermano de afuera puede completar la ficha: del comité, o responsable o auxiliar de ese trabajo.
+function puedeFichaExt(ext, t) {
+  if (!ext || !t) return false;
+  const pid = 'x:' + ext.id;
+  return !!ext.comite || t.resp === pid || t.aux === pid;
+}
+// Lo que manda desde el celular al completar la ficha (tareas y materiales tildados, nota, estado).
+function fichaDeExt(body, ext, email, ahoraIso) {
+  const marcas = (m) => { const o = {}; Object.keys((m && typeof m === 'object') ? m : {}).slice(0, 200).forEach((k) => { if (/^\d{1,3}$/.test(k) && m[k]) o[k] = true; }); return o; };
+  const estado = body && body.estado === 'hecho' ? 'hecho' : 'curso';
+  const d = { tid: String(body.tid || '').slice(0, 40), fecha: String(body.fecha || '').slice(0, 10), tareas: marcas(body.tareas), mats: marcas(body.mats),
+    nota: String((body && body.nota) || '').slice(0, 1000), estado, pubId: 'x:' + ext.id, nombre: String(ext.nombre || '').slice(0, 80), email: String(email || ''), at: ahoraIso };
+  if (estado === 'hecho') d.terminadoAt = String(body.terminadoAt || ahoraIso).slice(0, 30);
+  return d;
+}
 // Lo que se manda al celular del hermano de afuera: solo esos trabajos, con los nombres que hacen falta.
 // Nada de emails, teléfonos, programa, territorios ni del resto de la congregación.
 const CAMPOS_EXT = ['id', 'titulo', 'tipo', 'clase', 'fichaCod', 'fecha', 'hora', 'repite', 'cada', 'unidad', 'hasta', 'resp', 'aux', 'cupo', 'vista', 'materiales', 'tareas', 'notas', 'soloMes'];
-function proyeccionExterno(occ, trabajos, anotados, fichas, publishers, miUid) {
+function proyeccionExterno(occ, trabajos, anotados, fichas, publishers, miUid, comite) {
   const claves = new Set(occ.map((o) => o.tid + '__' + o.fecha));
   const lista = {}, ids = new Set();
   [...new Set(occ.map((o) => o.tid))].forEach((id) => {
@@ -724,7 +750,7 @@ function proyeccionExterno(occ, trabajos, anotados, fichas, publishers, miUid) {
     Object.keys(t.ocurr || {}).forEach((f) => {
       if (!claves.has(id + '__' + f)) return;
       const o = t.ocurr[f] || {}, x = {};
-      ['estado', 'cancelada', 'pub', 'vols'].forEach((k) => { if (o[k] !== undefined) x[k] = o[k]; });
+      ['estado', 'cancelada', 'pub', 'vols'].concat(comite ? ['nota', 'tareas', 'mats'] : []).forEach((k) => { if (o[k] !== undefined) x[k] = o[k]; });
       c.ocurr[f] = x;
       (o.vols || []).forEach((p) => ids.add(p));
     });
@@ -764,7 +790,7 @@ function datosInvitado(b) {
 }
 
 module.exports = {
-  normTxt, extVoluntario, extBuscar, estadoInvitacion, lugaresInvitacion, occVoluntario, proyeccionExterno, datosInvitado,
+  normTxt, occComite, puedeFichaExt, fichaDeExt, extVoluntario, extBuscar, estadoInvitacion, lugaresInvitacion, occVoluntario, proyeccionExterno, datosInvitado,
   faltantesSemana, resumenSemanal,
   salonAssignments, newSalonAssignments, salonAssignMessage, newPublished, publishedMessage, fichaCambio, fichaMessage, comiteIds, anotadoMessage, SALON_SUBS, ALL_SUBS,
   BACKUP_SUBS, BACKUP_KINDS, backupName, parseBackupName, buildBackup, backupsToPrune, restorePlan, isRestoreWrite,

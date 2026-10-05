@@ -1232,16 +1232,17 @@
       <div class="tf"><label for="slXt">Teléfono (opcional)</label><input id="slXt" type="tel" maxlength="25" value="${esc(x ? x.tel || '' : '')}" placeholder="Ej.: 342 555-1234"></div>
       <div class="tf"><label for="slXm">Email (para que entre a la vista)</label><input id="slXm" type="email" maxlength="80" value="${esc(x ? x.email || '' : '')}" placeholder="Ej.: juan@gmail.com" autocomplete="off"></div>
       <label class="sl-sw" style="margin-bottom:10px;"><span><b style="display:block">Voluntario del salón</b>Entra a la vista con ese email y ve solo los trabajos de mantenimiento publicados. Se puede anotar y le llegan los avisos.</span><input type="checkbox" id="slXv"${x && x.vol ? ' checked' : ''}></label>
+      <label class="sl-sw" style="margin:0 0 10px;"><span><b style="display:block">Integrante del comité de mantenimiento</b>Además ve todos los trabajos (también los que ve solo el comité), completa las fichas y le llegan los avisos del comité. Crear y editar trabajos queda para ustedes.</span><input type="checkbox" id="slXk"${x && x.comite ? ' checked' : ''}></label>
       <div class="tnote">🔒 No ve el programa, las asignaciones, los territorios ni los datos de los hermanos: solo Mantenimiento. Si deja de venir, sacás la tilde. El teléfono y el email solo los ven el Super Admin y el Admin — Salón.</div>
       <div class="sl-err" id="slXe"></div>
       <div class="tfoot">${x ? '<button type="button" class="btn btn-danger" id="slXd">Borrar</button>' : ''}<button type="button" class="btn" data-tclose>Cancelar</button><button type="button" class="btn btn-primary" id="slXs">Guardar</button></div>`);
     m.q('#slXs').addEventListener('click', async () => {
       const nombre = m.q('#slXn').value.trim();
       if (!nombre) { m.q('#slXe').textContent = 'Escribí el nombre.'; return; }
-      const email = m.q('#slXm').value.trim().toLowerCase(), vol = m.q('#slXv').checked;
+      const email = m.q('#slXm').value.trim().toLowerCase(), comite = m.q('#slXk').checked, vol = m.q('#slXv').checked || comite;
       if (vol && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { m.q('#slXe').textContent = 'Para que entre como voluntario, escribí su email.'; return; }
       if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { m.q('#slXe').textContent = 'Ese email no parece válido.'; return; }
-      const nx = Object.assign({}, x || {}, { id: (x && x.id) || newId(), nombre, cong: m.q('#slXc').value.trim(), tel: m.q('#slXt').value.trim(), email, vol });
+      const nx = Object.assign({}, x || {}, { id: (x && x.id) || newId(), nombre, cong: m.q('#slXc').value.trim(), tel: m.q('#slXt').value.trim(), email, vol, comite });
       if (!nx.email) delete nx.email;
       if (await safe(() => sWrite(sRef('externos'), [[['lista', nx.id], nx]]), 'Guardado')) { S.externos[nx.id] = nx; m.close(); if (onSaved) onSaved(nx.id); render(); }
     });
@@ -1555,7 +1556,7 @@
     const xs = extList();
     return `<div class="sl-sec"><h4>Hermanos de ${esc(otraNombre() || 'otra congregación')}</h4><button type="button" class="btn" data-s="x-new">+ Agregar</button></div>
       <p class="hint" style="margin:-4px 2px 8px;">Hermanos de otra congregación que ayudan en los trabajos: para ponerlos de responsable, auxiliar o voluntario. Con su email y la tilde "Voluntario del salón" entran a la vista y ven solo Mantenimiento. Los que se anotan con una invitación se agregan solos.</p>
-      ${xs.length ? `<div class="sl-box">${xs.map(x => `<button type="button" class="sl-rot" data-s="x-edit" data-id="${esc(x.id)}" style="width:100%;background:none;border-left:none;border-right:none;border-bottom:none;font:inherit;color:var(--ink);text-align:left;cursor:pointer;"><span class="sl-av" style="background:${colorOf(x.nombre)}">${esc(inic(x.nombre))}</span><span class="nm">${esc(x.nombre)}<small>${x.cong ? 'Cong. ' + esc(x.cong) : 'Otra congregación'}${x.tel ? ' · 📱 ' + esc(x.tel) : ''}${x.vol && x.email ? ' · <b class="sl-volx">👁 Entra como voluntario</b>' : ''}${x.origen === 'invitacion' ? ' · 🔗 por invitación' : ''}</small></span><span style="color:var(--ink-soft)">›</span></button>`).join('')}</div>` : ''}`;
+      ${xs.length ? `<div class="sl-box">${xs.map(x => `<button type="button" class="sl-rot" data-s="x-edit" data-id="${esc(x.id)}" style="width:100%;background:none;border-left:none;border-right:none;border-bottom:none;font:inherit;color:var(--ink);text-align:left;cursor:pointer;"><span class="sl-av" style="background:${colorOf(x.nombre)}">${esc(inic(x.nombre))}</span><span class="nm">${esc(x.nombre)}<small>${x.cong ? 'Cong. ' + esc(x.cong) : 'Otra congregación'}${x.tel ? ' · 📱 ' + esc(x.tel) : ''}${x.comite && x.email ? ' · <b class="sl-volx">🛠 Comité</b>' : x.vol && x.email ? ' · <b class="sl-volx">👁 Entra como voluntario</b>' : ''}${x.origen === 'invitacion' ? ' · 🔗 por invitación' : ''}</small></span><span style="color:var(--ink-soft)">›</span></button>`).join('')}</div>` : ''}`;
   }
 
   /* =====================================================================

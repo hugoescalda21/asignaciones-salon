@@ -521,6 +521,27 @@ t('restaurar: no manda avisos de "te asignaron"', () => {
   t('otra cong.: el aviso dice de qué congregación es', () => {
     assert.strictEqual(L.anotadoMessage({ nombre: 'Juan Ramírez', cong: 'Norte', fecha: '2026-10-10', comentario: '' }, w1, true, 2, 3).title, 'Juan Ramírez (Cong. Norte) se sumó a Canaletas');
   });
+  t('comité de otra cong.: ve todo el cronograma (también lo del comité), los hechos solo dos semanas', () => {
+    const tr = Object.assign({}, trabajos, { w0: { id: 'w0', titulo: 'Viejo', fecha: '2026-09-10', resp: 'p1', aux: 'p2', repite: 'no', ocurr: { '2026-09-10': { estado: 'hecho' } } }, w4: { id: 'w4', titulo: 'Atrasado', fecha: '2026-09-28', resp: 'p1', aux: 'p2', repite: 'no', vista: false } });
+    assert.deepStrictEqual(L.occComite(tr, '2026-10-05').map(o => o.tid), ['w4', 'w3', 'w1', 'w2']);
+  });
+  t('comité de otra cong.: completa fichas; el voluntario solo si es responsable o auxiliar', () => {
+    assert.strictEqual(L.puedeFichaExt({ id: 'e5', comite: true }, w2), true);
+    assert.strictEqual(L.puedeFichaExt(externos.e1, w3), true);    // auxiliar de Rejas
+    assert.strictEqual(L.puedeFichaExt(externos.e1, w1), false);
+    const d = L.fichaDeExt({ tid: 'w1', fecha: '2026-10-10', tareas: { 0: true, 3: true, x: true, '__proto__': true }, mats: { 1: true }, nota: 'ok', estado: 'hecho' }, { id: 'e5', nombre: 'Pedro Sur', comite: true }, 'pedro@x.com', '2026-10-10T11:00:00Z');
+    assert.deepStrictEqual(d, { tid: 'w1', fecha: '2026-10-10', tareas: { 0: true, 3: true }, mats: { 1: true }, nota: 'ok', estado: 'hecho', pubId: 'x:e5', nombre: 'Pedro Sur', email: 'pedro@x.com', at: '2026-10-10T11:00:00Z', terminadoAt: '2026-10-10T11:00:00Z' });
+    assert.strictEqual(L.fichaDeExt({ estado: 'raro' }, { id: 'e5' }, '', 'x').estado, 'curso');
+  });
+  t('comité de otra cong.: le llegan los avisos del comité (y entra con su email)', () => {
+    const cong = { settings: { editorEmails: ['carlos@x.com'] }, publishers: pubs };
+    const xs = { e5: { id: 'e5', nombre: 'Pedro Sur', email: 'pedro@x.com', comite: true }, e1: externos.e1 };
+    assert.deepStrictEqual(L.comiteIds(cong, null, xs), ['p1', 'x:e5']);
+    assert.deepStrictEqual(L.comiteIds(cong, 'x:e5', xs), ['p1']);
+    assert.strictEqual(L.extVoluntario({ e5: Object.assign({}, xs.e5) }, 'PEDRO@x.com').id, 'e5');
+    const p = L.proyeccionExterno([{ tid: 'w1', fecha: '2026-10-10' }], trabajos, {}, {}, pubs, null, true);
+    assert.strictEqual(p.trabajos.w1.ocurr['2026-10-10'].nota, 'interna');
+  });
   t('otra cong.: el voluntario del salón también tiene recordatorio de sus trabajos', () => {
     const a = L.salonAssignments({ publishers: pubs }, trabajos, {}, null, {}, '2026-10-08', '2026-10-08', externos).filter(x => x.pubId === 'x:e1');
     assert.deepStrictEqual(a.map(x => x.dateIso + ' ' + x.label), ['2026-10-08 Rejas (auxiliar)']);
