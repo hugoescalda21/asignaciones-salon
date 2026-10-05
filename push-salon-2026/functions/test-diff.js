@@ -394,6 +394,26 @@ t('restaurar: no manda avisos de "te asignaron"', () => {
     assert.deepStrictEqual(n, ['p2:auxiliar', 'p7:voluntario']);
     assert.ok(/sos el auxiliar/.test(L.salonAssignMessage({ rol: 'auxiliar', t: trabajos.w1, fecha: '2026-09-26' }, 'Mario').title));
   });
+  t('cronograma: sin día no se avisa; al ponerle el día, sí', () => {
+    const base = { id: 'm1', titulo: 'Pintura del frente', fecha: '2026-10-01', soloMes: true, resp: 'p2', aux: 'p3', repite: 'no' };
+    assert.deepStrictEqual(L.newSalonAssignments({}, { m1: base }, '2026-09-23'), []);
+    const conDia = Object.assign({}, base, { fecha: '2026-10-17' }); delete conDia.soloMes;
+    assert.deepStrictEqual(L.newSalonAssignments({ m1: base }, { m1: conDia }, '2026-09-23').map(a => a.pubId + ':' + a.rol + ':' + a.fecha), ['p2:responsable:2026-10-17', 'p3:auxiliar:2026-10-17']);
+    assert.deepStrictEqual(L.salonAssignments({ publishers: [{ id: 'p2' }] }, { m1: base }, {}, null, {}, '2026-09-01', '2026-12-31'), []);
+  });
+  t('cronograma: aviso a todos solo cuando se publica algo que pide voluntarios', () => {
+    const w = { id: 'f1', titulo: 'Fumigación', fecha: '2026-10-03', hora: '10:00', resp: 'p2', aux: 'p3', cupo: 2, repite: 'no', vista: false };
+    assert.deepStrictEqual(L.newPublished({}, { f1: w }, '2026-09-23'), [], 'nuevo y solo del comité: nada');
+    const pub = Object.assign({}, w, { ocurr: { '2026-10-03': { pub: true } } });
+    const r = L.newPublished({ f1: w }, { f1: pub }, '2026-09-23');
+    assert.deepStrictEqual(r.map(x => x.t.id + ':' + x.fecha), ['f1:2026-10-03']);
+    assert.ok(/Se buscan voluntarios/.test(L.publishedMessage(r[0]).title) && /Fumigación · sábado 3 a las 10:00/.test(L.publishedMessage(r[0]).body), JSON.stringify(L.publishedMessage(r[0])));
+    assert.deepStrictEqual(L.newPublished({ f1: pub }, { f1: Object.assign({}, pub, { notas: 'x' }) }, '2026-09-23'), [], 'ya estaba publicado: nada');
+    assert.deepStrictEqual(L.newPublished({}, { f1: Object.assign({}, w, { cupo: 0, vista: true }) }, '2026-09-23'), [], 'sin voluntarios: nada');
+    const pasto = { id: 'p', titulo: 'Pasto', fecha: '2026-09-26', repite: '15d', cupo: 3, vista: true, resp: 'p2', aux: 'p3' };
+    assert.deepStrictEqual(L.newPublished({}, { p: pasto }, '2026-09-23').map(x => x.fecha), ['2026-09-26'], 'los que se repiten: un solo aviso');
+    assert.deepStrictEqual(L.newPublished({}, { p: Object.assign({}, pasto, { fecha: '2026-11-28' }) }, '2026-09-23'), [], 'más de 30 días: nada');
+  });
   t('salón: aviso al responsable cuando alguien se suma o se baja', () => {
     const r = anotados['w1__2026-09-26__u'];
     assert.deepStrictEqual(L.anotadoMessage(Object.assign({ comentario: 'Llevo la escalera' }, r), trabajos.w1, true, 1, 2), { title: 'Juan Paz se sumó a Pintura', body: 'sábado 26 · van 1 de 2 · "Llevo la escalera"' });

@@ -15,7 +15,7 @@ const { roleLabel, collectNewlyAssignedIds, avisoPreview, selectNewAvisos, notif
   arParts, addDaysIso, remindersDue, reminderMessage, sentReminderId, roleAreasFor, disallowedWeekChanges, guardSummary, accessRequestMessage,
   conductorAssignments, newConductors, conductorMessage, newTerritoryAssignments,
   BACKUP_SUBS, ALL_SUBS, backupName, parseBackupName, buildBackup, backupsToPrune, restorePlan, isRestoreWrite,
-  salonAssignments, newSalonAssignments, salonAssignMessage, anotadoMessage, resumenSemanal } = require('./lib');
+  salonAssignments, newSalonAssignments, salonAssignMessage, anotadoMessage, resumenSemanal, newPublished, publishedMessage } = require('./lib');
 const SalonCore = require('./salon-core');
 
 // La app vive en GitHub Pages bajo /asignaciones-salon/, no en la raíz del
@@ -381,11 +381,18 @@ exports.onSalonWrite = onDocumentWritten({ document: 'congregations/{code}/salon
   const code = event.params.code;
   const { dateIso: hoyIso } = arParts(new Date());
   const nuevos = newSalonAssignments(beforeDoc.lista || {}, afterDoc.lista || {}, hoyIso);
-  if (!nuevos.length) return null;
+  const publicados = newPublished(beforeDoc.lista || {}, afterDoc.lista || {}, hoyIso);
+  if (!nuevos.length && !publicados.length) return null;
   const cong = (await db.collection('congregations').doc(code).get()).data() || {};
   for (const a of nuevos) {
     const n = await sendToPubs(code, [a.pubId], salonAssignMessage(a, firstName(cong, a.pubId)), verLink(code, 'salon'), 'asignacion', `salon-${a.t.id}-${a.fecha}-${a.rol}`);
     console.log('[salón]', a.rol, a.pubId, a.fecha, '· celulares:', n);
+  }
+  // Publicado en la vista y pide voluntarios → aviso a todos (menos el responsable y el auxiliar, que ya saben).
+  for (const p of publicados) {
+    const ids = ((cong.publishers) || []).filter((x) => x.status !== 'inactivo' && x.id !== p.t.resp && x.id !== p.t.aux).map((x) => x.id);
+    const n = await sendToPubs(code, ids, publishedMessage(p), verLink(code, 'salon'), 'aviso', `salon-pub-${p.t.id}-${p.fecha}`);
+    console.log('[salón] publicado', p.t.id, p.fecha, '· celulares:', n);
   }
   return null;
 });
@@ -779,7 +786,7 @@ exports.weeklySummary = onSchedule({ schedule: '50 7 * * 1', timeZone: 'America/
         ref.collection('salon').doc('trabajos').get(), ref.collection('salon').doc('limpieza').get(), ref.collection('terr').doc('grupos').get(), ref.collection('salonAnotados').get()]);
       const trabajos = (tr.exists && tr.data().lista) || {}, limpieza = lz.exists ? lz.data() : {}, grupos = (gr.exists && gr.data().lista) || {};
       const anotados = {}; an.forEach((x) => { anotados[x.id] = x.data(); });
-      const occ = SalonCore.trabajosEntre(trabajos, hoyIso, SalonCore.addDays(hoyIso, 6)).filter((o) => !o.cancelada && o.estado !== 'hecho');
+      const occ = SalonCore.trabajosEntre(trabajos, hoyIso, SalonCore.addDays(hoyIso, 6)).filter((o) => !o.cancelada && o.estado !== 'hecho' && o.pub);
       const buscan = occ.filter((o) => { const ci = SalonCore.cupoInfo(o.t, o.fecha, anotados); return ci.cupo && !ci.completo; }).length;
       const quien = SalonCore.limpiezasSemana(limpieza, SalonCore.mondayOf(hoyIso), s).map((l) => l.quien).filter((q) => q && q.g !== 'nadie')
         .map((q) => (q.g === 'otra' ? (limpieza.otraNombre || 'otra congregación') : ((grupos[q.g] || {}).nombre || '')));

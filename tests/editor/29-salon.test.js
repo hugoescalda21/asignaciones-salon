@@ -47,7 +47,7 @@ let ok = 0, bad = 0; const check = (l, c, x) => { if (c) { ok++; console.log('  
   let p = await open('hugo@x.com', store);
   check('ve la pestaña Mantenimiento', await p.evaluate(() => !document.querySelector('.bottom-tabs .tab-btn[data-tab="salon"]').classList.contains('hidden')));
   await click(p, '.bottom-tabs .tab-btn[data-tab="salon"]');
-  check('Calendario · Trabajos · Limpieza', await p.evaluate(() => [...document.querySelectorAll('#salonRoot .tseg button')].map(x => x.textContent).join(',') === 'Calendario,Trabajos,Limpieza'));
+  check('Calendario · Trabajos · Limpieza', await p.evaluate(() => [...document.querySelectorAll('#salonRoot .tseg button')].map(x => x.textContent).join(',') === 'Calendario,Trabajos,Año,Limpieza'));
   check('muestra septiembre 2026 y explica cómo empezar', await p.evaluate(() => /septiembre 2026/i.test($('salonRoot').innerText) && /Todavía no hay trabajos programados/.test($('salonRoot').innerText)));
 
   // Nuevo trabajo: responsable y auxiliar obligatorios
@@ -69,6 +69,8 @@ let ok = 0, bad = 0; const check = (l, c, x) => { if (c) { ok++; console.log('  
   await elegir(p, 'slAux', 'mario');
   await p.fill('#slCupo', '3');
   await p.fill('#slMat', 'Rodillos\nLátex blanco');
+  check('un trabajo nuevo empieza como "Solo el comité"', await p.evaluate(() => document.querySelector('#slVis .cr-opt.on').dataset.v === '0'));
+  await click(p, '#slVis [data-v="1"]');
   await click(p, '#slSave'); await p.waitForTimeout(200);
   const t1 = await p.evaluate(() => Object.values(window.__salon.trabajos)[0]);
   check('trabajo guardado en salon/trabajos', t1 && t1.titulo === 'Pintura de la entrada' && t1.resp === 'p2' && t1.aux === 'p11' && t1.cupo === 3 && t1.materiales.length === 2 && t1.vista === true && !!store.docs, t1);

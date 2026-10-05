@@ -27,7 +27,8 @@
     profunda: { icon: '🧽', label: 'Limpieza profunda', color: '#7C3AED' },
     otro: { icon: '🛠', label: 'Otro trabajo', color: '#0891B2' }
   };
-  const REPITE = { no: 'No se repite', '15d': 'Cada 15 días', mes: 'Cada mes', '3m': 'Cada 3 meses' };
+  const REPITE = { no: 'No se repite', '15d': 'Cada 15 días', mes: 'Cada mes', '2m': 'Cada 2 meses', '3m': 'Cada 3 meses', '6m': 'Cada 6 meses', anio: 'Cada año' };
+  const MESES_REP = { mes: 1, '2m': 2, '3m': 3, '6m': 6, anio: 12 };
   const ESTADOS = { prog: 'Programado', curso: 'En curso', hecho: 'Hecho' };
 
   function pad(n) { return String(n).padStart(2, '0'); }
@@ -50,7 +51,7 @@
     const rep = t.repite || 'no';
     if (rep === 'no') { if (t.fecha >= from && t.fecha <= to) out.push(t.fecha); return out; }
     for (let i = 0; i < 1000; i++) {
-      const f = rep === '15d' ? addDays(t.fecha, 14 * i) : addMonths(t.fecha, (rep === '3m' ? 3 : 1) * i);
+      const f = rep === '15d' ? addDays(t.fecha, 14 * i) : addMonths(t.fecha, (MESES_REP[rep] || 1) * i);
       if (f > to) break;
       if (t.hasta && f > t.hasta) break;
       if (f >= from) out.push(f);
@@ -58,15 +59,25 @@
     return out;
   }
 
+  // ¿Esa vez se ve en la vista (y se piden voluntarios)? Cada vez puede publicarse u ocultarse
+  // aparte (ocurr[fecha].pub); si no, vale lo del trabajo (vista: false = "Solo el comité").
+  // Los que todavía no tienen día (soloMes) no se publican.
+  function publicado(t, fecha) {
+    if (!t || t.soloMes) return false;
+    const o = ((t.ocurr || {})[fecha]) || {};
+    if (o.pub === true || o.pub === false) return o.pub;
+    return t.vista !== false;
+  }
   // Todos los trabajos (cada vez que toca) entre dos días, en orden. Incluye los suspendidos
-  // esa vez (cancelada: true) para que la app los muestre tachados.
+  // esa vez (cancelada: true) para que la app los muestre tachados. sinDia: el trabajo tiene
+  // solo el mes (fecha = el día 1 de ese mes); pub: se ve en la vista.
   function trabajosEntre(lista, from, to) {
     const out = [];
     Object.values(lista || {}).forEach(t => {
       if (!t || !t.id) return;
       fechasDe(t, from, to).forEach(f => {
         const o = (t.ocurr || {})[f] || {};
-        out.push({ t, fecha: f, occ: o, estado: o.estado || 'prog', cancelada: !!o.cancelada });
+        out.push({ t, fecha: f, occ: o, estado: o.estado || 'prog', cancelada: !!o.cancelada, sinDia: !!t.soloMes, pub: publicado(t, f) });
       });
     });
     return out.sort((a, b) => (a.fecha + (a.t.hora || '')).localeCompare(b.fecha + (b.t.hora || '')));
@@ -200,7 +211,7 @@
     const out = [];
     if (!pubId) return out;
     trabajosEntre(trabajos, from, to).forEach(o => {
-      if (o.cancelada || o.estado === 'hecho') return;
+      if (o.cancelada || o.estado === 'hecho' || o.sinDia) return;
       const t = o.t;
       let rol = null;
       if (t.resp === pubId) rol = 'resp';
@@ -225,7 +236,7 @@
     return out.sort((a, b) => (a.fecha + a.hora).localeCompare(b.fecha + b.hora));
   }
 
-  const api = { TIPOS, REPITE, ESTADOS, TAREAS_REU, isoOf, addDays, addMonths, mondayOf, fechasDe, trabajosEntre, anotadoId, voluntarios, cupoInfo, semanaDelMes, esOtra, turnoLimpieza, diasLimpieza,
+  const api = { TIPOS, REPITE, ESTADOS, TAREAS_REU, isoOf, addDays, addMonths, mondayOf, fechasDe, publicado, trabajosEntre, anotadoId, voluntarios, cupoInfo, semanaDelMes, esOtra, turnoLimpieza, diasLimpieza,
     tiposLimpieza, claveDe, cargado, quienLimpia, diasDe, limpiezasSemana, ultimaVez, ordenSugerido, sugerir, asignacionesSalon };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.SalonCore = api;

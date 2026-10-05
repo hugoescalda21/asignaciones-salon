@@ -170,9 +170,11 @@
   }
   function tareasKey() { return `salon-tareas-${V.code}-${C.mondayOf(hoy())}`; }
   function loadTareas(k) { try { return new Set(JSON.parse(localStorage.getItem(k) || '[]')); } catch (e) { return new Set(); } }
-  function visibles() {
+  // Los publicados en la vista y, de los que son "solo del comité", los que son tuyos (responsable, auxiliar o anotado).
+  function visibles(pub) {
     const h = hoy();
-    return C.trabajosEntre(V.trabajos, h, C.addDays(h, 21)).filter(o => !o.cancelada && o.estado !== 'hecho' && o.t.vista !== false);
+    return C.trabajosEntre(V.trabajos, h, C.addDays(h, 21)).filter(o => !o.cancelada && o.estado !== 'hecho' && !o.sinDia &&
+      (o.pub || (pub && (o.t.resp === pub.id || o.t.aux === pub.id || voy(o.t, o.fecha, pub)))));
   }
   function renderBox() {
     const box = ensureBox(); if (!box) return;
@@ -182,7 +184,7 @@
     const ls = C.limpiezasSemana(V.limpieza, mon, data && data.settings)
       .map(l => Object.assign({}, l, { dias: l.dias.filter(f => f >= h) }))
       .filter(l => l.quien && l.quien.g !== 'nadie' && l.dias.length);
-    const occ = visibles();
+    const occ = visibles(pub);
     const tieneSalon = C.tiposLimpieza(V.limpieza).length && (V.limpieza.semanas || V.limpieza.inicio) || Object.keys(V.trabajos).length;
     const btn = document.querySelector('.bt-btn[data-tab="salon"]');
     if (btn) btn.classList.toggle('hidden', !tieneSalon);
@@ -224,7 +226,7 @@
     const miG = pub ? grupoDe(pub.id) : null;
     const mias = ls.filter(l => miG && l.quien.g === miG);
     const misTrab = occ.filter(o => pub && (o.t.resp === pub.id || o.t.aux === pub.id || voy(o.t, o.fecha, pub)));
-    const conLugar = occ.filter(o => { const ci = C.cupoInfo(o.t, o.fecha, V.anotados); return ci.cupo && !ci.completo && !misTrab.includes(o); });
+    const conLugar = occ.filter(o => { if (!o.pub) return false; const ci = C.cupoInfo(o.t, o.fecha, V.anotados); return ci.cupo && !ci.completo && !misTrab.includes(o); });
     const dot = document.querySelector('.bt-btn[data-tab="salon"] .bt-dot');
     if (dot) dot.classList.toggle('hidden', !mias.length && !misTrab.length);
     const partes = [];
@@ -247,9 +249,9 @@
     if (soy) act = `<span class="sv-tag">${soy}</span>`;
     else if (anot) act = `<button type="button" class="sv-btn ok" data-sv="anotado" data-id="${esc(t.id)}" data-f="${o.fecha}">✓ Anotado</button>`;
     else if (ci.completo) act = '<button type="button" class="sv-btn full" disabled>Completo</button>';
-    else if (ci.cupo) act = `<button type="button" class="sv-btn" data-sv="sumo" data-id="${esc(t.id)}" data-f="${o.fecha}">Me sumo</button>`;
+    else if (ci.cupo && o.pub) act = `<button type="button" class="sv-btn" data-sv="sumo" data-id="${esc(t.id)}" data-f="${o.fecha}">Me sumo</button>`;
     return `<div class="sv-card${soy || anot ? ' mine' : ''}" id="sv-${esc(t.id)}-${o.fecha}"><span class="sv-dt">${DIAS3[d.getDay()]}<b>${d.getDate()}</b></span><span class="sv-bar" style="background:${tp.color}"></span>
-      <span class="sv-tx"><b>${tp.icon} ${esc(t.titulo)}</b><small>${t.hora ? esc(t.hora) + ' · ' : ''}${esc(quienCorto(t.resp, t))} y ${esc(quienCorto(t.aux, t))}${ci.cupo ? (ci.faltan ? ` · <em>${ci.faltan === 1 ? 'falta 1' : 'faltan ' + ci.faltan}</em>` : ' · completo') : ''}</small>${van.length ? `<small>Van: ${esc(van.join(', '))}</small>` : ''}</span>
+      <span class="sv-tx"><b>${tp.icon} ${esc(t.titulo)}</b><small>${t.hora ? esc(t.hora) + ' · ' : ''}${esc(quienCorto(t.resp, t))} y ${esc(quienCorto(t.aux, t))}${ci.cupo ? (ci.faltan ? ` · <em>${ci.faltan === 1 ? 'falta 1' : 'faltan ' + ci.faltan}</em>` : ' · completo') : ''}</small>${van.length ? `<small>Van: ${esc(van.join(', '))}</small>` : ''}${o.pub ? '' : '<small>🔒 Todavía no está publicado: lo ve el comité de mantenimiento y vos.</small>'}</span>
       <span class="sv-act">${act}</span></div>`;
   }
 

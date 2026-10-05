@@ -195,6 +195,8 @@
     if (terr && terr.terminados.length) urg.push(item('🗺', 'y', `${terr.terminados.length} ${terr.terminados.length === 1 ? 'aviso' : 'avisos'} de "Lo terminé" para confirmar`, esc(terr.terminados.slice(0, 2).map(t => `Territorio ${t.num}${t.nombre ? ' · ' + t.nombre : ''}${t.quien ? ' · ' + t.quien : ''}`).join(' — ')), go('terminados', 'Confirmar ›')));
     if (terr && terr.loaded && !A.super && terr.sinConductor.length) urg.push(item('🚶', 'y', `${terr.sinConductor.length === 1 ? '1 salida' : terr.sinConductor.length + ' salidas'} de esta semana sin conductor`, esc(terr.sinConductor.slice(0, 3).map(x => `${fmtCorto(x.fecha)}${x.hora ? ' ' + x.hora : ''}${x.grupo ? ' · ' + x.grupo : ''}`).join(' — ')), go('territorios', 'Ver ›')));
     if (sal && sal.pronto) sal.pronto.forEach(x => urg.push(item('🛠', daysBetween(today, x.fecha) <= 2 ? 'r' : 'y', `${esc(x.titulo)}: ${x.faltan === 1 ? 'falta 1 voluntario' : 'faltan ' + x.faltan + ' voluntarios'}`, esc(fmtCorto(x.fecha).replace(/^./, c => c.toUpperCase())) + ' · Trabajo de mantenimiento', go('salon', 'Ver ›'))));
+    if (sal && sal.sinDia) sal.sinDia.forEach(x => urg.push(item('📅', 'y', `${esc(x.titulo)}: falta poner el día`, `Programado para ${esc(x.mes)} · mientras no tenga día no se le avisa a nadie`, go('trabajo', 'Poner el día ›', ` data-id="${esc(x.id)}" data-f="${x.fecha}"`))));
+    if (sal && sal.porPublicar) sal.porPublicar.forEach(x => urg.push(item('📢', 'y', `${esc(x.titulo)} (${esc(fmtCorto(x.fecha))}) todavía no está publicado`, `Necesita ${x.cupo} ${x.cupo === 1 ? 'voluntario' : 'voluntarios'} y lo ve solo el comité`, go('trabajo', 'Ver ›', ` data-id="${esc(x.id)}" data-f="${x.fecha}"`))));
     if (sal && sal.hayLimpieza && sal.vacias) urg.push(item('🧹', 'y', `Limpieza sin cargar desde la semana del ${fmtSem(sal.primeraVacia)}`, `${sal.vacias} ${sal.vacias === 1 ? 'semana vacía' : 'semanas vacías'} en las próximas 6 · "Sugerir" las completa`, go('limpieza', 'Cargar ›', ` data-m="${sal.primeraVacia}"`)));
     if (P.errN) urg.push(item('⚠️', 'y', `${P.errN >= 20 ? 'Más de 20' : P.errN} ${P.errN === 1 ? 'error nuevo' : 'errores nuevos'} en el registro`, 'En los teléfonos de los hermanos', go('errores', 'Ver ›')));
     if (P.bk && P.bk !== 'error') {
@@ -300,6 +302,7 @@
     else if (k === 'territorios') switchTab('territorios');
     else if (k === 'limpieza') { if (window.salonGoLimpieza) window.salonGoLimpieza(b.dataset.m); }
     else if (k === 'salon') switchTab('salon');
+    else if (k === 'trabajo') { if (window.salonOpenTrabajo) window.salonOpenTrabajo(b.dataset.id, b.dataset.f); }
     else if (k === 'ajustes') switchTab('ajustes');
     else if (k === 'errores') { switchTab('ajustes'); setTimeout(() => { const c = $('errLogCard'); if (c) { c.open = true; if (typeof loadErrLog === 'function') loadErrLog(); c.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, 120); P.errN = 0; }
     else if (k === 'backup') { switchTab('ajustes'); setTimeout(() => { const c = $('backupCard'); if (c) { c.open = true; c.dispatchEvent(new Event('toggle')); c.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, 120); }

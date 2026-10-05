@@ -48,7 +48,7 @@ function installMock(store) {
 
 (async () => {
   const b = await launch();
-  async function open(email, query) {
+  async function open(email, query, extra) {
     const ctx = await b.newContext({ viewport: { width: 390, height: 844 } });
     await ctx.route(/googleapis|tile\.openstreetmap/, r => r.abort());
     await ctx.addInitScript(() => { localStorage.setItem('welcome-seen-C', '1'); window.__opened = []; window.open = (u) => { window.__opened.push(u); return null; }; });
@@ -60,7 +60,7 @@ function installMock(store) {
       hideInitialLoading(); $('gateView').classList.add('hidden'); $('authGateView').classList.add('hidden'); $('mainView').classList.remove('hidden');
       renderCurrent(); renderPersonalSummary('C'); renderAnuncios(); renderUpcoming();
       window.terrVer.onData('C'); window.salonVer.onData('C');
-    }, { store: JSON.parse(JSON.stringify(DOCS)), main: data, email, mock: installMock.toString() });
+    }, { store: extra ? extra(JSON.parse(JSON.stringify(DOCS))) : JSON.parse(JSON.stringify(DOCS)), main: data, email, mock: installMock.toString() });
     await p.waitForTimeout(300);
     return p;
   }
@@ -115,6 +115,35 @@ function installMock(store) {
   await p.click('#salonBox [data-sv="sumo"][data-id="t1"]'); await p.waitForTimeout(120);
   check('"Me sumo" le pide vincular su email', await p.evaluate(() => /Primero vinculá tu nombre/.test(document.querySelector('.sv-sheet').innerText) && !window.__writes.length));
   check('sin errores', !p.errs.length, p.errs);
+  await p.context().close();
+
+  console.log('\nCronograma: solo el comité, publicado por fecha y sin día');
+  const conComite = (d) => {
+    Object.assign(d['congregations/C/salon/trabajos'].lista, {
+      t5: { id: 't5', titulo: 'Fumigación', tipo: 'otro', fecha: '2026-10-01', hora: '10:00', resp: 'p1', aux: 'p9', cupo: 2, repite: 'no', vista: false },
+      t6: { id: 't6', titulo: 'Corte de pasto', tipo: 'jardin', fecha: '2026-09-25', hora: '17:00', resp: 'p8', aux: 'p9', cupo: 2, repite: '15d', vista: false, ocurr: { '2026-09-25': { pub: true } } },
+      t7: { id: 't7', titulo: 'Pintura del frente', tipo: 'pintura', fecha: '2026-10-01', resp: 'p1', aux: 'p9', cupo: 8, repite: 'no', vista: true, soloMes: true },
+      t8: { id: 't8', titulo: 'Arreglo del portón', tipo: 'reparacion', fecha: '2026-09-29', resp: 'p8', aux: 'p9', cupo: 1, repite: 'no', vista: true, ocurr: { '2026-09-29': { pub: false } } }
+    });
+    return d;
+  };
+  p = await open('martin@x.com', '', conComite);
+  await p.evaluate(() => showTab('salon')); await p.waitForTimeout(100);
+  cards = await cardsOf(p);
+  const fum = cards.find(c => /Fumigación/.test(c)) || '';
+  check('el trabajo del comité lo ve el responsable, con el aviso y sin "Me sumo"', /🔒 Todavía no está publicado/.test(fum) && /Sos el responsable/.test(fum) && !/Me sumo/.test(fum), fum);
+  const pasto = cards.filter(c => /Corte de pasto/.test(c));
+  check('de los que se repiten, solo la fecha publicada (25/9), no la siguiente', pasto.length === 1 && /Me sumo/.test(pasto[0]) && /vie\s*25|VIE\s*25|Vie\s*25/.test(pasto[0]), pasto);
+  check('una fecha ocultada no se ve aunque el trabajo sea para todos', !cards.some(c => /Arreglo del portón/.test(c)), cards);
+  check('lo que no tiene día no aparece (ni en sus asignaciones)', !cards.some(c => /Pintura del frente/.test(c)) && await p.evaluate(() => !/Pintura del frente/.test(document.body.innerText)));
+  const tz = await p.evaluate(() => $('salonTeaser').innerText.replace(/\s+/g, ' '));
+  check('en Inicio: "buscan voluntarios" cuenta solo lo publicado', /3 trabajos buscan voluntarios/.test(tz) && /Fumigación/.test(tz), tz);
+  check('sin errores', !p.errs.length, p.errs);
+  await p.context().close();
+  p = await open('ver@x.com', '', conComite);
+  await p.evaluate(() => showTab('salon')); await p.waitForTimeout(100);
+  cards = await cardsOf(p);
+  check('otro hermano no ve lo del comité', !cards.some(c => /Fumigación|Pintura del frente|Arreglo del portón/.test(c)) && cards.some(c => /Corte de pasto/.test(c)), cards);
   await p.context().close();
 
   console.log('\nVer como un hermano (Super Admin)');

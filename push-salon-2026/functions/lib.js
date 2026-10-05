@@ -549,10 +549,12 @@ function newSalonAssignments(beforeLista, afterLista, todayIso) {
   Object.values(afterLista || {}).forEach((t) => {
     if (!t || !t.id) return;
     const b = (beforeLista || {})[t.id] || {};
+    if (t.soloMes) return;   // sin día todavía: se avisa cuando le pongan el día
     const next = SC.fechasDe(t, todayIso, SC.addDays(todayIso, 120))[0];
     if (!next) return;
-    if (t.resp && t.resp !== b.resp) out.push({ pubId: t.resp, rol: 'responsable', t, fecha: next });
-    if (t.aux && t.aux !== b.aux) out.push({ pubId: t.aux, rol: 'auxiliar', t, fecha: next });
+    const recienConDia = !!(b.id && b.soloMes);
+    if (t.resp && (t.resp !== b.resp || recienConDia)) out.push({ pubId: t.resp, rol: 'responsable', t, fecha: next });
+    if (t.aux && (t.aux !== b.aux || recienConDia)) out.push({ pubId: t.aux, rol: 'auxiliar', t, fecha: next });
     Object.keys(t.ocurr || {}).forEach((f) => {
       if (f < todayIso) return;
       const antes = (((b.ocurr || {})[f]) || {}).vols || [];
@@ -560,6 +562,25 @@ function newSalonAssignments(beforeLista, afterLista, todayIso) {
     });
   });
   return out;
+}
+// Trabajos que pasan a verse en la vista y piden voluntarios (en los próximos 30 días): uno por trabajo,
+// la primera vez que se publica. Así no llega un aviso por cada fecha de los que se repiten.
+function newPublished(beforeLista, afterLista, todayIso) {
+  const out = [];
+  const hasta = SC.addDays(todayIso, 30);
+  Object.values(afterLista || {}).forEach((t) => {
+    if (!t || !t.id || !(Number(t.cupo) > 0)) return;
+    const b = (beforeLista || {})[t.id];
+    const f = SC.fechasDe(t, todayIso, hasta).find((x) => {
+      const o = ((t.ocurr || {})[x]) || {};
+      return !o.cancelada && o.estado !== 'hecho' && SC.publicado(t, x) && !(b && SC.publicado(b, x));
+    });
+    if (f) out.push({ t, fecha: f });
+  });
+  return out;
+}
+function publishedMessage(p) {
+  return { title: 'Se buscan voluntarios para el Salón', body: `${p.t.titulo || 'Trabajo de mantenimiento'} · ${diaTxt(p.fecha)}${p.t.hora ? ' a las ' + p.t.hora : ''}. Si podés ir, tocá "Me sumo".` };
 }
 const DIAS_L = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 function diaTxt(iso) { const d = new Date(iso + 'T00:00:00Z'); return DIAS_L[d.getUTCDay()] + ' ' + d.getUTCDate(); }
@@ -621,7 +642,7 @@ function isRestoreWrite(before, after) {
 
 module.exports = {
   faltantesSemana, resumenSemanal,
-  salonAssignments, newSalonAssignments, salonAssignMessage, anotadoMessage, SALON_SUBS, ALL_SUBS,
+  salonAssignments, newSalonAssignments, salonAssignMessage, newPublished, publishedMessage, anotadoMessage, SALON_SUBS, ALL_SUBS,
   BACKUP_SUBS, BACKUP_KINDS, backupName, parseBackupName, buildBackup, backupsToPrune, restorePlan, isRestoreWrite,
   salidaInstances, conductorAssignments, newConductors, conductorMessage, newTerritoryAssignments, mondayOfIsoLib,
   accessRequestMessage,
