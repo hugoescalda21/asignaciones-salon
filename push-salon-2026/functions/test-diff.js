@@ -400,6 +400,10 @@ t('restaurar: no manda avisos de "te asignaron"', () => {
     const conDia = Object.assign({}, base, { fecha: '2026-10-17' }); delete conDia.soloMes;
     assert.deepStrictEqual(L.newSalonAssignments({ m1: base }, { m1: conDia }, '2026-09-23').map(a => a.pubId + ':' + a.rol + ':' + a.fecha), ['p2:responsable:2026-10-17', 'p3:auxiliar:2026-10-17']);
     assert.deepStrictEqual(L.salonAssignments({ publishers: [{ id: 'p2' }] }, { m1: base }, {}, null, {}, '2026-09-01', '2026-12-31'), []);
+    const pend = { id: 'q1', titulo: 'Canilla', sinFecha: true, repite: 'no' };
+    assert.deepStrictEqual(L.newSalonAssignments({}, { q1: Object.assign({}, pend, { resp: 'p2' }) }, '2026-09-23'), [], 'pendiente: nada');
+    const prog = { id: 'q1', titulo: 'Canilla', fecha: '2026-10-01', repite: 'no', resp: 'p2' };
+    assert.deepStrictEqual(L.newSalonAssignments({ q1: Object.assign({}, pend, { resp: 'p2' }) }, { q1: prog }, '2026-09-23').map(a => a.pubId + ':' + a.rol), ['p2:responsable'], 'al programarlo, se avisa');
   });
   t('cronograma: aviso a todos solo cuando se publica algo que pide voluntarios', () => {
     const w = { id: 'f1', titulo: 'Fumigación', fecha: '2026-10-03', hora: '10:00', resp: 'p2', aux: 'p3', cupo: 2, repite: 'no', vista: false };

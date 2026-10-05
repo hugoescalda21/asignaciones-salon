@@ -196,6 +196,7 @@
     if (terr && terr.loaded && !A.super && terr.sinConductor.length) urg.push(item('🚶', 'y', `${terr.sinConductor.length === 1 ? '1 salida' : terr.sinConductor.length + ' salidas'} de esta semana sin conductor`, esc(terr.sinConductor.slice(0, 3).map(x => `${fmtCorto(x.fecha)}${x.hora ? ' ' + x.hora : ''}${x.grupo ? ' · ' + x.grupo : ''}`).join(' — ')), go('territorios', 'Ver ›')));
     if (sal && sal.pronto) sal.pronto.forEach(x => urg.push(item('🛠', daysBetween(today, x.fecha) <= 2 ? 'r' : 'y', `${esc(x.titulo)}: ${x.faltan === 1 ? 'falta 1 voluntario' : 'faltan ' + x.faltan + ' voluntarios'}`, esc(fmtCorto(x.fecha).replace(/^./, c => c.toUpperCase())) + ' · Trabajo de mantenimiento', go('salon', 'Ver ›'))));
     if (sal && sal.sinDia) sal.sinDia.forEach(x => urg.push(item('📅', 'y', `${esc(x.titulo)}: falta poner el día`, `Programado para ${esc(x.mes)} · mientras no tenga día no se le avisa a nadie`, go('trabajo', 'Poner el día ›', ` data-id="${esc(x.id)}" data-f="${x.fecha}"`))));
+    if (sal && sal.sinResp) sal.sinResp.forEach(x => urg.push(item('🙋', daysBetween(today, x.fecha) <= 3 ? 'r' : 'y', `${esc(x.titulo)} (${esc(fmtCorto(x.fecha))}): sin ${esc(x.falta)}`, 'Trabajo de mantenimiento · hasta elegirlos no se le avisa a nadie', go('trabajo', 'Elegir ›', ` data-id="${esc(x.id)}" data-f="${x.fecha}"`))));
     if (sal && sal.porPublicar) sal.porPublicar.forEach(x => urg.push(item('📢', 'y', `${esc(x.titulo)} (${esc(fmtCorto(x.fecha))}) todavía no está publicado`, `Necesita ${x.cupo} ${x.cupo === 1 ? 'voluntario' : 'voluntarios'} y lo ve solo el comité`, go('trabajo', 'Ver ›', ` data-id="${esc(x.id)}" data-f="${x.fecha}"`))));
     if (sal && sal.hayLimpieza && sal.vacias) urg.push(item('🧹', 'y', `Limpieza sin cargar desde la semana del ${fmtSem(sal.primeraVacia)}`, `${sal.vacias} ${sal.vacias === 1 ? 'semana vacía' : 'semanas vacías'} en las próximas 6 · "Sugerir" las completa`, go('limpieza', 'Cargar ›', ` data-m="${sal.primeraVacia}"`)));
     if (P.errN) urg.push(item('⚠️', 'y', `${P.errN >= 20 ? 'Más de 20' : P.errN} ${P.errN === 1 ? 'error nuevo' : 'errores nuevos'} en el registro`, 'En los teléfonos de los hermanos', go('errores', 'Ver ›')));
@@ -242,6 +243,7 @@
         <div class="pn-row"><span>Limpia esta semana</span><b>${esc(sal.limpiaEsta || '—')}</b></div>
         <div class="pn-row"><span>Trabajos en 30 días</span><b>${sal.trabajos}</b></div>
         <div class="pn-row"><span>Buscan voluntarios</span><b class="${sal.buscan ? 'w' : ''}">${sal.buscan ? `${sal.buscan} · faltan ${sal.faltan}` : '0'}</b></div>
+        ${sal.pendientes ? `<div class="pn-row"><span>Pendientes (sin fecha)</span><b>${sal.pendientes}</b></div>` : ''}
         <div class="pn-row"><span>Semanas de limpieza sin cargar</span><b class="${sal.vacias ? 'w' : ''}">${sal.hayLimpieza ? sal.vacias : '—'}</b></div>` : '<p class="pn-muted">Cargando…</p>'}</div>`;
     }
     if (A.super) html += `<div class="pn-c"><h4>Ver como un hermano</h4><div class="pn-ver"><span class="ic">👁</span><p>Abrí la vista tal como la ve un hermano: sus asignaciones, su grupo, su limpieza y sus territorios. Solo para mirar: no se cambia nada.</p></div>

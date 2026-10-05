@@ -552,7 +552,7 @@ function newSalonAssignments(beforeLista, afterLista, todayIso) {
     if (t.soloMes) return;   // sin día todavía: se avisa cuando le pongan el día
     const next = SC.fechasDe(t, todayIso, SC.addDays(todayIso, 120))[0];
     if (!next) return;
-    const recienConDia = !!(b.id && b.soloMes);
+    const recienConDia = !!(b.id && (b.soloMes || !b.fecha));   // tenía solo el mes o estaba pendiente
     if (t.resp && (t.resp !== b.resp || recienConDia)) out.push({ pubId: t.resp, rol: 'responsable', t, fecha: next });
     if (t.aux && (t.aux !== b.aux || recienConDia)) out.push({ pubId: t.aux, rol: 'auxiliar', t, fecha: next });
     Object.keys(t.ocurr || {}).forEach((f) => {

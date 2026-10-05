@@ -225,6 +225,9 @@
   .cr-pub.v { background: rgba(76,122,94,.1); } .cr-pub.q { background: rgba(201,138,27,.12); }
   .cr-pub .btn { white-space: nowrap; }
   .topts button:disabled { opacity: .4; cursor: not-allowed; }
+  .sl-opc { text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--ink-soft); }
+  .cr-sinf { margin-top: 14px; }
+  .cr-sinf .sl-ev .dt b { color: var(--ink-soft); }
   .sl-hint { margin: 6px 2px 0; font-size: 12px; color: var(--ink-soft); line-height: 1.4; }
   `;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
@@ -424,6 +427,8 @@
     const vistos = new Set();
     const prox = C.trabajosEntre(S.trabajos, today, C.addDays(today, 120)).filter(o => !o.cancelada && o.estado !== 'hecho' && !vistos.has(o.t.id) && vistos.add(o.t.id)).slice(0, 8);
     html += `<div class="sl-sec"><h4>Próximos trabajos</h4><button type="button" class="btn btn-primary" data-s="new">+ Trabajo</button></div>`;
+    const nPend = pendientesDe().length;
+    if (nPend) html += `<button type="button" class="sl-ev" data-s="pend" style="justify-content:space-between;"><span class="tx"><b>📝 Pendientes: ${nPend}</b><small>Trabajos anotados que todavía no tienen fecha</small></span><span class="cr-tag q">Ver ›</span></button>`;
     html += prox.length ? prox.map(evRow).join('') : '<div class="tempty">Todavía no hay trabajos programados.<br>Con "+ Trabajo" cargás qué hay que hacer, el día, el responsable y el auxiliar. Si se repite (el corte de pasto, por ejemplo), aparece solo en el calendario.</div>';
     html += '</div></div>';
     v.innerHTML = html;
@@ -432,13 +437,22 @@
   /* =====================================================================
      TRABAJOS (lista de todos, con los que se repiten)
      ===================================================================== */
+  // Un trabajo pendiente (sin fecha): se abre el formulario para programarlo.
+  function pendRow(t) {
+    const tp = tipoOf(t);
+    const quien = t.resp || t.aux ? `Resp. ${pubName(t.resp, t) || '—'} · Aux. ${pubName(t.aux, t) || '—'}` : 'Sin responsable ni auxiliar todavía';
+    return `<button type="button" class="sl-ev" data-s="edit" data-id="${esc(t.id)}"><span class="dt"><b>—</b></span><span class="bar" style="background:${tp.color}"></span>
+      <span class="tx"><b>${tp.icon} ${esc(t.titulo)}</b><small>${esc(quien)}${t.repite && t.repite !== 'no' ? ' · 🔁 ' + esc(C.REPITE[t.repite].toLowerCase()) : ''}</small></span><span class="cr-tag q">Programar ›</span></button>`;
+  }
+  const pendientesDe = () => Object.values(S.trabajos).filter(t => t && t.id && (t.sinFecha || !t.fecha));
   function renderTrabajos(v) {
     const today = hoy();
     const ts = Object.values(S.trabajos).filter(t => t && t.id);
     const next = (t) => C.fechasDe(t, today, C.addDays(today, 400)).find(f => { const o = (t.ocurr || {})[f] || {}; return !o.cancelada && o.estado !== 'hecho'; });
     const activos = ts.filter(t => next(t)).sort((a, b) => next(a).localeCompare(next(b)));
     const hechos = C.trabajosEntre(S.trabajos, C.addDays(today, -120), today).filter(o => o.estado === 'hecho').reverse().slice(0, 10);
-    const pasados = ts.filter(t => !next(t));
+    const pendientes = ts.filter(t => t.sinFecha || !t.fecha).sort((a, b) => (a.creado || '').localeCompare(b.creado || ''));
+    const pasados = ts.filter(t => !next(t) && !pendientes.includes(t));
     let html = `<div class="thead"><h3>Trabajos</h3><button type="button" class="btn btn-primary" data-s="new">+ Trabajo</button></div>`;
     if (!ts.length) html += '<div class="tempty">Todavía no hay trabajos.</div>';
     html += activos.map(t => {
@@ -448,6 +462,7 @@
       return `<button type="button" class="sl-ev" data-s="open" data-id="${esc(t.id)}" data-f="${f}"><span class="bar" style="background:${tp.color}"></span>
         <span class="tx"><b>${tp.icon} ${esc(t.titulo)}</b><small>${esc(cuando)} · ${esc(C.REPITE[t.repite || 'no'])}</small><small>Resp. ${esc(pubName(t.resp, t) || '—')} · Aux. ${esc(pubName(t.aux, t) || '—')}</small></span>${tag}</button>`;
     }).join('');
+    if (pendientes.length) html += `<div class="sl-sec" id="slPend"><h4>Pendientes (sin fecha) · ${pendientes.length}</h4></div>` + pendientes.map(pendRow).join('');
     if (hechos.length) html += '<div class="sl-sec"><h4>Hechos hace poco</h4></div>' + hechos.map(evRow).join('');
     if (pasados.length) html += '<div class="sl-sec"><h4>Terminados</h4></div>' + pasados.map(t => `<button type="button" class="sl-ev off" data-s="edit" data-id="${esc(t.id)}"><span class="bar" style="background:${tipoOf(t).color}"></span><span class="tx"><b>${tipoOf(t).icon} ${esc(t.titulo)}</b><small>${esc(fmtCorto(t.fecha))}</small></span></button>`).join('');
     v.innerHTML = html;
@@ -480,9 +495,11 @@
     if (!S.aStart) S.aStart = mesHoy;
     const c = cronograma(S.aStart, 12);
     const rango = `${MES3(c.meses[0]).replace(/^./, x => x.toUpperCase())} ${c.meses[0].slice(0, 4)} – ${MES3(c.meses[11]).replace(/^./, x => x.toUpperCase())} ${c.meses[11].slice(0, 4)}`;
-    let html = `<div class="cr-head"><h3>Cronograma<small>${esc(rango)} · ${c.filas.length} ${c.filas.length === 1 ? 'trabajo' : 'trabajos'}</small></h3><div class="cr-nav"><button type="button" data-s="a-mes" data-d="-12" aria-label="12 meses antes">‹</button><button type="button" data-s="a-mes" data-d="12" aria-label="12 meses después">›</button></div><button type="button" class="btn" data-s="a-pdf">📄 PDF</button><button type="button" class="btn btn-primary" data-s="new">+ Trabajo</button></div>
+    const pend = pendientesDe();
+    const sinf = pend.length ? `<div class="cr-sinf"><div class="sl-sec" style="margin-top:0;"><h4>Sin fecha · ${pend.length}</h4></div>${pend.map(pendRow).join('')}</div>` : '';
+    let html = `<div class="cr-head"><h3>Cronograma<small>${esc(rango)} · ${c.filas.length} ${c.filas.length === 1 ? 'trabajo' : 'trabajos'}${pend.length ? ` · ${pend.length} sin fecha` : ''}</small></h3><div class="cr-nav"><button type="button" data-s="a-mes" data-d="-12" aria-label="12 meses antes">‹</button><button type="button" data-s="a-mes" data-d="12" aria-label="12 meses después">›</button></div><button type="button" class="btn" data-s="a-pdf">📄 PDF</button><button type="button" class="btn btn-primary" data-s="new">+ Trabajo</button></div>
       <div class="cr-leg"><span><i style="background:#16A34A"></i>En la vista (lo ven todos)</span><span><i style="border:1.5px solid #16A34A"></i>Solo el comité</span><span><i style="border:1.5px dashed #B7791F"></i>Falta poner el día</span></div>`;
-    if (!c.filas.length) { v.innerHTML = html + '<div class="tempty">No hay trabajos en estos 12 meses.<br>Con "+ Trabajo" cargás lo que hay que hacer: con el día, o solo el mes si todavía no lo saben. Los que se repiten (cada 3 meses, cada año…) aparecen solos.</div>'; return; }
+    if (!c.filas.length) { v.innerHTML = html + '<div class="tempty">No hay trabajos con fecha en estos 12 meses.<br>Con "+ Trabajo" cargás lo que hay que hacer: con el día, solo el mes, o "Todavía no" para dejarlo pendiente. Los que se repiten (cada 3 meses, cada año…) aparecen solos.</div>' + sinf; return; }
     // Computadora: una fila por trabajo y los 12 meses en columnas.
     let g = `<div class="cr-grid"><div class="h" style="text-align:left;padding-left:12px;">Trabajo</div>` + c.meses.map(ym => `<div class="h${ym === mesHoy ? ' now' : ''}">${esc(MES3(ym))}<small>${ym.slice(0, 4)}</small></div>`).join('');
     c.filas.forEach(r => {
@@ -502,7 +519,7 @@
           return evRow(o).replace(' · 🔒 solo el comité', '').replace(/<\/button>$/, tag + '</button>').replace(/<span class="sl-pill[^"]*">[^<]*<\/span>/, '');
         }).join('') : '<div class="tempty" style="padding:8px;">Nada programado.</div>') : '');
     }).join('') + '</div>';
-    v.innerHTML = html;
+    v.innerHTML = html + sinf;
   }
   // PDF del cronograma: todo (para el comité) o solo lo publicado (para el tablero de anuncios).
   function openCronoPdf() {
@@ -557,7 +574,8 @@
     const f = t ? Object.assign({}, t) : { tipo: 'pintura', fecha: fechaDefault || C.addDays(hoy(), 7), hora: '09:00', cupo: 0, repite: 'no', materiales: [], vista: false };
     f.vista = f.vista !== false;
     if (!t) f.vista = false;
-    let modoMes = !!f.soloMes;
+    // Cuándo: 'dia' (día exacto), 'mes' (solo el mes) o 'no' (todavía no: queda pendiente, sin fecha).
+    let modo = f.sinFecha || (t && !t.fecha) ? 'no' : f.soloMes ? 'mes' : 'dia';
     // Meses para "Solo el mes": desde el mes anterior hasta dos años adelante (y el que ya tenía).
     const mesesOpc = []; for (let i = -1; i <= 24; i++) mesesOpc.push(shiftYm(hoy().slice(0, 7), i));
     const mesSel = (f.fecha || hoy()).slice(0, 7);
@@ -566,10 +584,11 @@
     const m = openModal(`<h3>${t ? 'Editar trabajo' : 'Nuevo trabajo'}</h3>
       <div class="tf"><label for="slTit">Qué hay que hacer</label><input id="slTit" maxlength="80" placeholder="Ej.: Pintura de la entrada" value="${esc(f.titulo || '')}"></div>
       <div class="tf"><span class="tlbl">Tipo</span><div class="sl-types" id="slTipo">${Object.entries(C.TIPOS).map(([k, tp]) => `<button type="button" data-k="${k}" class="${f.tipo === k ? 'on' : ''}" style="${f.tipo === k ? 'background:' + tp.color : ''}">${tp.icon} ${tp.label}</button>`).join('')}</div></div>
-      <div class="tf" style="margin-bottom:8px;"><span class="tlbl">Cuándo</span><div class="topts" id="slCuando"><button type="button" data-k="dia" class="${modoMes ? '' : 'on'}">Día exacto</button><button type="button" data-k="mes" class="${modoMes ? 'on' : ''}">Solo el mes</button></div></div>
-      <div class="trow2${modoMes ? ' hidden' : ''}" id="slDiaRow"><div class="tf"><label for="slFec">Día</label><input type="date" id="slFec" value="${esc(modoMes ? '' : f.fecha)}"></div><div class="tf"><label for="slHora">Hora</label><input type="time" id="slHora" value="${esc(f.hora || '')}"></div></div>
-      <div class="tf${modoMes ? '' : ' hidden'}" id="slMesRow"><select id="slMes" aria-label="Mes">${mesesOpc.map(ym => `<option value="${ym}"${ym === mesSel ? ' selected' : ''}>${esc(mesLabel(ym).replace(/^./, c => c.toUpperCase()))}</option>`).join('')}</select><p class="sl-hint">Cuando se acerque le ponés el día. Mientras tanto aparece con "?" en el cronograma y no se le avisa a nadie.</p></div>
-      <div class="trow2"><div class="tf"><label for="slRespBtn">Responsable <span class="sl-req">*</span></label><button type="button" class="sl-pickbtn" id="slRespBtn" data-for="slResp"></button><input type="hidden" id="slResp" value="${esc(f.resp || '')}"></div><div class="tf"><label for="slAuxBtn">Auxiliar <span class="sl-req">*</span></label><button type="button" class="sl-pickbtn" id="slAuxBtn" data-for="slAux"></button><input type="hidden" id="slAux" value="${esc(f.aux || '')}"></div></div>
+      <div class="tf" style="margin-bottom:8px;"><span class="tlbl">Cuándo</span><div class="topts" id="slCuando"><button type="button" data-k="dia" class="${modo === 'dia' ? 'on' : ''}">Día exacto</button><button type="button" data-k="mes" class="${modo === 'mes' ? 'on' : ''}">Solo el mes</button><button type="button" data-k="no" class="${modo === 'no' ? 'on' : ''}">Todavía no</button></div></div>
+      <div class="trow2${modo === 'dia' ? '' : ' hidden'}" id="slDiaRow"><div class="tf"><label for="slFec">Día</label><input type="date" id="slFec" value="${esc(modo === 'dia' ? (f.fecha || '') : '')}"></div><div class="tf"><label for="slHora">Hora</label><input type="time" id="slHora" value="${esc(f.hora || '')}"></div></div>
+      <div class="tf${modo === 'mes' ? '' : ' hidden'}" id="slMesRow"><select id="slMes" aria-label="Mes">${mesesOpc.map(ym => `<option value="${ym}"${ym === mesSel ? ' selected' : ''}>${esc(mesLabel(ym).replace(/^./, c => c.toUpperCase()))}</option>`).join('')}</select><p class="sl-hint">Cuando se acerque le ponés el día. Mientras tanto aparece con "?" en el cronograma y no se le avisa a nadie.</p></div>
+      <p class="sl-hint${modo === 'no' ? '' : ' hidden'}" id="slNoRow" style="margin:-2px 2px 12px;">Queda en <b>Pendientes</b> (en Trabajos y abajo del Año). Cuando lo decidan, lo abrís y le ponés el mes o el día.</p>
+      <div class="trow2"><div class="tf"><label for="slRespBtn">Responsable <small class="sl-opc">· para publicar</small></label><button type="button" class="sl-pickbtn" id="slRespBtn" data-for="slResp"></button><input type="hidden" id="slResp" value="${esc(f.resp || '')}"></div><div class="tf"><label for="slAuxBtn">Auxiliar <small class="sl-opc">· para publicar</small></label><button type="button" class="sl-pickbtn" id="slAuxBtn" data-for="slAux"></button><input type="hidden" id="slAux" value="${esc(f.aux || '')}"></div></div>
       <div class="trow2"><div class="tf"><label for="slCupo">Voluntarios además</label><input type="number" id="slCupo" min="0" max="30" value="${Number(f.cupo) || 0}"></div><div class="tf"></div></div>
       <div class="tf"><span class="tlbl">Se repite</span><div class="topts" id="slRep">${Object.entries(C.REPITE).map(([k, l]) => `<button type="button" data-k="${k}" class="${(f.repite || 'no') === k ? 'on' : ''}">${k === 'no' ? 'No' : l}</button>`).join('')}</div></div>
       <div class="tf"><label for="slMat">Qué llevar / materiales <small style="text-transform:none;letter-spacing:0;font-weight:400;">(uno por renglón)</small></label><textarea id="slMat" placeholder="Rodillos y pinceles&#10;2 latas de látex blanco">${esc((f.materiales || []).join('\n'))}</textarea></div>
@@ -582,15 +601,14 @@
       m.qa('#slTipo button').forEach(x => { const on = x.dataset.k === f.tipo; x.classList.toggle('on', on); x.style.background = on ? C.TIPOS[x.dataset.k].color : ''; });
     });
     // "Solo el mes" no va con "cada 15 días" ni "cada mes": esos necesitan el día.
-    const pintarRep = () => m.qa('#slRep button').forEach(x => { x.classList.toggle('on', x.dataset.k === (f.repite || 'no')); x.disabled = modoMes && (x.dataset.k === '15d' || x.dataset.k === 'mes'); });
+    const pintarRep = () => m.qa('#slRep button').forEach(x => { x.classList.toggle('on', x.dataset.k === (f.repite || 'no')); x.disabled = modo === 'mes' && (x.dataset.k === '15d' || x.dataset.k === 'mes'); });
     m.q('#slRep').addEventListener('click', (e) => { const b = e.target.closest('[data-k]'); if (!b || b.disabled) return; f.repite = b.dataset.k; pintarRep(); });
     m.q('#slCuando').addEventListener('click', (e) => {
       const b = e.target.closest('[data-k]'); if (!b) return;
-      modoMes = b.dataset.k === 'mes';
+      modo = b.dataset.k;
       m.qa('#slCuando button').forEach(x => x.classList.toggle('on', x === b));
-      m.q('#slDiaRow').classList.toggle('hidden', modoMes); m.q('#slMesRow').classList.toggle('hidden', !modoMes);
-      if (modoMes && (f.repite === '15d' || f.repite === 'mes')) f.repite = 'no';
-      if (!modoMes && !m.q('#slFec').value && m.q('#slMes').value) m.q('#slFec').value = m.q('#slMes').value + '-01';
+      m.q('#slDiaRow').classList.toggle('hidden', modo !== 'dia'); m.q('#slMesRow').classList.toggle('hidden', modo !== 'mes'); m.q('#slNoRow').classList.toggle('hidden', modo !== 'no');
+      if (modo === 'mes' && (f.repite === '15d' || f.repite === 'mes')) f.repite = 'no';
       pintarRep();
     });
     pintarRep();
@@ -609,8 +627,11 @@
     });
     m.q('#slSave').addEventListener('click', async () => {
       const titulo = m.q('#slTit').value.trim(), resp = m.q('#slResp').value, aux = m.q('#slAux').value;
-      const fecha = modoMes ? (m.q('#slMes').value ? m.q('#slMes').value + '-01' : '') : m.q('#slFec').value;
-      const err = !titulo ? 'Escribí qué hay que hacer.' : !fecha ? (modoMes ? 'Elegí el mes.' : 'Elegí el día.') : !resp ? 'Elegí el responsable.' : !aux ? 'Elegí el auxiliar: cada trabajo lleva responsable y auxiliar.' : resp === aux ? 'El responsable y el auxiliar tienen que ser dos hermanos distintos.' : '';
+      const fecha = modo === 'no' ? '' : modo === 'mes' ? (m.q('#slMes').value ? m.q('#slMes').value + '-01' : '') : m.q('#slFec').value;
+      // Responsable y auxiliar hacen falta recién para que lo vean todos ("Todos" o "Publicar").
+      const err = !titulo ? 'Escribí qué hay que hacer.' : modo !== 'no' && !fecha ? (modo === 'mes' ? 'Elegí el mes.' : 'Elegí el día.')
+        : f.vista && (!resp || !aux) ? 'Para que lo vean todos hacen falta responsable y auxiliar. Si todavía no los tienen, dejalo en "Solo el comité".'
+        : resp && aux && resp === aux ? 'El responsable y el auxiliar tienen que ser dos hermanos distintos.' : '';
       m.q('#slErr').textContent = err;
       if (err) return;
       const nt = Object.assign({}, t || {}, {
@@ -619,7 +640,10 @@
         materiales: m.q('#slMat').value.split('\n').map(x => x.trim()).filter(Boolean).slice(0, 30),
         notas: m.q('#slNotas').value.trim(), vista: !!f.vista
       });
-      if (modoMes) nt.soloMes = true; else delete nt.soloMes;
+      if (modo === 'mes') nt.soloMes = true; else delete nt.soloMes;
+      if (modo === 'no') { nt.sinFecha = true; delete nt.fecha; } else delete nt.sinFecha;
+      if (!nt.resp) delete nt.resp;
+      if (!nt.aux) delete nt.aux;
       if (!nt.ocurr) nt.ocurr = {};
       nt.externos = extRefs(nt);
       if (!t) nt.creado = new Date().toISOString();
@@ -653,6 +677,7 @@
       ? `<div class="cr-pub q"><span><b>📅 Falta poner el día</b>Está programado para ${esc(mesTxt)}. Cuando lo sepan, ponele el día: recién ahí les llega el aviso al responsable y al auxiliar.</span><button type="button" class="btn btn-primary" data-d="ponerdia">Poner el día</button></div>`
       : o.cancelada || estado === 'hecho' ? ''
       : pub ? `<div class="cr-pub v"><span><b>👁 Se ve en la vista</b>Lo ven todos los hermanos${ci.cupo ? ' y se pueden anotar con "Me sumo"' : ''}.</span><button type="button" class="btn" data-d="ocultar">Ocultar</button></div>`
+      : !t.resp || !t.aux ? `<div class="cr-pub q"><span><b>🙋 Falta ${!t.resp && !t.aux ? 'responsable y auxiliar' : !t.resp ? 'el responsable' : 'el auxiliar'}</b>Lo ve solo el comité. Para publicarlo hace falta elegir${!t.resp && !t.aux ? 'los' : 'lo'}.</span><button type="button" class="btn btn-primary" data-d="editar">Elegir</button></div>`
       : `<div class="cr-pub"><span><b>🔒 Solo lo ve el comité</b>Todavía no aparece en la vista${ci.cupo ? ' ni se pidieron voluntarios' : ''}. El responsable y el auxiliar sí lo ven.</span><button type="button" class="btn btn-primary" data-d="publicar">📢 Publicar</button></div>`;
     if (sinDia) {
       return `<div class="sl-dhero" style="background:${tp.color}"><small>${tp.icon} ${tp.label} · ${esc(mesTxt)} · falta el día</small><b>${esc(t.titulo)}</b><p>${esc(C.REPITE[t.repite || 'no'])}</p></div>${estadoVis}
@@ -704,6 +729,7 @@
         else { const vols = ((((t.ocurr || {})[fecha]) || {}).vols || []).filter(x => x !== b.dataset.p); if (await setOcc('vols', vols.length ? vols : undefined)) { showToast('Quitado'); openDetail.refresh(); render(); } }
       }
       else if (k === 'publicar') {
+        if (!t.resp || !t.aux) { showToast('Antes de publicarlo, elegí responsable y auxiliar'); openForm(t.id); return; }
         // Si el trabajo es "Todos" y esta vez estaba oculta, alcanza con sacar la excepción.
         if (await setOcc('pub', t.vista !== false ? undefined : true)) { showToast(Number(t.cupo) > 0 ? 'Publicado: ya se ve en la vista y se piden voluntarios' : 'Publicado: ya se ve en la vista'); openDetail.refresh(); render(); }
       }
@@ -1142,6 +1168,7 @@
     else if (k === 'a-mes') { S.aStart = shiftYm(S.aStart || hoy().slice(0, 7), Number(b.dataset.d)); S.aOpen = {}; render(); }
     else if (k === 'a-tog') { if (!S.aOpen) S.aOpen = {}; S.aOpen[b.dataset.m] = b.getAttribute('aria-expanded') !== 'true'; render(); }
     else if (k === 'a-pdf') openCronoPdf();
+    else if (k === 'pend') { S.view = 'trab'; render(); setTimeout(() => { const e = $('slPend'); if (e) e.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50); }
     else if (k === 'lz-ajustes') { S.lAjustes = true; render(); }
     else if (k === 'lz-volver') { S.lAjustes = false; render(); }
     else if (k === 'lz-mes') { S.lMonth = shiftYm(S.lMonth, Number(b.dataset.d)); render(); }
@@ -1175,7 +1202,9 @@
     const buscan = occ.filter(o => o.pub).map(o => ({ o, ci: C.cupoInfo(o.t, o.fecha, S.anotados) })).filter(x => x.ci.cupo && x.ci.faltan);
     // Para decidir: los que piden voluntarios en las próximas 2 semanas y siguen siendo solo del comité,
     // y los que tienen solo el mes y ese mes ya es este o el que viene.
-    const porPublicar = occ.filter(o => !o.pub && o.fecha <= C.addDays(today, 14) && Number(o.t.cupo) > 0)
+    const sinResp = occ.filter(o => (!o.t.resp || !o.t.aux) && o.fecha <= C.addDays(today, 14))
+      .map(o => ({ id: o.t.id, titulo: o.t.titulo || 'Trabajo', fecha: o.fecha, falta: !o.t.resp && !o.t.aux ? 'responsable y auxiliar' : !o.t.resp ? 'responsable' : 'auxiliar' }));
+    const porPublicar = occ.filter(o => !o.pub && o.t.resp && o.t.aux && o.fecha <= C.addDays(today, 14) && Number(o.t.cupo) > 0)
       .map(o => ({ id: o.t.id, titulo: o.t.titulo || 'Trabajo', fecha: o.fecha, cupo: Number(o.t.cupo) }));
     const vistos = new Set();
     const sinDia = C.trabajosEntre(S.trabajos, today.slice(0, 7) + '-01', shiftYm(today.slice(0, 7), 1) + '-31').filter(o => o.sinDia && !o.cancelada && !vistos.has(o.t.id) && vistos.add(o.t.id))
@@ -1189,7 +1218,7 @@
     return { loaded: S.loaded.trabajos && S.loaded.limpieza && S.loaded.grupos, limpiaEsta: lz ? lz.nombre : '', trabajos: occ.length,
       buscan: buscan.length, faltan: buscan.reduce((n, x) => n + x.ci.faltan, 0), hayLimpieza, vacias: hayLimpieza ? vacias : 0, primeraVacia,
       // Los de esta semana que todavía necesitan voluntarios (para "Para resolver" del Admin — Mantenimiento).
-      porPublicar, sinDia,
+      porPublicar, sinDia, sinResp, pendientes: pendientesDe().length,
       pronto: buscan.filter(x => x.o.fecha <= C.addDays(today, 7)).map(x => ({ titulo: x.o.t.titulo || 'Trabajo', fecha: x.o.fecha, faltan: x.ci.faltan })) };
   };
   window.salonOpenTrabajo = function (id, f) { if (S.view !== 'anio' && S.view !== 'trab') S.view = 'trab'; switchTab('salon'); openTrabajo(id, f); };
