@@ -555,7 +555,7 @@ t('restaurar: no manda avisos de "te asignaron"', () => {
   const st = { weekdaySemana: 4, weekdayFinde: 0, congregationName: 'San Agustín' };
   const LZ = { rotacion: ['g1', 'g2'], enlace: 'SECRETO', tipos: [{ id: 'reu', nombre: 'Después de las reuniones', modo: 'reunion', tareas: ['Barrer'] }, { id: 'sem', nombre: 'Limpieza semanal', modo: 'semana', dia: 6, hora: '09:00', tareas: ['Vidrios'], mismoGrupo: true, turno: { orden: ['local', 'n1'], inicio: '2026-09-28' } }],
     congs: [{ id: 'n1', nombre: 'Norte', color: '#B45309', dias: { semana: 2, finde: 6 }, grupos: [{ id: 'a', nombre: 'Grupo A', encargado: 'Esteban Ríos', tel: '343111' }, { id: 'b', nombre: 'Grupo B', encargado: 'Walter Godoy', tel: '343222' }] }],
-    semanas: { '2026-09-28': { g: 'g1' }, '2026-10-05': { g: 'g2', c: { n1: { g: 'b' } } }, '2026-10-12': { g: 'g1', t: { sem: 'local' } } } };
+    semanas: { '2026-09-28': { g: 'g1', x: { sem: { g: 'g1' } } }, '2026-10-05': { g: 'g2', c: { n1: { g: 'b' } }, cs: { n1: { g: 'a' } } }, '2026-10-12': { g: 'g1', t: { sem: 'local' } } } };
   t('limpieza del Salón: la semanal se turna por semana entre las congregaciones', () => {
     assert.deepStrictEqual(['2026-09-28', '2026-10-05', '2026-10-12', '2026-10-19'].map(m => SC.turnoDe(LZ, LZ.tipos[1], m)), ['local', 'n1', 'local', 'n1']);
     const L2 = Object.assign({}, LZ, { semanas: { '2026-10-19': { t: { sem: 'local' } } } });
@@ -563,10 +563,11 @@ t('restaurar: no manda avisos de "te asignaron"', () => {
     assert.strictEqual(SC.turnoDe(LZ, LZ.tipos[0], '2026-10-05'), 'local');   // la de reuniones no se turna
     assert.strictEqual(SC.turnoDe({ tipos: LZ.tipos }, LZ.tipos[1], '2026-10-05'), 'local');   // sin otras congregaciones
   });
-  t('limpieza del Salón: cada congregación después de sus reuniones; la semanal, de la que le toca', () => {
+  t('limpieza del Salón: cada congregación después de sus reuniones; la semanal, de la que le toca (con sus grupos en orden, aparte)', () => {
     const ls = SC.limpiezasSalon(LZ, '2026-10-05', st);
     assert.deepStrictEqual(ls.map(l => [l.tipo.id, l.cong, l.quien && l.quien.g, l.dias.join(','), l.turno]), [
-      ['reu', 'local', 'g2', '2026-10-08,2026-10-11', false], ['reu', 'n1', 'b', '2026-10-06,2026-10-10', false], ['sem', 'n1', 'b', '2026-10-10', true]]);
+      ['reu', 'local', 'g2', '2026-10-08,2026-10-11', false], ['reu', 'n1', 'b', '2026-10-06,2026-10-10', false], ['sem', 'n1', 'a', '2026-10-10', true]]);
+    assert.strictEqual(SC.claveDe(LZ, 'sem'), 'sem');   // la que se turnan: su propio orden de grupos
     // Esa semana el grupo de acá no tiene la semanal (no le llega el recordatorio).
     assert.deepStrictEqual(SC.limpiezasSemana(LZ, '2026-10-05', st)[1].quien, { g: 'otra', c: 'n1', auto: true });
     const a = SC.asignacionesSalon('p1', {}, {}, LZ, st, () => 'g2', '2026-10-05', '2026-10-11').map(x => x.fecha + ' ' + x.titulo);
@@ -574,14 +575,20 @@ t('restaurar: no manda avisos de "te asignaron"', () => {
   });
   t('limpieza del Salón: "Sugerir" completa los grupos de la otra congregación por turno', () => {
     const r = SC.sugerirCongs(LZ, '2026-09-28', '2026-10-26');
-    assert.strictEqual(r.n, 4);
+    assert.strictEqual(r.n, 5);
     assert.deepStrictEqual(['2026-09-28', '2026-10-05', '2026-10-12', '2026-10-19', '2026-10-26'].map(m => r.semanas[m].c.n1.g + (r.semanas[m].c.n1.s ? '*' : '')), ['a*', 'b', 'a*', 'b*', 'a*']);
+    // La semanal de Norte (las semanas que le toca) sigue su orden aparte: A ya la hizo el 5/10, sigue B.
+    assert.deepStrictEqual(r.semanas['2026-10-19'].cs, { n1: { g: 'b', s: true } });
+    assert.ok(!r.semanas['2026-10-12'].cs && !r.semanas['2026-10-26'].cs);
+    // Y la de acá: 1, 2, 3… solo las semanas que le tocan.
+    const r2 = SC.sugerir({ rotacion: ['g1', 'g2', 'g3'], tipos: LZ.tipos, congs: LZ.congs, semanas: {} }, ['g1', 'g2', 'g3'], '2026-09-28', '2026-11-23', ['g', 'sem']);
+    assert.deepStrictEqual(Object.keys(r2.semanas).sort().filter(m => r2.semanas[m].x).map(m => r2.semanas[m].x.sem.g), ['g1', 'g2', 'g3', 'g1', 'g2']);
   });
   t('limpieza del Salón: tabla del mes para el PDF (columnas por congregación, la semanal una sola)', () => {
     const tb = SC.tablaLimpieza(LZ, ['2026-10-05', '2026-10-12'], st, { local: 'San Agustín', grupo: (g) => ({ g1: 'Grupo 1', g2: 'Grupo 2' })[g] });
     assert.deepStrictEqual(tb.cols.map(c => c.titulo), ['Después de las reuniones · San Agustín', 'Después de las reuniones · Norte', 'Limpieza semanal (09:00) · se turnan']);
-    assert.deepStrictEqual(tb.filas[0].celdas.map(c => c.txt + ' | ' + c.dias), ['Grupo 2 | jue 8 y dom 11', 'Grupo B | mar 6 y sáb 10', 'Norte · Grupo B | sáb 10 · 09:00']);
-    assert.deepStrictEqual(tb.filas[1].celdas.map(c => c.txt), ['Grupo 1', 'Sin cargar', 'San Agustín · Grupo 1']);
+    assert.deepStrictEqual(tb.filas[0].celdas.map(c => c.txt + ' | ' + c.dias), ['Grupo 2 | jue 8 y dom 11', 'Grupo B | mar 6 y sáb 10', 'Norte · Grupo A | sáb 10 · 09:00']);
+    assert.deepStrictEqual(tb.filas[1].celdas.map(c => c.txt), ['Grupo 1', 'Sin cargar', 'San Agustín · Sin cargar']);
   });
   t('limpieza del Salón: lo que ve la otra congregación no trae teléfonos ni el enlace', () => {
     const x = L.limpiezaExterna(LZ, { g1: { id: 'g1', nombre: 'Grupo 1', miembros: ['p1'], encargado: 'p1' } }, st, 'San Agustín', '2026-10-07');
@@ -609,21 +616,22 @@ t('restaurar: no manda avisos de "te asignaron"', () => {
   const st = { weekdaySemana: 4, weekdayFinde: 6 };
   const LZ = { tipos: [{ id: 'reu', nombre: 'Después de las reuniones', modo: 'reunion', porReunion: true }, { id: 'sem', nombre: 'Limpieza semanal', modo: 'semana', dia: 6, hora: '09:00', mismoGrupo: true, turno: { orden: ['local', 'n1'], inicio: '2026-09-28' } }],
     congs: [{ id: 'n1', nombre: 'Norte', porReunion: true, dias: { semana: 2, finde: 0 }, grupos: [{ id: 'a', nombre: 'Grupo A' }, { id: 'b', nombre: 'Grupo B' }] }],
-    semanas: { '2026-09-28': { g: 'g1', r: { g: 'g2' } } } };
-  t('un grupo por reunión: el jueves uno y el sábado otro (y la semanal, el del fin de semana)', () => {
+    semanas: { '2026-09-28': { g: 'g1', r: { g: 'g2' }, x: { sem: { g: 'g3' } } } } };
+  t('un grupo por reunión: el jueves uno y el sábado otro (la semanal, con su propio orden)', () => {
     const ls = SC.limpiezasSalon(LZ, '2026-09-28', st);
     assert.deepStrictEqual(ls.map(l => [l.cong, l.parte || '', l.quien && l.quien.g, l.dias.join()]), [
-      ['local', 'semana', 'g1', '2026-10-01'], ['local', 'finde', 'g2', '2026-10-03'], ['n1', 'semana', null, '2026-09-29'], ['n1', 'finde', null, '2026-10-04'], ['local', '', 'g2', '2026-10-03']]);
-    assert.strictEqual(SC.claveDe(LZ, 'sem'), 'r');
+      ['local', 'semana', 'g1', '2026-10-01'], ['local', 'finde', 'g2', '2026-10-03'], ['n1', 'semana', null, '2026-09-29'], ['n1', 'finde', null, '2026-10-04'], ['local', '', 'g3', '2026-10-03']]);
+    assert.strictEqual(SC.claveDe(LZ, 'sem'), 'sem');
     // A cada grupo le llega el recordatorio solo de su día.
     assert.deepStrictEqual(SC.asignacionesSalon('p1', {}, {}, LZ, st, () => 'g1', '2026-09-28', '2026-10-04').map(x => x.fecha), ['2026-10-01']);
-    assert.deepStrictEqual(SC.asignacionesSalon('p2', {}, {}, LZ, st, () => 'g2', '2026-09-28', '2026-10-04').map(x => x.fecha), ['2026-10-03', '2026-10-03']);
+    assert.deepStrictEqual(SC.asignacionesSalon('p2', {}, {}, LZ, st, () => 'g2', '2026-09-28', '2026-10-04').map(x => x.fecha), ['2026-10-03']);
+    assert.deepStrictEqual(SC.asignacionesSalon('p3', {}, {}, LZ, st, () => 'g3', '2026-09-28', '2026-10-04').map(x => x.fecha), ['2026-10-03']);
   });
   t('un grupo por reunión: "Sugerir" no repite el mismo grupo en la semana (acá y en Norte)', () => {
     const r = SC.sugerir(LZ, ['g1', 'g2', 'g3'], '2026-10-05', '2026-10-12', ['g', 'r']);
     assert.ok(['2026-10-05', '2026-10-12'].every(m => r.semanas[m].g && r.semanas[m].r && r.semanas[m].g !== r.semanas[m].r.g), JSON.stringify(r.semanas));
     const r2 = SC.sugerirCongs(LZ, '2026-09-28', '2026-10-05');
-    assert.strictEqual(r2.n, 4);
+    assert.strictEqual(r2.n, 5);   // reunión de entre semana y del fin de semana (2 semanas) y la semanal del 5/10
     assert.ok(['2026-09-28', '2026-10-05'].every(m => r2.semanas[m].c.n1.g !== r2.semanas[m].cr.n1.g), JSON.stringify(r2.semanas));
     const tb = SC.tablaLimpieza(Object.assign({}, LZ, { semanas: r2.semanas }), ['2026-10-05'], st, { local: 'SA', grupo: (g) => g });
     assert.deepStrictEqual(tb.cols.map(c => c.titulo), ['Reunión de entre semana · SA', 'Reunión del fin de semana · SA', 'Reunión de entre semana · Norte', 'Reunión del fin de semana · Norte', 'Limpieza semanal (09:00) · se turnan']);

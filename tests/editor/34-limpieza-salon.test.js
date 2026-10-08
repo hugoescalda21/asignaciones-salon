@@ -85,13 +85,17 @@ const TIPOS = [{ id: 'reu', nombre: 'Después de las reuniones', modo: 'reunion'
   await click(p, '#salonRoot [data-s="lz-sug"]');
   lz = await p.evaluate(() => window.__salon.limpieza);
   check('"Sugerir" completa los grupos de acá y los de Norte', ['2026-09-28', '2026-10-05', '2026-10-12', '2026-10-19', '2026-10-26'].every(m => lz.semanas[m] && lz.semanas[m].g && lz.semanas[m].c && lz.semanas[m].c[n1.id]), lz.semanas);
+  // La semanal sigue su propio orden (1, 2, 3…) en las semanas que le tocan a San Agustín, aparte de las reuniones.
+  const semLoc = ['2026-09-28', '2026-10-05', '2026-10-12', '2026-10-19', '2026-10-26'].filter(m => lz.semanas[m].x && lz.semanas[m].x.sem).map(m => lz.semanas[m].x.sem.g);
+  check('la semanal de acá: grupos en orden 1, 2… (las semanas que le toca: 5/10 y 19/10)', JSON.stringify(semLoc) === JSON.stringify(['g1', 'g2']), { semLoc, semanas: lz.semanas });
+  check('y la de Norte, con sus grupos en orden (aparte de sus reuniones)', ['2026-09-28', '2026-10-12', '2026-10-26'].map(m => (lz.semanas[m].cs || {})[n1.id]).every(Boolean) && JSON.stringify(['2026-09-28', '2026-10-12', '2026-10-26'].map(m => lz.semanas[m].cs[n1.id].g)) === JSON.stringify(n1.grupos.map(g => g.id)), lz.semanas);
   t = await semana('2026-10-12');
   check('después de sugerir: "Grupo X ✨" en cada línea', /Reuniones Norte Grupo [ABC] ✨ · mar 13 y sáb 17/.test(t) && /Semanal Norte Grupo [ABC] ✨ · sáb 17 · 09:00/.test(t), t);
   await p.screenshot({ path: path.join(SHOTS, 'limpieza-salon-mes.png'), fullPage: true });
   // Elegir el grupo de Norte una semana
   await click(p, `#lz-2026-10-12 [data-s="lz-cpick"][data-c="${n1.id}"]`);
   t = await p.evaluate(() => [...document.querySelectorAll('.slmodal')].pop().innerText.replace(/\s+/g, ' '));
-  check('elegir: grupos de Norte con su encargado; y la semanal de esa semana', /Norte · semana del 12\/10/.test(t) && /mar 13 y sáb 17/.test(t) && /limpieza semanal \(sáb 17 · 09:00\)/.test(t) && /Encargado: Walter Godoy/.test(t), t);
+  check('elegir: grupos de Norte con su encargado', /Norte · semana del 12\/10/.test(t) && /mar 13 y sáb 17/.test(t)  && /Encargado: Walter Godoy/.test(t), t);
   check('"Avisar por WhatsApp" al encargado (si tiene teléfono)', await p.evaluate(() => !![...document.querySelectorAll('.slmodal')].pop().querySelector('#lzAvisar')) || /Pedro Sosa/.test(t));
   const gB = n1.grupos[1].id;
   await click(p, `.slmodal:last-child .tpick[data-v="${gB}"]`);
@@ -128,7 +132,7 @@ const TIPOS = [{ id: 'reu', nombre: 'Después de las reuniones', modo: 'reunion'
   } else console.log('  (sin jsPDF: se salta el PDF)');
   check('editor sin errores', !p.errs.length, p.errs);
   const LZ = await p.evaluate(() => JSON.parse(JSON.stringify(window.__salon.limpieza)));
-  LZ.semanas['2026-09-21'] = { g: 'g1', c: { [n1.id]: { g: n1.grupos[0].id } } };
+  LZ.semanas['2026-09-21'] = { g: 'g1', c: { [n1.id]: { g: n1.grupos[0].id } }, x: { sem: { g: 'g1' } } };
   await ctx.close();
 
   /* ======================= Vista ======================= */
@@ -197,7 +201,7 @@ const TIPOS = [{ id: 'reu', nombre: 'Después de las reuniones', modo: 'reunion'
   await p.waitForTimeout(500);
   t = await box(p);
   check('ve la limpieza arriba de los trabajos: esta semana de Norte y "falta elegir"', /Limpieza del Salón/.test(t) && /Esta semana en Norte: falta elegir el grupo/.test(t) && /Falta elegir 1 semana de Norte/.test(t) && /Trabajos de mantenimiento/.test(t), t.slice(0, 600));
-  check('solo puede tocar las líneas de Norte (las de San Agustín no)', await p.evaluate(() => { const bs = [...document.querySelectorAll('#salonBox [data-lz="pick"]')]; return bs.length >= 1 && bs.every(x => /Norte/.test(x.textContent)) && !bs.some(x => /Semanal/.test(x.textContent)); }));
+  check('solo puede tocar las líneas de Norte (también la semanal cuando le toca a Norte)', await p.evaluate(() => { const bs = [...document.querySelectorAll('#salonBox [data-lz="pick"]')]; return bs.length >= 1 && bs.every(x => /Norte/.test(x.textContent)); }));
   await p.screenshot({ path: path.join(SHOTS, 'limpieza-salon-comite.png'), fullPage: true });
   await click(p, '#salonBox [data-lz="pick"][data-m="2026-09-21"]');
   t = await p.evaluate(() => [...document.querySelectorAll('.sv-sheet')].pop().innerText.replace(/\s+/g, ' '));

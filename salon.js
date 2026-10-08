@@ -1308,8 +1308,17 @@
   const gruposIds = () => Object.values(S.grupos).filter(g => g && g.id).sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es', { numeric: true })).map(g => g.id);
   // Claves que se cargan por separado: 'g' (la principal y las que van con ella) y cada limpieza con su propio grupo.
   const claves = () => ['g'].concat(C.porReunion(S.limpieza) ? ['r'] : [], tipos().filter(t => { const k = C.claveDe(S.limpieza, t.id); return k !== 'g' && k !== 'r'; }).map(t => t.id));
+  // Qué falta cargar esa semana (sin contar la que se turnan cuando le toca a otra congregación).
+  function faltanSemana(L, m) {
+    let n = claves().filter(k => { const t = tipos().find(x => x.id === k); if (t && t.turno && multi() && C.turnoDe(L, t, m) !== 'local') return false; return !C.quienLimpia(L, m, k); }).length;
+    congsL().filter(c => (c.grupos || []).length).forEach(c => {
+      const ps = C.partesCong(L, c.id).concat(tipos().some(t => t.modo !== 'reunion' && C.turnoDe(L, t, m) === c.id) ? ['sem'] : []);
+      n += ps.filter(pt => !C.grupoCong(L, m, c.id, pt)).length;
+    });
+    return n;
+  }
   // Etiqueta corta de una línea: "Reunión jue" / "Reunión dom" cuando hay un grupo por reunión.
-  const etq = (l) => l.parte && l.dias.length ? 'Reunión ' + fmtCorto(l.dias[0]).split(' ')[0] : cortoDe(l.tipo);
+  const etq = (l) => (l.parte === 'semana' || l.parte === 'finde') && l.dias.length ? 'Reunión ' + fmtCorto(l.dias[0]).split(' ')[0] : cortoDe(l.tipo);
   // Lunes de las semanas de un mes (las que tienen el jueves en ese mes, como "Semana 1 … 5").
   function semanasDelMes(ym) {
     const out = [];
@@ -1371,7 +1380,7 @@
       const cls = !qg ? ' vac' : qg.g === 'otra' || qg.g === 'nadie' ? ' ot' : qg.s ? ' sg' : '';
       return `<div class="sl-wk${cls}${m === hoyM ? ' hoy' : ''}" id="lz-${m}"><button type="button" class="sl-wkm" data-s="lz-pick" data-m="${m}" data-k="g"><span class="d">${m === hoyM ? 'ESTA' : 'SEM'}<b>${fmtSem(m)}</b></span><span class="tx"><span class="nmrow"><b>${qg ? esc(nombreQuien(qg)) : 'Sin cargar'}</b>${tagDe(qg)}</span>${lineas}</span></button>${extra ? `<div class="sl-wkx">${extra}</div>` : ''}</div>`;
     }).join('');
-    const vacias = semanas.reduce((n, m) => n + ks.filter(k => !C.quienLimpia(L, m, k)).length + congsL().filter(c => (c.grupos || []).length).reduce((k, c) => k + C.partesCong(L, c.id).filter(pt => !C.grupoCong(L, m, c.id, pt)).length, 0), 0);
+    const vacias = semanas.reduce((n, m) => n + faltanSemana(L, m), 0);
     const stats = gruposIds().map(g => {
       const ult = C.ultimaVez(L, g, 'g', C.addDays(hoyM, 7));
       let n = 0; Object.keys(L.semanas || {}).forEach(m => { if (m >= C.addDays(hoyM, -84) && m <= hoyM) ks.forEach(k => { const q = C.cargado(L, m, k); if (q && q.g === g) n++; }); });
@@ -1446,6 +1455,8 @@
     act.forEach((m, i) => {
       const src = ant[i]; if (!src) return;
       claves().forEach(k => {
+        const tt = tipos().find(x => x.id === k);
+        if (tt && tt.turno && multi()) return;   // la que se turnan sigue su orden: se completa con "Sugerir"
         if (C.cargado(L, m, k) || C.esOtra(L, m)) return;
         const q = C.cargado(L, src, k); if (!q) return;
         const w = nuevas[m] = nuevas[m] || {};
@@ -1473,23 +1484,23 @@
   function pickCong(m, idc, parte) {
     const L = S.limpieza || {};
     const cg = congsL().find(c => c.id === idc); if (!cg) return;
-    const pt = cg.porReunion ? (parte || 'semana') : '';
+    const pt = parte === 'sem' ? 'sem' : cg.porReunion ? (parte || 'semana') : '';
     const actual = C.grupoCong(L, m, idc, pt);
-    const otro = pt ? C.grupoCong(L, m, idc, pt === 'finde' ? 'semana' : 'finde') : null;
-    const ord = C.ordenCong(L, idc, m);
+    const otro = pt && pt !== 'sem' ? C.grupoCong(L, m, idc, pt === 'finde' ? 'semana' : 'finde') : null;
+    const ord = C.ordenCong(L, idc, m, pt);
     const sug = (ord.find(o => !otro || o.g !== otro.g) || ord[0] || {}).g;
     const dd = C.diasCong(cg, m);
-    const dias = (pt === 'semana' ? dd.slice(0, 1) : pt === 'finde' ? dd.slice(1) : dd).map(fmtCorto).join(' y ');
-    const semanal = pt === 'semana' ? [] : C.limpiezasSalon(L, m, data.settings).filter(l => l.turno && l.cong === idc);
+    const semanal = pt === 'sem' ? C.limpiezasSalon(L, m, data.settings).filter(l => l.turno && l.cong === idc) : [];
+    const dias = (pt === 'sem' ? [].concat(...semanal.map(l => l.dias)) : pt === 'semana' ? dd.slice(0, 1) : pt === 'finde' ? dd.slice(1) : dd).map(fmtCorto).join(' y ');
     const hace = (ult) => { if (!ult) return 'Todavía no limpió'; const n = Math.round((new Date(m + 'T12:00:00') - new Date(ult + 'T12:00:00')) / 604800000); return n <= 0 ? 'Ya limpia más adelante' : `Limpió hace ${n} ${n === 1 ? 'semana' : 'semanas'}`; };
     const gr = (gid) => (cg.grupos || []).find(g => g.id === gid) || {};
     const opt = (val, nm, small, on, star) => `<button type="button" class="tpick${on ? ' on' : ''}" data-v="${esc(val)}"><span>${nm}<small>${small}</small></span>${star ? '<span class="sl-star">✨</span>' : on ? '<span class="sl-star">✓</span>' : ''}</button>`;
-    const md = openModal(`<h3>${esc(cg.nombre)} · ${pt === 'semana' ? 'reunión de entre semana · ' : pt === 'finde' ? 'reunión del fin de semana · ' : ''}semana del ${fmtSem(m)}</h3><p class="modal-sub" style="margin:0 0 10px;">${pt ? 'Después de la reunión del' : 'Después de sus reuniones:'} ${esc(dias)}${semanal.length ? ` · y la ${esc(semanal.map(l => l.tipo.nombre.toLowerCase()).join(', '))} (${esc(semanal.map(l => l.dias.map(fmtCorto).join(' y ') + (l.tipo.hora ? ' · ' + l.tipo.hora : '')).join(', '))})` : ''}. ¿Qué grupo limpia?</p>
+    const md = openModal(`<h3>${esc(cg.nombre)} · ${pt === 'sem' ? esc((semanal[0] && semanal[0].tipo.nombre.toLowerCase()) || 'limpieza semanal') + ' · ' : pt === 'semana' ? 'reunión de entre semana · ' : pt === 'finde' ? 'reunión del fin de semana · ' : ''}semana del ${fmtSem(m)}</h3><p class="modal-sub" style="margin:0 0 10px;">${pt === 'sem' ? 'Le toca a ' + esc(cg.nombre) + ': ' + esc(dias) + (semanal[0] && semanal[0].tipo.hora ? ' · ' + esc(semanal[0].tipo.hora) : '') + '. Sus grupos la hacen en orden, aparte de la limpieza de reuniones.' : (pt ? 'Después de la reunión del ' : 'Después de sus reuniones: ') + esc(dias) + '.'} ¿Qué grupo la hace?</p>
       ${ord.length ? `<div class="sl-box" style="padding:0 8px;">${ord.map(o => opt(o.g, esc(gr(o.g).nombre || 'Grupo'), (gr(o.g).encargado ? 'Encargado: ' + esc(gr(o.g).encargado) + ' · ' : '') + hace(o.ult) + (otro && otro.g === o.g ? ' · ya limpia la otra reunión' : ''), actual && actual.g === o.g, o.g === sug && !(actual && actual.g === o.g))).join('')}</div>` : `<div class="tnote">Todavía no cargaste los grupos de ${esc(cg.nombre)}. Hacelo en ⚙ Ajustes.</div>`}
       <div class="sl-box" style="padding:0 8px;">${opt('nadie', 'Sin limpieza', 'Asamblea, semana sin reunión…', actual && actual.g === 'nadie')}</div>
       ${actual && gr(actual.g).tel ? `<button type="button" class="btn sl-wa" id="lzAvisar" style="width:100%;justify-content:center;margin-bottom:8px;">💬 Avisar a ${esc(gr(actual.g).encargado || gr(actual.g).nombre)} por WhatsApp</button>` : ''}
       <div class="tfoot">${actual ? '<button type="button" class="btn" id="lzBorrar">Dejar sin cargar</button>' : ''}<button type="button" class="btn" data-tclose>Cancelar</button></div>`, { cls: 'sl-chooser' });
-    const guardar = (val) => { md.close(); S.undo = null; saveLimpieza([[['semanas', m, pt === 'finde' ? 'cr' : 'c', idc], val ? { g: val } : undefined]], val ? 'Guardado' : 'Semana sin cargar'); };
+    const guardar = (val) => { md.close(); S.undo = null; saveLimpieza([[['semanas', m, C.claveParte(pt), idc], val ? { g: val } : undefined]], val ? 'Guardado' : 'Semana sin cargar'); };
     md.el.addEventListener('click', (e) => { const b = e.target.closest('.tpick[data-v]'); if (b) guardar(b.dataset.v); });
     const bb = md.q('#lzBorrar'); if (bb) bb.addEventListener('click', () => guardar(''));
     const av = md.q('#lzAvisar'); if (av) av.addEventListener('click', () => avisarGrupoCong(m, idc, actual.g));
@@ -1515,15 +1526,15 @@
     const ahora = C.turnoDe(L, t, m);
     const fijo = ((((L.semanas || {})[m] || {}).t) || {})[tipoId];
     const ids = ['local'].concat(congsL().map(c => c.id));
-    const quien = (id) => { if (id === 'local') { const q = C.quienLimpia(L, m, C.claveDe(L, tipoId)); return q ? nombreQuien(q) : 'sin grupo cargado'; } const q = C.grupoCong(L, m, id); return q ? C.nombreGrupoCong(L, id, q.g) : 'sin grupo cargado'; };
+    const quien = (id) => { if (id === 'local') { const q = C.quienLimpia(L, m, C.claveDe(L, tipoId)); return q ? nombreQuien(q) : 'sin grupo cargado'; } const q = C.grupoCong(L, m, id, 'sem'); return q ? C.nombreGrupoCong(L, id, q.g) : 'sin grupo cargado'; };
     const clave = C.claveDe(L, tipoId);
     const propio = clave !== 'g' && clave !== 'r';   // con su propio grupo (no el de las reuniones)
-    const md = openModal(`<h3>${esc(t.nombre)} · semana del ${fmtSem(m)}</h3><p class="modal-sub" style="margin:0 0 10px;">${t.turno ? 'Las congregaciones se turnan. ' : ''}La hace el grupo que esa semana tiene la limpieza de reuniones${propio ? ' (en ' + esc(localNom()) + ', el que elijas)' : ''}. ¿Qué congregación la hace esta semana?</p>
+    const md = openModal(`<h3>${esc(t.nombre)} · semana del ${fmtSem(m)}</h3><p class="modal-sub" style="margin:0 0 10px;">${t.turno ? 'Las congregaciones se turnan; cada una la hace con sus grupos en orden (1, 2, 3…), aparte de la limpieza de reuniones. ' : ''}¿Qué congregación la hace esta semana?</p>
       <div class="sl-box" style="padding:0 8px;">${ids.map(id => `<button type="button" class="tpick${ahora === id ? ' on' : ''}" data-v="${esc(id)}"><span>${congDot(id)}<small>${esc(quien(id))}</small></span>${ahora === id ? '<span class="sl-star">✓</span>' : ''}</button>`).join('')}</div>
-      ${ahora === 'local' && propio ? '<button type="button" class="btn" id="lzTgrupo" style="width:100%;justify-content:center;margin-bottom:8px;">Elegir el grupo de ' + esc(localNom()) + '</button>' : ''}
+      ${(ahora === 'local' && propio) || ahora !== 'local' ? '<button type="button" class="btn" id="lzTgrupo" style="width:100%;justify-content:center;margin-bottom:8px;">Elegir el grupo de ' + esc(congNom(ahora)) + '</button>' : ''}
       ${t.turno ? '' : '<div class="tnote">Si se turnan siempre, en ⚙ Ajustes editá esta limpieza y tildá "Se turnan las congregaciones": se arma sola.</div>'}
       <div class="tfoot">${fijo ? `<button type="button" class="btn" id="lzTnormal">${t.turno ? 'Volver al turno normal' : 'Volver a ' + esc(localNom())}</button>` : ''}<button type="button" class="btn" data-tclose>Cancelar</button></div>`, { cls: 'sl-chooser' });
-    const tg = md.q('#lzTgrupo'); if (tg) tg.addEventListener('click', () => { md.close(); pickSemana(m, clave); });
+    const tg = md.q('#lzTgrupo'); if (tg) tg.addEventListener('click', () => { md.close(); if (ahora === 'local') pickSemana(m, clave); else pickCong(m, ahora, 'sem'); });
     md.el.addEventListener('click', (e) => { const b = e.target.closest('.tpick[data-v]'); if (!b) return; md.close(); saveLimpieza([[['semanas', m, 't', tipoId], b.dataset.v === 'local' && !t.turno ? undefined : b.dataset.v]], `Esta semana la hace ${congNom(b.dataset.v)}`); });
     const tn = md.q('#lzTnormal'); if (tn) tn.addEventListener('click', () => { md.close(); saveLimpieza([[['semanas', m, 't', tipoId], undefined]], t.turno ? 'Vuelve al turno normal' : `Vuelve a ${localNom()}`); });
   }
@@ -1596,7 +1607,7 @@
       if (!opts.limpieza && !opts.trabajos) { showToast('Elegí qué incluir'); return; }
       m.close();
       const sem = []; for (let i = 0; i < meses; i++) sem.push(...semanasDelMes(shiftYm(S.lMonth, i)));
-      const faltan = sem.reduce((n, w) => n + claves().filter(k => !C.quienLimpia(S.limpieza, w, k)).length + congsL().filter(c => (c.grupos || []).length).reduce((k, c) => k + C.partesCong(S.limpieza, c.id).filter(pt => !C.grupoCong(S.limpieza, w, c.id, pt)).length, 0), 0);
+      const faltan = sem.reduce((n, w) => n + faltanSemana(S.limpieza, w), 0);
       if (opts.limpieza && faltan && confirm(`Faltan ${faltan} ${faltan === 1 ? 'semana' : 'semanas'} sin cargar. ¿Las sugiero antes de armar el PDF?`)) {
         const r0 = C.sugerir(S.limpieza, gruposIds(), sem[0], sem[sem.length - 1], claves());
         const r = C.sugerirCongs(Object.assign({}, S.limpieza, { semanas: r0.semanas }), sem[0], sem[sem.length - 1]);
@@ -1683,8 +1694,8 @@
     const sinRot = Object.values(S.grupos).filter(g => g && g.id && !rot.includes(g.id)).sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es', { numeric: true }));
     let html = `<div class="thead"><h3><button type="button" class="sl-back" data-s="lz-volver" aria-label="Volver">‹</button> Ajustes de la limpieza</h3></div><div class="sl-ajgrid"><div>`;
     html += `<div class="sl-sec" style="margin-top:0;"><h4>Limpiezas</h4></div>` + ts.map((t, i) => `<div class="sl-lzc"><div class="h"><b>${i === 0 ? '🧹' : '🧽'} ${esc(t.nombre)}</b><button type="button" class="btn" data-s="lz-tipo" data-i="${i}">Editar</button></div>
-      <small>${esc(t.modo === 'reunion' ? 'Después de cada reunión' : DIAS[t.dia != null ? t.dia : 6] + (t.hora ? ' · ' + t.hora : ''))} · ${(t.tareas || []).length} tareas${congsL().length ? (t.modo === 'reunion' ? ' · cada congregación después de sus reuniones' : t.turno ? ' · <b>se turnan las congregaciones</b>' : ' · solo esta congregación') : ''}</small>
-      ${i > 0 ? `<label class="sl-sw"><span><b>La hace el mismo grupo</b> que «${esc(ts[0].nombre)}»${C.porReunion(L) ? ' (el de la reunión del fin de semana)' : ''}</span><input type="checkbox" data-s="lz-mismo" data-i="${i}"${t.mismoGrupo !== false ? ' checked' : ''}></label>` : ''}</div>`).join('') +
+      <small>${esc(t.modo === 'reunion' ? 'Después de cada reunión' : DIAS[t.dia != null ? t.dia : 6] + (t.hora ? ' · ' + t.hora : ''))} · ${(t.tareas || []).length} tareas${congsL().length ? (t.modo === 'reunion' ? ' · cada congregación después de sus reuniones' : t.turno ? ' · <b>se turnan las congregaciones</b>, cada una con sus grupos en orden' : ' · solo esta congregación') : ''}</small>
+      ${i > 0 && !(t.turno && congsL().length) ? `<label class="sl-sw"><span><b>La hace el mismo grupo</b> que «${esc(ts[0].nombre)}»${C.porReunion(L) ? ' (el de la reunión del fin de semana)' : ''}</span><input type="checkbox" data-s="lz-mismo" data-i="${i}"${t.mismoGrupo !== false ? ' checked' : ''}></label>` : ''}</div>`).join('') +
       `<button type="button" class="btn" data-s="lz-tipo" data-i="-1" style="width:100%;justify-content:center;">＋ Agregar otra limpieza</button>`;
     html += `<div class="sl-sec"><h4>Orden para sugerir</h4></div><p class="hint" style="margin:-4px 2px 8px;">"Sugerir" propone al grupo que hace más tiempo que no limpia; a igualdad, el que está más arriba.</p><div class="sl-box">${rot.length ? rot.map((g, i) => `<div class="sl-rot"><span class="nn">${i + 1}</span><span class="nm">${esc(grupoName(g))}<small>${S.grupos[g].encargado ? 'Encargado: ' + esc(pubName(S.grupos[g].encargado)) : ''}</small></span><button type="button" data-s="rot-up" data-i="${i}" aria-label="Subir"${i === 0 ? ' disabled' : ''}>↑</button><button type="button" data-s="rot-down" data-i="${i}" aria-label="Bajar"${i === rot.length - 1 ? ' disabled' : ''}>↓</button><button type="button" data-s="rot-del" data-i="${i}" aria-label="Sacar">✕</button></div>`).join('') : '<div class="sl-rot" style="color:var(--ink-soft)">Sin orden: se usan todos los grupos por nombre.</div>'}</div>
       ${sinRot.length ? `<div class="topts">${sinRot.map(g => `<button type="button" data-s="rot-add" data-g="${esc(g.id)}">+ ${esc(g.nombre)}</button>`).join('')}</div>` : ''}`;
@@ -1711,7 +1722,7 @@
       <div class="tf"><span class="tlbl">Cuándo</span><div class="topts" id="lzModo"><button type="button" data-k="reunion" class="${f.modo === 'reunion' ? 'on' : ''}">Después de cada reunión</button><button type="button" data-k="semana" class="${f.modo !== 'reunion' ? 'on' : ''}">Un día por semana</button></div></div>
       <div class="trow2" id="lzDH"><div class="tf"><label for="lzD">Día</label><select id="lzD">${[1, 2, 3, 4, 5, 6, 0].map(d => `<option value="${d}"${Number(f.dia != null ? f.dia : 6) === d ? ' selected' : ''}>${DIAS[d]}</option>`).join('')}</select></div><div class="tf"><label for="lzH">Hora (opcional)</label><input type="time" id="lzH" value="${esc(f.hora || '')}"></div></div>
       ${i === 0 ? `<label class="sl-sw" id="lzPrBox" style="margin:0 0 10px;"><span><b style="display:block">Un grupo por reunión</b>Un grupo limpia después de la reunión de entre semana y otro después de la del fin de semana${congsL().length ? ' (en ' + esc(localNom()) + '; cada otra congregación lo elige en sus ajustes)' : ''}.</span><input type="checkbox" id="lzPr"${f.porReunion ? ' checked' : ''}></label>` : ''}
-      ${congsL().length ? `<div class="tf" id="lzTurnoBox"><label class="sl-sw" style="border-top:none;margin-top:0;padding-top:0"><span><b style="display:block">Se turnan las congregaciones</b>Una semana cada una, en orden. La hace el grupo que esa semana tiene la limpieza de reuniones.</span><input type="checkbox" id="lzTu"${f.turno ? ' checked' : ''}></label>
+      ${congsL().length ? `<div class="tf" id="lzTurnoBox"><label class="sl-sw" style="border-top:none;margin-top:0;padding-top:0"><span><b style="display:block">Se turnan las congregaciones</b>Una semana cada una, en orden. Cada congregación la hace con sus grupos en orden (1, 2, 3…), aparte de la limpieza de reuniones.</span><input type="checkbox" id="lzTu"${f.turno ? ' checked' : ''}></label>
         <p class="hint" id="lzTuNo" style="margin:4px 2px 0;">Si no se turnan, igual podés elegir qué congregación la hace, semana por semana, tocando la línea en el mes.</p>
         <div class="trow2" id="lzTuOpts"><div class="tf"><label for="lzTu1">Empieza</label><select id="lzTu1">${['local'].concat(congsL().map(c => c.id)).map(id => `<option value="${esc(id)}"${(f.turno && f.turno.orden && f.turno.orden[0] === id) ? ' selected' : ''}>${esc(congNom(id))}</option>`).join('')}</select></div><div class="tf"><label for="lzTu2">la semana del</label><input type="date" id="lzTu2" value="${esc((f.turno && f.turno.inicio) || C.mondayOf(hoy()))}"></div></div></div>` : ''}
       <div class="tf"><label for="lzT">Tareas <small style="text-transform:none;letter-spacing:0;font-weight:400;">(una por renglón, las ven los hermanos)</small></label><textarea id="lzT" style="min-height:120px;">${esc((f.tareas || []).join('\n'))}</textarea></div>

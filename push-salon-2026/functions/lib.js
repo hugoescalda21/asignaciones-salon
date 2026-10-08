@@ -819,7 +819,7 @@ function grupoLimpiezaValido(L, ext, body) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(m) || SC.mondayOf(m) !== m) return { error: 'Semana no válida.' };
   const g = String((body && body.g) || '');
   if (g && g !== 'nadie' && !(cg.grupos || []).some((x) => x.id === g)) return { error: 'Ese grupo no es de tu congregación.' };
-  const parte = cg.porReunion && body && body.parte === 'finde' ? 'finde' : '';
+  const parte = body && body.parte === 'sem' ? 'sem' : cg.porReunion && body && body.parte === 'finde' ? 'finde' : '';
   return parte ? { m, cong: cg.id, g, parte } : { m, cong: cg.id, g };
 }
 

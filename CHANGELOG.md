@@ -6,6 +6,13 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Limpieza semanal que se turnan: grupos en su propio orden — 8 oct 2026 (caché asignaciones-salon-v65 y ver-salon-v51)
+
+- La limpieza que se turnan las congregaciones ya no la hace "el grupo de las reuniones de esa semana". Cada congregación la hace con **sus grupos en orden** (1, 2, 3, 4…), aparte de la limpieza de reuniones, solo las semanas que le tocan.
+- "✨ Sugerir" sigue ese orden: en San Agustín, el que hace más tiempo que no hizo la semanal; en Norte, lo mismo con sus grupos. "Copiar el mes anterior" no la copia, para no romper el orden.
+- Tocando la línea de la semanal se elige la congregación y, con "Elegir el grupo de…", el grupo de esa vez. El comité de Norte también elige su grupo de la semanal desde la vista.
+- Hay que publicar las funciones: `firebase deploy --only functions`.
+
 ## Limpieza semanal: elegir qué congregación la hace — 8 oct 2026 (caché asignaciones-salon-v64 y ver-salon-v50)
 
 - Con otra congregación cargada en el Salón, tocando la línea de una limpieza de un día por semana (la semanal) se elige **qué congregación la hace esa semana**, aunque no esté tildado "Se turnan". Con "Volver a…" queda como antes.
