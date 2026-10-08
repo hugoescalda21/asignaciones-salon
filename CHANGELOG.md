@@ -6,6 +6,12 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Limpieza semanal: elegir qué congregación la hace — 8 oct 2026 (caché asignaciones-salon-v64 y ver-salon-v50)
+
+- Con otra congregación cargada en el Salón, tocando la línea de una limpieza de un día por semana (la semanal) se elige **qué congregación la hace esa semana**, aunque no esté tildado "Se turnan". Con "Volver a…" queda como antes.
+- Si se turnan siempre, en Ajustes se tilda "Se turnan las congregaciones" y se arma sola.
+- Si la otra congregación todavía no está cargada en "Congregaciones que usan el Salón", el mes lo avisa.
+
 ## Limpieza: un grupo por reunión — 8 oct 2026 (caché asignaciones-salon-v63 y ver-salon-v49)
 
 - En la limpieza "Después de cada reunión", la opción **"Un grupo por reunión"**: un grupo limpia después de la reunión de entre semana y otro después de la del fin de semana. Los días siguen saliendo de Ajustes.

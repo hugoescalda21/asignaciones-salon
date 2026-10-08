@@ -221,12 +221,15 @@
        las congregaciones, semana por semana; la hace el grupo que esa semana tiene la limpieza de reuniones.
      cfg.semanas[lunes].t[idTipo] = 'local' | idCong: cambio a mano del turno esa semana. */
   function congsSalon(cfg) { return ((cfg && cfg.congs) || []).filter(c => c && c.id); }
+  // A qué congregación le toca esa semana una limpieza de un día por semana: la elegida a mano esa semana
+  // (aunque no se turnen) o, si se turnan, la del turno. Si no, esta congregación.
   function turnoDe(cfg, tipo, monday) {
-    if (!tipo || !tipo.turno || tipo.modo === 'reunion') return 'local';
+    if (!tipo || tipo.modo === 'reunion') return 'local';
     const ids = ['local'].concat(congsSalon(cfg).map(c => c.id));
     if (ids.length < 2) return 'local';
     const fijo = ((((cfg && cfg.semanas) || {})[monday] || {}).t || {})[tipo.id];
     if (fijo && ids.includes(fijo)) return fijo;
+    if (!tipo.turno) return 'local';
     const orden = (tipo.turno.orden || []).filter(x => ids.includes(x)).concat(ids.filter(x => !(tipo.turno.orden || []).includes(x)));
     const ini = mondayOf(tipo.turno.inicio || monday);
     const k = Math.round((Date.parse(monday + 'T12:00:00Z') - Date.parse(ini + 'T12:00:00Z')) / 604800000);
@@ -257,7 +260,7 @@
     const reu = [], otras = [], resto = [];
     const congs = congsSalon(cfg);
     limpiezasSemana(cfg, monday, settings).forEach(l => {
-      const turno = !!(l.tipo.turno && l.tipo.modo !== 'reunion' && congs.length);
+      const turno = !!(l.tipo.modo !== 'reunion' && congs.length);   // de un día por semana: la puede hacer cualquiera de las congregaciones
       if (l.quien && l.quien.g === 'otra' && l.quien.c) { const pr = congPorReunion(cfg, l.quien.c) ? 'finde' : undefined; resto.push({ tipo: l.tipo, clave: l.clave, cong: l.quien.c, quien: grupoCong(cfg, monday, l.quien.c, pr), dias: l.dias, turno: true }); return; }
       const x = Object.assign({}, l, { cong: 'local', turno });
       if (l.tipo.modo !== 'reunion') { resto.push(x); return; }
@@ -319,7 +322,7 @@
     const colDe = (l) => l.turno ? l.tipo.id + '|T' : l.tipo.id + '|' + l.cong + (l.parte ? '|' + l.parte : '');
     semanas.forEach(m => limpiezasSalon(cfg, m, settings).forEach(l => {
       const k = colDe(l);
-      if (!cols.some(c => c.k === k)) cols.push({ k, tipo: l.tipo, cong: l.turno ? null : l.cong, turno: l.turno, titulo: l.turno ? `${l.tipo.nombre}${l.tipo.hora ? ' (' + l.tipo.hora + ')' : ''} · se turnan` : `${l.parte ? (l.parte === 'semana' ? 'Reunión de entre semana' : 'Reunión del fin de semana') : l.tipo.modo === 'reunion' ? 'Después de las reuniones' : l.tipo.nombre} · ${nomCong(l.cong)}` });
+      if (!cols.some(c => c.k === k)) cols.push({ k, tipo: l.tipo, cong: l.turno ? null : l.cong, turno: l.turno, titulo: l.turno ? `${l.tipo.nombre}${l.tipo.hora ? ' (' + l.tipo.hora + ')' : ''}${l.tipo.turno ? ' · se turnan' : ''}` : `${l.parte ? (l.parte === 'semana' ? 'Reunión de entre semana' : 'Reunión del fin de semana') : l.tipo.modo === 'reunion' ? 'Después de las reuniones' : l.tipo.nombre} · ${nomCong(l.cong)}` });
     }));
     const filas = semanas.map(m => {
       const ls = limpiezasSalon(cfg, m, settings);

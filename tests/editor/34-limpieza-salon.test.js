@@ -52,6 +52,18 @@ const TIPOS = [{ id: 'reu', nombre: 'Después de las reuniones', modo: 'reunion'
   t = await root();
   check('en Ajustes: Norte con sus grupos y su comité', /Norte · Editar ›/.test(t) && /Grupo A\s*· Ríos/.test(t) && /Comité: Pedro Sosa/.test(t), t.slice(0, 900));
   check('la semanal dice "solo esta congregación" hasta que se turnen', /cada congregación después de sus reuniones/.test(t) && /solo esta congregación/.test(t));
+  // Sin turno: igual se elige qué congregación hace la semanal una semana.
+  await p.evaluate(() => { window.__salon.lAjustes = false; window.__salon.lMonth = '2026-10'; salonRender(); });
+  await p.waitForTimeout(150);
+  await click(p, '#lz-2026-10-05 [data-s="lz-tpick"]');
+  check('sin turno: tocando la semanal se elige la congregación', /¿Qué congregación la hace esta semana\?/.test(await p.evaluate(() => [...document.querySelectorAll('.slmodal')].pop().innerText)));
+  await click(p, `.slmodal:last-child .tpick[data-v="${n1.id}"]`);
+  check('esa semana la hace Norte; las demás, San Agustín', /Semanal Norte/.test(await p.evaluate(() => document.getElementById('lz-2026-10-05').innerText.replace(/\s+/g, ' '))) && /Semanal San Agustín/.test(await p.evaluate(() => document.getElementById('lz-2026-10-12').innerText.replace(/\s+/g, ' '))) && await p.evaluate((id) => window.__salon.limpieza.semanas['2026-10-05'].t.sem === id, n1.id));
+  await click(p, '#lz-2026-10-05 [data-s="lz-tpick"]');
+  await click(p, '.slmodal:last-child #lzTnormal');
+  check('"Volver a San Agustín"', await p.evaluate(() => !((window.__salon.limpieza.semanas['2026-10-05'] || {}).t || {}).sem));
+  await p.evaluate(() => { window.__salon.lAjustes = true; salonRender(); });
+  await p.waitForTimeout(150);
   await click(p, '#salonRoot [data-s="lz-tipo"][data-i="1"]');
   check('editar la semanal: "Se turnan las congregaciones"', await p.evaluate(() => !!$('lzTu') && getComputedStyle($('lzTurnoBox')).display !== 'none' && getComputedStyle($('lzTuOpts')).display === 'none'));
   await click(p, '#lzTu');
