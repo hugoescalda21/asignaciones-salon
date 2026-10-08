@@ -223,6 +223,45 @@ const TIPOS = [{ id: 'reu', nombre: 'Después de las reuniones', modo: 'reunion'
   check('vista del hermano sin errores', !p.errs.length, p.errs);
   await c2.close();
 
+  /* ======================= Un grupo por reunión ======================= */
+  console.log('\nUn grupo por reunión');
+  const st2 = { docs: { 'congregations/C': JSON.parse(JSON.stringify(data)), 'congregations/C/terr/grupos': GR, 'congregations/C/salon/trabajos': { lista: {} },
+    'congregations/C/salon/limpieza': { rotacion: ['g1', 'g2', 'g3'], tipos: TIPOS, semanas: {}, otraNombre: 'Norte' } }, writes: [], uploads: [] };
+  const ctx3 = await b.newContext({ viewport: { width: 390, height: 844 }, acceptDownloads: true });
+  await rutasPdf(ctx3);
+  await ctx3.addInitScript((d) => { localStorage.setItem('kh-schedule-data-v2', JSON.stringify(d)); localStorage.setItem('kh-welcome-salon', '1'); window.open = () => null; window.confirm = () => true; }, data);
+  p = await ctx3.newPage(); p.errs = []; p.on('pageerror', e => p.errs.push(e.message));
+  await p.goto(FILE); await p.waitForTimeout(700);
+  await p.evaluate(async ({ store, mock }) => { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden')); eval('(' + mock + ')')(store, 'hugo@x.com'); await startSync('C'); }, { store: st2, mock: installMock.toString() });
+  await p.waitForTimeout(400);
+  await p.evaluate(() => { switchTab('salon'); window.__salon.view = 'limp'; window.__salon.lAjustes = true; salonRender(); });
+  await p.waitForTimeout(150);
+  await click(p, '#salonRoot [data-s="lz-tipo"][data-i="0"]');
+  check('en "Después de las reuniones": la opción "Un grupo por reunión"', await p.evaluate(() => !!$('lzPr') && getComputedStyle($('lzPrBox')).display !== 'none'));
+  await click(p, '#lzPr'); await click(p, '#lzOk');
+  check('se guarda', await p.evaluate(() => window.__salon.limpieza.tipos[0].porReunion === true));
+  check('la semanal la hace el grupo del fin de semana', /\(el de la reunión del fin de semana\)/.test(await root()));
+  await p.evaluate(() => { window.__salon.lAjustes = false; window.__salon.lMonth = '2026-10'; salonRender(); });
+  await p.waitForTimeout(150);
+  await click(p, '#salonRoot [data-s="lz-sug"]');
+  const sm = await p.evaluate(() => window.__salon.limpieza.semanas);
+  check('"Sugerir": un grupo el jueves y otro el domingo, distintos', ['2026-10-05', '2026-10-12', '2026-10-19'].every(m => sm[m].g && sm[m].r && sm[m].g !== sm[m].r.g), sm);
+  t = await semana('2026-10-05');
+  check('el mes muestra "Reunión jue" y "Reunión dom" con su grupo', /Reunión jue/.test(t) && /Reunión dom/.test(t) && /jue 8/.test(t) && /dom 11/.test(t), t);
+  await click(p, '#lz-2026-10-05 [data-s="lz-pick"][data-k="r"]');
+  check('elegir el del fin de semana', /Reunión del fin de semana · semana del 5\/10/.test(await p.evaluate(() => [...document.querySelectorAll('.slmodal')].pop().innerText)));
+  const gOtro = ['g1', 'g2', 'g3'].find(g => g !== sm['2026-10-05'].g && g !== sm['2026-10-05'].r.g);
+  await click(p, `.slmodal:last-child .tpick[data-v="${gOtro}"]`);
+  check('se guarda aparte (semanas.r)', await p.evaluate((g) => window.__salon.limpieza.semanas['2026-10-05'].r.g === g, gOtro));
+  if (jd) {
+    await click(p, '#salonRoot [data-s="lz-pdf"]'); await click(p, '#pdfMeses [data-k="1"]');
+    const [dl] = await Promise.all([p.waitForEvent('download'), p.click('#pdfOk')]);
+    const txt = fs.readFileSync(await dl.path()).toString('latin1');
+    check('PDF: columnas de entre semana y del fin de semana', /entre semana/.test(txt) && /fin de semana/.test(txt), (txt.match(/\((.*?)\) Tj/g) || []).slice(0, 12));
+  }
+  check('sin errores', !p.errs.length, p.errs);
+  await ctx3.close();
+
   await b.close();
   console.log(`\n${ok} OK, ${bad} fallaron`);
   process.exitCode = bad ? 1 : 0;

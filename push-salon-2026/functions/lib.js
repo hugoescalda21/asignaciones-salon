@@ -797,8 +797,8 @@ function limpiezaExterna(L, grupos, settings, congName, hoyIso) {
   const semanas = {};
   Object.keys(c.semanas || {}).forEach((m) => { if (m >= desde && m <= hasta) semanas[m] = c.semanas[m]; });
   const out = {
-    tipos: SC.tiposLimpieza(c).map((t) => { const o = { id: t.id, nombre: t.nombre || '', modo: t.modo, dia: t.dia, hora: t.hora || '', tareas: t.tareas || [], mismoGrupo: !!t.mismoGrupo }; if (t.turno) o.turno = t.turno; return o; }),
-    congs: SC.congsSalon(c).map((x) => ({ id: x.id, nombre: x.nombre || '', color: x.color || '', dias: x.dias || {}, grupos: (x.grupos || []).map((g) => { const o = { id: g.id, nombre: g.nombre || '' }; if (g.encargado) o.encargado = g.encargado; return o; }) })),
+    tipos: SC.tiposLimpieza(c).map((t) => { const o = { id: t.id, nombre: t.nombre || '', modo: t.modo, dia: t.dia, hora: t.hora || '', tareas: t.tareas || [], mismoGrupo: !!t.mismoGrupo }; if (t.turno) o.turno = t.turno; if (t.porReunion) o.porReunion = true; return o; }),
+    congs: SC.congsSalon(c).map((x) => ({ id: x.id, nombre: x.nombre || '', color: x.color || '', dias: x.dias || {}, porReunion: !!x.porReunion, grupos: (x.grupos || []).map((g) => { const o = { id: g.id, nombre: g.nombre || '' }; if (g.encargado) o.encargado = g.encargado; return o; }) })),
     semanas, otra: c.otra || [], otraNombre: c.otraNombre || '', rotacion: c.rotacion || [],
     local: congName || '', grupos: {}, settings: { weekdaySemana: (settings || {}).weekdaySemana, weekdayFinde: (settings || {}).weekdayFinde }
   };
@@ -819,7 +819,8 @@ function grupoLimpiezaValido(L, ext, body) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(m) || SC.mondayOf(m) !== m) return { error: 'Semana no válida.' };
   const g = String((body && body.g) || '');
   if (g && g !== 'nadie' && !(cg.grupos || []).some((x) => x.id === g)) return { error: 'Ese grupo no es de tu congregación.' };
-  return { m, cong: cg.id, g };
+  const parte = cg.porReunion && body && body.parte === 'finde' ? 'finde' : '';
+  return parte ? { m, cong: cg.id, g, parte } : { m, cong: cg.id, g };
 }
 
 module.exports = {

@@ -1043,7 +1043,7 @@ exports.salonExterno = onRequest({ cors: ['https://hugoescalda21.github.io'], re
       const { L } = await leerLimpieza();
       const v = grupoLimpiezaValido(L, ext, body);
       if (v.error) { res.status(403).send({ error: v.error }); return; }
-      await salon.doc('limpieza').update(new admin.firestore.FieldPath('semanas', v.m, 'c', v.cong), v.g ? { g: v.g, por: 'x:' + ext.id } : admin.firestore.FieldValue.delete());
+      await salon.doc('limpieza').update(new admin.firestore.FieldPath('semanas', v.m, v.parte === 'finde' ? 'cr' : 'c', v.cong), v.g ? { g: v.g, por: 'x:' + ext.id } : admin.firestore.FieldValue.delete());
       res.status(200).send({ ok: true });
       return;
     }

@@ -535,6 +535,7 @@
   const lzGrupo = (L, l) => { const q = l.quien; if (!q) return ''; if (q.g === 'nadie') return 'Sin limpieza'; if (q.g === 'otra') return L.otraNombre || 'Otra congregación'; return l.cong === 'local' ? (L.grupos[q.g] || 'Grupo') : C.nombreGrupoCong(L, l.cong, q.g); };
   const lzDias = (l) => l.dias.map(fmtCorto).reduce((t, x, i, a) => t + (i === 0 ? '' : i === a.length - 1 ? ' y ' : ', ') + x, '') + (l.tipo.modo === 'semana' && l.tipo.hora ? ' · ' + l.tipo.hora : '');
   const lzCorto = (t) => t.modo === 'reunion' ? 'Reuniones' : String(t.nombre || 'Semanal').replace(/^limpieza\s+/i, '').replace(/^./, c => c.toUpperCase());
+  const lzEtq = (l) => l.parte && l.dias.length ? 'Reunión ' + fmtCorto(l.dias[0]).split(' ')[0] : lzCorto(l.tipo);
   const MESES_LZ = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
   const lzMesLbl = (ym) => { const [y, m] = ym.split('-').map(Number); return `${MESES_LZ[m - 1].replace(/^./, c => c.toUpperCase())} ${y}`; };
   const lzShift = (ym, n) => { const [y, m] = ym.split('-').map(Number); return C.isoOf(new Date(y, m - 1 + n, 1, 12)).slice(0, 7); };
@@ -558,7 +559,7 @@
       if (ls.length) html += `<div class="sv-teaser" style="cursor:default;border-left-color:${lzColor(L, foco)};"><span class="ic">🧹</span><span class="tx"><b>${gn && gn !== 'Sin limpieza' ? `Esta semana en ${esc(lzNomCong(L, foco))} limpia el ${esc(gn)}` : `Esta semana en ${esc(lzNomCong(L, foco))}: ${gn ? esc(gn) : 'falta elegir el grupo'}`}</b><small>${esc(ls.map(l => (l.tipo.modo === 'reunion' ? 'Después de las reuniones del ' : l.tipo.nombre + ' del ') + lzDias(l)).join(' · '))}</small></span></div>`;
     }
     if (mia) {
-      const falta = sem.filter(m => m >= hoyM && !C.grupoCong(L, m, mia)).length;
+      const falta = sem.filter(m => m >= hoyM && C.partesCong(L, mia).some(pt => !C.grupoCong(L, m, mia, pt))).length;
       if (falta) html += `<div class="sv-teaser" style="cursor:default;border-left-color:#B45309;"><span class="ic">✏️</span><span class="tx"><b>Falta elegir ${falta === 1 ? '1 semana' : falta + ' semanas'} de ${esc(lzNomCong(L, mia))}</b><small>Tocá "Elegir grupo". Los grupos de las otras congregaciones los arma su comité.</small></span></div>`;
     }
     if (!o.sinFiltro) html += `<div class="sv-lzfil">${['todas'].concat(congs.filter(x => x !== 'local')).map(id => `<button type="button" data-lz="fil" data-v="${esc(id)}" class="${fil === id ? 'on' : ''}">${id === 'todas' ? 'Todas' : 'Solo ' + esc(lzNomCong(L, id))}</button>`).join('')}</div>`;
@@ -570,7 +571,7 @@
         const gn = lzGrupo(L, l);
         const edita = mia && l.cong === mia && !l.turno;
         const nom = gn ? `<b>${esc(gn)}</b>` : `<b class="vac">${edita ? 'Elegir grupo ›' : 'Sin cargar'}</b>`;
-        return `<${edita ? 'button type="button" data-lz="pick" data-m="' + m + '"' : 'span'} class="lz-ln${l.turno ? ' lz-sem' : ''}${edita ? ' ed' : ''}"><i class="${l.turno ? 's' : ''}">${esc(lzCorto(l.tipo))}</i><span>${lzDot(L, l.cong)} ${nom}${l.quien && l.quien.g === 'nadie' ? '' : ` <span class="d">· ${esc(lzDias(l))}</span>`}${edita && gn ? ' <span class="d">✏️</span>' : ''}</span></${edita ? 'button' : 'span'}>`;
+        return `<${edita ? 'button type="button" data-lz="pick" data-m="' + m + '" data-p="' + (l.parte || '') + '"' : 'span'} class="lz-ln${l.turno ? ' lz-sem' : ''}${edita ? ' ed' : ''}"><i class="${l.turno ? 's' : ''}">${esc(lzEtq(l))}</i><span>${lzDot(L, l.cong)} ${nom}${l.quien && l.quien.g === 'nadie' ? '' : ` <span class="d">· ${esc(lzDias(l))}</span>`}${edita && gn ? ' <span class="d">✏️</span>' : ''}</span></${edita ? 'button' : 'span'}>`;
       }).join('')}</span></div>`;
     }).join('');
     const ts = C.tiposLimpieza(L).filter(t => (t.tareas || []).length);
@@ -579,23 +580,25 @@
     return html;
   }
   // El comité de afuera elige el grupo de su congregación una semana.
-  function lzPick(m) {
+  function lzPick(m, parte) {
     const L = lzL(); const mia = EXT.res && EXT.res.miCong; if (!L || !mia) return;
     const cg = C.congsSalon(L).find(c => c.id === mia); if (!cg) return;
-    const actual = C.grupoCong(L, m, mia);
+    const pt = cg.porReunion ? (parte || 'semana') : '';
+    const actual = C.grupoCong(L, m, mia, pt);
+    const otro = pt ? C.grupoCong(L, m, mia, pt === 'finde' ? 'semana' : 'finde') : null;
     const ord = C.ordenCong(L, mia, m);
-    const sug = (ord[0] || {}).g;
+    const sug = (ord.find(o => !otro || o.g !== otro.g) || ord[0] || {}).g;
     const gr = (gid) => (cg.grupos || []).find(g => g.id === gid) || {};
     const hace = (ult) => { if (!ult) return 'Todavía no limpió'; const n = Math.round((new Date(m + 'T12:00:00') - new Date(ult + 'T12:00:00')) / 604800000); return n <= 0 ? 'Ya limpia más adelante' : `Limpió hace ${n} ${n === 1 ? 'semana' : 'semanas'}`; };
-    const ls = C.limpiezasSalon(L, m, L.settings).filter(l => l.cong === mia);
-    const sh = sheet(`<h3>${esc(cg.nombre)} · semana del ${fmtSemV(m)}</h3><div class="sub">${esc(ls.map(l => (l.tipo.modo === 'reunion' ? 'Después de las reuniones: ' : l.tipo.nombre + ': ') + lzDias(l)).join(' · '))}. ¿Qué grupo limpia?</div>
-      <div class="sv-lzpick">${ord.map(o => `<button type="button" data-g="${esc(o.g)}" class="${actual && actual.g === o.g ? 'on' : ''}"><b>${o.g === sug && !(actual && actual.g === o.g) ? '✨ ' : ''}${esc(gr(o.g).nombre)}</b><small>${gr(o.g).encargado ? 'Encargado: ' + esc(gr(o.g).encargado) + ' · ' : ''}${hace(o.ult)}</small></button>`).join('')}
+    const ls = C.limpiezasSalon(L, m, L.settings).filter(l => l.cong === mia && (!pt || l.parte === pt || (l.turno && pt === 'finde')));
+    const sh = sheet(`<h3>${esc(cg.nombre)} · ${pt === 'semana' ? 'reunión de entre semana · ' : pt === 'finde' ? 'reunión del fin de semana · ' : ''}semana del ${fmtSemV(m)}</h3><div class="sub">${esc(ls.map(l => (l.tipo.modo === 'reunion' ? 'Después de las reuniones: ' : l.tipo.nombre + ': ') + lzDias(l)).join(' · '))}. ¿Qué grupo limpia?</div>
+      <div class="sv-lzpick">${ord.map(o => `<button type="button" data-g="${esc(o.g)}" class="${actual && actual.g === o.g ? 'on' : ''}"><b>${o.g === sug && !(actual && actual.g === o.g) ? '✨ ' : ''}${esc(gr(o.g).nombre)}</b><small>${gr(o.g).encargado ? 'Encargado: ' + esc(gr(o.g).encargado) + ' · ' : ''}${hace(o.ult)}${otro && otro.g === o.g ? ' · ya limpia la otra reunión' : ''}</small></button>`).join('')}
       <button type="button" data-g="nadie" class="${actual && actual.g === 'nadie' ? 'on' : ''}"><b>Sin limpieza</b><small>Asamblea, semana sin reunión…</small></button></div>
       ${actual ? '<button type="button" class="sv-bb o" data-g="">Dejar sin cargar</button>' : ''}<button type="button" class="sv-bb o" data-svclose>Cancelar</button>`);
     sh.el.addEventListener('click', async (e) => {
       const b = e.target.closest('[data-g]'); if (!b) return;
       sh.el.querySelectorAll('[data-g]').forEach(x => { x.disabled = true; });
-      const r = await extApi('limpieza', { m, g: b.dataset.g });
+      const r = await extApi('limpieza', { m, g: b.dataset.g, parte: pt });
       if (!r.ok) { showToast((r.j && r.j.error) || 'No se pudo guardar. Revisá la conexión.'); sh.el.querySelectorAll('[data-g]').forEach(x => { x.disabled = false; }); return; }
       sh.close(); showToast('Guardado'); extCargar();
     });
@@ -629,7 +632,7 @@
     const k = b.dataset.lz;
     if (k === 'mes') { EXT.lMes = lzShift(EXT.lMes, Number(b.dataset.d)); schedule(); }
     else if (k === 'fil') { EXT.lFil = b.dataset.v; try { localStorage.setItem('lz-fil-' + V.code, EXT.lFil); } catch (err) { /* nada */ } schedule(); }
-    else if (k === 'pick') lzPick(b.dataset.m);
+    else if (k === 'pick') lzPick(b.dataset.m, b.dataset.p || '');
     else if (k === 'pdf') lzPdf();
   }
   /* ---------- Hermanos de otra congregación ---------- */

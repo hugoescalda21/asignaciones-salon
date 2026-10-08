@@ -13,7 +13,7 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-const CACHE_NAME = 'ver-salon-v48';
+const CACHE_NAME = 'ver-salon-v49';
 const ASSETS = [
   './ver.html',
   './territorios-ver.js',

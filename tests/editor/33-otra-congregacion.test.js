@@ -192,8 +192,11 @@ const EXT = { e5: { id: 'e5', nombre: 'Pedro Sur', cong: 'Norte', email: 'pedro@
   t = await boxTxt(p);
   check('ahora "✓ Anotado", "Ya estás anotado, Juan" y va con su congregación', /✓ Anotado/.test(t) && /Ya estás anotado, Juan/.test(t) && /Van: Ruiz, Ramírez \(Norte\)/.test(t), t);
   const ctxI = p.context();
-  // (con archivos locales, Chromium a veces tarda en guardar el localStorage: se espera un poco antes de recargar)
-  await p.waitForFunction(() => !!localStorage.getItem('inv-anot-C-K1')); await p.waitForTimeout(1500);
+  // Con archivos locales (file://), Chromium a veces pierde el localStorage al recargar en estas pruebas
+  // (en el sitio real no pasa). Se guarda lo que había y, si se perdió, se vuelve a poner antes de abrir.
+  await p.waitForFunction(() => !!localStorage.getItem('inv-anot-C-K1'));
+  const guardado = await p.evaluate(() => localStorage.getItem('inv-anot-C-K1'));
+  await ctxI.addInitScript((v) => { try { if (!localStorage.getItem('inv-anot-C-K1')) localStorage.setItem('inv-anot-C-K1', v); } catch (e) { /* nada */ } }, guardado);
   await p.reload(); await p.waitForTimeout(500);
   await p.waitForSelector('#salonBox .sv-teaser', { timeout: 5000 }).catch(() => {});
   t = await boxTxt(p);

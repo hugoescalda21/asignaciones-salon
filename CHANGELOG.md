@@ -6,6 +6,16 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Limpieza: un grupo por reunión — 8 oct 2026 (caché asignaciones-salon-v63 y ver-salon-v49)
+
+- En la limpieza "Después de cada reunión", la opción **"Un grupo por reunión"**: un grupo limpia después de la reunión de entre semana y otro después de la del fin de semana. Los días siguen saliendo de Ajustes.
+- También para cada otra congregación del Salón, por separado (en sus ajustes, con sus propios días).
+- En el mes, cada semana muestra "Reunión jue" y "Reunión dom" (o los días que correspondan) con su grupo. "✨ Sugerir" no repite el mismo grupo en la semana y cuenta las dos reuniones para ver quién hace más que no limpia.
+- Las limpiezas que van "con el mismo grupo" (por ejemplo la semanal) las hace el grupo de la reunión del fin de semana. Cuando le toca a la otra congregación, la hace el suyo.
+- Cada hermano ve y recibe el recordatorio solo del día de su grupo. El PDF tiene una columna por reunión.
+- Hay que publicar las funciones: `firebase deploy --only functions`.
+- Pruebas: 9 más en `34-limpieza-salon`, 3 en las funciones.
+
 ## Limpieza del Salón con las dos congregaciones — 8 oct 2026 (caché asignaciones-salon-v62 y ver-salon-v48)
 
 - **Ajustes de la limpieza › Congregaciones que usan el Salón:** la de acá (grupos de Territorios) y las otras, cargadas a mano con sus días de reunión, su color y sus grupos (nombre, encargado y teléfono). No hace falta que usen la app.
