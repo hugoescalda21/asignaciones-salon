@@ -118,5 +118,33 @@
     doc.setFontSize(7); doc.setTextColor(160, 165, 172);
     doc.text(`${cong ? 'Salón del Reino · ' + cong + ' · ' : ''}Generado con Asignaciones${md && !md.propia ? ' · basada en la ficha ' + md.cod + ' del manual' : ''}`, W / 2, H - 14, { align: 'center' });
   }
-  root.FichaPdf = { dibujar, esGrupoTxt };
+  // Limpieza del Salón con varias congregaciones (salon-core tablaLimpieza): una fila por semana y una
+  // columna por limpieza y congregación, con el punto del color de cada una. Devuelve dónde terminó.
+  function limpieza(doc, tabla, o) {
+    const opts = o || {};
+    const rgb = (hex) => { const h = String(hex || '#64748B').replace('#', ''); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; };
+    const fs = opts.fmtSem || ((m) => `${Number(m.slice(8))}/${Number(m.slice(5, 7))}`);
+    const hoyM = opts.hoyM || '';
+    const head = [['Semana'].concat(tabla.cols.map(c => c.titulo))];
+    const body = tabla.filas.map(f => [fs(f.m)].concat(f.celdas.map(c => c.txt + (c.dias ? '\n' + c.dias : ''))));
+    doc.autoTable({ startY: opts.y || 86, margin: { left: 32, right: 32 }, theme: 'grid', head, body,
+      headStyles: { fillColor: [15, 27, 45], textColor: 255, fontStyle: 'bold', fontSize: 8.5 },
+      styles: { fontSize: 9, cellPadding: { top: 5, bottom: 5, left: 16, right: 5 } },
+      columnStyles: { 0: { cellPadding: 5, fontStyle: 'bold', cellWidth: 46 } },
+      didParseCell: (d) => {
+        if (d.section !== 'body') return;
+        const f = tabla.filas[d.row.index];
+        if (hoyM && f && f.m === hoyM) d.cell.styles.fillColor = [255, 248, 230];
+        if (d.column.index > 0) { const c = f.celdas[d.column.index - 1]; if (c && c.vacio) d.cell.styles.textColor = [180, 83, 9]; }
+      },
+      didDrawCell: (d) => {
+        if (d.section !== 'body' || d.column.index === 0) return;
+        const c = tabla.filas[d.row.index].celdas[d.column.index - 1];
+        if (!c || !c.cong || c.vacio) return;
+        doc.setFillColor(...rgb(opts.color ? opts.color(c.cong) : null));
+        doc.circle(d.cell.x + 8, d.cell.y + 10.5, 3, 'F');
+      } });
+    return doc.lastAutoTable.finalY + 16;
+  }
+  root.FichaPdf = { dibujar, esGrupoTxt, limpieza };
 })(typeof window !== 'undefined' ? window : this);

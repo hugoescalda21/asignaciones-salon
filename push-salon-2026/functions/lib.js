@@ -789,7 +789,41 @@ function datosInvitado(b) {
   return { nombre, cong, tel, comentario };
 }
 
+// La limpieza del Salón para mirar desde afuera (enlace de la limpieza o comité de otra congregación):
+// los tipos, las congregaciones con sus grupos (sin teléfonos) y las semanas cercanas. Sin el enlace.
+function limpiezaExterna(L, grupos, settings, congName, hoyIso) {
+  const c = L || {};
+  const desde = SC.addDays(SC.mondayOf(hoyIso), -35), hasta = SC.addDays(hoyIso, 130);
+  const semanas = {};
+  Object.keys(c.semanas || {}).forEach((m) => { if (m >= desde && m <= hasta) semanas[m] = c.semanas[m]; });
+  const out = {
+    tipos: SC.tiposLimpieza(c).map((t) => { const o = { id: t.id, nombre: t.nombre || '', modo: t.modo, dia: t.dia, hora: t.hora || '', tareas: t.tareas || [], mismoGrupo: !!t.mismoGrupo }; if (t.turno) o.turno = t.turno; return o; }),
+    congs: SC.congsSalon(c).map((x) => ({ id: x.id, nombre: x.nombre || '', color: x.color || '', dias: x.dias || {}, grupos: (x.grupos || []).map((g) => { const o = { id: g.id, nombre: g.nombre || '' }; if (g.encargado) o.encargado = g.encargado; return o; }) })),
+    semanas, otra: c.otra || [], otraNombre: c.otraNombre || '', rotacion: c.rotacion || [],
+    local: congName || '', grupos: {}, settings: { weekdaySemana: (settings || {}).weekdaySemana, weekdayFinde: (settings || {}).weekdayFinde }
+  };
+  if (c.inicio) out.inicio = c.inicio;
+  Object.values(grupos || {}).forEach((g) => { if (g && g.id) out.grupos[g.id] = g.nombre || ''; });
+  return out;
+}
+// La congregación del Salón de ese hermano de afuera (por el nombre de su congregación).
+function congDeExt(L, ext) {
+  if (!ext) return null;
+  return SC.congsSalon(L).find((c) => normTxt(c.nombre) === normTxt(ext.cong)) || null;
+}
+// Lo que puede guardar el comité de otra congregación en la limpieza: el grupo de SU congregación una semana.
+function grupoLimpiezaValido(L, ext, body) {
+  const cg = congDeExt(L, ext);
+  if (!ext || !ext.comite || !cg) return { error: 'Solo el comité de esa congregación puede elegir sus grupos.' };
+  const m = String((body && body.m) || '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(m) || SC.mondayOf(m) !== m) return { error: 'Semana no válida.' };
+  const g = String((body && body.g) || '');
+  if (g && g !== 'nadie' && !(cg.grupos || []).some((x) => x.id === g)) return { error: 'Ese grupo no es de tu congregación.' };
+  return { m, cong: cg.id, g };
+}
+
 module.exports = {
+  limpiezaExterna, congDeExt, grupoLimpiezaValido,
   normTxt, occComite, puedeFichaExt, fichaDeExt, extVoluntario, extBuscar, estadoInvitacion, lugaresInvitacion, occVoluntario, proyeccionExterno, datosInvitado,
   faltantesSemana, resumenSemanal,
   salonAssignments, newSalonAssignments, salonAssignMessage, newPublished, publishedMessage, fichaCambio, fichaMessage, comiteIds, anotadoMessage, SALON_SUBS, ALL_SUBS,

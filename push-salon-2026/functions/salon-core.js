@@ -186,9 +186,120 @@
     if (Array.isArray(d)) return d.slice().sort();
     return diasLimpieza({ modo: tipo.modo, dia: tipo.dia }, monday, settings);
   }
-  // Todas las limpiezas de una semana: [{ tipo, clave, quien, dias }]
+  // Todas las limpiezas de una semana (de esta congregación): [{ tipo, clave, quien, dias }]
+  // Si una limpieza se turna entre las congregaciones del Salón y esa semana le toca a otra,
+  // sale como { g: 'otra', c: id de esa congregación }.
   function limpiezasSemana(cfg, monday, settings) {
-    return tiposLimpieza(cfg).map(tipo => { const clave = claveDe(cfg, tipo.id); return { tipo, clave, quien: quienLimpia(cfg, monday, clave), dias: diasDe(cfg, monday, tipo, settings) }; });
+    return tiposLimpieza(cfg).map(tipo => {
+      const clave = claveDe(cfg, tipo.id);
+      const tc = turnoDe(cfg, tipo, monday);
+      const quien = tc !== 'local' ? { g: 'otra', c: tc, auto: true } : quienLimpia(cfg, monday, clave);
+      return { tipo, clave, quien, dias: diasDe(cfg, monday, tipo, settings) };
+    });
+  }
+
+  /* ---------- Salón compartido: las otras congregaciones con sus grupos ----------
+     cfg.congs: [{ id, nombre, color, dias: { semana: 0-6, finde: 0-6 }, grupos: [{ id, nombre, encargado, tel }] }]
+     cfg.semanas[lunes].c[idCong] = { g, s }: el grupo de esa congregación esa semana (limpia después de SUS reuniones).
+     tipo.turno = { orden: ['local', idCong…], inicio: lunes }: una limpieza de un día por semana que se turnan
+       las congregaciones, semana por semana; la hace el grupo que esa semana tiene la limpieza de reuniones.
+     cfg.semanas[lunes].t[idTipo] = 'local' | idCong: cambio a mano del turno esa semana. */
+  function congsSalon(cfg) { return ((cfg && cfg.congs) || []).filter(c => c && c.id); }
+  function turnoDe(cfg, tipo, monday) {
+    if (!tipo || !tipo.turno || tipo.modo === 'reunion') return 'local';
+    const ids = ['local'].concat(congsSalon(cfg).map(c => c.id));
+    if (ids.length < 2) return 'local';
+    const fijo = ((((cfg && cfg.semanas) || {})[monday] || {}).t || {})[tipo.id];
+    if (fijo && ids.includes(fijo)) return fijo;
+    const orden = (tipo.turno.orden || []).filter(x => ids.includes(x)).concat(ids.filter(x => !(tipo.turno.orden || []).includes(x)));
+    const ini = mondayOf(tipo.turno.inicio || monday);
+    const k = Math.round((Date.parse(monday + 'T12:00:00Z') - Date.parse(ini + 'T12:00:00Z')) / 604800000);
+    return orden[((k % orden.length) + orden.length) % orden.length];
+  }
+  // Días de reunión de otra congregación esa semana (después de esas reuniones limpia su grupo).
+  function diasCong(cong, monday) {
+    const d = (cong && cong.dias) || {};
+    return diasLimpieza({ modo: 'reunion' }, monday, { weekdaySemana: d.semana != null ? d.semana : 2, weekdayFinde: d.finde != null ? d.finde : 6 });
+  }
+  function grupoCong(cfg, monday, idCong) {
+    const x = (((((cfg && cfg.semanas) || {})[monday]) || {}).c || {})[idCong];
+    return x && x.g ? { g: x.g, s: !!x.s } : null;
+  }
+  function nombreGrupoCong(cfg, idCong, gid) {
+    const c = congsSalon(cfg).find(x => x.id === idCong);
+    const g = c && (c.grupos || []).find(x => x.id === gid);
+    return gid === 'nadie' ? 'Sin limpieza' : g ? g.nombre : '';
+  }
+  // Las limpiezas del Salón esa semana, de todas las congregaciones: [{ tipo, cong: 'local' | id, quien, dias, turno }]
+  // · "Después de cada reunión": la de esta congregación y, además, cada otra congregación después de sus reuniones.
+  // · La que se turnan: una sola, de la congregación a la que le toca (con el grupo que esa semana tiene).
+  function limpiezasSalon(cfg, monday, settings) {
+    const out = [];
+    const congs = congsSalon(cfg);
+    limpiezasSemana(cfg, monday, settings).forEach(l => {
+      const turno = !!(l.tipo.turno && l.tipo.modo !== 'reunion' && congs.length);
+      if (l.quien && l.quien.g === 'otra' && l.quien.c) { out.push({ tipo: l.tipo, clave: l.clave, cong: l.quien.c, quien: grupoCong(cfg, monday, l.quien.c), dias: l.dias, turno: true }); return; }
+      out.push(Object.assign({}, l, { cong: 'local', turno }));
+      if (l.tipo.modo === 'reunion' && !out.some(x => x.cong !== 'local' && x.tipo.modo === 'reunion')) {
+        congs.forEach(c => out.push({ tipo: l.tipo, clave: 'c', cong: c.id, quien: grupoCong(cfg, monday, c.id), dias: diasCong(c, monday), turno: false }));
+      }
+    });
+    return out;
+  }
+  // La última semana (antes de "antesDe") en que limpió ese grupo de otra congregación.
+  function ultimaVezCong(cfg, idCong, gid, antesDe) {
+    let best = null;
+    Object.keys((cfg && cfg.semanas) || {}).forEach(m => { if (m >= antesDe) return; const w = grupoCong(cfg, m, idCong); if (w && w.g === gid && (!best || m > best)) best = m; });
+    return best;
+  }
+  function ordenCong(cfg, idCong, monday) {
+    const c = congsSalon(cfg).find(x => x.id === idCong);
+    return ((c && c.grupos) || []).filter(g => g && g.id).map((g, i) => ({ g: g.id, i, ult: ultimaVezCong(cfg, idCong, g.id, monday) }))
+      .sort((a, b) => (a.ult || '') === (b.ult || '') ? a.i - b.i : (a.ult || '').localeCompare(b.ult || ''));
+  }
+  // Completa los grupos de las otras congregaciones en las semanas vacías (el que hace más que no limpia).
+  function sugerirCongs(cfg, desde, hasta, soloCong) {
+    const c = JSON.parse(JSON.stringify(cfg || {}));
+    c.semanas = c.semanas || {};
+    let n = 0;
+    congsSalon(c).filter(cg => !soloCong || cg.id === soloCong).forEach(cg => {
+      for (let m = mondayOf(desde); m <= hasta; m = addDays(m, 7)) {
+        if (grupoCong(c, m, cg.id)) continue;
+        const ord = ordenCong(c, cg.id, m);
+        if (!ord.length) continue;
+        const w = c.semanas[m] = Object.assign({}, c.semanas[m] || {});
+        w.c = Object.assign({}, w.c || {}); w.c[cg.id] = { g: ord[0].g, s: true };
+        n++;
+      }
+    });
+    return { semanas: c.semanas, n };
+  }
+  // Tabla del mes para el PDF y la vista: columnas (una por limpieza y congregación; la que se turnan, una sola)
+  // y una fila por semana. nombres: { local: 'San Agustín', grupo: (gid) => nombre del grupo de esta congregación }.
+  function tablaLimpieza(cfg, semanas, settings, nombres) {
+    const congs = congsSalon(cfg);
+    const nomCong = (id) => id === 'local' ? (nombres.local || 'Esta congregación') : ((congs.find(c => c.id === id) || {}).nombre || 'Otra congregación');
+    const DIAS3 = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+    const corto = (f) => { const d = new Date(f + 'T12:00:00Z'); return `${DIAS3[d.getUTCDay()]} ${d.getUTCDate()}`; };
+    const lista = (a) => a.map(corto).reduce((t, x, i, arr) => t + (i === 0 ? '' : i === arr.length - 1 ? ' y ' : ', ') + x, '');
+    const cols = [];
+    const colDe = (l) => l.turno ? l.tipo.id + '|T' : l.tipo.id + '|' + l.cong;
+    semanas.forEach(m => limpiezasSalon(cfg, m, settings).forEach(l => {
+      const k = colDe(l);
+      if (!cols.some(c => c.k === k)) cols.push({ k, tipo: l.tipo, cong: l.turno ? null : l.cong, turno: l.turno, titulo: l.turno ? `${l.tipo.nombre}${l.tipo.hora ? ' (' + l.tipo.hora + ')' : ''} · se turnan` : `${l.tipo.modo === 'reunion' ? 'Después de las reuniones' : l.tipo.nombre} · ${nomCong(l.cong)}` });
+    }));
+    const filas = semanas.map(m => {
+      const ls = limpiezasSalon(cfg, m, settings);
+      return { m, celdas: cols.map(c => {
+        const l = ls.find(x => colDe(x) === c.k);
+        if (!l) return { txt: '—', cong: null };
+        const q = l.quien;
+        const gn = !q ? '' : q.g === 'nadie' ? 'Sin limpieza' : q.g === 'otra' ? nomCong('otra') : l.cong === 'local' ? (nombres.grupo ? nombres.grupo(q.g) : q.g) : nombreGrupoCong(cfg, l.cong, q.g);
+        const quien = (l.turno ? nomCong(l.cong) + (gn ? ' · ' + gn : '') : gn) || 'Sin cargar';
+        return { txt: quien, dias: q && q.g === 'nadie' ? '' : lista(l.dias) + (l.tipo.modo === 'semana' && l.tipo.hora ? ' · ' + l.tipo.hora : ''), cong: l.cong, vacio: !q };
+      }) };
+    });
+    return { cols, filas, nomCong };
   }
   // Grupos ordenados para sugerir: el que hace más tiempo que no limpia (con esa clave); a igualdad, el orden de la lista.
   function ultimaVez(cfg, gid, clave, antesDe) {
@@ -255,7 +366,8 @@
   }
 
   const api = { TIPOS, REPITE, ESTADOS, TAREAS_REU, isoOf, addDays, addMonths, mondayOf, fechasDe, pasoDe, repiteTxt, UNIDADES, publicado, trabajosEntre, anotadoId, voluntarios, cupoInfo, semanaDelMes, esOtra, turnoLimpieza, diasLimpieza,
-    tiposLimpieza, claveDe, cargado, quienLimpia, diasDe, limpiezasSemana, ultimaVez, ordenSugerido, sugerir, asignacionesSalon };
+    tiposLimpieza, claveDe, cargado, quienLimpia, diasDe, limpiezasSemana, ultimaVez, ordenSugerido, sugerir, asignacionesSalon,
+    congsSalon, turnoDe, diasCong, grupoCong, nombreGrupoCong, limpiezasSalon, ultimaVezCong, ordenCong, sugerirCongs, tablaLimpieza };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.SalonCore = api;
 })(typeof window !== 'undefined' ? window : this);

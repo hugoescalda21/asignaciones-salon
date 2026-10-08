@@ -107,6 +107,22 @@
   .sv-fnotas { font-size: 11px; color: var(--ink-soft); line-height: 1.45; margin-top: 12px; border-top: 1px solid var(--line); padding-top: 8px; }
   .sv-externo .help-btn:not(.pal-btn), .sv-externo #offlineNote { display: none !important; }
   .sv-inv #bottomTabs { display: none !important; }
+  .lz-c { display: inline-flex; align-items: center; gap: 5px; font-weight: 800; }
+  .lz-c::before { content: ''; width: 9px; height: 9px; border-radius: 50%; background: var(--cc); flex-shrink: 0; }
+  .lz-card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 9px 12px; margin-bottom: 8px; display: flex; gap: 12px; }
+  .lz-card.hoy { border: 1.5px solid var(--accent-gold, #A9822F); }
+  .lz-card .dd { width: 44px; flex-shrink: 0; text-align: center; font-size: 10px; font-weight: 800; color: var(--ink-soft); letter-spacing: .06em; padding-top: 3px; }
+  .lz-card .dd b { display: block; font-size: 16px; color: var(--ink); letter-spacing: 0; }
+  .lz-card .tx { flex: 1; min-width: 0; }
+  .lz-ln { display: grid; grid-template-columns: 64px 1fr; gap: 8px; align-items: baseline; font-size: 12.5px; line-height: 1.45; padding: 3px 0; width: 100%; border: none; background: none; font-family: inherit; color: var(--ink); text-align: left; }
+  button.lz-ln { cursor: pointer; } .lz-ln.ed { background: color-mix(in srgb, #B45309 6%, transparent); border-radius: 8px; padding: 3px 4px; }
+  .lz-ln i { font-style: normal; font-size: 10px; font-weight: 800; border-radius: 6px; padding: 1px 4px; background: rgba(15,23,42,.07); color: var(--ink-soft); text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lz-ln i.s { background: rgba(124,58,237,.12); color: #6D28D9; } html.dk .lz-ln i.s { color: #C4B5FD; }
+  .lz-ln .d { color: var(--ink-soft); } .lz-ln b.vac { color: #B45309; }
+  .lz-ln.lz-sem { border-top: 1px dashed var(--line); margin-top: 3px; padding-top: 5px; }
+  .sv-lzfil { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 10px; } .sv-lzfil button { font: inherit; font-size: 13px; font-weight: 800; border-radius: 16px; padding: 6px 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; } .sv-lzfil button.on { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+  .sv-lznav { display: flex; justify-content: space-between; align-items: center; margin: 4px 0 8px; } .sv-lznav button { border: 1px solid var(--line); background: var(--surface); color: var(--ink); width: 36px; height: 34px; border-radius: 10px; font-size: 18px; cursor: pointer; } .sv-lznav b { font-size: 15px; }
+  .sv-lzpick { display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px; } .sv-lzpick button { text-align: left; font: inherit; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 12px; padding: 10px 12px; cursor: pointer; } .sv-lzpick button.on { border: 2px solid var(--accent-blue, #2563EB); } .sv-lzpick b { display: block; font-size: 14.5px; } .sv-lzpick small { color: var(--ink-soft); font-size: 12px; }
   .sv-fld { display: block; font-size: 11.5px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-soft); margin: 0 2px 4px; }
   .sv-err { color: #B91C1C; font-size: 13px; font-weight: 700; margin: -4px 2px 10px; }
   .sv-note { font-size: 12px; color: var(--ink-soft); text-align: center; margin-top: 10px; line-height: 1.45; }
@@ -245,7 +261,7 @@
     renderTeaser(pub, ls, occ);
     if (!ls.length && !occ.length && !tieneSalon) { box.innerHTML = ''; return; }
     const otraN = (V.limpieza.otraNombre || '').trim() || 'otra congregación';
-    const nombreDe = (q) => q.g === 'otra' ? otraN : ((V.grupos[q.g] || {}).nombre || 'un grupo');
+    const nombreDe = (q) => q.g === 'otra' ? (q.c ? ((C.congsSalon(V.limpieza).find(c => c.id === q.c) || {}).nombre || otraN) : otraN) : ((V.grupos[q.g] || {}).nombre || 'un grupo');
     const cuandoL = (l) => esc(l.dias.map(fmtCorto).reduce((t, x, i, a) => t + (i === 0 ? '' : i === a.length - 1 ? ' y ' : ', ') + x, '')) + (l.tipo.modo === 'semana' ? (l.tipo.hora ? ' · ' + esc(l.tipo.hora) : '') : ', después de la reunión');
     const miG = pub ? grupoDe(pub.id) : null;
     const mias = ls.filter(l => miG && l.quien.g === miG);
@@ -509,12 +525,119 @@
   }
 
 
+  /* ---------- Limpieza del Salón para las otras congregaciones (enlace "lz" o comité de afuera) ----------
+     Llega por la función salonExterno (j.limpieza): las limpiezas, las congregaciones con sus grupos y las semanas. */
+  const COLOR_LOCAL_V = '#0E7490';
+  const lzL = () => (EXT.res && EXT.res.limpieza) || null;
+  const lzNomCong = (L, id) => id === 'local' ? (L.local || 'Esta congregación') : ((C.congsSalon(L).find(c => c.id === id) || {}).nombre || 'Otra congregación');
+  const lzColor = (L, id) => id === 'local' ? COLOR_LOCAL_V : ((C.congsSalon(L).find(c => c.id === id) || {}).color || '#B45309');
+  const lzDot = (L, id) => `<span class="lz-c" style="--cc:${lzColor(L, id)}">${esc(lzNomCong(L, id))}</span>`;
+  const lzGrupo = (L, l) => { const q = l.quien; if (!q) return ''; if (q.g === 'nadie') return 'Sin limpieza'; if (q.g === 'otra') return L.otraNombre || 'Otra congregación'; return l.cong === 'local' ? (L.grupos[q.g] || 'Grupo') : C.nombreGrupoCong(L, l.cong, q.g); };
+  const lzDias = (l) => l.dias.map(fmtCorto).reduce((t, x, i, a) => t + (i === 0 ? '' : i === a.length - 1 ? ' y ' : ', ') + x, '') + (l.tipo.modo === 'semana' && l.tipo.hora ? ' · ' + l.tipo.hora : '');
+  const lzCorto = (t) => t.modo === 'reunion' ? 'Reuniones' : String(t.nombre || 'Semanal').replace(/^limpieza\s+/i, '').replace(/^./, c => c.toUpperCase());
+  const MESES_LZ = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  const lzMesLbl = (ym) => { const [y, m] = ym.split('-').map(Number); return `${MESES_LZ[m - 1].replace(/^./, c => c.toUpperCase())} ${y}`; };
+  const lzShift = (ym, n) => { const [y, m] = ym.split('-').map(Number); return C.isoOf(new Date(y, m - 1 + n, 1, 12)).slice(0, 7); };
+  function lzSemanas(ym) { const out = []; for (let m = C.mondayOf(ym + '-01'); m <= ym + '-31'; m = C.addDays(m, 7)) if (C.semanaDelMes(m).mes === ym) out.push(m); return out; }
+  const fmtSemV = (m) => `${Number(m.slice(8))}/${Number(m.slice(5, 7))}`;
+  // El bloque de la limpieza: "esta semana", el mes con sus semanas (filtrable) y las tareas.
+  function lzHTML(L, opts) {
+    const o = opts || {};
+    const h = hoy(), hoyM = C.mondayOf(h);
+    if (!EXT.lMes) EXT.lMes = C.semanaDelMes(hoyM).mes;
+    const fil = EXT.lFil || 'todas';
+    const congs = ['local'].concat(C.congsSalon(L).map(c => c.id));
+    const sem = lzSemanas(EXT.lMes);
+    const mia = o.miCong;
+    let html = '';
+    // Esta semana (para la congregación del filtro o la del comité).
+    const foco = mia || (fil !== 'todas' ? fil : null);
+    if (foco) {
+      const ls = C.limpiezasSalon(L, hoyM, L.settings).filter(l => l.cong === foco);
+      const gn = ls.map(l => lzGrupo(L, l)).filter(Boolean)[0];
+      if (ls.length) html += `<div class="sv-teaser" style="cursor:default;border-left-color:${lzColor(L, foco)};"><span class="ic">🧹</span><span class="tx"><b>${gn && gn !== 'Sin limpieza' ? `Esta semana en ${esc(lzNomCong(L, foco))} limpia el ${esc(gn)}` : `Esta semana en ${esc(lzNomCong(L, foco))}: ${gn ? esc(gn) : 'falta elegir el grupo'}`}</b><small>${esc(ls.map(l => (l.tipo.modo === 'reunion' ? 'Después de las reuniones del ' : l.tipo.nombre + ' del ') + lzDias(l)).join(' · '))}</small></span></div>`;
+    }
+    if (mia) {
+      const falta = sem.filter(m => m >= hoyM && !C.grupoCong(L, m, mia)).length;
+      if (falta) html += `<div class="sv-teaser" style="cursor:default;border-left-color:#B45309;"><span class="ic">✏️</span><span class="tx"><b>Falta elegir ${falta === 1 ? '1 semana' : falta + ' semanas'} de ${esc(lzNomCong(L, mia))}</b><small>Tocá "Elegir grupo". Los grupos de las otras congregaciones los arma su comité.</small></span></div>`;
+    }
+    if (!o.sinFiltro) html += `<div class="sv-lzfil">${['todas'].concat(congs.filter(x => x !== 'local')).map(id => `<button type="button" data-lz="fil" data-v="${esc(id)}" class="${fil === id ? 'on' : ''}">${id === 'todas' ? 'Todas' : 'Solo ' + esc(lzNomCong(L, id))}</button>`).join('')}</div>`;
+    html += `<div class="sv-lznav"><button type="button" data-lz="mes" data-d="-1" aria-label="Mes anterior">‹</button><b>${esc(lzMesLbl(EXT.lMes))}</b><button type="button" data-lz="mes" data-d="1" aria-label="Mes siguiente">›</button></div>`;
+    html += sem.map(m => {
+      const ls = C.limpiezasSalon(L, m, L.settings).filter(l => fil === 'todas' || l.cong === fil);
+      if (!ls.length) return '';
+      return `<div class="lz-card${m === hoyM ? ' hoy' : ''}"><span class="dd">${m === hoyM ? 'ESTA' : 'SEM'}<b>${fmtSemV(m)}</b></span><span class="tx">${ls.map(l => {
+        const gn = lzGrupo(L, l);
+        const edita = mia && l.cong === mia && !l.turno;
+        const nom = gn ? `<b>${esc(gn)}</b>` : `<b class="vac">${edita ? 'Elegir grupo ›' : 'Sin cargar'}</b>`;
+        return `<${edita ? 'button type="button" data-lz="pick" data-m="' + m + '"' : 'span'} class="lz-ln${l.turno ? ' lz-sem' : ''}${edita ? ' ed' : ''}"><i class="${l.turno ? 's' : ''}">${esc(lzCorto(l.tipo))}</i><span>${lzDot(L, l.cong)} ${nom}${l.quien && l.quien.g === 'nadie' ? '' : ` <span class="d">· ${esc(lzDias(l))}</span>`}${edita && gn ? ' <span class="d">✏️</span>' : ''}</span></${edita ? 'button' : 'span'}>`;
+      }).join('')}</span></div>`;
+    }).join('');
+    const ts = C.tiposLimpieza(L).filter(t => (t.tareas || []).length);
+    if (ts.length) html += `<div class="sv-box" style="background:var(--surface);">${ts.map(t => `<div><span>${t.modo === 'reunion' ? '🧹' : '🧽'}</span>${esc(t.nombre)}: ${esc(t.tareas.join(', '))}.</div>`).join('')}</div>`;
+    html += '<button type="button" class="sv-bb o" data-lz="pdf">📄 Descargar el PDF del mes</button>';
+    return html;
+  }
+  // El comité de afuera elige el grupo de su congregación una semana.
+  function lzPick(m) {
+    const L = lzL(); const mia = EXT.res && EXT.res.miCong; if (!L || !mia) return;
+    const cg = C.congsSalon(L).find(c => c.id === mia); if (!cg) return;
+    const actual = C.grupoCong(L, m, mia);
+    const ord = C.ordenCong(L, mia, m);
+    const sug = (ord[0] || {}).g;
+    const gr = (gid) => (cg.grupos || []).find(g => g.id === gid) || {};
+    const hace = (ult) => { if (!ult) return 'Todavía no limpió'; const n = Math.round((new Date(m + 'T12:00:00') - new Date(ult + 'T12:00:00')) / 604800000); return n <= 0 ? 'Ya limpia más adelante' : `Limpió hace ${n} ${n === 1 ? 'semana' : 'semanas'}`; };
+    const ls = C.limpiezasSalon(L, m, L.settings).filter(l => l.cong === mia);
+    const sh = sheet(`<h3>${esc(cg.nombre)} · semana del ${fmtSemV(m)}</h3><div class="sub">${esc(ls.map(l => (l.tipo.modo === 'reunion' ? 'Después de las reuniones: ' : l.tipo.nombre + ': ') + lzDias(l)).join(' · '))}. ¿Qué grupo limpia?</div>
+      <div class="sv-lzpick">${ord.map(o => `<button type="button" data-g="${esc(o.g)}" class="${actual && actual.g === o.g ? 'on' : ''}"><b>${o.g === sug && !(actual && actual.g === o.g) ? '✨ ' : ''}${esc(gr(o.g).nombre)}</b><small>${gr(o.g).encargado ? 'Encargado: ' + esc(gr(o.g).encargado) + ' · ' : ''}${hace(o.ult)}</small></button>`).join('')}
+      <button type="button" data-g="nadie" class="${actual && actual.g === 'nadie' ? 'on' : ''}"><b>Sin limpieza</b><small>Asamblea, semana sin reunión…</small></button></div>
+      ${actual ? '<button type="button" class="sv-bb o" data-g="">Dejar sin cargar</button>' : ''}<button type="button" class="sv-bb o" data-svclose>Cancelar</button>`);
+    sh.el.addEventListener('click', async (e) => {
+      const b = e.target.closest('[data-g]'); if (!b) return;
+      sh.el.querySelectorAll('[data-g]').forEach(x => { x.disabled = true; });
+      const r = await extApi('limpieza', { m, g: b.dataset.g });
+      if (!r.ok) { showToast((r.j && r.j.error) || 'No se pudo guardar. Revisá la conexión.'); sh.el.querySelectorAll('[data-g]').forEach(x => { x.disabled = false; }); return; }
+      sh.close(); showToast('Guardado'); extCargar();
+    });
+  }
+  async function lzPdf() {
+    const L = lzL(); if (!L) return;
+    try {
+      if (!window.jspdf) await cargarScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+      if (!window.jspdf.jsPDF.API.autoTable) await cargarScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js');
+    } catch (e) { showToast('No se pudo preparar el PDF (revisá la conexión).'); return; }
+    if (!window.FichaPdf || !window.FichaPdf.limpieza) return;
+    const doc = new window.jspdf.jsPDF({ unit: 'pt', format: 'a4' });
+    const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight();
+    const nombres = [L.local].concat(C.congsSalon(L).map(c => c.nombre)).filter(Boolean);
+    doc.setFillColor(15, 27, 45); doc.rect(0, 0, W, 66, 'F');
+    doc.setTextColor(147, 197, 253); doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
+    doc.text(`SALÓN DEL REINO — ${nombres.join(' Y ').toUpperCase()}`, 32, 24);
+    doc.setTextColor(255, 255, 255); doc.setFontSize(17); doc.text('Limpieza del Salón', 32, 46);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(203, 213, 225); doc.text(lzMesLbl(EXT.lMes), 32, 60);
+    const tabla = C.tablaLimpieza(L, lzSemanas(EXT.lMes), L.settings, { local: L.local, grupo: (g) => L.grupos[g] || 'Grupo' });
+    let y = window.FichaPdf.limpieza(doc, tabla, { y: 86, color: (id) => lzColor(L, id), fmtSem: fmtSemV, hoyM: C.mondayOf(hoy()) });
+    doc.setFontSize(9);
+    C.tiposLimpieza(L).forEach(t => { const lines = doc.splitTextToSize(`${t.nombre}: ${(t.tareas || []).join(' · ') || '—'}`, W - 64); if (y + lines.length * 12 > H - 30) { doc.addPage(); y = 40; } doc.setFont('helvetica', 'bold'); doc.setTextColor(15, 27, 45); doc.text(lines, 32, y); y += lines.length * 12 + 4; });
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(140); doc.text('Comité de mantenimiento · Generado con Asignaciones', 32, H - 16);
+    const nombre = `Limpieza del Salon - ${lzMesLbl(EXT.lMes).normalize('NFD').replace(/[̀-ͯ]/g, '')}.pdf`;
+    try { const file = new File([doc.output('blob')], nombre, { type: 'application/pdf' }); if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: nombre }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+    doc.save(nombre);
+  }
+  function onLzClick(e) {
+    const b = e.target.closest('[data-lz]'); if (!b) return;
+    const k = b.dataset.lz;
+    if (k === 'mes') { EXT.lMes = lzShift(EXT.lMes, Number(b.dataset.d)); schedule(); }
+    else if (k === 'fil') { EXT.lFil = b.dataset.v; try { localStorage.setItem('lz-fil-' + V.code, EXT.lFil); } catch (err) { /* nada */ } schedule(); }
+    else if (k === 'pick') lzPick(b.dataset.m);
+    else if (k === 'pdf') lzPdf();
+  }
   /* ---------- Hermanos de otra congregación ---------- */
   async function extApi(action, payload) {
     const headers = { 'Content-Type': 'application/json' };
     try {
       if (EXT.modo === 'vol') headers.Authorization = 'Bearer ' + (await currentUser.getIdToken());
-      const r = await fetch(EXT_URL, { method: 'POST', headers, body: JSON.stringify(Object.assign({ code: V.code, action }, EXT.k ? { k: EXT.k } : {}, payload || {})) });
+      const r = await fetch(EXT_URL, { method: 'POST', headers, body: JSON.stringify(Object.assign({ code: V.code, action }, EXT.k ? { k: EXT.k } : {}, EXT.lz ? { lz: EXT.lz } : {}, payload || {})) });
       let j = {}; try { j = await r.json(); } catch (e) { /* sin cuerpo */ }
       return { ok: r.ok, status: r.status, j };
     } catch (e) { return { ok: false, status: 0, j: {} }; }
@@ -542,9 +665,10 @@
     if (typeof hideInitialLoading === 'function') hideInitialLoading();
     ['gateView', 'authGateView'].forEach(id => { const e = $(id); if (e) e.classList.add('hidden'); });
     $('mainView').classList.remove('hidden');
-    document.body.classList.add('sv-externo', EXT.modo === 'inv' ? 'sv-inv' : 'sv-vol');
+    document.body.classList.add('sv-externo', EXT.modo === 'vol' ? 'sv-vol' : 'sv-inv');
     const ct = $('congTitle'); if (ct) ct.textContent = (EXT.res && EXT.res.cong) || 'Salón del Reino';
-    const tag = document.querySelector('.readonly-tag'); if (tag) tag.textContent = EXT.modo === 'inv' ? 'Invitación' : (EXT.yo && EXT.yo.comite ? 'Comité' : 'Voluntario') + (EXT.yo && EXT.yo.cong ? ' · Cong. ' + EXT.yo.cong : '');
+    if (EXT.modo === 'lz' && ct && EXT.res && EXT.res.limpieza) ct.textContent = [EXT.res.limpieza.local].concat(C.congsSalon(EXT.res.limpieza).map(c => c.nombre)).filter(Boolean).join(' y ');
+    const tag = document.querySelector('.readonly-tag'); if (tag) tag.textContent = EXT.modo === 'lz' ? 'Limpieza del Salón' : EXT.modo === 'inv' ? 'Invitación' : (EXT.yo && EXT.yo.comite ? 'Comité' : 'Voluntario') + (EXT.yo && EXT.yo.cong ? ' · Cong. ' + EXT.yo.cong : '');
     document.querySelectorAll('.bt-btn').forEach(b => b.classList.toggle('hidden', b.dataset.tab !== 'salon'));
     if (typeof showTab === 'function') showTab('salon');
     // El voluntario recibe los avisos del Salón (trabajos nuevos y recordatorios): el cartel de notificaciones va arriba.
@@ -558,6 +682,15 @@
     const pub = myPub();
     const teaser = (ic, col, tit, txt) => `<div class="sv-teaser" style="cursor:default;border-left-color:${col};"><span class="ic">${ic}</span><span class="tx"><b>${tit}</b><small>${txt}</small></span></div>`;
     let html = '';
+    if (EXT.modo === 'lz') {
+      const L = lzL();
+      if (j.estado !== 'ok' || !L) {
+        html = '<h2 class="sec-title" style="margin-top:6px;">Limpieza del Salón</h2>' + (j.estado === 'error' ? teaser('📶', '#B45309', 'No se pudo abrir', 'Revisá la conexión y volvé a abrir el enlace.') : teaser('⏰', '#B45309', 'Este enlace ya no está activo', 'Pedile el enlace nuevo al comité de mantenimiento.'));
+        box.innerHTML = html; return;
+      }
+      box.innerHTML = '<h2 class="sec-title" style="margin-top:6px;">Limpieza del Salón</h2>' + lzHTML(L, {}) + '<p class="sv-empty" style="margin-top:10px">🔒 Este enlace muestra solo la limpieza del Salón y se actualiza solo.</p>';
+      return;
+    }
     if (EXT.modo === 'inv') {
       if (j.estado !== 'ok') {
         html = '<h2 class="sec-title" style="margin-top:6px;">Invitación</h2>' + (j.estado === 'error'
@@ -587,8 +720,9 @@
       const hecho = (o) => o.estado === 'hecho' || terminado(o.t, o.fecha);
       const atr = occ.filter(o => o.fecha < h && !hecho(o)), prox = occ.filter(o => o.fecha >= h && !hecho(o)), hechos = occ.filter(hecho).reverse();
       html += teaser('🛠', '#0E7490', `Hola${nom ? ', ' + esc(nom) : ''}`, 'Sos del comité de mantenimiento. Acá ves todos los trabajos (también los que ve solo el comité), completás las fichas y te llegan los avisos del comité.');
+      if (lzL()) html += `<h2 class="sec-title">Limpieza del Salón</h2>${lzHTML(lzL(), { miCong: j.miCong, sinFiltro: true })}`;
       if (atr.length) html += '<h2 class="sec-title">⚠ Atrasados</h2>' + atr.map(o => cardHTML(o, pub)).join('');
-      html += '<h2 class="sec-title">Próximos trabajos</h2>' + (prox.length ? prox.map(o => cardHTML(o, pub)).join('') : '<p class="sv-empty">No hay trabajos programados en los próximos tres meses.</p>');
+      html += `<h2 class="sec-title">${lzL() ? 'Trabajos de mantenimiento' : 'Próximos trabajos'}</h2>` + (prox.length ? prox.map(o => cardHTML(o, pub)).join('') : '<p class="sv-empty">No hay trabajos programados en los próximos tres meses.</p>');
       if (hechos.length) html += '<h2 class="sec-title">✓ Hechos (últimas dos semanas)</h2>' + hechos.map(o => cardHTML(o, pub)).join('');
       box.innerHTML = html;
       return;
@@ -645,12 +779,15 @@
     // Entra como hermano de otra congregación. Devuelve false si no corresponde (voluntario sin acceso).
     async externo(cfg) {
       EXT.modo = cfg.modo; EXT.k = cfg.k ? String(cfg.k).replace(/[^A-Za-z0-9]/g, '') : null; V.code = cfg.code;
+      EXT.lz = cfg.lz ? String(cfg.lz).replace(/[^A-Za-z0-9]/g, '') : null;
+      try { EXT.lFil = localStorage.getItem('lz-fil-' + cfg.code) || 'todas'; } catch (e) { EXT.lFil = 'todas'; }
       const g = EXT.modo === 'inv' ? invGuardado() : null;
       const r = await extApi('ver', g ? { aid: g.aid } : {});
       if (EXT.modo === 'vol' && !r.ok) { EXT.modo = null; return false; }
       stop(); EXT.on = true;
       if (r.ok) aplicarExt(r.j); else EXT.res = { estado: 'error' };
       extUI(); schedule();
+      const bx = ensureBox(); if (bx && !bx.__lz) { bx.__lz = true; bx.addEventListener('click', onLzClick); }
       // Se actualiza solo (cada minuto con la página a la vista, y al volver a ella).
       EXT.timer = setInterval(() => { if (document.visibilityState === 'visible') extCargar(); }, 60000);
       document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') extCargar(); });

@@ -2677,9 +2677,11 @@
 
   (async () => {
     // Invitación a un trabajo del Salón para hermanos de otra congregación: sin cuenta ni inicio de sesión.
+    // También el enlace de la limpieza del Salón (lz): para las otras congregaciones, solo para mirar.
     const invK = new URLSearchParams(location.search).get('inv');
-    if (invK && getCode()) {
-      const go = () => { if (window.salonVer && window.salonVer.externo) window.salonVer.externo({ modo: 'inv', code: getCode(), k: invK }); };
+    const lzK = new URLSearchParams(location.search).get('lz');
+    if ((invK || lzK) && getCode()) {
+      const go = () => { if (window.salonVer && window.salonVer.externo) window.salonVer.externo(invK ? { modo: 'inv', code: getCode(), k: invK } : { modo: 'lz', code: getCode(), lz: lzK }); };
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
       return;
     }

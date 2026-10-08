@@ -17,7 +17,7 @@ const { roleLabel, collectNewlyAssignedIds, avisoPreview, selectNewAvisos, notif
   BACKUP_SUBS, ALL_SUBS, backupName, parseBackupName, buildBackup, backupsToPrune, restorePlan, isRestoreWrite,
   salonAssignments, newSalonAssignments, salonAssignMessage, anotadoMessage, resumenSemanal, newPublished, publishedMessage,
   fichaCambio, fichaMessage, comiteIds,
-  occComite, puedeFichaExt, fichaDeExt, extVoluntario, extBuscar, estadoInvitacion, lugaresInvitacion, occVoluntario, proyeccionExterno, datosInvitado } = require('./lib');
+  limpiezaExterna, congDeExt, grupoLimpiezaValido, occComite, puedeFichaExt, fichaDeExt, extVoluntario, extBuscar, estadoInvitacion, lugaresInvitacion, occVoluntario, proyeccionExterno, datosInvitado } = require('./lib');
 const crypto = require('crypto');
 const SalonCore = require('./salon-core');
 
@@ -917,6 +917,7 @@ exports.salonExterno = onRequest({ cors: ['https://hugoescalda21.github.io'], re
     const body = req.body || {};
     const code = String(body.code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
     const k = String(body.k || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 40);
+    const lz = String(body.lz || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 40);
     if (!code) { res.status(400).send({ error: 'Datos no válidos' }); return; }
     const ref = db.collection('congregations').doc(code);
     const salon = ref.collection('salon');
@@ -928,6 +929,17 @@ exports.salonExterno = onRequest({ cors: ['https://hugoescalda21.github.io'], re
     const externos = (xs.exists && xs.data().lista) || {};
     const { dateIso: hoyIso } = arParts(new Date());
     let modo, ext = null, inv = null, email = '';
+    const leerLimpieza = async () => {
+      const [ls, gs] = await Promise.all([salon.doc('limpieza').get(), ref.collection('terr').doc('grupos').get()]);
+      return { L: (ls.exists && ls.data()) || {}, grupos: (gs.exists && gs.data().lista) || {} };
+    };
+    // Enlace de la limpieza del Salón (sin cuenta, solo para mirar).
+    if (lz) {
+      const { L, grupos } = await leerLimpieza();
+      if (!L.enlace || L.enlace !== lz) { res.status(200).send({ modo: 'lz', cong: congName, estado: 'nohay' }); return; }
+      res.status(200).send({ modo: 'lz', cong: congName, estado: 'ok', limpieza: limpiezaExterna(L, grupos, cong.settings, congName, arParts(new Date()).dateIso) });
+      return;
+    }
     if (k) {
       modo = 'inv';
       const x = ((iv && iv.exists && iv.data().lista) || {})[k];
@@ -963,10 +975,13 @@ exports.salonExterno = onRequest({ cors: ['https://hugoescalda21.github.io'], re
       const fichas = {}; fi.forEach((d) => { fichas[d.id] = d.data(); });
       // Del comité: todo el cronograma. Voluntario: lo publicado que pide ayuda y lo suyo.
       const occ = ext.comite ? occComite(trabajos, hoyIso) : occVoluntario(trabajos, anotados, ext.id, hoyIso);
+      // El comité de otra congregación también ve la limpieza del Salón (y elige los grupos de su congregación).
+      let limpieza = null, miCong = null;
+      if (ext.comite) { const { L, grupos } = await leerLimpieza(); if (L.congs && L.congs.length) { limpieza = limpiezaExterna(L, grupos, cong.settings, congName, hoyIso); const cg = congDeExt(L, ext); miCong = cg ? cg.id : null; } }
       const proj = proyeccionExterno(occ, trabajos, anotados, fichas, cong.publishers || [], 'x-' + ext.id, !!ext.comite);
       if (!proj.pubs.some((p) => p.id === 'x:' + ext.id)) proj.pubs.push({ id: 'x:' + ext.id, name: ext.nombre || '', email });
       else proj.pubs.forEach((p) => { if (p.id === 'x:' + ext.id) p.email = email; });
-      res.status(200).send(Object.assign({ modo, cong: congName, estado: 'ok', yo: { id: 'x:' + ext.id, nombre: ext.nombre || '', cong: ext.cong || '', comite: !!ext.comite } }, proj));
+      res.status(200).send(Object.assign({ modo, cong: congName, estado: 'ok', yo: { id: 'x:' + ext.id, nombre: ext.nombre || '', cong: ext.cong || '', comite: !!ext.comite } }, proj, limpieza ? { limpieza, miCong } : {}));
       return;
     }
 
@@ -1019,6 +1034,17 @@ exports.salonExterno = onRequest({ cors: ['https://hugoescalda21.github.io'], re
       if (out.error) { res.status(409).send(out); return; }
       if (bk) out.bk = bk;
       res.status(200).send(out);
+      return;
+    }
+
+    // El comité de otra congregación elige el grupo de SU congregación una semana de la limpieza.
+    if (action === 'limpieza') {
+      if (modo !== 'vol') { res.status(403).send({ error: 'Sin permiso' }); return; }
+      const { L } = await leerLimpieza();
+      const v = grupoLimpiezaValido(L, ext, body);
+      if (v.error) { res.status(403).send({ error: v.error }); return; }
+      await salon.doc('limpieza').update(new admin.firestore.FieldPath('semanas', v.m, 'c', v.cong), v.g ? { g: v.g, por: 'x:' + ext.id } : admin.firestore.FieldValue.delete());
+      res.status(200).send({ ok: true });
       return;
     }
 

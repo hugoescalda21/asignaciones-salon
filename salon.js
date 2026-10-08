@@ -114,6 +114,20 @@
   .sl-wamsg { background: #DCF8C6; color: #111; border-radius: 12px 12px 2px 12px; padding: 10px 12px; font-size: 13px; line-height: 1.45; margin: 0 0 12px 18px; box-shadow: 0 1px 2px rgba(0,0,0,.15); white-space: pre-wrap; word-break: break-word; }
   html.dk .sl-wamsg { background: #005C4B; color: #E9EDEF; }
   .sl-volx { color: #15803D; } html.dk .sl-volx { color: #86EFAC; }
+  .lz-c { display: inline-flex; align-items: center; gap: 5px; font-weight: 800; color: var(--ink); }
+  .lz-c::before { content: ''; width: 9px; height: 9px; border-radius: 50%; background: var(--cc); flex-shrink: 0; }
+  .lz-legend { display: flex; gap: 14px; font-size: 12.5px; margin: 2px 2px 10px; flex-wrap: wrap; align-items: center; } .lz-legend .d { color: var(--ink-soft); }
+  .lz-ln { display: grid; grid-template-columns: 66px 1fr; gap: 8px; align-items: baseline; width: 100%; border: none; background: none; font: inherit; font-size: 12.5px; line-height: 1.45; color: var(--ink); text-align: left; padding: 3px 0; cursor: pointer; }
+  .lz-ln i { font-style: normal; font-size: 10px; font-weight: 800; border-radius: 6px; padding: 1px 4px; background: color-mix(in srgb, var(--accent-blue) 12%, transparent); color: var(--accent-blue); text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lz-ln i.s { background: rgba(124,58,237,.12); color: #6D28D9; } html.dk .lz-ln i.s { color: #C4B5FD; }
+  .lz-ln .lzd { color: var(--ink-soft); font-weight: 400; } .lz-ln b.vac { color: #B45309; } .lz-ln b.sg { color: #6D28D9; } html.dk .lz-ln b.sg { color: #C4B5FD; }
+  .lz-ln.lz-sem { border-top: 1px dashed var(--line); margin-top: 3px; padding-top: 5px; }
+  .lz-cg { display: block; width: 100%; text-align: left; font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-left: 5px solid var(--cc); border-radius: 14px; padding: 11px 12px; margin-bottom: 9px; cursor: pointer; }
+  div.lz-cg { cursor: default; }
+  .lz-cg h5 { margin: 0 0 2px; font-size: 15px; } .lz-cg h5 span { font-size: 11px; color: var(--ink-soft); font-weight: 700; }
+  .lz-cg small { display: block; color: var(--ink-soft); font-size: 12px; line-height: 1.45; }
+  .lz-gr { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; } .lz-gr span { font-size: 12px; font-weight: 700; border-radius: 10px; padding: 4px 9px; background: var(--bg); border: 1px solid var(--line); } .lz-gr span small { display: inline; font-weight: 500; }
+  .lz-gfila { display: grid; grid-template-columns: 1fr 1.3fr 1fr 34px; gap: 6px; margin-bottom: 6px; } .lz-gfila input { min-width: 0; } .lz-gfila button { border: none; background: var(--bg); border-radius: 10px; cursor: pointer; color: var(--ink-soft); }
   .sl-oc { font-size: 10px; font-weight: 800; border-radius: 7px; padding: 2px 6px; background: #FEF3C7; color: #92400E; white-space: nowrap; vertical-align: 1px; }
   html.dk .sl-oc { background: rgba(251,191,36,.18); color: #FCD34D; }
   .sl-wa { border: none; border-radius: 8px; padding: 5px 9px; font: inherit; font-size: 12px; font-weight: 800; background: #DCFCE7; color: #15803D; cursor: pointer; white-space: nowrap; text-decoration: none; }
@@ -1282,7 +1296,15 @@
   function saveLimpieza(pairs, msg) { return safe(() => sWrite(sRef('limpieza'), pairs), msg).then(ok => { if (ok) pairs.forEach(([p, v]) => setLocal(S.limpieza, p, v === undefined ? undefined : JSON.parse(JSON.stringify(v)))); render(); return ok; }); }
   const tipos = () => C.tiposLimpieza(S.limpieza);
   const cortoDe = (t) => t.modo === 'reunion' ? 'Reuniones' : (String(t.nombre || 'Semanal').replace(/^limpieza\s+/i, '').replace(/^./, c => c.toUpperCase()));
-  const nombreQuien = (q) => !q ? '' : q.g === 'otra' ? otraLabel() : q.g === 'nadie' ? 'Sin limpieza' : grupoName(q.g);
+  const nombreQuien = (q) => !q ? '' : q.g === 'otra' ? (q.c ? congNom(q.c) : otraLabel()) : q.g === 'nadie' ? 'Sin limpieza' : grupoName(q.g);
+  // Salón compartido con otras congregaciones (cada una con sus grupos): ver salon-core (congs, turno).
+  const COLOR_LOCAL = '#0E7490', COLORES_CONG = ['#B45309', '#7C3AED', '#BE185D', '#15803D'];
+  const congsL = () => C.congsSalon(S.limpieza);
+  const multi = () => congsL().length > 0;
+  const localNom = () => (data.settings && data.settings.congregationName) || 'Esta congregación';
+  const congNom = (id) => id === 'local' ? localNom() : ((congsL().find(c => c.id === id) || {}).nombre || otraLabel());
+  const congColor = (id) => id === 'local' ? COLOR_LOCAL : ((congsL().find(c => c.id === id) || {}).color || COLORES_CONG[0]);
+  const congDot = (id) => `<span class="lz-c" style="--cc:${congColor(id)}">${esc(congNom(id))}</span>`;
   const gruposIds = () => Object.values(S.grupos).filter(g => g && g.id).sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es', { numeric: true })).map(g => g.id);
   // Claves que se cargan por separado: 'g' (la principal y las que van con ella) y cada limpieza con su propio grupo.
   const claves = () => ['g'].concat(tipos().filter(t => C.claveDe(S.limpieza, t.id) !== 'g').map(t => t.id));
@@ -1314,7 +1336,7 @@
     if (S.lAjustes) { renderLimpAjustes(v); return; }
     const L = S.limpieza || {};
     if (!S.lMonth) S.lMonth = C.semanaDelMes(C.mondayOf(hoy())).mes;
-    let html = `<div class="thead"><h3>Limpieza por grupos</h3><button type="button" class="btn" data-s="lz-ajustes">⚙ Ajustes</button></div>`;
+    let html = `<div class="thead"><h3>${multi() ? 'Limpieza del Salón' : 'Limpieza por grupos'}</h3><button type="button" class="btn" data-s="lz-ajustes">⚙ Ajustes</button></div>`;
     if (!Object.keys(S.grupos).length) {
       v.innerHTML = html + '<div class="tempty">Primero hay que crear los grupos en <b>Territorios → Grupos</b>. La limpieza se reparte entre esos grupos.</div>';
       return;
@@ -1323,8 +1345,22 @@
     const semanas = semanasDelMes(S.lMonth);
     const hoyM = C.mondayOf(hoy());
     html += `<div class="sl-mnav"><button type="button" data-s="lz-mes" data-d="-1" aria-label="Mes anterior">‹</button><span class="lbl">${mesLabel(S.lMonth)}</span><button type="button" data-s="lz-mes" data-d="1" aria-label="Mes siguiente">›</button></div>`;
+    if (multi()) html += `<div class="lz-legend">${['local'].concat(congsL().map(c => c.id)).map(congDot).join('')}${tipos().some(t => t.turno && t.modo !== 'reunion') ? '<span class="d">· la semanal se turnan</span>' : ''}</div>`;
     if (S.undo && S.undo.month === S.lMonth) html += `<div class="sl-undo"><span>${esc(S.undo.msg)}</span><button type="button" data-s="lz-undo">Deshacer</button></div>`;
-    const rows = semanas.map(m => {
+    const diasTxt = (l) => esc(l.dias.map(fmtCorto).reduce((t, x, i, a) => t + (i === 0 ? '' : i === a.length - 1 ? ' y ' : ', ') + x, '')) + (l.tipo.modo === 'semana' && l.tipo.hora ? ' · ' + esc(l.tipo.hora) : '');
+    // Varias congregaciones: cada semana, una línea por limpieza y congregación (la que se turnan, una sola).
+    const rowsMulti = () => semanas.map(m => {
+      const ls = C.limpiezasSalon(L, m, data.settings);
+      const lineas = ls.map(l => {
+        const q = l.quien;
+        const gn = !q ? '' : q.g === 'nadie' ? 'Sin limpieza' : l.cong === 'local' ? nombreQuien(q) : C.nombreGrupoCong(L, l.cong, q.g);
+        const act = l.turno ? `data-s="lz-tpick" data-m="${m}" data-t="${esc(l.tipo.id)}"` : l.cong === 'local' ? `data-s="lz-pick" data-m="${m}" data-k="${esc(l.clave)}"` : `data-s="lz-cpick" data-m="${m}" data-c="${esc(l.cong)}"`;
+        return `<button type="button" class="lz-ln${l.turno ? ' lz-sem' : ''}" ${act}><i class="${l.turno ? 's' : ''}">${esc(cortoDe(l.tipo))}</i><span>${congDot(l.cong)} ${gn ? `<b class="${q && q.s ? 'sg' : ''}">${esc(gn)}${q && q.s ? ' ✨' : ''}</b>` : '<b class="vac">Elegir grupo ›</b>'}${q && q.g === 'nadie' ? '' : ` <span class="lzd">· ${diasTxt(l)}</span>`}</span></button>`;
+      }).join('');
+      const vac = ls.some(l => !l.quien);
+      return `<div class="sl-wk lz-wk${vac ? ' vac' : ''}${m === hoyM ? ' hoy' : ''}" id="lz-${m}"><div class="sl-wkm" style="cursor:default"><span class="d">${m === hoyM ? 'ESTA' : 'SEM'}<b>${fmtSem(m)}</b></span><span class="tx">${lineas}</span></div></div>`;
+    }).join('');
+    const rows = multi() ? rowsMulti() : semanas.map(m => {
       const ls = C.limpiezasSemana(L, m, data.settings);
       const qg = C.quienLimpia(L, m, 'g');
       const conG = ls.filter(l => l.clave === 'g'), solos = ls.filter(l => l.clave !== 'g');
@@ -1333,7 +1369,7 @@
       const cls = !qg ? ' vac' : qg.g === 'otra' || qg.g === 'nadie' ? ' ot' : qg.s ? ' sg' : '';
       return `<div class="sl-wk${cls}${m === hoyM ? ' hoy' : ''}" id="lz-${m}"><button type="button" class="sl-wkm" data-s="lz-pick" data-m="${m}" data-k="g"><span class="d">${m === hoyM ? 'ESTA' : 'SEM'}<b>${fmtSem(m)}</b></span><span class="tx"><span class="nmrow"><b>${qg ? esc(nombreQuien(qg)) : 'Sin cargar'}</b>${tagDe(qg)}</span>${lineas}</span></button>${extra ? `<div class="sl-wkx">${extra}</div>` : ''}</div>`;
     }).join('');
-    const vacias = semanas.reduce((n, m) => n + ks.filter(k => !C.quienLimpia(L, m, k)).length, 0);
+    const vacias = semanas.reduce((n, m) => n + ks.filter(k => !C.quienLimpia(L, m, k)).length + congsL().filter(c => (c.grupos || []).length && !C.grupoCong(L, m, c.id)).length, 0);
     const stats = gruposIds().map(g => {
       const ult = C.ultimaVez(L, g, 'g', C.addDays(hoyM, 7));
       let n = 0; Object.keys(L.semanas || {}).forEach(m => { if (m >= C.addDays(hoyM, -84) && m <= hoyM) ks.forEach(k => { const q = C.cargado(L, m, k); if (q && q.g === g) n++; }); });
@@ -1341,7 +1377,8 @@
     }).join('');
     html += `<div class="sl-lzwrap"><div class="sl-lzmain">${rows}
       <div class="sl-lzbtns"><button type="button" class="btn btn-primary" data-s="lz-sug"${vacias ? '' : ' disabled'}>✨ Sugerir${vacias ? ` las vacías (${vacias})` : ''}</button><button type="button" class="btn" data-s="lz-copy">Copiar ${MESES[Number(shiftYm(S.lMonth, -1).slice(5)) - 1]}</button><button type="button" class="btn" data-s="lz-pdf">📄 Compartir</button></div>
-      <p class="hint" style="margin:8px 2px 0;">Tocá una semana para elegir el grupo. Lo que cargás a mano no lo cambia "Sugerir".</p></div>
+      ${multi() ? `<div class="sl-lzbtns" style="margin-top:8px;"><button type="button" class="btn" data-s="lz-enlace" style="flex:1">🔗 Enlace para ${esc(congsL().map(c => c.nombre).join(' y '))}</button></div>` : ''}
+      <p class="hint" style="margin:8px 2px 0;">${multi() ? 'Tocá una línea para elegir el grupo de esa semana. Lo que cargás a mano no lo cambia "Sugerir". Los grupos de las otras congregaciones también los puede elegir su comité, desde la vista.' : 'Tocá una semana para elegir el grupo. Lo que cargás a mano no lo cambia "Sugerir".'}</p></div>
       <aside class="sl-lzside"><div class="sl-sec" style="margin-top:0;"><h4>Grupos</h4></div><div class="sl-box">${stats}</div>
       <div class="sl-sec"><h4>Limpiezas</h4></div><div class="sl-box">${ts.map(t => `<div class="sl-st"><b>${esc(t.nombre)}</b><span>${esc(t.modo === 'reunion' ? 'Después de cada reunión' : DIAS[t.dia != null ? t.dia : 6] + (t.hora ? ' · ' + t.hora : ''))}</span><em>${C.claveDe(L, t.id) === 'g' ? (t === ts[0] ? 'Principal' : 'Mismo grupo') : 'Su propio grupo'}</em></div>`).join('')}</div></aside></div>`;
     v.innerHTML = html;
@@ -1390,7 +1427,9 @@
   function sugerirMes() {
     const L = S.limpieza || {};
     const sem = semanasDelMes(S.lMonth);
-    const r = C.sugerir(L, gruposIds(), sem[0], sem[sem.length - 1], claves());
+    const r0 = C.sugerir(L, gruposIds(), sem[0], sem[sem.length - 1], claves());
+    const r1 = C.sugerirCongs(Object.assign({}, L, { semanas: r0.semanas }), sem[0], sem[sem.length - 1]);
+    const r = { semanas: r1.semanas, n: r0.n + r1.n };
     if (!r.n) { showToast('No hay semanas vacías este mes'); return; }
     const prev = L.semanas ? JSON.parse(JSON.stringify(L.semanas)) : null;
     saveLimpieza([[['semanas'], r.semanas]], null).then(ok => { if (ok) { S.undo = { month: S.lMonth, prev, msg: `Se completaron ${r.n} ${r.n === 1 ? 'semana' : 'semanas'}` }; render(); } });
@@ -1409,6 +1448,11 @@
         if (k === 'g') { w.g = q.g; w.s = true; } else { w.x = w.x || {}; w.x[k] = { g: q.g, s: true }; }
         n++;
       });
+      congsL().forEach(c => {
+        if (C.grupoCong(L, m, c.id)) return;
+        const q = C.grupoCong(L, src, c.id); if (!q) return;
+        const w = nuevas[m] = nuevas[m] || {}; w.c = w.c || {}; w.c[c.id] = { g: q.g, s: true }; n++;
+      });
     });
     if (!n) { showToast('No hay nada para copiar (o este mes ya está completo)'); return; }
     const prev = L.semanas ? JSON.parse(JSON.stringify(L.semanas)) : null;
@@ -1420,6 +1464,107 @@
     saveLimpieza([[['semanas'], u.prev || undefined]], 'Listo, se deshizo');
   }
 
+  /* ---------- Salón compartido: elegir el grupo de otra congregación y el turno ---------- */
+  function pickCong(m, idc) {
+    const L = S.limpieza || {};
+    const cg = congsL().find(c => c.id === idc); if (!cg) return;
+    const actual = C.grupoCong(L, m, idc);
+    const ord = C.ordenCong(L, idc, m);
+    const sug = (ord[0] || {}).g;
+    const dias = C.diasCong(cg, m).map(fmtCorto).join(' y ');
+    const semanal = C.limpiezasSalon(L, m, data.settings).filter(l => l.turno && l.cong === idc);
+    const hace = (ult) => { if (!ult) return 'Todavía no limpió'; const n = Math.round((new Date(m + 'T12:00:00') - new Date(ult + 'T12:00:00')) / 604800000); return n <= 0 ? 'Ya limpia más adelante' : `Limpió hace ${n} ${n === 1 ? 'semana' : 'semanas'}`; };
+    const gr = (gid) => (cg.grupos || []).find(g => g.id === gid) || {};
+    const opt = (val, nm, small, on, star) => `<button type="button" class="tpick${on ? ' on' : ''}" data-v="${esc(val)}"><span>${nm}<small>${small}</small></span>${star ? '<span class="sl-star">✨</span>' : on ? '<span class="sl-star">✓</span>' : ''}</button>`;
+    const md = openModal(`<h3>${esc(cg.nombre)} · semana del ${fmtSem(m)}</h3><p class="modal-sub" style="margin:0 0 10px;">Después de sus reuniones: ${esc(dias)}${semanal.length ? ` · y la ${esc(semanal.map(l => l.tipo.nombre.toLowerCase()).join(', '))} (${esc(semanal.map(l => l.dias.map(fmtCorto).join(' y ') + (l.tipo.hora ? ' · ' + l.tipo.hora : '')).join(', '))})` : ''}. ¿Qué grupo limpia?</p>
+      ${ord.length ? `<div class="sl-box" style="padding:0 8px;">${ord.map(o => opt(o.g, esc(gr(o.g).nombre || 'Grupo'), (gr(o.g).encargado ? 'Encargado: ' + esc(gr(o.g).encargado) + ' · ' : '') + hace(o.ult), actual && actual.g === o.g, o.g === sug && !(actual && actual.g === o.g))).join('')}</div>` : `<div class="tnote">Todavía no cargaste los grupos de ${esc(cg.nombre)}. Hacelo en ⚙ Ajustes.</div>`}
+      <div class="sl-box" style="padding:0 8px;">${opt('nadie', 'Sin limpieza', 'Asamblea, semana sin reunión…', actual && actual.g === 'nadie')}</div>
+      ${actual && gr(actual.g).tel ? `<button type="button" class="btn sl-wa" id="lzAvisar" style="width:100%;justify-content:center;margin-bottom:8px;">💬 Avisar a ${esc(gr(actual.g).encargado || gr(actual.g).nombre)} por WhatsApp</button>` : ''}
+      <div class="tfoot">${actual ? '<button type="button" class="btn" id="lzBorrar">Dejar sin cargar</button>' : ''}<button type="button" class="btn" data-tclose>Cancelar</button></div>`, { cls: 'sl-chooser' });
+    const guardar = (val) => { md.close(); S.undo = null; saveLimpieza([[['semanas', m, 'c', idc], val ? { g: val } : undefined]], val ? 'Guardado' : 'Semana sin cargar'); };
+    md.el.addEventListener('click', (e) => { const b = e.target.closest('.tpick[data-v]'); if (b) guardar(b.dataset.v); });
+    const bb = md.q('#lzBorrar'); if (bb) bb.addEventListener('click', () => guardar(''));
+    const av = md.q('#lzAvisar'); if (av) av.addEventListener('click', () => avisarGrupoCong(m, idc, actual.g));
+  }
+  // Aviso por WhatsApp al encargado del grupo de otra congregación (no usan la app).
+  function avisarGrupoCong(m, idc, gid) {
+    const L = S.limpieza || {};
+    const cg = congsL().find(c => c.id === idc); const g = cg && (cg.grupos || []).find(x => x.id === gid);
+    if (!g || !g.tel) return;
+    const ls = C.limpiezasSalon(L, m, data.settings).filter(l => l.cong === idc);
+    const partes = ls.map(l => `${l.tipo.modo === 'reunion' ? 'después de las reuniones del ' : (l.tipo.nombre || 'limpieza').toLowerCase() + ' del '}${l.dias.map(fmtCorto).join(' y ')}${l.tipo.modo === 'semana' && l.tipo.hora ? ' a las ' + l.tipo.hora : ''}`);
+    const tareas = [...new Set([].concat(...ls.map(l => l.tipo.tareas || [])))];
+    const lines = [`Hola ${String(g.encargado || '').split(' ')[0] || 'hermano'}, la semana del ${fmtSem(m)} le toca la limpieza del Salón al ${g.nombre} de ${cg.nombre}:`, partes.join('; ') + '.'];
+    if (tareas.length) lines.push('Tareas: ' + tareas.join(', ') + '.');
+    if (L.enlace) lines.push('Todo el mes: ' + lzLink(L.enlace));
+    lines.push('¡Gracias!');
+    window.open(waLink(g.tel, lines.join('\n')), '_blank', 'noopener');
+  }
+  // La limpieza que se turnan: a qué congregación le toca esa semana (cambio a mano, solo esa semana).
+  function pickTurno(m, tipoId) {
+    const L = S.limpieza || {};
+    const t = tipos().find(x => x.id === tipoId); if (!t) return;
+    const ahora = C.turnoDe(L, t, m);
+    const fijo = ((((L.semanas || {})[m] || {}).t) || {})[tipoId];
+    const ids = ['local'].concat(congsL().map(c => c.id));
+    const quien = (id) => { if (id === 'local') { const q = C.quienLimpia(L, m, C.claveDe(L, tipoId)); return q ? nombreQuien(q) : 'sin grupo cargado'; } const q = C.grupoCong(L, m, id); return q ? C.nombreGrupoCong(L, id, q.g) : 'sin grupo cargado'; };
+    const md = openModal(`<h3>${esc(t.nombre)} · semana del ${fmtSem(m)}</h3><p class="modal-sub" style="margin:0 0 10px;">Las congregaciones se turnan. La hace el grupo que esa semana tiene la limpieza de reuniones. ¿A quién le toca esta semana?</p>
+      <div class="sl-box" style="padding:0 8px;">${ids.map(id => `<button type="button" class="tpick${ahora === id ? ' on' : ''}" data-v="${esc(id)}"><span>${congDot(id)}<small>${esc(quien(id))}</small></span>${ahora === id ? '<span class="sl-star">✓</span>' : ''}</button>`).join('')}</div>
+      <div class="tfoot">${fijo ? '<button type="button" class="btn" id="lzTnormal">Volver al turno normal</button>' : ''}<button type="button" class="btn" data-tclose>Cancelar</button></div>`, { cls: 'sl-chooser' });
+    md.el.addEventListener('click', (e) => { const b = e.target.closest('.tpick[data-v]'); if (!b) return; md.close(); saveLimpieza([[['semanas', m, 't', tipoId], b.dataset.v]], 'Turno cambiado esta semana'); });
+    const tn = md.q('#lzTnormal'); if (tn) tn.addEventListener('click', () => { md.close(); saveLimpieza([[['semanas', m, 't', tipoId], undefined]], 'Vuelve al turno normal'); });
+  }
+  // Enlace para que los hermanos de las otras congregaciones vean la limpieza (sin cuenta, solo para mirar).
+  function lzLink(k) { const base = vistaLink(); return base ? base + '&lz=' + encodeURIComponent(k) : ''; }
+  async function openEnlaceLz(nuevo) {
+    const L = S.limpieza || {};
+    let k = L.enlace;
+    if (!k || nuevo) { k = invToken(); if (!(await saveLimpieza([[['enlace'], k]], null))) return; }
+    const nombres = congsL().map(c => c.nombre).join(' y ');
+    const msg = `🧹 *Limpieza del Salón del Reino*\nQué grupo limpia cada semana (${localNom()} y ${nombres}), con las tareas. Se actualiza solo:\n${lzLink(k)}`;
+    const m = openModal(`<h3>Enlace para ${esc(nombres)}</h3><p class="modal-sub" style="margin:0 0 10px;">Los hermanos lo abren sin cuenta y ven solo la limpieza del Salón: a quién le toca cada semana, las tareas y el PDF del mes. No pueden cambiar nada.</p>
+      <div class="sl-wamsg">${esc(msg)}</div>
+      <div class="tnote">Es siempre el mismo enlace: conviene fijarlo en el grupo de WhatsApp. Si llegó a quien no corresponde, "Cambiar el enlace" hace uno nuevo y el anterior deja de andar.</div>
+      <div class="tfoot"><button type="button" class="btn" id="lzEnNuevo">Cambiar el enlace</button><button type="button" class="btn" id="lzEnC">Copiar</button><button type="button" class="btn btn-primary" id="lzEnW">💬 WhatsApp</button></div>`);
+    m.q('#lzEnC').addEventListener('click', async () => { try { await navigator.clipboard.writeText(msg); showToast('Mensaje con el enlace copiado'); } catch (e) { window.prompt('Copiá el enlace:', lzLink(k)); } m.close(); });
+    m.q('#lzEnW').addEventListener('click', () => { window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank', 'noopener'); m.close(); });
+    m.q('#lzEnNuevo').addEventListener('click', () => { if (!confirm('¿Hacer un enlace nuevo? El anterior deja de andar.')) return; m.close(); openEnlaceLz(true); });
+  }
+  // Alta o edición de otra congregación del Salón: nombre, color, días de reunión y sus grupos.
+  function openCong(idc) {
+    const cs = congsL();
+    const c0 = cs.find(c => c.id === idc);
+    const f = JSON.parse(JSON.stringify(c0 || { id: newId(), nombre: cs.length ? '' : otraNombre(), color: COLORES_CONG[cs.length % COLORES_CONG.length], dias: { semana: 2, finde: 6 }, grupos: [] }));
+    f.dias = f.dias || { semana: 2, finde: 6 }; f.grupos = f.grupos || [];
+    const diaSel = (id, v, opts) => `<select id="${id}">${opts.map(d => `<option value="${d}"${Number(v) === d ? ' selected' : ''}>${DIAS[d]}</option>`).join('')}</select>`;
+    const filas = () => f.grupos.map((g, i) => `<div class="lz-gfila" data-i="${i}"><input data-f="nombre" maxlength="30" value="${esc(g.nombre || '')}" placeholder="Grupo" aria-label="Grupo"><input data-f="encargado" maxlength="50" value="${esc(g.encargado || '')}" placeholder="Encargado" aria-label="Encargado"><input data-f="tel" type="tel" maxlength="25" value="${esc(g.tel || '')}" placeholder="Teléfono" aria-label="Teléfono"><button type="button" data-x="${i}" aria-label="Sacar">✕</button></div>`).join('');
+    const m = openModal(`<h3>${c0 ? 'Editar congregación' : 'Otra congregación del Salón'}</h3><p class="modal-sub" style="margin:0 0 10px;">Limpia después de sus propias reuniones, con un grupo por semana. No hace falta que use la app.</p>
+      <div class="tf"><label for="lzCn">Nombre *</label><input id="lzCn" maxlength="40" value="${esc(f.nombre || '')}" placeholder="Ej.: Norte"></div>
+      <div class="tf"><span class="tlbl">Color</span><div class="topts" id="lzCcol">${COLORES_CONG.map(c => `<button type="button" data-c="${c}" class="${f.color === c ? 'on' : ''}" style="min-width:38px;background:${c};border-color:${c};color:#fff" aria-label="Color">${f.color === c ? '✓' : '&nbsp;'}</button>`).join('')}</div></div>
+      <div class="trow2"><div class="tf"><label for="lzCs">Reunión entre semana</label>${diaSel('lzCs', f.dias.semana, [1, 2, 3, 4, 5])}</div><div class="tf"><label for="lzCf">Fin de semana</label>${diaSel('lzCf', f.dias.finde, [6, 0])}</div></div>
+      <div class="tf"><span class="tlbl">Grupos <small style="text-transform:none;letter-spacing:0;font-weight:400;">(el teléfono es para mandarle el aviso por WhatsApp al encargado)</small></span><div id="lzCg">${filas()}</div><button type="button" class="btn" id="lzCadd" style="width:100%;justify-content:center;">＋ Agregar grupo</button></div>
+      <div class="tnote">🔒 Los teléfonos solo los ven el Super Admin y el Admin — Mantenimiento. En el enlace y en la vista se ven solo los nombres.</div>
+      <div class="sl-err" id="lzCe"></div>
+      <div class="tfoot">${c0 ? '<button type="button" class="btn btn-danger" id="lzCx">Sacar</button>' : ''}<button type="button" class="btn" data-tclose>Cancelar</button><button type="button" class="btn btn-primary" id="lzCok">Guardar</button></div>`);
+    const leer = () => { m.qa('.lz-gfila').forEach(r => { const g = f.grupos[Number(r.dataset.i)]; r.querySelectorAll('input[data-f]').forEach(inp => { g[inp.dataset.f] = inp.value.trim(); }); }); };
+    const pintar = () => { m.q('#lzCg').innerHTML = filas(); };
+    m.q('#lzCadd').addEventListener('click', () => { leer(); f.grupos.push({ id: newId(), nombre: 'Grupo ' + String.fromCharCode(65 + f.grupos.length), encargado: '', tel: '' }); pintar(); });
+    m.q('#lzCg').addEventListener('click', (e) => { const x = e.target.closest('[data-x]'); if (!x) return; leer(); f.grupos.splice(Number(x.dataset.x), 1); pintar(); });
+    m.q('#lzCcol').addEventListener('click', (e) => { const b = e.target.closest('[data-c]'); if (!b) return; f.color = b.dataset.c; m.qa('#lzCcol button').forEach(x => { const on = x === b; x.classList.toggle('on', on); x.innerHTML = on ? '✓' : '&nbsp;'; }); });
+    m.q('#lzCok').addEventListener('click', () => {
+      leer();
+      f.nombre = m.q('#lzCn').value.trim().replace(/^cong(regaci[oó]n)?\.?\s+/i, '');
+      if (!f.nombre) { m.q('#lzCe').textContent = 'Escribí el nombre de la congregación.'; return; }
+      f.dias = { semana: Number(m.q('#lzCs').value), finde: Number(m.q('#lzCf').value) };
+      f.grupos = f.grupos.filter(g => g.nombre).map(g => { const o = { id: g.id, nombre: g.nombre }; if (g.encargado) o.encargado = g.encargado; if (g.tel) o.tel = g.tel; return o; });
+      const nuevos = c0 ? cs.map(c => c.id === f.id ? f : c) : cs.concat(f);
+      const pairs = [[['congs'], nuevos]];
+      if (!otraNombre()) pairs.push([['otraNombre'], f.nombre]);
+      m.close(); saveLimpieza(pairs, 'Guardado');
+    });
+    const del = m.q('#lzCx');
+    if (del) del.addEventListener('click', () => { if (!confirm(`¿Sacar a ${c0.nombre} de la limpieza del Salón? Lo cargado en las semanas queda guardado por si la volvés a agregar.`)) return; m.close(); saveLimpieza([[['congs'], cs.filter(c => c.id !== c0.id)]], 'Congregación sacada'); });
+  }
   /* ---------- Compartir en PDF ---------- */
   function openPdf() {
     const m = openModal(`<h3>Compartir la limpieza</h3><p class="modal-sub" style="margin:0 0 10px;">Un PDF para mandar por WhatsApp o imprimir, desde ${esc(mesLabel(S.lMonth))}.</p>
@@ -1436,10 +1581,11 @@
       if (!opts.limpieza && !opts.trabajos) { showToast('Elegí qué incluir'); return; }
       m.close();
       const sem = []; for (let i = 0; i < meses; i++) sem.push(...semanasDelMes(shiftYm(S.lMonth, i)));
-      const faltan = sem.reduce((n, w) => n + claves().filter(k => !C.quienLimpia(S.limpieza, w, k)).length, 0);
+      const faltan = sem.reduce((n, w) => n + claves().filter(k => !C.quienLimpia(S.limpieza, w, k)).length + congsL().filter(c => (c.grupos || []).length && !C.grupoCong(S.limpieza, w, c.id)).length, 0);
       if (opts.limpieza && faltan && confirm(`Faltan ${faltan} ${faltan === 1 ? 'semana' : 'semanas'} sin cargar. ¿Las sugiero antes de armar el PDF?`)) {
-        const r = C.sugerir(S.limpieza, gruposIds(), sem[0], sem[sem.length - 1], claves());
-        if (r.n) await saveLimpieza([[['semanas'], r.semanas]], null);
+        const r0 = C.sugerir(S.limpieza, gruposIds(), sem[0], sem[sem.length - 1], claves());
+        const r = C.sugerirCongs(Object.assign({}, S.limpieza, { semanas: r0.semanas }), sem[0], sem[sem.length - 1]);
+        if (r0.n + r.n) await saveLimpieza([[['semanas'], r.semanas]], null);
       }
       await limpiezaPdf(sem, opts);
     });
@@ -1457,14 +1603,16 @@
     doc.setFillColor(15, 27, 45); doc.rect(0, 0, W, 66, 'F');
     doc.setFillColor(37, 99, 235); doc.rect(0, 66, W, 3, 'F');
     doc.setTextColor(147, 197, 253); doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
-    doc.text(`SALÓN DEL REINO — ${cong.toUpperCase()}`, 32, 24);
+    doc.text(`SALÓN DEL REINO — ${(multi() ? [cong].concat(congsL().map(c => c.nombre)).join(' Y ') : cong).toUpperCase()}`, 32, 24);
     doc.setTextColor(255, 255, 255); doc.setFontSize(17);
     doc.text(opts.limpieza ? 'Limpieza del Salón' : 'Trabajos del Salón', 32, 46);
     doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(203, 213, 225);
     doc.text(meses.length > 1 ? `${meses.slice(0, -1).join(', ')} y ${meses[meses.length - 1]}` : meses[0], 32, 60);
     let y = 86;
     const dd = (arr) => arr.map(fmtCorto).join(' · ');
-    if (opts.limpieza) {
+    if (opts.limpieza && multi() && window.FichaPdf && window.FichaPdf.limpieza) {
+      y = window.FichaPdf.limpieza(doc, C.tablaLimpieza(L, sem, data.settings, { local: cong, grupo: grupoName }), { y, color: congColor, fmtSem });
+    } else if (opts.limpieza) {
       const head = ['Semana'].concat(ts.map(t => t.nombre + (t.modo === 'semana' && t.hora ? ` (${t.hora})` : ''))).concat(ks.map(k => k === 'g' ? (ks.length > 1 ? `Limpia (${cortoDe(ts[0])})` : 'Limpia') : `Limpia (${cortoDe(ts.find(t => t.id === k))})`));
       const body = sem.map(mm => {
         const ls = C.limpiezasSemana(L, mm, data.settings);
@@ -1510,6 +1658,8 @@
   }
 
   /* ---------- Ajustes de la limpieza ---------- */
+  // El integrante del comité de esa congregación (de la lista de hermanos de otra congregación).
+  function comiteDe(c) { const n = String(c.nombre || '').toLowerCase(); const x = Object.values(S.externos || {}).find(e => e && e.comite && e.email && String(e.cong || '').toLowerCase() === n); return x ? x.nombre : ''; }
   function guardarTipos(nuevos, msg) { return saveLimpieza([[['tipos'], nuevos]], msg); }
   function renderLimpAjustes(v) {
     const L = S.limpieza || {};
@@ -1518,14 +1668,22 @@
     const sinRot = Object.values(S.grupos).filter(g => g && g.id && !rot.includes(g.id)).sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es', { numeric: true }));
     let html = `<div class="thead"><h3><button type="button" class="sl-back" data-s="lz-volver" aria-label="Volver">‹</button> Ajustes de la limpieza</h3></div><div class="sl-ajgrid"><div>`;
     html += `<div class="sl-sec" style="margin-top:0;"><h4>Limpiezas</h4></div>` + ts.map((t, i) => `<div class="sl-lzc"><div class="h"><b>${i === 0 ? '🧹' : '🧽'} ${esc(t.nombre)}</b><button type="button" class="btn" data-s="lz-tipo" data-i="${i}">Editar</button></div>
-      <small>${esc(t.modo === 'reunion' ? 'Después de cada reunión' : DIAS[t.dia != null ? t.dia : 6] + (t.hora ? ' · ' + t.hora : ''))} · ${(t.tareas || []).length} tareas</small>
+      <small>${esc(t.modo === 'reunion' ? 'Después de cada reunión' : DIAS[t.dia != null ? t.dia : 6] + (t.hora ? ' · ' + t.hora : ''))} · ${(t.tareas || []).length} tareas${congsL().length ? (t.modo === 'reunion' ? ' · cada congregación después de sus reuniones' : t.turno ? ' · <b>se turnan las congregaciones</b>' : ' · solo esta congregación') : ''}</small>
       ${i > 0 ? `<label class="sl-sw"><span><b>La hace el mismo grupo</b> que «${esc(ts[0].nombre)}»</span><input type="checkbox" data-s="lz-mismo" data-i="${i}"${t.mismoGrupo !== false ? ' checked' : ''}></label>` : ''}</div>`).join('') +
       `<button type="button" class="btn" data-s="lz-tipo" data-i="-1" style="width:100%;justify-content:center;">＋ Agregar otra limpieza</button>`;
     html += `<div class="sl-sec"><h4>Orden para sugerir</h4></div><p class="hint" style="margin:-4px 2px 8px;">"Sugerir" propone al grupo que hace más tiempo que no limpia; a igualdad, el que está más arriba.</p><div class="sl-box">${rot.length ? rot.map((g, i) => `<div class="sl-rot"><span class="nn">${i + 1}</span><span class="nm">${esc(grupoName(g))}<small>${S.grupos[g].encargado ? 'Encargado: ' + esc(pubName(S.grupos[g].encargado)) : ''}</small></span><button type="button" data-s="rot-up" data-i="${i}" aria-label="Subir"${i === 0 ? ' disabled' : ''}>↑</button><button type="button" data-s="rot-down" data-i="${i}" aria-label="Bajar"${i === rot.length - 1 ? ' disabled' : ''}>↓</button><button type="button" data-s="rot-del" data-i="${i}" aria-label="Sacar">✕</button></div>`).join('') : '<div class="sl-rot" style="color:var(--ink-soft)">Sin orden: se usan todos los grupos por nombre.</div>'}</div>
       ${sinRot.length ? `<div class="topts">${sinRot.map(g => `<button type="button" data-s="rot-add" data-g="${esc(g.id)}">+ ${esc(g.nombre)}</button>`).join('')}</div>` : ''}`;
     html += `</div><div>`;
-    html += `<div class="sl-sec" style="margin-top:0;"><h4>Salón compartido (opcional)</h4></div><div class="tf"><label for="slOtraN">Nombre de la otra congregación</label><input id="slOtraN" maxlength="40" value="${esc(otraNombre())}" placeholder="Ej.: Paraná Sur"></div>
-      <p class="hint" style="margin:0 0 6px;">Las semanas de cada mes que limpia la otra congregación salen solas en el mes.</p><div class="topts">${[1, 2, 3, 4, 5].map(n => `<button type="button" data-s="otra" data-n="${n}" class="${(L.otra || []).includes(n) ? 'on' : ''}" aria-pressed="${(L.otra || []).includes(n)}">Semana ${n}</button>`).join('')}</div>`;
+    const st = data.settings || {};
+    html += `<div class="sl-sec" style="margin-top:0;"><h4>Congregaciones que usan el Salón</h4><button type="button" class="btn" data-s="lz-cong">+ Agregar</button></div>
+      <div class="lz-cg" style="--cc:${COLOR_LOCAL}"><h5>${esc(localNom())} <span>· esta congregación</span></h5><small>Reuniones: ${esc(DIAS[st.weekdaySemana != null ? st.weekdaySemana : 4])} y ${esc(DIAS[st.weekdayFinde != null ? st.weekdayFinde : 0])} (de Ajustes) · los grupos salen de Territorios</small>
+        <div class="lz-gr">${gruposIds().map(g => `<span>${esc(grupoName(g))}</span>`).join('') || '<span>Sin grupos</span>'}</div></div>
+      ${congsL().map(c => `<button type="button" class="lz-cg" data-s="lz-cong" data-c="${esc(c.id)}" style="--cc:${c.color || COLORES_CONG[0]}"><h5>${esc(c.nombre)} <span>· Editar ›</span></h5><small>Reuniones: ${esc(DIAS[(c.dias || {}).semana != null ? c.dias.semana : 2])} y ${esc(DIAS[(c.dias || {}).finde != null ? c.dias.finde : 6])}</small>
+        <span class="lz-gr">${(c.grupos || []).map(g => `<span>${esc(g.nombre)}${g.encargado ? ` <small>· ${esc(g.encargado.split(' ').slice(-1)[0])}</small>` : ''}</span>`).join('') || '<span>Sin grupos cargados</span>'}</span>
+        ${comiteDe(c) ? `<small style="margin-top:6px">Comité: <b>${esc(comiteDe(c))}</b> (puede elegir los grupos de ${esc(c.nombre)} desde la vista)</small>` : ''}</button>`).join('')}
+      ${congsL().length ? '' : '<p class="hint" style="margin:-2px 2px 10px;">Si comparten el Salón, agregá la otra congregación con sus grupos: cada una limpia después de sus reuniones y las limpiezas de un día por semana se pueden turnar.</p>'}
+      ${congsL().length && !(L.otra || []).length ? '' : `<div class="tf"><label for="slOtraN">Nombre de la otra congregación</label><input id="slOtraN" maxlength="40" value="${esc(otraNombre())}" placeholder="Ej.: Paraná Sur"></div>
+      <p class="hint" style="margin:0 0 6px;">Semanas de cada mes en que la otra congregación hace toda la limpieza.</p><div class="topts">${[1, 2, 3, 4, 5].map(n => `<button type="button" data-s="otra" data-n="${n}" class="${(L.otra || []).includes(n) ? 'on' : ''}" aria-pressed="${(L.otra || []).includes(n)}">Semana ${n}</button>`).join('')}</div>`}`;
     html += externosHTML() + '</div></div>';
     v.innerHTML = html;
   }
@@ -1537,14 +1695,22 @@
       <div class="tf"><label for="lzN">Nombre</label><input id="lzN" maxlength="40" value="${esc(f.nombre || '')}"></div>
       <div class="tf"><span class="tlbl">Cuándo</span><div class="topts" id="lzModo"><button type="button" data-k="reunion" class="${f.modo === 'reunion' ? 'on' : ''}">Después de cada reunión</button><button type="button" data-k="semana" class="${f.modo !== 'reunion' ? 'on' : ''}">Un día por semana</button></div></div>
       <div class="trow2" id="lzDH"><div class="tf"><label for="lzD">Día</label><select id="lzD">${[1, 2, 3, 4, 5, 6, 0].map(d => `<option value="${d}"${Number(f.dia != null ? f.dia : 6) === d ? ' selected' : ''}>${DIAS[d]}</option>`).join('')}</select></div><div class="tf"><label for="lzH">Hora (opcional)</label><input type="time" id="lzH" value="${esc(f.hora || '')}"></div></div>
+      ${congsL().length ? `<div class="tf" id="lzTurnoBox"><label class="sl-sw" style="border-top:none;margin-top:0;padding-top:0"><span><b style="display:block">Se turnan las congregaciones</b>Una semana cada una, en orden. La hace el grupo que esa semana tiene la limpieza de reuniones.</span><input type="checkbox" id="lzTu"${f.turno ? ' checked' : ''}></label>
+        <div class="trow2" id="lzTuOpts"><div class="tf"><label for="lzTu1">Empieza</label><select id="lzTu1">${['local'].concat(congsL().map(c => c.id)).map(id => `<option value="${esc(id)}"${(f.turno && f.turno.orden && f.turno.orden[0] === id) ? ' selected' : ''}>${esc(congNom(id))}</option>`).join('')}</select></div><div class="tf"><label for="lzTu2">la semana del</label><input type="date" id="lzTu2" value="${esc((f.turno && f.turno.inicio) || C.mondayOf(hoy()))}"></div></div></div>` : ''}
       <div class="tf"><label for="lzT">Tareas <small style="text-transform:none;letter-spacing:0;font-weight:400;">(una por renglón, las ven los hermanos)</small></label><textarea id="lzT" style="min-height:120px;">${esc((f.tareas || []).join('\n'))}</textarea></div>
       <div class="tfoot">${i > 0 ? '<button type="button" class="btn btn-danger" id="lzX">Borrar</button>' : ''}<button type="button" class="btn" data-tclose>Cancelar</button><button type="button" class="btn btn-primary" id="lzOk">Guardar</button></div>`);
-    const paintDH = () => { m.q('#lzDH').style.display = f.modo === 'reunion' ? 'none' : ''; };
+    const paintDH = () => { m.q('#lzDH').style.display = f.modo === 'reunion' ? 'none' : ''; const tb = m.q('#lzTurnoBox'); if (tb) { tb.style.display = f.modo === 'reunion' ? 'none' : ''; m.q('#lzTuOpts').style.display = m.q('#lzTu').checked ? '' : 'none'; } };
+    if (m.q('#lzTu')) m.q('#lzTu').addEventListener('change', () => paintDH());
     m.q('#lzModo').addEventListener('click', (e) => { const b = e.target.closest('[data-k]'); if (!b) return; f.modo = b.dataset.k; m.qa('#lzModo button').forEach(x => x.classList.toggle('on', x === b)); paintDH(); });
     paintDH();
     m.q('#lzOk').addEventListener('click', () => {
       const nombre = m.q('#lzN').value.trim() || (f.modo === 'reunion' ? 'Después de las reuniones' : 'Limpieza general');
       const nt = Object.assign({}, f, { nombre, dia: Number(m.q('#lzD').value), hora: m.q('#lzH').value, tareas: m.q('#lzT').value.split('\n').map(x => x.trim()).filter(Boolean).slice(0, 40) });
+      if (m.q('#lzTu') && f.modo !== 'reunion' && m.q('#lzTu').checked) {
+        const ids = ['local'].concat(congsL().map(c => c.id)); const p1 = m.q('#lzTu1').value;
+        nt.turno = { orden: [p1].concat(ids.filter(x => x !== p1)), inicio: C.mondayOf(m.q('#lzTu2').value || hoy()) };
+        if (i > 0) nt.mismoGrupo = true;
+      } else delete nt.turno;
       const nuevos = ts.map(x => Object.assign({}, x));
       if (i >= 0) nuevos[i] = nt; else nuevos.push(nt);
       m.close(); guardarTipos(nuevos, 'Guardado');
@@ -1605,6 +1771,10 @@
     else if (k === 'lz-volver') { S.lAjustes = false; render(); }
     else if (k === 'lz-mes') { S.lMonth = shiftYm(S.lMonth, Number(b.dataset.d)); render(); }
     else if (k === 'lz-pick') pickSemana(b.dataset.m, b.dataset.k);
+    else if (k === 'lz-cpick') pickCong(b.dataset.m, b.dataset.c);
+    else if (k === 'lz-tpick') pickTurno(b.dataset.m, b.dataset.t);
+    else if (k === 'lz-enlace') openEnlaceLz(false);
+    else if (k === 'lz-cong') openCong(b.dataset.c || null);
     else if (k === 'lz-sug') sugerirMes();
     else if (k === 'lz-copy') copiarMesAnterior();
     else if (k === 'lz-undo') deshacer();

@@ -6,6 +6,18 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Limpieza del Salón con las dos congregaciones — 8 oct 2026 (caché asignaciones-salon-v62 y ver-salon-v48)
+
+- **Ajustes de la limpieza › Congregaciones que usan el Salón:** la de acá (grupos de Territorios) y las otras, cargadas a mano con sus días de reunión, su color y sus grupos (nombre, encargado y teléfono). No hace falta que usen la app.
+- **Cada congregación limpia después de sus propias reuniones**, con un grupo por semana. La limpieza de un día por semana puede tener **"Se turnan las congregaciones"**: una semana cada una, en orden, desde la semana que elijas. La hace el grupo que esa semana tiene la limpieza de reuniones. Se puede cambiar el turno solo una semana.
+- **El mes:** cada semana muestra la línea de cada congregación y la de la semanal. "✨ Sugerir" y "Copiar el mes anterior" también completan los grupos de las otras congregaciones. Al elegir el grupo de otra congregación se le puede mandar el aviso por WhatsApp al encargado.
+- **🔗 Enlace para la otra congregación:** sin cuenta y solo para mirar. Muestra esta semana, el mes (todas o solo una congregación), las tareas y el PDF. Se actualiza solo y se puede cambiar si llega a quien no corresponde.
+- **El comité de la otra congregación** ve la limpieza en la vista, arriba de los trabajos, y elige los grupos de su congregación.
+- **PDF del mes** con las dos congregaciones, cada una con su color.
+- Los hermanos de acá, la semana que la semanal le toca a la otra congregación, no reciben ese recordatorio.
+- Hay que publicar las funciones: `firebase deploy --only functions`.
+- Pruebas: `34-limpieza-salon` (nueva), 6 en las funciones.
+
 ## Comité de mantenimiento con hermanos de otra congregación — 5 oct 2026 (caché asignaciones-salon-v61 y ver-salon-v47)
 
 - En la lista de hermanos de otra congregación, la tilde nueva **"Integrante del comité de mantenimiento"** (con su email). Entra a la vista y ve **solo Mantenimiento**, pero con todo el cronograma: atrasados, próximos (también los que ve solo el comité) y los hechos de las últimas dos semanas.
