@@ -427,6 +427,11 @@
   .cal-d .num { font-family: 'Fraunces', serif; font-size: 21px; line-height: 1.1; }
   .cal-s { flex: 1; min-width: 0; }
   .cal-t { font-size: 10.5px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.03em; }
+  /* Semana especial (visita del superintendente, asamblea, cambio de día) */
+  :root { --esp: #6D28D9; } html.dk { --esp: #C4B5FD; }
+  .esp-tag { display: inline-block; font-size: 9.5px; font-weight: 900; letter-spacing: .03em; color: var(--esp); margin-left: 6px; vertical-align: 1px; }
+  .esp-ban { display: flex; gap: 10px; align-items: center; background: color-mix(in srgb, #7C3AED 10%, var(--surface, #fff)); border: 1.5px solid color-mix(in srgb, #7C3AED 35%, transparent); border-radius: 14px; padding: 10px 12px; margin: 0 0 14px; font-size: 13px; line-height: 1.4; color: var(--ink); }
+  .esp-ban .ic { font-size: 22px; } .esp-ban .tx { flex: 1; min-width: 0; } .esp-ban .tx > b:first-child { display: block; font-size: 14px; }
   .cal-next { display: inline-block; font-size: 9px; font-weight: 700; color: #fff; background: var(--accent-blue); border-radius: 6px; padding: 1px 6px; margin-left: 5px; vertical-align: 1px; letter-spacing: 0.02em; }
   .cal-sum { font-size: 12.5px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .cal-me { display: inline-block; font-size: 10.5px; font-weight: 700; color: var(--accent-gold-text); background: rgba(169, 130, 47, 0.13); border-radius: 8px; padding: 2px 7px; margin-top: 4px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -605,6 +610,7 @@
     <div id="offlineNote" class="offline-note hidden" role="status">Sin conexión · mostrando la última copia guardada</div>
 
     <section id="panel-inicio" class="tab-panel" aria-label="Inicio">
+      <div id="espBannerV" class="hidden"></div>
       <div id="colNews" class="hidden"></div>
       <div id="annTeaser" class="hidden"></div>
       <div id="nextHero" class="hidden"></div>
@@ -899,12 +905,32 @@
     return d.toISOString().slice(0, 10);
   }
   function shiftDate(iso, days) { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + days); return d.toISOString().slice(0, 10); }
-  function dateForType(monday, type, settings) {
-    const dow = type === 'semana' ? settings.weekdaySemana : settings.weekdayFinde;
-    const offset = (dow - 1 + 7) % 7;
-    const d = new Date(monday + 'T00:00:00'); d.setDate(d.getDate() + offset);
-    return d.toISOString().slice(0, 10);
+  /* ---------- Semana especial (visita del superintendente de circuito, asamblea, otro cambio de día) ----------
+     data.weeks[lunes].especial = { tipo, so, semana: { dia, hora }, finde: { dia, hora }, sinSemana, sinFinde }
+     (la misma cuenta que salon-core.js → reunionDe y el editor). */
+  const ESPECIAL_TIPOS = {
+    visita: { icon: '🧳', label: 'Visita del superintendente de circuito', tag: 'VISITA' },
+    asamblea: { icon: '🏟', label: 'Asamblea', tag: 'ASAMBLEA' },
+    cambio: { icon: '📅', label: 'Cambio de día', tag: 'CAMBIO' }
+  };
+  function especialDe(monday) {
+    const e = data && data.weeks && data.weeks[monday] && data.weeks[monday].especial;
+    return e && ESPECIAL_TIPOS[e.tipo] ? e : null;
   }
+  function addDaysIso(iso, n) { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+  function reunionDe(monday, type, settings) {
+    const s = settings || (data && data.settings) || {};
+    const k = type === 'finde' ? 'finde' : 'semana';
+    const base = Number(k === 'finde' ? (s.weekdayFinde != null ? s.weekdayFinde : 0) : (s.weekdaySemana != null ? s.weekdaySemana : 4));
+    const e = especialDe(monday);
+    const x = (e && e[k]) || {};
+    const dow = x.dia != null && x.dia !== '' && !isNaN(Number(x.dia)) ? Number(x.dia) : base;
+    const hora = (x.hora && /^\d{2}:\d{2}$/.test(x.hora) ? x.hora : '') || (k === 'finde' ? s.meetingTimeFinde : s.meetingTimeSemana) || '';
+    return { fecha: addDaysIso(monday, (dow + 6) % 7), hora, sin: !!(e && (k === 'finde' ? e.sinFinde : e.sinSemana)), especial: e, visita: !!(e && e.tipo === 'visita'), movida: dow !== base, fechaNormal: addDaysIso(monday, (base + 6) % 7) };
+  }
+  const sinReunion = (monday, type) => reunionDe(monday, type).sin;
+  const espTagHTML = (monday) => { const e = especialDe(monday); return e ? `<span class="esp-tag">${ESPECIAL_TIPOS[e.tipo].icon} ${ESPECIAL_TIPOS[e.tipo].tag}</span>` : ''; };
+  function dateForType(monday, type, settings) { return reunionDe(monday, type, settings).fecha; }
   function formatDate(iso) {
     const d = new Date(iso + 'T00:00:00');
     const dayName = d.toLocaleDateString('es-ES', { weekday: 'long' });
@@ -912,9 +938,10 @@
   }
   function monthKey(iso) { const d = new Date(iso + 'T00:00:00'); return d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }); }
   // Horario de la reunión cargado por el editor ("HH:MM"), o '' si no hay.
-  function meetingTimeOf(type) {
+  // Con la fecha (o el lunes) de la reunión, sigue a una semana especial que la cambió de hora.
+  function meetingTimeOf(type, date) {
     const s = data.settings || {};
-    const v = type === 'finde' ? s.meetingTimeFinde : s.meetingTimeSemana;
+    const v = date ? reunionDe(mondayOf(date), type).hora : (type === 'finde' ? s.meetingTimeFinde : s.meetingTimeSemana);
     return /^\d{2}:\d{2}$/.test(v || '') ? v : '';
   }
   /* ---------- Google Calendar: recordar cuáles ya se agregaron ----------
@@ -983,8 +1010,11 @@
     const v = program && program.oradorVisitante;
     return v && v.nombre ? v.nombre + (v.congregacion ? ` (${v.congregacion})` : '') : null;
   }
-  function programEntries(program, type) {
+  // esp: la semana especial (en la visita del superintendente cambia el programa).
+  function programEntries(program, type, esp) {
     if (!program) return [];
+    const vis = !!(esp && esp.tipo === 'visita');
+    const so = (esp && esp.so) || 'Superintendente de circuito';
     const nameOf = id => { const p = (data.publishers || []).find(pp => pp.id === id); return p ? p.name : null; };
     const pairName = (a, b) => { const n1 = nameOf(a), n2 = nameOf(b); if (!n1 && !n2) return null; return n2 ? `${n1 || '—'} / ${n2}` : n1; };
     const entries = [];
@@ -992,10 +1022,11 @@
     entries.push({ label: 'Oración inicial', name: nameOf(program.oracionInicial) });
     if (type === 'finde') {
       if (program.cancionInicial) entries.push({ song: true, label: 'Canción inicial', value: program.cancionInicial });
-      entries.push({ label: 'Discurso público', name: nameOf(program.oradorPublico) || visitorName(program), tema: program.temaPublico });
+      entries.push({ label: 'Discurso público', name: vis ? so : (nameOf(program.oradorPublico) || visitorName(program)), tema: program.temaPublico });
       if (program.cancionIntermedia) entries.push({ song: true, label: 'Canción intermedia', value: program.cancionIntermedia });
       entries.push({ label: 'Atalaya — Conductor', name: nameOf(program.atalayaConductor) });
       entries.push({ label: 'Atalaya — Lector', name: nameOf(program.atalayaLector) });
+      if (vis) entries.push({ label: 'Discurso de conclusión', name: so });
       if (program.cancionFinal) entries.push({ song: true, label: 'Canción final', value: program.cancionFinal });
       entries.push({ label: 'Oración final', name: nameOf(program.oracionFinal) });
       return entries.filter(e => e.song || e.name);
@@ -1033,7 +1064,8 @@
       n++;
     });
     const estudioNm = pairName(program.estudioConductor, program.estudioLector);
-    if (estudioNm) vidaGroup.push({ num: n, label: 'Estudio bíblico', name: estudioNm });
+    if (vis) vidaGroup.push({ num: n, label: 'Discurso de servicio del superintendente', name: so });
+    else if (estudioNm) vidaGroup.push({ num: n, label: 'Estudio bíblico', name: estudioNm });
     const vidaFilled = vidaGroup.filter(e => e.name);
     if (vidaFilled.length) { entries.push({ section: 'NUESTRA VIDA CRISTIANA' }); entries.push(...vidaFilled); }
 
@@ -1067,7 +1099,7 @@
     return html;
   }
   function isProgramFilled(program, type) {
-    return programEntries(program, type).some(e => e.song || e.name);
+    return programEntries(program, type).some(e => e.song || e.name);   // sin la semana especial: lo que cargó el editor
   }
 
   // Calendario: qué reuniones abrió o cerró la persona (se mantiene al actualizarse los datos).
@@ -1365,7 +1397,8 @@
     }).join('')}</div>` : '<div class="cal-empty">Equipo técnico no cargado</div>';
 
     // Programa, en una columna, con sus secciones de colores
-    const entries = programEntries(row.program, row.type);
+    const rowMon = mondayOf(row.date);
+    const entries = programEntries(row.program, row.type, especialDe(rowMon));
     let progHtml = '';
     entries.forEach(e => {
       if (e.section) {
@@ -1383,13 +1416,14 @@
     // Resumen de la línea cerrada
     const p = row.program || {};
     let sum = '';
-    if (row.type === 'finde' && (pubName(p.oradorPublico) || visitorName(p))) sum = 'Discurso: ' + (pubName(p.oradorPublico) || visitorName(p));
+    if (row.type === 'finde' && reunionDe(rowMon, 'finde').visita) sum = 'Discurso: ' + ((especialDe(rowMon) || {}).so || 'superintendente de circuito');
+    else if (row.type === 'finde' && (pubName(p.oradorPublico) || visitorName(p))) sum = 'Discurso: ' + (pubName(p.oradorPublico) || visitorName(p));
     else if (pubName(p.presidente)) sum = 'Presidente: ' + pubName(p.presidente);
     else if (anyTec) sum = 'Audio: ' + (pubName(row.roles.sonido) || '—') + ' · Video: ' + (pubName(row.roles.video) || '—');
     else sum = 'Sin asignaciones cargadas';
     const meTag = mine.length ? `<span class="cal-me">Vos: ${escapeHtml(mine.slice(0, 2).join(' · ') + (mine.length > 2 ? ` y ${mine.length - 2} más` : ''))}</span>` : '';
-    const hora = meetingTimeOf(row.type);
-    const tipo = (row.type === 'finde' ? 'Fin de semana' : 'Entre semana') + (hora ? ' · ' + hora : '');
+    const hora = meetingTimeOf(row.type, row.date);
+    const tipo = (row.type === 'finde' ? 'Fin de semana' : 'Entre semana') + (hora ? ' · ' + hora : '') + espTagHTML(rowMon);
 
     return `<div class="cal-m${row.type === 'finde' ? ' finde' : ''}${open ? ' open' : ''}" data-mkey="${key}">
       <button type="button" class="cal-h" aria-expanded="${open}">
@@ -1427,7 +1461,7 @@
     const out = [];
     Object.keys(data.weeks || {}).forEach(monday => ['semana', 'finde'].forEach(t => {
       const w = data.weeks[monday][t];
-      if (!w || !((w.roles && Object.values(w.roles).some(Boolean)) || isProgramFilled(w.program, t))) return;
+      if (!w || !((w.roles && Object.values(w.roles).some(Boolean)) || isProgramFilled(w.program, t)) || sinReunion(monday, t)) return;
       out.push(dateForType(monday, t, settings));
     }));
     return out.sort();
@@ -1448,6 +1482,7 @@
         const hasRoles = w.roles && Object.values(w.roles).some(Boolean);
         const hasProgram = isProgramFilled(w.program, t);
         if (!hasRoles && !hasProgram) return;
+        if (sinReunion(monday, t)) return;
         const date = dateForType(monday, t, settings);
         if (date.slice(0, 7) !== prefix) return;
         const { dayName, day } = formatDate(date);
@@ -1504,8 +1539,9 @@
     const extra = LABEL_SEARCH_ALIASES[label] || [];
     return norm(label + ' ' + extra.join(' '));
   }
-  function programMatches(program, type, matchedIds) {
+  function programMatches(program, type, matchedIds, esp) {
     if (!program) return [];
+    const vis = !!(esp && esp.tipo === 'visita');   // en la visita no hay discurso público de acá ni Estudio bíblico
     const out = [];
     const nameOf = id => { const p = (data.publishers || []).find(pp => pp.id === id); return p ? p.name : ''; };
     const pairName = (a, b) => { const n1 = nameOf(a), n2 = nameOf(b); return b ? `${n1 || '—'} / ${n2}` : n1; };
@@ -1514,7 +1550,7 @@
     chk(program.presidente, 'Presidente');
     chk(program.oracionInicial, 'Oración inicial');
     if (type === 'finde') {
-      chk(program.oradorPublico, 'Discurso público');
+      if (!vis) chk(program.oradorPublico, 'Discurso público');
       chk(program.atalayaConductor, 'Atalaya — Conductor');
       chk(program.atalayaLector, 'Atalaya — Lector');
       chk(program.oracionFinal, 'Oración final');
@@ -1531,7 +1567,7 @@
       chkPair(s.estudianteAux, s.ayudanteAux, `${base} (sala aux.)`);
     });
     (program.vidaCristiana || []).forEach(v => chk(v.presentador, v.tema || 'Nuestra Vida Cristiana'));
-    chkPair(program.estudioConductor, program.estudioLector, 'Estudio bíblico');
+    if (!vis) chkPair(program.estudioConductor, program.estudioLector, 'Estudio bíblico');
     chk(program.oracionFinal, 'Oración final');
     return out;
   }
@@ -1544,7 +1580,7 @@
     return qWords.every(w => dateStr.includes(w));
   }
   function programLabelMatches(program, type, qWords) {
-    return programEntries(program, type)
+    return programEntries(program, type, arguments[3])
       .filter(e => !e.section && !e.song && e.name && (
         (e.label && qWords.every(w => searchableLabel(e.label).includes(w))) ||
         (e.tema && qWords.every(w => norm(e.tema).includes(w)))
@@ -1591,18 +1627,19 @@
       ['semana', 'finde'].forEach(t => {
         const w = data.weeks[monday][t];
         if (!w) return;
+        if (sinReunion(monday, t)) return;
         const date = dateForType(monday, t, settings);
         if (date < today) return;
         const roles = getRoles(t, settings.micCount, settings.usherCount);
         let matches = roles.filter(r => w.roles && matchedIds.has(w.roles[r.key]));
-        let progLabels = programMatches(w.program, t, matchedIds);
+        let progLabels = programMatches(w.program, t, matchedIds, especialDe(monday));
         // Coincidencia por nombre del puesto/sección (aunque no coincida ningún hermano)
         roles.filter(r => qWords.every(word => norm(r.label).includes(word)) && w.roles && w.roles[r.key] && !matches.includes(r)).forEach(r => matches.push(r));
-        programLabelMatches(w.program, t, qWords).forEach(pl => { if (!progLabels.some(x => x.label === pl.label && x.name === pl.name)) progLabels.push(pl); });
+        programLabelMatches(w.program, t, qWords, especialDe(monday)).forEach(pl => { if (!progLabels.some(x => x.label === pl.label && x.name === pl.name)) progLabels.push(pl); });
         // Coincidencia por fecha: mostrar todo lo cargado ese día
         if (dateMatchesQuery(date, qWords)) {
           matches = roles.filter(r => w.roles && w.roles[r.key]);
-          progLabels = programEntries(w.program, t)
+          progLabels = programEntries(w.program, t, especialDe(monday))
             .filter(e => !e.section && !e.song && e.name)
             .map(e => ({ label: e.tema ? `${e.label} — ${e.tema}` : e.label, name: e.name }));
         }
@@ -1682,13 +1719,13 @@
     const { dayName, day } = formatDate(dateStr);
     const roles = getRoles(meetingType, settings.micCount, settings.usherCount);
     const techHtml = technicalRowsToHTML(roles, w.roles || {});
-    const entries = programEntries(w.program, meetingType);
+    const entries = programEntries(w.program, meetingType, especialDe(monday));
     const progHtml = entries.length ? programEntriesToHTML(entries) : '';
     $('dayModalContent').innerHTML = `
       <div class="day-modal-handle"></div>
       <div class="day-modal-header">
         <div class="day-modal-title">${escapeHtml(dayName)} ${day}</div>
-        <div class="day-modal-type">${meetingType === 'finde' ? 'Fin de semana' : 'Entre semana'}</div>
+        <div class="day-modal-type">${meetingType === 'finde' ? 'Fin de semana' : 'Entre semana'}${espTagHTML(monday)}</div>
       </div>
       <p class="day-modal-sub">${escapeHtml(monthKey(dateStr))}</p>
       ${techHtml || '<div class="chip-row"><div class="chip empty">Equipo técnico no cargado</div></div>'}
@@ -2115,12 +2152,13 @@
       ['semana', 'finde'].forEach(t => {
         const w = data.weeks[monday] && data.weeks[monday][t];
         if (!w) return;
+        if (sinReunion(monday, t)) return;
         const date = dateForType(monday, t, settings);
         if (date < today || (best && date >= best.date)) return;
         getRoles(t, settings.micCount, settings.usherCount).forEach(r => {
           if (w.roles && w.roles[r.key] === pub.id) take({ label: r.label, date, meetingType: t });
         });
-        programMatches(w.program, t, new Set([pub.id])).forEach(pm => take({ label: pm.label, date, meetingType: t }));
+        programMatches(w.program, t, new Set([pub.id]), especialDe(monday)).forEach(pm => take({ label: pm.label, date, meetingType: t }));
       });
     });
     return best;
@@ -2128,7 +2166,7 @@
   function welcomeWhen(r) {
     let when = new Date(r.date + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
     when = when.charAt(0).toUpperCase() + when.slice(1);
-    const hora = meetingTimeOf(r.meetingType);
+    const hora = meetingTimeOf(r.meetingType, r.date);
     return when + (hora ? ' · ' + hora : '');
   }
   // Qué muestra la última pantalla.
@@ -2406,6 +2444,7 @@
       ['semana', 'finde'].forEach(t => {
         const w = data.weeks[monday][t];
         if (!w) return;
+        if (sinReunion(monday, t)) return;
         const date = dateForType(monday, t, settings);
         if (date < today) return;
         const { dayName, day } = formatDate(date);
@@ -2414,7 +2453,7 @@
         getRoles(t, settings.micCount, settings.usherCount).forEach(r => {
           if (w.roles && w.roles[r.key] === pub.id) rows.push({ dayLabel, month, type: 'tecnico', label: r.label, date, meetingType: t });
         });
-        programMatches(w.program, t, new Set([pub.id])).forEach(pm => rows.push({ dayLabel, month, type: 'programa', label: pm.label, date, meetingType: t }));
+        programMatches(w.program, t, new Set([pub.id]), especialDe(monday)).forEach(pm => rows.push({ dayLabel, month, type: 'programa', label: pm.label, date, meetingType: t }));
       });
     });
     // Las salidas que conduce (las arma el encargado en Territorios) también son asignaciones suyas.
@@ -2439,7 +2478,7 @@
     const gcalAdded = loadGcalAdded(gcalStore, today);
     const flatRowHTML = (r) => {
       const meetingLabel = r.where || (r.meetingType === 'finde' ? 'Fin de semana' : 'Entre semana');
-      const gcalHref = gcalUrl(r.label, r.date, `${meetingLabel} — ${congName}`, r.time || meetingTimeOf(r.meetingType));
+      const gcalHref = gcalUrl(r.label, r.date, `${meetingLabel} — ${congName}`, r.time || meetingTimeOf(r.meetingType, r.date));
       const gkey = gcalKey(r);
       const added = gcalAdded.has(gkey);
       return `<div class="prow" data-date="${r.date}" data-meeting="${r.meetingType}"><div class="pdate">${r.dayLabel}</div><div class="prow-label">${escapeHtml(r.label)}</div><a class="gcal-btn${added ? ' added' : ''}" href="${gcalHref}" target="_blank" rel="noopener" data-gkey="${escapeHtml(gkey)}" data-gstore="${escapeHtml(gcalStore)}" ${gcalBtnAttrs(added)}>${added ? GCAL_ICON_ADDED : GCAL_ICON_ADD}</a></div>`;
@@ -2496,7 +2535,7 @@
     const diff = Math.round((d - hoy) / 86400000);
     const count = diff <= 0 ? 'Hoy' : diff === 1 ? 'Mañana' : `En ${diff} días`;
     const meeting = r.where || (r.meetingType === 'finde' ? 'Fin de semana' : 'Entre semana');
-    const hora = r.time || meetingTimeOf(r.meetingType);
+    const hora = r.time || meetingTimeOf(r.meetingType, r.date);
     const first = ((pub && pub.name) || '').split(' ')[0];
     box.classList.remove('hidden');
     box.innerHTML = `<div class="next-hero" data-date="${r.date}" data-meeting="${r.meetingType}" role="button" tabindex="0" aria-label="Ver el detalle de esa reunión">
@@ -2510,7 +2549,34 @@
     card.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); card.click(); } });
   }
 
+  // Aviso arriba de Inicio cuando esta semana (o la que viene) es especial: visita del superintendente, asamblea…
+  function renderEspBannerV() {
+    const el = $('espBannerV');
+    if (!el || !data) return;
+    const today = localIso(new Date());
+    const m0 = mondayOf(today);
+    const diaLargo = (iso) => { const { dayName, day } = formatDate(iso); return `${dayName.toLowerCase()} ${day}`; };
+    const mon = [m0, addDaysIso(m0, 7)].find(m => especialDe(m) && ['semana', 'finde'].some(t => reunionDe(m, t).fecha >= today || reunionDe(m, t).fechaNormal >= today));
+    if (!mon) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+    const e = especialDe(mon), T = ESPECIAL_TIPOS[e.tipo];
+    const cuando = mon === m0 ? 'Esta semana' : 'La semana que viene';
+    const s = data.settings || {};
+    const out = [];
+    ['semana', 'finde'].forEach(t => {
+      const r = reunionDe(mon, t);
+      const nom = t === 'finde' ? 'del fin de semana' : 'de entre semana';
+      const normalHora = (t === 'finde' ? s.meetingTimeFinde : s.meetingTimeSemana) || '';
+      if (r.sin) out.push(`no hay reunión ${nom}`);
+      else if (r.movida) out.push(`la reunión ${nom} es el <b>${diaLargo(r.fecha)}${r.hora ? ' a las ' + r.hora : ''}</b>, no el ${diaLargo(r.fechaNormal).split(' ')[0]}`);
+      else if (r.hora && r.hora !== normalHora) out.push(`la reunión ${nom} es a las <b>${r.hora}</b>`);
+    });
+    const titulo = e.tipo === 'visita' ? `${cuando} nos visita el superintendente de circuito` : `${T.label}: ${cuando.toLowerCase()}`;
+    const txt = out.length ? out.join('; ').replace(/^./, c => c.toUpperCase()) + '.' : 'Las reuniones siguen en sus días de siempre.';
+    el.classList.remove('hidden');
+    el.innerHTML = `<div class="esp-ban"><span class="ic">${T.icon}</span><span class="tx"><b>${escapeHtml(titulo)}</b>${txt}</span></div>`;
+  }
   function renderUpcoming() {
+    renderEspBannerV();
     const box = $('thisWeek');
     if (!box || !data) return;
     const settings = data.settings || { weekdaySemana: 4, weekdayFinde: 0, micCount: 2, usherCount: 2 };
@@ -2523,6 +2589,7 @@
         const hasRoles = w.roles && Object.values(w.roles).some(Boolean);
         const hasProgram = isProgramFilled(w.program, t);
         if (!hasRoles && !hasProgram) return;
+        if (sinReunion(monday, t)) return;
         const date = dateForType(monday, t, settings);
         if (date < today) return;
         rows.push({ date, type: t, w });

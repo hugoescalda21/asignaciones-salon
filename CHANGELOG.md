@@ -6,6 +6,17 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Semana especial: visita del superintendente de circuito, asamblea y cambios de día — 12 oct 2026 (caché asignaciones-salon-v66 y ver-salon-v52)
+
+- En Programa, debajo del título de la reunión, **"🧳 Semana especial"** abre una ventana para esa semana: *Visita del superintendente de circuito*, *Asamblea* u *Otro cambio de día*, con el día y la hora de cada reunión y el nombre del superintendente (opcional). "Cambiar" la edita y "Quitar" la vuelve normal.
+- **Visita**: la reunión de entre semana pasa al martes (el fin de semana queda igual, se puede cambiar). La tira, el calendario, la lista del mes, el PDF, el cronómetro y la vista usan el día nuevo, con la marca "🧳 VISITA".
+- El programa se acomoda: entre semana, el Estudio bíblico pasa a ser el **Discurso de servicio del superintendente** (no se asigna conductor ni lector); el fin de semana, el **discurso público** lo da él (no se asigna orador), **La Atalaya dura 30 min** y se agrega el **discurso de conclusión**.
+- **Asamblea**: por defecto no hay reunión del fin de semana (sale de la tira, la vista y los recordatorios); la de entre semana se puede sacar también.
+- Recordatorios, el resumen del lunes y la limpieza "después de las reuniones" de esa semana siguen al día nuevo (también en el enlace y la vista de la otra congregación).
+- La vista de los hermanos muestra arriba "Esta semana nos visita el superintendente de circuito…" y, **3 días antes**, a todos les llega una notificación con el cambio (a las 10:00).
+- La semana especial la cargan quienes manejan el Programa (Admin general o Admin de Asignaciones).
+- Hay que publicar las funciones: `firebase deploy --only functions`.
+
 ## Limpieza semanal que se turnan: grupos en su propio orden — 8 oct 2026 (caché asignaciones-salon-v65 y ver-salon-v51)
 
 - La limpieza que se turnan las congregaciones ya no la hace "el grupo de las reuniones de esa semana". Cada congregación la hace con **sus grupos en orden** (1, 2, 3, 4…), aparte de la limpieza de reuniones, solo las semanas que le tocan.

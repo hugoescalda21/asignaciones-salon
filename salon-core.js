@@ -143,9 +143,39 @@
     const s = settings || {};
     const off = (wd) => (Number(wd) + 6) % 7;
     if (cfg && cfg.modo === 'semana') return [addDays(monday, off(cfg.dia != null ? cfg.dia : 6))];
+    // Con las semanas a mano (settings.weeks), una semana especial mueve o saca las reuniones.
+    if (s.weeks && especialDe(s.weeks, monday)) return ['semana', 'finde'].map(t => reunionDe(s.weeks, monday, t, s)).filter(r => !r.sin).map(r => r.fecha).sort();
     const a = addDays(monday, off(s.weekdaySemana != null ? s.weekdaySemana : 4));
     const b = addDays(monday, off(s.weekdayFinde != null ? s.weekdayFinde : 0));
     return [a, b].sort();
+  }
+
+  /* ---------- Semana especial (visita del superintendente de circuito, asamblea, otro cambio) ----------
+     weeks[lunes].especial = { tipo: 'visita' | 'asamblea' | 'cambio', so: nombre del superintendente,
+       semana: { dia: 0-6, hora }, finde: { dia: 0-6, hora }, sinSemana, sinFinde }
+     Lo que no se cambió sigue como en Ajustes (weekdaySemana / weekdayFinde, meetingTimeSemana / meetingTimeFinde). */
+  const ESPECIAL = {
+    visita: { icon: '🧳', label: 'Visita del superintendente de circuito', tag: 'VISITA' },
+    asamblea: { icon: '🏟', label: 'Asamblea', tag: 'ASAMBLEA' },
+    cambio: { icon: '📅', label: 'Cambio de día', tag: 'CAMBIO' }
+  };
+  function especialDe(weeks, monday) {
+    const e = weeks && weeks[monday] && weeks[monday].especial;
+    return e && ESPECIAL[e.tipo] ? e : null;
+  }
+  // La reunión de esa semana: { fecha, hora, sin (no hay reunión), especial, visita, movida (cambió de día), fechaNormal }
+  function reunionDe(weeks, monday, type, settings) {
+    const s = settings || {};
+    const k = type === 'finde' ? 'finde' : 'semana';
+    const base = Number(k === 'finde' ? (s.weekdayFinde != null ? s.weekdayFinde : 0) : (s.weekdaySemana != null ? s.weekdaySemana : 4));
+    const e = especialDe(weeks, monday);
+    const x = (e && e[k]) || {};
+    const dow = x.dia != null && x.dia !== '' && !isNaN(Number(x.dia)) ? Number(x.dia) : base;
+    const hora = (x.hora && /^\d{2}:\d{2}$/.test(x.hora) ? x.hora : '') || (k === 'finde' ? s.meetingTimeFinde : s.meetingTimeSemana) || '';
+    return {
+      fecha: addDays(monday, (dow + 6) % 7), hora, sin: !!(e && (k === 'finde' ? e.sinFinde : e.sinSemana)),
+      especial: e, visita: !!(e && e.tipo === 'visita'), movida: dow !== base, fechaNormal: addDays(monday, (base + 6) % 7)
+    };
   }
 
   /* ---------- Limpiezas cargadas semana por semana ----------
@@ -416,7 +446,7 @@
 
   const api = { TIPOS, REPITE, ESTADOS, TAREAS_REU, isoOf, addDays, addMonths, mondayOf, fechasDe, pasoDe, repiteTxt, UNIDADES, publicado, trabajosEntre, anotadoId, voluntarios, cupoInfo, semanaDelMes, esOtra, turnoLimpieza, diasLimpieza,
     tiposLimpieza, porReunion, claveDe, cargado, quienLimpia, diasDe, limpiezasSemana, ultimaVez, ordenSugerido, sugerir, asignacionesSalon,
-    congsSalon, turnoDe, diasCong, grupoCong, claveParte, congPorReunion, partesCong, nombreGrupoCong, limpiezasSalon, ultimaVezCong, ordenCong, sugerirCongs, tablaLimpieza };
+    ESPECIAL, especialDe, reunionDe, congsSalon, turnoDe, diasCong, grupoCong, claveParte, congPorReunion, partesCong, nombreGrupoCong, limpiezasSalon, ultimaVezCong, ordenCong, sugerirCongs, tablaLimpieza };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.SalonCore = api;
 })(typeof window !== 'undefined' ? window : this);

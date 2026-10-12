@@ -835,6 +835,20 @@
   .ms-item.past { opacity: 0.55; }
   .ms-item.active { border: 2px solid var(--emphasis); box-shadow: 0 4px 12px rgba(33,44,52,0.16); opacity: 1; }
   .ms-next { position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: var(--accent-blue); color: #fff; font-size: 8.5px; font-weight: 700; border-radius: 6px; padding: 1px 6px; white-space: nowrap; }
+  /* Semana especial (visita del superintendente, asamblea, cambio de día) */
+  :root { --esp: #6D28D9; }
+  html[data-theme="dark"] { --esp: #C4B5FD; }
+  .ms-esp { display: block; font-size: 9px; font-weight: 900; letter-spacing: .03em; color: var(--esp); margin-top: 2px; white-space: nowrap; }
+  .esp-ban { display: flex; gap: 10px; align-items: center; background: color-mix(in srgb, #7C3AED 10%, var(--surface)); border: 1.5px solid color-mix(in srgb, #7C3AED 35%, transparent); border-radius: 14px; padding: 10px 12px; margin: 0 0 12px; font-size: 13px; line-height: 1.4; color: var(--ink); }
+  .esp-ban .ic { font-size: 22px; } .esp-ban > span.tx { flex: 1; min-width: 0; } .esp-ban .tx > b:first-child { display: block; font-size: 14px; }
+  .esp-ban button { border: none; background: #6D28D9; color: #fff; font: inherit; font-weight: 800; font-size: 12.5px; border-radius: 12px; padding: 7px 11px; cursor: pointer; }
+  .esp-add { display: block; margin: -4px 2px 12px auto; border: none; background: none; color: var(--esp); font: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer; padding: 2px 0; }
+  .esp-card { border: 1.5px dashed color-mix(in srgb, #7C3AED 45%, transparent); background: color-mix(in srgb, #7C3AED 6%, transparent); border-radius: 12px; padding: 10px 12px; margin: 8px 0; font-size: 13px; line-height: 1.45; }
+  .esp-card b { display: block; font-size: 14px; } .esp-card small { color: var(--esp); font-weight: 800; }
+  .esp-modal .tpick.on { background: color-mix(in srgb, #7C3AED 8%, transparent); }
+  .esp-modal .tpick small { display: block; font-size: 12px; color: var(--ink-soft); font-weight: 500; margin-top: 2px; }
+  .esp-modal .tpick { padding: 10px 6px; }
+  .esp-modal select, .esp-modal input { width: 100%; }
   .meeting-title { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 0 2px 12px; }
   .meeting-title b { font-family: 'Fraunces', serif; font-weight: 500; font-size: 19px; }
   .meeting-title small { font-size: 13px; color: var(--ink-soft); font-weight: 600; }
@@ -1337,6 +1351,7 @@
       </div>
       <div class="mstrip" id="meetingStrip" role="tablist" aria-label="Reuniones del mes"></div>
       <div class="meeting-title"><b id="meetingTitle"></b><small id="meetingTime"></small></div>
+      <div id="espBanner"></div>
     </div>
     <div class="week-bar hidden">
       <div class="week-label-row">
@@ -2164,12 +2179,32 @@
     return d.toISOString().slice(0, 10);
   }
   function shiftDate(iso, days) { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + days); return d.toISOString().slice(0, 10); }
-  function dateForType(monday, type) {
-    const dow = type === 'semana' ? data.settings.weekdaySemana : data.settings.weekdayFinde;
-    const offset = (dow - 1 + 7) % 7;
-    const d = new Date(monday + 'T00:00:00'); d.setDate(d.getDate() + offset);
-    return d.toISOString().slice(0, 10);
+  /* ---------- Semana especial: visita del superintendente de circuito, asamblea, otro cambio de día ----------
+     data.weeks[lunes].especial = { tipo, so, semana: { dia, hora }, finde: { dia, hora }, sinSemana, sinFinde }
+     (la misma cuenta está en salon-core.js → reunionDe, para la vista y las funciones). */
+  const ESPECIAL_TIPOS = {
+    visita: { icon: '🧳', label: 'Visita del superintendente de circuito', tag: 'VISITA' },
+    asamblea: { icon: '🏟', label: 'Asamblea', tag: 'ASAMBLEA' },
+    cambio: { icon: '📅', label: 'Cambio de día', tag: 'CAMBIO' }
+  };
+  function especialDe(monday) {
+    const e = data && data.weeks && data.weeks[monday] && data.weeks[monday].especial;
+    return e && ESPECIAL_TIPOS[e.tipo] ? e : null;
   }
+  function addDaysIso(iso, n) { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+  function reunionDe(monday, type) {
+    const s = data.settings || {};
+    const k = type === 'finde' ? 'finde' : 'semana';
+    const base = Number(k === 'finde' ? (s.weekdayFinde != null ? s.weekdayFinde : 0) : (s.weekdaySemana != null ? s.weekdaySemana : 4));
+    const e = especialDe(monday);
+    const x = (e && e[k]) || {};
+    const dow = x.dia != null && x.dia !== '' && !isNaN(Number(x.dia)) ? Number(x.dia) : base;
+    const hora = (x.hora && /^\d{2}:\d{2}$/.test(x.hora) ? x.hora : '') || (k === 'finde' ? s.meetingTimeFinde : s.meetingTimeSemana) || '';
+    return { fecha: addDaysIso(monday, (dow + 6) % 7), hora, sin: !!(e && (k === 'finde' ? e.sinFinde : e.sinSemana)), especial: e, visita: !!(e && e.tipo === 'visita'), movida: dow !== base, fechaNormal: addDaysIso(monday, (base + 6) % 7) };
+  }
+  function dateForType(monday, type) { return reunionDe(monday, type).fecha; }
+  function horaDe(monday, type) { return reunionDe(monday, type).hora; }
+  const soNombre = (e) => (e && e.so) || 'Superintendente de circuito';
   function formatDate(iso) {
     const d = new Date(iso + 'T00:00:00');
     const dayName = d.toLocaleDateString('es-ES', { weekday: 'long' });
@@ -3042,17 +3077,15 @@
   /* ---------- Tira de reuniones: se elige la reunión directamente ---------- */
   // Reuniones de un mes ("AAAA-MM"): días de reunión entre semana y fin de semana, en orden.
   function meetingsOfMonth(ym) {
-    const [y, m] = ym.split('-').map(Number);
-    const days = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    // Semana por semana: así una semana especial mueve la reunión de día (o la saca, si no hay).
     const out = [];
-    for (let d = 1; d <= days; d++) {
-      const dt = new Date(Date.UTC(y, m - 1, d));
-      const dow = dt.getUTCDay();
-      const date = dt.toISOString().slice(0, 10);
-      if (dow === data.settings.weekdaySemana) out.push({ date, type: 'semana', monday: mondayOf(date) });
-      else if (dow === data.settings.weekdayFinde) out.push({ date, type: 'finde', monday: mondayOf(date) });
+    for (let monday = mondayOf(ym + '-01'); monday <= ym + '-31'; monday = addDaysIso(monday, 7)) {
+      ['semana', 'finde'].forEach(type => {
+        const r = reunionDe(monday, type);
+        if (!r.sin && r.fecha.slice(0, 7) === ym) out.push({ date: r.fecha, type, monday, esp: r.especial, movida: r.movida });
+      });
     }
-    return out;
+    return out.sort((a, b) => a.date.localeCompare(b.date) || (a.type === 'semana' ? -1 : 1));
   }
   function todayIsoLocal() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
   // Próxima reunión desde hoy (incluye la de hoy).
@@ -3072,9 +3105,7 @@
     const w = data.weeks[monday] && data.weeks[monday][type];
     const roles = rolesForCurrentUser(type);
     const pr = (w && w.program) || {};
-    const core = type === 'finde'
-      ? [pr.presidente, pr.oracionInicial, pr.oradorPublico || (pr.oradorVisitante && pr.oradorVisitante.nombre), pr.atalayaConductor, pr.atalayaLector, pr.oracionFinal]
-      : [pr.presidente, pr.oracionInicial, pr.tesoros, pr.perlas, pr.lectura, pr.oracionFinal];
+    const core = programCore(pr, type, especialDe(monday));
     const showTec = currentUserRole !== 'asignaciones';
     const showProg = currentUserRole !== 'tecnico' && currentUserRole !== 'acomodadores';
     const tecMissing = showTec ? roles.filter(r => !(w && w.roles && w.roles[r.key])).length : 0;
@@ -3106,7 +3137,7 @@
       const isNext = next && next.date === x.date;
       return `<button type="button" role="tab" aria-selected="${active}" class="ms-item${x.type === 'finde' ? ' finde' : ''}${active ? ' active' : ''}${x.date < today ? ' past' : ''}" data-ms-date="${x.date}" data-ms-type="${x.type}" aria-label="${dayName} ${day}, ${x.type === 'finde' ? 'fin de semana' : 'entre semana'}: ${statusText(s)}">
         ${isNext ? '<span class="ms-next">PRÓXIMA</span>' : ''}
-        <span class="ms-dw">${dayName.slice(0, 3)}</span><span class="ms-dn">${day}</span><span class="ms-ty">${x.type === 'finde' ? 'Finde' : 'Semana'}</span>
+        <span class="ms-dw">${dayName.slice(0, 3)}</span><span class="ms-dn">${day}</span><span class="ms-ty">${x.type === 'finde' ? 'Finde' : 'Semana'}${x.esp ? `<span class="ms-esp">${ESPECIAL_TIPOS[x.esp.tipo].icon} ${ESPECIAL_TIPOS[x.esp.tipo].tag}</span>` : ''}</span>
         <span class="ms-st ${s.kind}">${statusText(s)}</span>
       </button>`;
     }).join('');
@@ -3118,9 +3149,129 @@
     }
     const { dayName, day } = formatDate(curDate);
     $('meetingTitle').textContent = `${dayName} ${day} · ${currentType === 'finde' ? 'Fin de semana' : 'Entre semana'}`;
-    const hora = currentType === 'finde' ? data.settings.meetingTimeFinde : data.settings.meetingTimeSemana;
-    $('meetingTime').textContent = hora || '';
+    $('meetingTime').textContent = horaDe(currentMonday, currentType) || '';
+    renderEspBanner();
   }
+  /* ---------- Semana especial: aviso arriba de la reunión y la ventana para cargarla ---------- */
+  const puedeEsp = () => currentUserRole === 'super' || currentUserRole === 'asignaciones';
+  const diaLargo = (iso) => { const { dayName, day } = formatDate(iso); return `${dayName.toLowerCase()} ${day}`; };
+  // Qué cambia esa semana, en palabras: "la reunión de entre semana es el martes 22 a las 19:30 (en vez del jueves 24)".
+  function espCambios(monday) {
+    const out = [];
+    ['semana', 'finde'].forEach(t => {
+      const r = reunionDe(monday, t);
+      const nom = t === 'finde' ? 'del fin de semana' : 'de entre semana';
+      const normalHora = (t === 'finde' ? data.settings.meetingTimeFinde : data.settings.meetingTimeSemana) || '';
+      if (r.sin) out.push(`no hay reunión ${nom}`);
+      else if (r.movida) out.push(`la reunión ${nom} es el <b>${diaLargo(r.fecha)}${r.hora ? ' a las ' + r.hora : ''}</b> (en vez del ${diaLargo(r.fechaNormal)})`);
+      else if (r.hora && r.hora !== normalHora) out.push(`la reunión ${nom} es a las <b>${r.hora}</b>`);
+    });
+    return out;
+  }
+  function renderEspBanner() {
+    const el = $('espBanner');
+    if (!el) return;
+    const e = especialDe(currentMonday);
+    if (!e) { el.innerHTML = puedeEsp() ? '<button type="button" class="esp-add" id="espAddBtn">🧳 Semana especial (visita, asamblea…)</button>' : ''; return; }
+    const T = ESPECIAL_TIPOS[e.tipo];
+    const c = espCambios(currentMonday);
+    const txt = c.length ? 'Esta semana ' + c.join('; ') + '.' : (e.tipo === 'visita' ? 'Las reuniones siguen en sus días de siempre.' : 'Las reuniones siguen como siempre.');
+    el.innerHTML = `<div class="esp-ban"><span class="ic">${T.icon}</span><span class="tx"><b>${escapeHtml(T.label)}</b>${e.tipo === 'visita' && e.so ? escapeHtml(e.so) + ' · ' : ''}${txt}</span>${puedeEsp() ? '<button type="button" id="espEditBtn">Cambiar</button>' : ''}</div>`;
+  }
+  $('espBanner').addEventListener('click', (e) => { if (e.target.closest('#espAddBtn, #espEditBtn')) openEspecial(currentMonday); });
+  function openEspecial(monday) {
+    const prev = especialDe(monday);
+    const st = data.settings;
+    const baseS = Number(st.weekdaySemana != null ? st.weekdaySemana : 4), baseF = Number(st.weekdayFinde != null ? st.weekdayFinde : 0);
+    const dias = Array.from({ length: 7 }, (_, i) => addDaysIso(monday, i));   // lunes … domingo
+    const dowOf = (iso) => new Date(iso + 'T12:00:00').getDay();
+    const DEF = {
+      visita: { semana: 2, finde: baseF, sinSemana: false, sinFinde: false },
+      asamblea: { semana: baseS, finde: baseF, sinSemana: false, sinFinde: true },
+      cambio: { semana: baseS, finde: baseF, sinSemana: false, sinFinde: false }
+    };
+    let tipo = prev ? prev.tipo : 'visita';
+    const ov = document.createElement('div');
+    ov.className = 'modal-overlay esp-modal';
+    const opts = (base) => dias.map(d => `<option value="${dowOf(d)}">${formatDate(d).dayName} ${formatDate(d).day}${dowOf(d) === base ? ' (igual)' : ''}</option>`).join('') + '<option value="no">No hay reunión</option>';
+    const DESC = {
+      visita: 'La reunión de entre semana pasa al martes. Cambia el programa de las dos reuniones.',
+      asamblea: 'Esa semana no hay reunión del fin de semana en el Salón (la de entre semana, como elijas).',
+      cambio: 'Conmemoración, feriado… Elegís el día y la hora.'
+    };
+    const ini = new Date(monday + 'T12:00:00'), fin = new Date(addDaysIso(monday, 6) + 'T12:00:00');
+    ov.innerHTML = `<div class="modal"><h3>Semana especial</h3><p class="modal-sub" style="margin:0 0 10px;">Semana del ${ini.getDate()} al ${fin.getDate()} de ${fin.toLocaleDateString('es-ES', { month: 'long' })}</p>
+      <div class="tf"><span class="tlbl">¿Qué pasa esta semana?</span>
+      <div class="sl-box" style="padding:0 8px; border:1px solid var(--line); border-radius:12px;">
+        ${Object.keys(ESPECIAL_TIPOS).map(k => `<button type="button" class="tpick" data-esp-tipo="${k}"><span><b>${ESPECIAL_TIPOS[k].icon} ${k === 'cambio' ? 'Otro cambio de día' : ESPECIAL_TIPOS[k].label}</b><small>${DESC[k]}</small></span><span class="esp-ok" style="color:var(--esp);font-weight:900;"></span></button>`).join('')}
+      </div></div>
+      <div class="trow2"><div class="tf"><label for="espSemDia">Entre semana</label><select id="espSemDia">${opts(baseS)}</select></div><div class="tf"><label for="espSemHora">Hora</label><input type="time" id="espSemHora"></div></div>
+      <div class="trow2"><div class="tf"><label for="espFinDia">Fin de semana</label><select id="espFinDia">${opts(baseF)}</select></div><div class="tf"><label for="espFinHora">Hora</label><input type="time" id="espFinHora"></div></div>
+      <div class="tf" id="espSoWrap"><label for="espSo">Superintendente (opcional)</label><input id="espSo" placeholder="Nombre" maxlength="60"></div>
+      <div class="tnote" id="espNote"></div>
+      <div class="tfoot">${prev ? '<button type="button" class="btn" id="espQuitar" style="margin-right:auto;">Quitar</button>' : ''}<button type="button" class="btn" id="espCancel">Cancelar</button><button type="button" class="btn btn-primary" id="espSave">Guardar</button></div></div>`;
+    document.body.appendChild(ov);
+    const q = (id) => ov.querySelector('#' + id);
+    const close = () => ov.remove();
+    const NOTE = {
+      visita: 'Se acomoda todo solo: la tira, el calendario, la vista, los recordatorios, la limpieza de esa semana y el programa (discurso de servicio, discurso público, Atalaya de 30 min y discurso de conclusión). A los hermanos les avisamos unos días antes.',
+      asamblea: 'La reunión que no se hace sale de la tira, el calendario, la vista y los recordatorios. La limpieza de esa semana sigue a las reuniones que sí hay.',
+      cambio: 'La tira, el calendario, la vista, los recordatorios y la limpieza de esa semana pasan al día nuevo.'
+    };
+    const fill = (t, from) => {
+      const d = DEF[t];
+      const f = from || {};
+      q('espSemDia').value = f.sinSemana ? 'no' : String(f.semana && f.semana.dia != null ? f.semana.dia : d.sinSemana ? 'no' : d.semana);
+      q('espFinDia').value = f.sinFinde ? 'no' : String(f.finde && f.finde.dia != null ? f.finde.dia : d.sinFinde ? 'no' : d.finde);
+      q('espSemHora').value = (f.semana && f.semana.hora) || st.meetingTimeSemana || '';
+      q('espFinHora').value = (f.finde && f.finde.hora) || st.meetingTimeFinde || '';
+    };
+    const pintar = () => {
+      ov.querySelectorAll('[data-esp-tipo]').forEach(b => { const on = b.dataset.espTipo === tipo; b.classList.toggle('on', on); b.querySelector('.esp-ok').textContent = on ? '✓' : ''; });
+      q('espSoWrap').classList.toggle('hidden', tipo !== 'visita');
+      q('espNote').textContent = NOTE[tipo];
+      q('espSemHora').disabled = q('espSemDia').value === 'no';
+      q('espFinHora').disabled = q('espFinDia').value === 'no';
+    };
+    fill(tipo, prev);
+    q('espSo').value = (prev && prev.so) || '';
+    pintar();
+    ov.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-esp-tipo]');
+      if (b) { if (b.dataset.espTipo !== tipo) { tipo = b.dataset.espTipo; fill(tipo, prev && prev.tipo === tipo ? prev : null); } pintar(); return; }
+      if (e.target === ov || e.target.id === 'espCancel') close();
+    });
+    q('espSemDia').addEventListener('change', pintar);
+    q('espFinDia').addEventListener('change', pintar);
+    const aplicar = (val, msg) => {
+      ensureWeek(monday);
+      if (val) data.weeks[monday].especial = val; else delete data.weeks[monday].especial;
+      saveData();
+      close();
+      stripNeedsScroll = true;
+      updateWeekLabel(); renderRoleCards(); renderMonthTable(); renderMonthCalendar(); updateTimerTopicLabel();
+      if (currentSubtab === 'programa') renderProgramSection();
+      showToast(msg);
+    };
+    if (q('espQuitar')) q('espQuitar').addEventListener('click', () => aplicar(null, 'Volvió a ser una semana normal'));
+    q('espSave').addEventListener('click', () => {
+      const hh = (v) => /^\d{2}:\d{2}$/.test(v || '') ? v : '';
+      const sd = q('espSemDia').value, fd = q('espFinDia').value;
+      const val = { tipo };
+      if (sd === 'no') val.sinSemana = true; else val.semana = { dia: Number(sd), hora: hh(q('espSemHora').value) };
+      if (fd === 'no') val.sinFinde = true; else val.finde = { dia: Number(fd), hora: hh(q('espFinHora').value) };
+      const so = q('espSo').value.trim();
+      if (tipo === 'visita' && so) val.so = so;
+      // Lo que quedó igual que en Ajustes no se guarda (así un cambio en Ajustes lo sigue).
+      if (val.semana && val.semana.dia === baseS) delete val.semana.dia;
+      if (val.finde && val.finde.dia === baseF) delete val.finde.dia;
+      if (val.semana && val.semana.hora === (st.meetingTimeSemana || '')) delete val.semana.hora;
+      if (val.finde && val.finde.hora === (st.meetingTimeFinde || '')) delete val.finde.hora;
+      ['semana', 'finde'].forEach(k => { if (val[k] && !Object.keys(val[k]).length) delete val[k]; });
+      aplicar(val, ESPECIAL_TIPOS[tipo].label + ': guardada');
+    });
+  }
+
   function goToMeeting(date, type) {
     currentType = type;
     $('pillSemana').classList.toggle('active', type === 'semana');
@@ -3232,7 +3383,7 @@
       if (!w || !w.program) return;
       const d = dateForType(monday, t);
       if (d >= meetingDate) return;
-      programAssignedIds(w.program, t).forEach(id => { if (!last[id] || last[id] < d) last[id] = d; });
+      programAssignedIds(w.program, t, especialDe(monday)).forEach(id => { if (!last[id] || last[id] < d) last[id] = d; });
     }));
     const privUsed = data.publishers.some(p => p.progCaps && Object.values(p.progCaps).some(Boolean));
     pickerCtx = { slots, last, meetingDate, excluded: new Set(typeObj.excluded || []), privUsed };
@@ -3272,14 +3423,23 @@
   function renderProgramSection() {
     const program = weekView(currentMonday)[currentType].program;
     const aux = !!data.settings.useAuxRoom;
+    const reu = reunionDe(currentMonday, currentType);
+    const esp = reu.especial, vis = reu.visita;
+    if (reu.sin) {
+      $('programSection').innerHTML = `<div class="esp-card"><small>${ESPECIAL_TIPOS[esp.tipo].icon} ${ESPECIAL_TIPOS[esp.tipo].tag}</small><b>Esta semana no hay reunión ${currentType === 'finde' ? 'del fin de semana' : 'de entre semana'}</b>${escapeHtml(ESPECIAL_TIPOS[esp.tipo].label)}. No hace falta cargar el programa.</div>`;
+      updateSubtabDots();
+      return;
+    }
     buildPickerContext();
     let html = '<div id="programConflictBanner" class="hidden"></div><div id="programOverloadBanner" class="hidden"></div><div class="program-card">';
     html += programRowHTML('presidente', 'Presidente', program.presidente);
     html += programRowHTML('oracionInicial', 'Oración inicial', program.oracionInicial);
     if (currentType === 'finde') {
       html += `<div class="program-row"><label>🎵 Canción inicial</label>${SONG_INPUT('cancionInicial', program.cancionInicial)}</div>`;
-      const vis = program.oradorVisitante && (program.oradorVisitante.nombre || program.oradorVisitante.congregacion || program.oradorVisitante.open);
+      const visit = program.oradorVisitante && (program.oradorVisitante.nombre || program.oradorVisitante.congregacion || program.oradorVisitante.open);
       if (vis) {
+        html += `<div class="esp-card" id="espDiscursoPublico"><small>30 min · 🧳 VISITA</small><b>Discurso público</b>Lo da el superintendente de circuito${esp.so ? ' (' + escapeHtml(esp.so) + ')' : ''}. No se asigna orador.</div>`;
+      } else if (visit) {
         html += `<div class="visitor-block"><div class="split-label">Orador de otra congregación<span class="min-tag" style="display:inline; margin-left:6px;">30 min</span></div>
           <div class="program-row"><label>Nombre</label><input type="text" data-visitor-field="nombre" value="${escapeHtml(program.oradorVisitante.nombre || '')}" placeholder="Nombre y apellido"></div>
           <div class="program-row"><label>Congregación</label><input type="text" data-visitor-field="congregacion" value="${escapeHtml(program.oradorVisitante.congregacion || '')}" placeholder="Ej: Villa Elvira"></div>
@@ -3290,8 +3450,9 @@
       }
       html += `<div class="program-row"><label>Tema del discurso</label><input type="text" data-program-field="temaPublico" value="${escapeHtml(program.temaPublico || '')}" placeholder="Tema (opcional)"></div>`;
       html += `<div class="program-row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);"><label>🎵 Canción intermedia</label>${SONG_INPUT('cancionIntermedia', program.cancionIntermedia)}</div>`;
-      html += programRowHTML('atalayaConductor', 'Atalaya — Conductor', program.atalayaConductor, '60 min');
+      html += programRowHTML('atalayaConductor', 'Atalaya — Conductor', program.atalayaConductor, vis ? '30 min' : '60 min');
       html += programRowHTML('atalayaLector', 'Atalaya — Lector', program.atalayaLector);
+      if (vis) html += `<div class="esp-card" id="espConclusion"><small>30 min · 🧳 VISITA</small><b>Discurso de conclusión del superintendente de circuito</b>Lo da ${esp.so ? escapeHtml(esp.so) : 'el superintendente'}, después del Estudio de La Atalaya.</div>`;
       html += `<div class="program-row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);"><label>🎵 Canción final</label>${SONG_INPUT('cancionFinal', program.cancionFinal)}</div>`;
       html += programRowHTML('oracionFinal', 'Oración final', program.oracionFinal);
       html += '</div>';
@@ -3351,8 +3512,11 @@
         </div>`;
       });
       html += '<button type="button" class="add-part-btn" id="addVidaPartBtn">+ Agregar parte</button>';
-      html += `<div class="program-row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);"><label>${numTag(n)} Estudio bíblico — Conductor<span class="min-tag">30 min</span></label><select data-program-field="estudioConductor">${allPubOptionsHTML(program.estudioConductor, 'prog:estudioConductor')}</select></div>`;
-      html += `<div class="program-row"><label>Estudio bíblico — Lector</label><select data-program-field="estudioLector">${allPubOptionsHTML(program.estudioLector, 'prog:estudioLector')}</select></div>`;
+      if (vis) html += `<div class="esp-card" id="espServicio"><small>${n} · 30 min · 🧳 VISITA</small><b>Discurso de servicio del superintendente de circuito</b>Lo da ${esp.so ? escapeHtml(esp.so) : 'el superintendente'}. En la visita no hay Estudio bíblico de la congregación: no se asigna conductor ni lector.</div>`;
+      else {
+        html += `<div class="program-row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);"><label>${numTag(n)} Estudio bíblico — Conductor<span class="min-tag">30 min</span></label><select data-program-field="estudioConductor">${allPubOptionsHTML(program.estudioConductor, 'prog:estudioConductor')}</select></div>`;
+        html += `<div class="program-row"><label>Estudio bíblico — Lector</label><select data-program-field="estudioLector">${allPubOptionsHTML(program.estudioLector, 'prog:estudioLector')}</select></div>`;
+      }
       html += `<div class="program-row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);"><label>🎵 Canción final</label>${SONG_INPUT('cancionFinal', program.cancionFinal)}</div>`;
       html += programRowHTML('oracionFinal', 'Oración final', program.oracionFinal);
       html += '</div>';
@@ -4038,11 +4202,13 @@
         const w = data.weeks[monday][t];
         if (!w) return;
         const hasRoles = w.roles && Object.values(w.roles).some(Boolean);
-        const entries = programEntries(w.program || {}, t);
+        const r = reunionDe(monday, t);
+        if (r.sin) return;
+        const entries = programEntries(w.program || {}, t, r.especial);
         if (!hasRoles && !entries.some(e => e.name)) return;
-        const date = dateForType(monday, t);
+        const date = r.fecha;
         if (date.slice(0, 7) !== prefix) return;
-        rows.push({ date, type: t, w, entries });
+        rows.push({ date, type: t, w, entries, monday, esp: r.especial });
       });
     });
     rows.sort((a, b) => a.date.localeCompare(b.date));
@@ -4073,13 +4239,13 @@
       const sum = row.type === 'finde' && publicSpeakerName(p) ? 'Discurso: ' + publicSpeakerName(p)
         : nameOf(p.presidente) ? 'Presidente: ' + nameOf(p.presidente)
         : 'Audio: ' + (nameOf(rv.sonido) || '—') + ' · Video: ' + (nameOf(rv.video) || '—');
-      const hora = (row.type === 'finde' ? data.settings.meetingTimeFinde : data.settings.meetingTimeSemana) || '';
+      const hora = horaDe(row.monday, row.type) || '';
       const { dayName, day } = formatDate(row.date);
       return `<div class="cal-m${row.type === 'finde' ? ' finde' : ''}${open ? ' open' : ''}" data-mkey="${key}">
         <button type="button" class="cal-h" aria-expanded="${open}">
           <span class="cal-bar"></span>
           <span class="cal-d"><span class="dow">${dayName.slice(0, 3)}</span><span class="num">${day}</span></span>
-          <span class="cal-s"><span class="cal-t">${row.type === 'finde' ? 'Fin de semana' : 'Entre semana'}${hora ? ' · ' + hora : ''}</span><span class="cal-sum">${escapeHtml(sum)}</span>${missing ? `<span class="cal-miss">Faltan ${missing} del equipo técnico</span>` : ''}</span>
+          <span class="cal-s"><span class="cal-t">${row.type === 'finde' ? 'Fin de semana' : 'Entre semana'}${hora ? ' · ' + hora : ''}${row.esp ? ` <span class="ms-esp" style="display:inline">${ESPECIAL_TIPOS[row.esp.tipo].icon} ${ESPECIAL_TIPOS[row.esp.tipo].tag}</span>` : ''}</span><span class="cal-sum">${escapeHtml(sum)}</span>${missing ? `<span class="cal-miss">Faltan ${missing} del equipo técnico</span>` : ''}</span>
           <span class="cal-chev" aria-hidden="true">›</span>
         </button>
         <div class="cal-b">
@@ -4165,11 +4331,17 @@
     showToast('PDF generado');
   }
 
-  function programCompleteness(program, type) {
+  // Lo principal del programa de una reunión. En la visita del superintendente, el discurso público lo da él.
+  function programCore(program, type, esp) {
+    const pr = program || {};
+    if (type === 'finde') return (esp && esp.tipo === 'visita')
+      ? [pr.presidente, pr.oracionInicial, pr.atalayaConductor, pr.atalayaLector, pr.oracionFinal]
+      : [pr.presidente, pr.oracionInicial, pr.oradorPublico || (pr.oradorVisitante && pr.oradorVisitante.nombre), pr.atalayaConductor, pr.atalayaLector, pr.oracionFinal];
+    return [pr.presidente, pr.oracionInicial, pr.tesoros, pr.perlas, pr.lectura, pr.oracionFinal];
+  }
+  function programCompleteness(program, type, esp) {
     if (!program) return 'none';
-    const core = type === 'finde'
-      ? [program.presidente, program.oracionInicial, program.oradorPublico || (program.oradorVisitante && program.oradorVisitante.nombre), program.atalayaConductor, program.atalayaLector, program.oracionFinal]
-      : [program.presidente, program.oracionInicial, program.tesoros, program.perlas, program.lectura, program.oracionFinal];
+    const core = programCore(program, type, esp);
     const filledCount = core.filter(Boolean).length;
     if (filledCount === 0) return 'none';
     return filledCount === core.length ? 'complete' : 'partial';
@@ -4182,7 +4354,7 @@
     const dotT = $('dotTecnico');
     dotT.classList.toggle('ok', tecnicoOk);
     dotT.classList.toggle('warn', !tecnicoOk);
-    const progState = programCompleteness(typeObj.program, currentType);
+    const progState = programCompleteness(typeObj.program, currentType, especialDe(currentMonday));
     const dotP = $('dotPrograma');
     dotP.classList.toggle('ok', progState === 'complete');
     dotP.classList.toggle('warn', progState !== 'complete');
@@ -4199,13 +4371,14 @@
     const startOffset = (first.getDay() + 6) % 7; // Lunes = 0
     const daysInMonth = new Date(y, m + 1, 0).getDate();
     const todayIso = todayIsoLocal();
+    const reus = {};
+    meetingsOfMonth(`${y}-${String(m + 1).padStart(2, '0')}`).forEach(x => { reus[x.date] = x.type; });
     let cells = '';
     for (let i = 0; i < startOffset; i++) cells += '<div class="cal-day empty"></div>';
     for (let d = 1; d <= daysInMonth; d++) {
       const dateIso = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      const dow = new Date(dateIso + 'T00:00:00').getDay();
-      const isSemana = dow === data.settings.weekdaySemana;
-      const isFinde = dow === data.settings.weekdayFinde;
+      const isSemana = reus[dateIso] === 'semana';
+      const isFinde = reus[dateIso] === 'finde';
       const isToday = dateIso === todayIso;
       let dotsHtml = '';
       let typeClass = '';
@@ -4216,7 +4389,7 @@
         const week = weekView(mondayOf(dateIso))[type];
         const filled = getRoles(type).filter(r => week.roles[r.key]);
         if (filled.length) dotsHtml = '<div class="cal-dotrow">' + filled.map(r => `<span class="cal-role-dot" style="background:${r.color}"></span>`).join('') + '</div>';
-        const progState = programCompleteness(week.program, type);
+        const progState = programCompleteness(week.program, type, especialDe(mondayOf(dateIso)));
         if (progState === 'complete') ringHtml = '<span class="cal-prog-ring full" title="Programa completo"></span>';
         else if (progState === 'partial') ringHtml = '<span class="cal-prog-ring" title="Programa incompleto"></span>';
       }
@@ -4243,9 +4416,7 @@
       </div>`;
     $('calendarWrap').querySelectorAll('[data-date]').forEach(el => el.addEventListener('click', () => {
       const date = el.dataset.date;
-      const dow = new Date(date + 'T00:00:00').getDay();
-      if (dow === data.settings.weekdayFinde) currentType = 'finde';
-      else if (dow === data.settings.weekdaySemana) currentType = 'semana';
+      if (reus[date]) currentType = reus[date];
       $('pillSemana').classList.toggle('active', currentType === 'semana');
       $('pillFinde').classList.toggle('active', currentType === 'finde');
       setWeek(mondayOf(date));
@@ -4410,7 +4581,8 @@
     let any = false;
     ['semana', 'finde'].forEach(t => {
       const week = weekView(currentMonday)[t];
-      const pEntriesCheck = programEntries(week.program, t);
+      if (reunionDe(currentMonday, t).sin) return;
+      const pEntriesCheck = programEntries(week.program, t, especialDe(currentMonday));
       if (!Object.values(week.roles).some(Boolean) && !pEntriesCheck.length) return;
       any = true;
       const date = dateForType(currentMonday, t);
@@ -4557,32 +4729,38 @@
     const map = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
     return map[n] || `${n}.`;
   }
-  function programAssignedIds(program, type) {
+  function programAssignedIds(program, type, esp) {
     const ids = new Set();
     const add = (id) => { if (id) ids.add(id); };
     if (!program) return ids;
+    const vis = !!(esp && esp.tipo === 'visita');
     add(program.presidente); add(program.oracionInicial); add(program.oracionFinal);
     if (type === 'finde') {
-      add(program.oradorPublico); add(program.atalayaConductor); add(program.atalayaLector);
+      if (!vis) add(program.oradorPublico);
+      add(program.atalayaConductor); add(program.atalayaLector);
       return ids;
     }
     add(program.consejeroAux); add(program.tesoros); add(program.perlas); add(program.lectura); add(program.lecturaAux);
     (program.estudiantes || []).forEach(s => { add(s.estudiante); add(s.ayudante); add(s.estudianteAux); add(s.ayudanteAux); });
     (program.vidaCristiana || []).forEach(v => add(v.presentador));
-    add(program.estudioConductor); add(program.estudioLector);
+    if (!vis) { add(program.estudioConductor); add(program.estudioLector); }
     return ids;
   }
 
-  function programEntries(program, type) {
+  // esp: la semana especial (si la visita del superintendente cambia el programa).
+  function programEntries(program, type, esp) {
+    const vis = !!(esp && esp.tipo === 'visita');
+    const so = soNombre(esp);
     const nameOf = id => { const p = data.publishers.find(pp => pp.id === id); return p ? p.name : null; };
     const pairName = (a, b) => { const n1 = nameOf(a), n2 = nameOf(b); if (!n1 && !n2) return null; return n2 ? `${n1 || '—'} / ${n2}` : n1; };
     const entries = [];
     entries.push({ label: 'Presidente', name: nameOf(program.presidente) });
     entries.push({ label: 'Oración inicial', name: nameOf(program.oracionInicial) });
     if (type === 'finde') {
-      entries.push({ label: 'Discurso público', name: publicSpeakerName(program) || null, tema: program.temaPublico, min: 30 });
-      entries.push({ label: 'Atalaya — Conductor', name: nameOf(program.atalayaConductor), min: 60 });
+      entries.push({ label: 'Discurso público', name: vis ? so : (publicSpeakerName(program) || null), tema: program.temaPublico, min: 30 });
+      entries.push({ label: 'Atalaya — Conductor', name: nameOf(program.atalayaConductor), min: vis ? 30 : 60 });
       entries.push({ label: 'Atalaya — Lector', name: nameOf(program.atalayaLector) });
+      if (vis) entries.push({ label: 'Discurso de conclusión', name: so, min: 30 });
       entries.push({ label: 'Oración final', name: nameOf(program.oracionFinal) });
       return entries.filter(e => e.name);
     }
@@ -4618,7 +4796,8 @@
       n++;
     });
     const estudioNm = pairName(program.estudioConductor, program.estudioLector);
-    if (estudioNm) vidaGroup.push({ num: n, label: 'Estudio bíblico', name: estudioNm, min: 30 });
+    if (vis) vidaGroup.push({ num: n, label: 'Discurso de servicio', name: so, min: 30 });
+    else if (estudioNm) vidaGroup.push({ num: n, label: 'Estudio bíblico', name: estudioNm, min: 30 });
     const vidaFilled = vidaGroup.filter(e => e.name);
     if (vidaFilled.length) { entries.push({ section: 'NUESTRA VIDA CRISTIANA' }); entries.push(...vidaFilled); }
 
@@ -4638,7 +4817,7 @@
     if (currentUserRole !== 'asignaciones') {
       rolesForCurrentUser(currentType).forEach(r => { const p = data.publishers.find(pp => pp.id === week[r.key]); lines.push(`${r.emoji} *${r.label}:* ${p ? p.name : '—'}`); });
     }
-    const pEntries = (currentUserRole === 'tecnico' || currentUserRole === 'acomodadores') ? [] : programEntries(typeObj.program, currentType);
+    const pEntries = (currentUserRole === 'tecnico' || currentUserRole === 'acomodadores') ? [] : programEntries(typeObj.program, currentType, especialDe(currentMonday));
     if (pEntries.length) {
       lines.push('', '📖 *Programa*', '');
       pEntries.forEach(e => {
@@ -4753,7 +4932,7 @@
     const parts = [];
     const withCounsel = !!(data.settings && data.settings.timerCounsel) && currentType === 'semana';
     const presName = (() => { const pr = data.publishers.find(pp => pp.id === (w.program || {}).presidente); return pr ? pr.name : ''; })();
-    programEntries(w.program || {}, currentType).forEach(e => {
+    programEntries(w.program || {}, currentType, especialDe(currentMonday)).forEach(e => {
       if (e.section) { sec = e.section; return; }
       if (e.song || !e.name || /sala auxiliar/i.test(e.label)) return;
       const noMin = !Number(e.min) && !!e.num && !!DEF[sec];
@@ -4894,7 +5073,7 @@
   function meetingEndEstimate() {
     const type = currentType;
     const date = dateForType(currentMonday, type);
-    const startStr = data.settings[type === 'finde' ? 'meetingTimeFinde' : 'meetingTimeSemana'];
+    const startStr = horaDe(currentMonday, type);
     if (!/^\d{2}:\d{2}$/.test(startStr || '')) return null;
     const schedStart = new Date(`${date}T${startStr}:00`).getTime();
     const schedEnd = schedStart + meetingDurMin(type) * 60000;
@@ -6983,10 +7162,8 @@
     try { lastNotified = localStorage.getItem(REM_KEY); } catch (e) { /* sin acceso */ }
     if (lastNotified === today) return;
     const tomorrow = shiftDate(today, 1);
-    const dow = new Date(tomorrow + 'T00:00:00').getDay();
-    let type = null;
-    if (dow === data.settings.weekdaySemana) type = 'semana';
-    else if (dow === data.settings.weekdayFinde) type = 'finde';
+    const reu = meetingsOfMonth(tomorrow.slice(0, 7)).find(x => x.date === tomorrow);
+    const type = reu ? reu.type : null;
     if (!type) return;
     const week = weekView(mondayOf(tomorrow))[type];
     const missing = getRoles(type).filter(r => !week.roles[r.key]);

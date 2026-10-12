@@ -147,9 +147,9 @@ const isoDay = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate
   // =====================================================================
   // Datos de prueba compartidos por Calendario e Inicio
   const pubs = [['p1', 'Hugo Escalda', 'hugo@x.com'], ['p2', 'Martín Ruiz'], ['p3', 'Lucas Gómez'], ['p4', 'Carlos Vega'], ['p5', 'Sofía Abad'], ['p6', 'Laura Paz'], ['p7', 'Ramiro Quinteros'], ['p8', 'Tomás Bravo']].map(([id, name, email]) => ({ id, name, email }));
-  const calCode = [escapeHtml, constBlock('ROLE_META', '};'), fn('getRoles'), fn('dateForType'), fn('formatDate'), oneLine('  function monthKey('), oneLine('  function localIso('),
+  const calCode = [escapeHtml, constBlock('ROLE_META', '};'), fn('getRoles'), fn('mondayOf'), between('  const ESPECIAL_TIPOS', 'return reunionDe(monday, type, settings).fecha; }'), fn('formatDate'), oneLine('  function monthKey('), oneLine('  function localIso('),
     fn('meetingTimeOf'), fn('visitorName'), fn('programEntries'), constBlock('SECTION_COLOR', '};'), fn('isProgramFilled'), constBlock('calOpenState', ';'),
-    fn('viewerPub'), fn('calRowHTML'), fn('bindCalAccordion'), oneLine('  let calMonth = null;'), fn('meetingDates'), oneLine('  function shiftMonth('), fn('renderMonth'), fn('renderUpcoming'),
+    fn('viewerPub'), fn('calRowHTML'), fn('bindCalAccordion'), oneLine('  let calMonth = null;'), fn('meetingDates'), oneLine('  function shiftMonth('), fn('renderMonth'), fn('renderEspBannerV'), fn('renderUpcoming'),
     constBlock('annState', ';'), fn('annVigentesList'), fn('annItemHtml'), fn('gcalUrl'), fn('annEventHtml'), fn('annLinkify'), fn('annRelDate'), fn('annExpiresLabel'), fn('annTeaserEvent'), fn('renderAnnTeaser')].join('\n');
   function calCtx(weeks, anuncios, seenIso) {
     const $ = fakeDom();

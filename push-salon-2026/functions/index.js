@@ -11,6 +11,7 @@ const db = admin.firestore();
 const messaging = admin.messaging();
 
 const REGION = 'southamerica-east1';
+const { meetingDateFor, avisoEspecial } = require('./lib');
 const { roleLabel, collectNewlyAssignedIds, avisoPreview, selectNewAvisos, notificationForNewAvisos, validateReminder, reminderDocId, ROLES_MAP,
   arParts, addDaysIso, remindersDue, reminderMessage, sentReminderId, roleAreasFor, disallowedWeekChanges, guardSummary, accessRequestMessage,
   conductorAssignments, newConductors, conductorMessage, newTerritoryAssignments,
@@ -174,9 +175,7 @@ exports.onCongregationWrite = onDocumentUpdated({ document: 'congregations/{code
       title = `${greeting}tienes una asignación: ${assig.label}`;
       
       const settings = after.settings || {};
-      const weekday = assig.meetingType === 'semana' ? (settings.weekdaySemana || 4) : (settings.weekdayFinde || 7);
-      const meetingDate = new Date(assig.monday);
-      meetingDate.setDate(meetingDate.getDate() + (weekday - 1));
+      const meetingDate = new Date(meetingDateFor(assig.monday, assig.meetingType, settings, after.weeks || {}) + 'T12:00:00Z');   // sigue a una semana especial
       meetingDateIso = meetingDate.toISOString();
       
       const typeStr = assig.meetingType === 'semana' ? 'Entre semana' : 'Fin de semana';
@@ -189,9 +188,7 @@ exports.onCongregationWrite = onDocumentUpdated({ document: 'congregations/{code
       
       const settings = after.settings || {};
       const assig = assignments[0];
-      const weekday = assig.meetingType === 'semana' ? (settings.weekdaySemana || 4) : (settings.weekdayFinde || 7);
-      const meetingDate = new Date(assig.monday);
-      meetingDate.setDate(meetingDate.getDate() + (weekday - 1));
+      const meetingDate = new Date(meetingDateFor(assig.monday, assig.meetingType, settings, after.weeks || {}) + 'T12:00:00Z');   // sigue a una semana especial
       meetingDateIso = meetingDate.toISOString();
     }
 
@@ -599,12 +596,32 @@ exports.sendScheduledReminders = onSchedule({ schedule: '0,30 * * * *', timeZone
   const staleTokens = [];
   const sends = [];
   let enviados = 0;
+  const { dateIso: hoySlot, minutes: minSlot } = arParts(slot);
   for (const doc of subsSnap.docs) {
     const sub = doc.data();
     if (!sub.code || !sub.pubId) continue;
     const cong = await getCong(sub.code);
     if (!cong) continue;
     const token = doc.id;
+    // Semana especial (visita del superintendente, asamblea…): aviso a todos unos días antes, a las 10:00.
+    // Los hermanos de otra congregación ('x:…') no lo reciben: es de las reuniones de esta congregación.
+    if (minSlot === 10 * 60 && !String(sub.pubId).startsWith('x:')) {
+      const av = avisoEspecial(cong, hoySlot);
+      if (av) {
+        let nuevo = true;
+        try { await db.collection('sentReminders').doc(sentReminderId(token, 'especial', av.dateIso)).create({ token, kind: 'especial', dateIso: av.dateIso, pubId: sub.pubId, code: sub.code, sentAt: new Date().toISOString() }); } catch (e) { nuevo = false; }
+        if (nuevo) {
+          sends.push(messaging.send({
+            token, notification: { title: av.title, body: av.body }, android: { priority: 'high' },
+            webpush: { headers: { Urgency: 'high', TTL: '43200' }, fcmOptions: { link: verLink(sub.code) }, notification: { badge: BADGE_URL, vibrate: [200, 100, 200], tag: 'especial-' + av.monday } }
+          }).then(() => { enviados++; return markSent(token, 'especial'); }).catch((err) => {
+            console.error('[especial] error enviando:', err && err.code, err && err.message);
+            markFailed(token, err, 'especial');
+            if (err && (err.code === 'messaging/registration-token-not-registered' || err.code === 'messaging/invalid-registration-token')) staleTokens.push(token);
+          }));
+        }
+      }
+    }
     for (const due of remindersDue(cong, sub, slot)) {
       const markRef = db.collection('sentReminders').doc(sentReminderId(token, due.kind, due.dateIso));
       try {
@@ -821,7 +838,7 @@ exports.weeklySummary = onSchedule({ schedule: '50 7 * * 1', timeZone: 'America/
       const anotados = {}; an.forEach((x) => { anotados[x.id] = x.data(); });
       const occ = SalonCore.trabajosEntre(trabajos, hoyIso, SalonCore.addDays(hoyIso, 6)).filter((o) => !o.cancelada && o.estado !== 'hecho' && o.pub);
       const buscan = occ.filter((o) => { const ci = SalonCore.cupoInfo(o.t, o.fecha, anotados); return ci.cupo && !ci.completo; }).length;
-      const quien = SalonCore.limpiezasSemana(limpieza, SalonCore.mondayOf(hoyIso), s).map((l) => l.quien).filter((q) => q && q.g !== 'nadie')
+      const quien = SalonCore.limpiezasSemana(limpieza, SalonCore.mondayOf(hoyIso), Object.assign({}, s, { weeks: cong.weeks || {} })).map((l) => l.quien).filter((q) => q && q.g !== 'nadie')
         .map((q) => (q.g === 'otra' ? (limpieza.otraNombre || 'otra congregación') : ((grupos[q.g] || {}).nombre || '')));
       const msg = resumenSemanal(cong, hoyIso, { solicitudes: sol.size, terminados: ter.size, buscan, limpia: [...new Set(quien.filter(Boolean))].join(' y ') });
       if (!msg) continue;
@@ -937,7 +954,7 @@ exports.salonExterno = onRequest({ cors: ['https://hugoescalda21.github.io'], re
     if (lz) {
       const { L, grupos } = await leerLimpieza();
       if (!L.enlace || L.enlace !== lz) { res.status(200).send({ modo: 'lz', cong: congName, estado: 'nohay' }); return; }
-      res.status(200).send({ modo: 'lz', cong: congName, estado: 'ok', limpieza: limpiezaExterna(L, grupos, cong.settings, congName, arParts(new Date()).dateIso) });
+      res.status(200).send({ modo: 'lz', cong: congName, estado: 'ok', limpieza: limpiezaExterna(L, grupos, cong.settings, congName, arParts(new Date()).dateIso, cong.weeks) });
       return;
     }
     if (k) {
@@ -977,7 +994,7 @@ exports.salonExterno = onRequest({ cors: ['https://hugoescalda21.github.io'], re
       const occ = ext.comite ? occComite(trabajos, hoyIso) : occVoluntario(trabajos, anotados, ext.id, hoyIso);
       // El comité de otra congregación también ve la limpieza del Salón (y elige los grupos de su congregación).
       let limpieza = null, miCong = null;
-      if (ext.comite) { const { L, grupos } = await leerLimpieza(); if (L.congs && L.congs.length) { limpieza = limpiezaExterna(L, grupos, cong.settings, congName, hoyIso); const cg = congDeExt(L, ext); miCong = cg ? cg.id : null; } }
+      if (ext.comite) { const { L, grupos } = await leerLimpieza(); if (L.congs && L.congs.length) { limpieza = limpiezaExterna(L, grupos, cong.settings, congName, hoyIso, cong.weeks); const cg = congDeExt(L, ext); miCong = cg ? cg.id : null; } }
       const proj = proyeccionExterno(occ, trabajos, anotados, fichas, cong.publishers || [], 'x-' + ext.id, !!ext.comite);
       if (!proj.pubs.some((p) => p.id === 'x:' + ext.id)) proj.pubs.push({ id: 'x:' + ext.id, name: ext.nombre || '', email });
       else proj.pubs.forEach((p) => { if (p.id === 'x:' + ext.id) p.email = email; });

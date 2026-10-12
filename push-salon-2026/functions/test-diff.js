@@ -645,4 +645,57 @@ t('restaurar: no manda avisos de "te asignaron"', () => {
   });
 }
 
+// ---------- Semana especial: visita del superintendente de circuito, asamblea ----------
+{
+  const L = require('./lib'), SC = require('./salon-core');
+  const st = { weekdaySemana: 4, weekdayFinde: 0, meetingTimeSemana: '19:30', meetingTimeFinde: '10:00', micCount: 2, usherCount: 2 };
+  const M = '2026-09-21';
+  const weeks = { [M]: { especial: { tipo: 'visita', semana: { dia: 2 }, so: 'Rubén Acosta' },
+    semana: { roles: { sonido: 'p1' }, program: { presidente: 'p2', estudioConductor: 'p3' } }, finde: { roles: {}, program: { oradorPublico: 'p4', atalayaConductor: 'p5' } } } };
+  const cong = { settings: st, weeks, publishers: [] };
+  t('visita: la reunión de entre semana pasa al martes (fecha y hora para los recordatorios)', () => {
+    assert.strictEqual(L.meetingDateFor(M, 'semana', st, weeks), '2026-09-22');
+    assert.strictEqual(L.meetingDateFor(M, 'semana', st), '2026-09-24');
+    assert.strictEqual(L.meetingTimeFor('semana', st, weeks, M), 19 * 60 + 30);
+    assert.deepStrictEqual(L.assignmentsOnDate(cong, 'p1', '2026-09-22').map(a => a.type + ':' + a.labels.join()), ['semana:Consola de audio']);
+    assert.deepStrictEqual(L.assignmentsOnDate(cong, 'p1', '2026-09-24'), []);
+  });
+  t('visita: no hay Estudio bíblico ni discurso público de acá', () => {
+    assert.deepStrictEqual(L.assignmentsOnDate(cong, 'p3', '2026-09-22'), []);
+    assert.deepStrictEqual(L.assignmentsOnDate(cong, 'p4', '2026-09-27'), []);
+    assert.deepStrictEqual(L.assignmentsOnDate(cong, 'p5', '2026-09-27').map(a => a.labels.join()), ['Atalaya — Conductor']);
+    assert.deepStrictEqual(L.assignmentsOnDate(cong, 'p2', '2026-09-22').map(a => a.labels.join()), ['Presidente']);
+  });
+  t('asamblea: sin reunión del fin de semana, no hay recordatorio', () => {
+    const w2 = { [M]: Object.assign({}, weeks[M], { especial: { tipo: 'asamblea', sinFinde: true } }) };
+    assert.deepStrictEqual(L.assignmentsOnDate({ settings: st, weeks: w2 }, 'p5', '2026-09-27'), []);
+    assert.deepStrictEqual(L.assignmentsOnDate({ settings: st, weeks: w2 }, 'p1', '2026-09-24').map(a => a.labels.join()), ['Consola de audio']);
+  });
+  t('aviso de la semana especial: 3 días antes de la primera reunión que cambia, una sola vez', () => {
+    assert.strictEqual(L.avisoEspecial(cong, '2026-09-18'), null);
+    const a = L.avisoEspecial(cong, '2026-09-19');   // martes 22 - 3
+    assert.ok(a && /La semana que viene nos visita el superintendente de circuito/.test(a.title), JSON.stringify(a));
+    assert.strictEqual(a.body, 'La reunión de entre semana es el martes 22 a las 19:30 (no el jueves 24).');
+    assert.strictEqual(a.dateIso, '2026-09-22');
+    assert.strictEqual(L.avisoEspecial(cong, '2026-09-20'), null);
+    const asam = { settings: st, weeks: { [M]: { especial: { tipo: 'asamblea', sinFinde: true } } } };
+    const b = L.avisoEspecial(asam, '2026-09-24');   // domingo 27 - 3
+    assert.ok(b && b.title === 'Semana de asamblea' && b.body === 'No hay reunión del fin de semana.', JSON.stringify(b));
+  });
+  t('la limpieza después de las reuniones sigue a la visita (recordatorio del grupo y enlace de la otra congregación)', () => {
+    const LZ = { tipos: [{ id: 'reu', nombre: 'Después de las reuniones', modo: 'reunion' }], semanas: { [M]: { g: 'g1' } } };
+    assert.deepStrictEqual(SC.asignacionesSalon('p1', {}, {}, LZ, Object.assign({ weeks }, st), () => 'g1', M, '2026-09-27').map(x => x.fecha), ['2026-09-22', '2026-09-27']);
+    const ext = L.limpiezaExterna(LZ, {}, st, 'SA', '2026-09-20', weeks);
+    assert.deepStrictEqual(ext.settings.weeks, { [M]: { especial: weeks[M].especial } });
+    assert.deepStrictEqual(SC.diasLimpieza({ modo: 'reunion' }, M, ext.settings), ['2026-09-22', '2026-09-27']);
+    assert.strictEqual(L.limpiezaExterna(LZ, {}, st, 'SA', '2026-09-20').settings.weeks, undefined);
+  });
+  t('guardRoles: la semana especial es del área del Programa', () => {
+    assert.strictEqual(L.weekLeafArea([M, 'especial', 'tipo']), 'asignaciones');
+    const ch = L.disallowedWeekChanges({}, { [M]: { especial: { tipo: 'visita' } } }, ['tecnico']);
+    assert.strictEqual(ch.length, 1);
+    assert.strictEqual(L.disallowedWeekChanges({}, { [M]: { especial: { tipo: 'visita' } } }, ['asignaciones']).length, 0);
+  });
+}
+
 console.log('\n' + passed + ' pruebas OK' + (process.exitCode ? ' — HAY FALLAS' : ''));

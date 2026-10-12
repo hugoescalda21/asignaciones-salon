@@ -144,6 +144,7 @@
   function fmtDia(iso) { const d = new Date(iso + 'T12:00:00'); return `${DIAS[d.getDay()]} ${d.getDate()} de ${MESES[d.getMonth()]}`; }
   function fmtCorto(iso) { const d = new Date(iso + 'T12:00:00'); return `${DIAS3[d.getDay()].toLowerCase()} ${d.getDate()}`; }
   function cuando(iso) { const h = hoy(); return iso === h ? 'hoy' : iso === C.addDays(h, 1) ? 'mañana' : fmtDia(iso); }
+  const stW = () => Object.assign({}, data && data.settings, { weeks: data && data.weeks });
   function congName() { return (data && data.settings && data.settings.congregationName) || 'Salón del Reino'; }
   /* ---------- Fichas (modelo del manual + lo que completan el responsable y el auxiliar) ---------- */
   const FM = () => window.FichasModelo || { FICHAS: [], EPP: {}, EPP_NOMBRE: {}, porCodigo: () => null };
@@ -251,7 +252,7 @@
     const pub = myPub();
     const h = hoy(), mon = C.mondayOf(h);
     // Las limpiezas de esta semana (después de las reuniones, la general…) con quién las hace y qué días.
-    const ls = C.limpiezasSemana(V.limpieza, mon, data && data.settings)
+    const ls = C.limpiezasSemana(V.limpieza, mon, stW())
       .map(l => Object.assign({}, l, { dias: l.dias.filter(f => f >= h) }))
       .filter(l => l.quien && l.quien.g !== 'nadie' && l.dias.length);
     const occ = visibles(pub);
@@ -282,7 +283,7 @@
     // Próximas limpiezas: quién limpia las semanas que vienen (la de tu grupo, marcada).
     const prox = [];
     for (let i = 1, m = C.addDays(mon, 7); i <= 6; i++, m = C.addDays(m, 7)) {
-      const lw = C.limpiezasSemana(V.limpieza, m, data && data.settings).filter(l => l.quien && l.quien.g !== 'nadie');
+      const lw = C.limpiezasSemana(V.limpieza, m, stW()).filter(l => l.quien && l.quien.g !== 'nadie');
       if (!lw.length) continue;
       const nombres = [...new Set(lw.map(l => nombreDe(l.quien)))];
       const mio = miG && lw.some(l => l.quien.g === miG);
@@ -771,7 +772,7 @@
   /* ---------- "Tus asignaciones" ---------- */
   function myRows(pub, todayIso) {
     if (!pub) return [];
-    return C.asignacionesSalon(pub.id, V.trabajos, V.anotados, V.limpieza, data && data.settings, grupoDe, todayIso, C.addDays(todayIso, 56)).map(a => {
+    return C.asignacionesSalon(pub.id, V.trabajos, V.anotados, V.limpieza, stW(), grupoDe, todayIso, C.addDays(todayIso, 56)).map(a => {
       const { dayName, day } = formatDate(a.fecha);
       return { dayLabel: `${dayName.slice(0, 3).toUpperCase()} ${day}`, month: monthKey(a.fecha), type: 'salon', label: a.rol === 'limpieza' ? a.titulo : `${a.titulo} · ${a.quien.toLowerCase()}`, date: a.fecha, meetingType: 'salon', time: a.hora, where: 'Salón del Reino' };
     });

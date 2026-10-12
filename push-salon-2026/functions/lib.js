@@ -184,19 +184,23 @@ function parseHHMM(v) {
 function fmtHHMM(min) { return String(Math.floor(min / 60)).padStart(2, '0') + ':' + String(min % 60).padStart(2, '0'); }
 
 // Mismo cálculo que ver.html (dateForType): lunes de la semana + día configurado.
-function meetingDateFor(monday, type, settings) {
+// Con weeks, sigue a una semana especial (visita del superintendente, asamblea…): ver salon-core.js → reunionDe.
+function meetingDateFor(monday, type, settings, weeks) {
+  if (weeks) return SC.reunionDe(weeks, monday, type, settings).fecha;
   const s = settings || {};
   const dow = type === 'semana' ? (s.weekdaySemana != null ? s.weekdaySemana : 4) : (s.weekdayFinde != null ? s.weekdayFinde : 0);
   return addDaysIso(monday, (dow - 1 + 7) % 7);
 }
-function meetingTimeFor(type, settings) {
+function meetingTimeFor(type, settings, weeks, monday) {
+  if (weeks && monday) return parseHHMM(SC.reunionDe(weeks, monday, type, settings).hora);
   const s = settings || {};
   return parseHHMM(type === 'semana' ? s.meetingTimeSemana : s.meetingTimeFinde);
 }
 
 // Qué le toca a un hermano en una reunión (equipo técnico + programa), con los
 // mismos nombres que ve en la app.
-function assignmentLabels(week, type, settings, pubId) {
+function assignmentLabels(week, type, settings, pubId, esp) {
+  const vis = !!(esp && esp.tipo === 'visita');   // en la visita no hay discurso público de acá ni Estudio bíblico
   const out = [];
   if (!week || !pubId) return out;
   const s = settings || {};
@@ -215,7 +219,7 @@ function assignmentLabels(week, type, settings, pubId) {
   chk(p.presidente, 'Presidente');
   chk(p.oracionInicial, 'Oración inicial');
   if (type === 'finde') {
-    chk(p.oradorPublico, 'Discurso público');
+    if (!vis) chk(p.oradorPublico, 'Discurso público');
     chk(p.atalayaConductor, 'Atalaya — Conductor');
     chk(p.atalayaLector, 'Atalaya — Lector');
     chk(p.oracionFinal, 'Oración final');
@@ -233,7 +237,7 @@ function assignmentLabels(week, type, settings, pubId) {
     chkPair(st.estudianteAux, st.ayudanteAux, base + ' (sala aux.)');
   });
   (p.vidaCristiana || []).forEach((v) => { if (v) chk(v.presentador, v.tema || 'Nuestra Vida Cristiana'); });
-  chkPair(p.estudioConductor, p.estudioLector, 'Estudio bíblico');
+  if (!vis) chkPair(p.estudioConductor, p.estudioLector, 'Estudio bíblico');
   chk(p.oracionFinal, 'Oración final');
   return out;
 }
@@ -252,9 +256,11 @@ function assignmentsOnDate(cong, pubId, dateIso) {
   Object.keys(weeks).forEach((monday) => {
     ['semana', 'finde'].forEach((type) => {
       const week = weeks[monday] && weeks[monday][type];
-      if (!week || meetingDateFor(monday, type, settings) !== dateIso) return;
-      const labels = assignmentLabels(week, type, settings, pubId);
-      if (labels.length) out.push({ type, labels, timeMin: meetingTimeFor(type, settings) });
+      if (!week) return;
+      const r = SC.reunionDe(weeks, monday, type, settings);
+      if (r.sin || r.fecha !== dateIso) return;
+      const labels = assignmentLabels(week, type, settings, pubId, r.especial);
+      if (labels.length) out.push({ type, labels, timeMin: parseHHMM(r.hora) });
     });
   });
   return out;
@@ -367,6 +373,7 @@ function leaves(obj, prefix, out) {
 }
 // ¿A qué área pertenece una hoja de weeks? [monday, type, campo, ...]
 function weekLeafArea(path) {
+  if (path[1] === 'especial') return 'asignaciones';   // la semana especial (visita, asamblea…) la carga quien hace el Programa
   const field = path[2], key = path[3];
   if (field === 'roles') return /^usher/.test(key || '') ? 'acomodadores' : 'tecnico';
   if (field === 'program') return 'asignaciones';
@@ -543,7 +550,7 @@ function salonAssignments(cong, trabajos, anotados, limpieza, grupos, fromIso, t
   });
   const grupoDe = (pid) => { const g = Object.values(grupos || {}).find(x => x && ((x.miembros || []).includes(pid) || x.encargado === pid || x.auxiliar === pid)); return g ? g.id : null; };
   ((cong && cong.publishers) || []).forEach((p) => {
-    SC.asignacionesSalon(p.id, trabajos, anotados, limpieza, cong.settings, grupoDe, fromIso, toIso).forEach((a) => {
+    SC.asignacionesSalon(p.id, trabajos, anotados, limpieza, Object.assign({}, cong.settings, { weeks: cong.weeks || {} }), grupoDe, fromIso, toIso).forEach((a) => {
       out.push({ pubId: p.id, dateIso: a.fecha, timeMin: a.hora ? parseHHMM(a.hora) : null, label: a.label });
     });
   });
@@ -630,6 +637,34 @@ function anotadoMessage(r, t, alta, van, cupo) {
   return { title: `${n || 'Un hermano'} ya no va a ${t.titulo || 'un trabajo'}`, body: `${diaTxt(r.fecha)} · van ${van}${cupo ? ' de ' + cupo : ''}${cupo && van < cupo ? ' · se liberó un lugar' : ''}` };
 }
 
+/* ---------- Aviso de una semana especial (unos días antes) ---------- */
+// Se manda a todos los hermanos de la congregación AVISO_ESP_DIAS días antes de la primera reunión que cambia
+// (la de antes o la nueva, la que venga primero). null si hoy no toca.
+const AVISO_ESP_DIAS = 3;
+function avisoEspecial(cong, hoyIso) {
+  const weeks = (cong && cong.weeks) || {}, st = (cong && cong.settings) || {};
+  for (const m of [mondayOfIsoLib(hoyIso), addDaysIso(mondayOfIsoLib(hoyIso), 7)]) {
+    const e = SC.especialDe(weeks, m);
+    if (!e) continue;
+    const rs = ['semana', 'finde'].map((t) => Object.assign({ t }, SC.reunionDe(weeks, m, t, st)));
+    const cambia = rs.filter((r) => r.sin || r.movida || (r.hora && r.hora !== ((r.t === 'finde' ? st.meetingTimeFinde : st.meetingTimeSemana) || '')));
+    const base = (cambia.length ? cambia : rs).map((r) => (r.sin || r.fecha > r.fechaNormal ? r.fechaNormal : r.fecha)).sort()[0];
+    if (addDaysIso(base, -AVISO_ESP_DIAS) !== hoyIso) continue;
+    const dia = (iso) => DIAS[new Date(iso + 'T00:00:00Z').getUTCDay()].toLowerCase() + ' ' + Number(iso.slice(8));
+    const partes = cambia.map((r) => {
+      const nom = r.t === 'finde' ? 'del fin de semana' : 'de entre semana';
+      if (r.sin) return `no hay reunión ${nom}`;
+      if (r.movida) return `la reunión ${nom} es el ${dia(r.fecha)}${r.hora ? ' a las ' + r.hora : ''} (no el ${dia(r.fechaNormal)})`;
+      return `la reunión ${nom} es a las ${r.hora}`;
+    });
+    const titulo = e.tipo === 'visita' ? (m === mondayOfIsoLib(hoyIso) ? 'Esta semana nos visita el superintendente de circuito' : 'La semana que viene nos visita el superintendente de circuito')
+      : e.tipo === 'asamblea' ? 'Semana de asamblea' : 'Cambio de día de reunión';
+    const body = partes.length ? partes.join('; ').replace(/^./, (c) => c.toUpperCase()) + '.' : 'Las reuniones siguen en sus días de siempre.';
+    return { title: titulo, body, dateIso: base, monday: m };
+  }
+  return null;
+}
+
 /* ---------- Resumen semanal para el Super Admin (lunes a la mañana) ---------- */
 // Puestos del Equipo técnico sin asignar en las reuniones que quedan esta semana.
 function faltantesSemana(cong, todayIso) {
@@ -638,8 +673,9 @@ function faltantesSemana(cong, todayIso) {
   const w = ((cong && cong.weeks) || {})[monday];
   const out = [];
   ['semana', 'finde'].forEach((type) => {
-    const fecha = meetingDateFor(monday, type, st);
-    if (fecha < todayIso) return;
+    const r = SC.reunionDe((cong && cong.weeks) || {}, monday, type, st);
+    const fecha = r.fecha;
+    if (fecha < todayIso || r.sin) return;
     const roles = (w && w[type] && w[type].roles) || {};
     const keys = ['sonido', 'video'];
     for (let i = 1; i <= (st.micCount || 2); i++) keys.push('mic' + i);
@@ -791,7 +827,7 @@ function datosInvitado(b) {
 
 // La limpieza del Salón para mirar desde afuera (enlace de la limpieza o comité de otra congregación):
 // los tipos, las congregaciones con sus grupos (sin teléfonos) y las semanas cercanas. Sin el enlace.
-function limpiezaExterna(L, grupos, settings, congName, hoyIso) {
+function limpiezaExterna(L, grupos, settings, congName, hoyIso, weeks) {
   const c = L || {};
   const desde = SC.addDays(SC.mondayOf(hoyIso), -35), hasta = SC.addDays(hoyIso, 130);
   const semanas = {};
@@ -802,6 +838,10 @@ function limpiezaExterna(L, grupos, settings, congName, hoyIso) {
     semanas, otra: c.otra || [], otraNombre: c.otraNombre || '', rotacion: c.rotacion || [],
     local: congName || '', grupos: {}, settings: { weekdaySemana: (settings || {}).weekdaySemana, weekdayFinde: (settings || {}).weekdayFinde }
   };
+  // Las semanas especiales de esta congregación (visita, asamblea…): mueven su limpieza después de las reuniones.
+  const esp = {};
+  Object.keys(weeks || {}).forEach((m) => { if (m >= desde && m <= hasta && SC.especialDe(weeks, m)) esp[m] = { especial: weeks[m].especial }; });
+  if (Object.keys(esp).length) out.settings.weeks = esp;
   if (c.inicio) out.inicio = c.inicio;
   Object.values(grupos || {}).forEach((g) => { if (g && g.id) out.grupos[g.id] = g.nombre || ''; });
   return out;
@@ -834,6 +874,6 @@ module.exports = {
   roleAreasFor, isEmptyDeep, leaves, weekLeafArea, disallowedWeekChanges, guardSummary,
   PROGRAM_SIMPLE_FIELDS, ROLES_MAP, roleLabel, collectNewlyAssignedIds,
   avisoPreview, selectNewAvisos, notificationForNewAvisos, validateReminder, reminderDocId,
-  arParts, addDaysIso, parseHHMM, fmtHHMM, meetingDateFor, assignmentLabels, assignmentsOnDate,
+  arParts, addDaysIso, parseHHMM, fmtHHMM, meetingDateFor, meetingTimeFor, assignmentLabels, assignmentsOnDate, avisoEspecial, AVISO_ESP_DIAS,
   normalizeReminderPrefs, remindersDue, reminderMessage, sentReminderId, DEFAULT_REMINDER_PREFS
 };

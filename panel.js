@@ -110,7 +110,8 @@
     const partes = type === 'finde'
       ? [['presidente', 'Presidente'], ['oracionInicial', 'Oración inicial'], ['oradorPublico', 'Discurso público'], ['atalayaConductor', 'Conductor de La Atalaya'], ['atalayaLector', 'Lector de La Atalaya'], ['oracionFinal', 'Oración final']]
       : [['presidente', 'Presidente'], ['oracionInicial', 'Oración inicial'], ['tesoros', 'Tesoros'], ['perlas', 'Perlas escondidas'], ['lectura', 'Lectura'], ['oracionFinal', 'Oración final']];
-    return partes.filter(([k]) => !(pr[k] || (k === 'oradorPublico' && pr.oradorVisitante && pr.oradorVisitante.nombre))).map(([key, label]) => ({ key, label }));
+    const vis = typeof especialDe === 'function' && (especialDe(monday) || {}).tipo === 'visita';   // en la visita, el discurso público lo da el superintendente
+    return partes.filter(([k]) => !(vis && k === 'oradorPublico')).filter(([k]) => !(pr[k] || (k === 'oradorPublico' && pr.oradorVisitante && pr.oradorVisitante.nombre))).map(([key, label]) => ({ key, label }));
   }
   function semanaVacia(monday) {
     const w = (data.weeks || {})[monday];
@@ -120,7 +121,7 @@
   function reuniones() {
     const today = hoy(), out = [];
     for (let i = 0, m = mondayOf(today); i < 4; i++, m = shiftDate(m, 7)) {
-      const tipos = ['semana', 'finde'].map(t => ({ t, fecha: dateForType(m, t) })).filter(x => x.fecha >= today || i > 0);
+      const tipos = ['semana', 'finde'].filter(t => !(typeof reunionDe === 'function' && reunionDe(m, t).sin)).map(t => ({ t, fecha: dateForType(m, t) })).filter(x => x.fecha >= today || i > 0);
       const vacia = semanaVacia(m);
       const prog = (alcance() || {}).reu === 'prog';
       const faltan = vacia ? [] : tipos.map(x => ({ ...x, roles: prog ? faltanPartes(m, x.t) : faltanRoles(m, x.t) })).filter(x => x.roles.length);
@@ -138,7 +139,7 @@
         const f = dateForType(m, t);
         if (f < desde || f > shiftDate(today, 60)) return;
         Object.values(w[t].roles || {}).forEach(id => id && usados.add(id));
-        programAssignedIds(w[t].program, t).forEach(id => usados.add(id));
+        programAssignedIds(w[t].program, t, especialDe(m)).forEach(id => usados.add(id));
       });
     });
     return pubs().filter(p => p.status !== 'no_disponible' && (Object.values(p.roles || {}).some(Boolean) || Object.values(p.progCaps || {}).some(Boolean)) && !usados.has(p.id));

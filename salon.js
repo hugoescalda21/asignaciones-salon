@@ -1301,6 +1301,8 @@
   const COLOR_LOCAL = '#0E7490', COLORES_CONG = ['#B45309', '#7C3AED', '#BE185D', '#15803D'];
   const congsL = () => C.congsSalon(S.limpieza);
   const multi = () => congsL().length > 0;
+  // Ajustes + semanas: así las limpiezas siguen a una semana especial (visita, asamblea…).
+  const stW = () => Object.assign({}, data.settings, { weeks: data.weeks });
   const localNom = () => (data.settings && data.settings.congregationName) || 'Esta congregación';
   const congNom = (id) => id === 'local' ? localNom() : ((congsL().find(c => c.id === id) || {}).nombre || otraLabel());
   const congColor = (id) => id === 'local' ? COLOR_LOCAL : ((congsL().find(c => c.id === id) || {}).color || COLORES_CONG[0]);
@@ -1337,7 +1339,7 @@
   }
   // Lo que se ve en el calendario y en "Esta semana": quién limpia y qué días.
   function limpiezaDe(monday) {
-    const ls = C.limpiezasSemana(S.limpieza, monday, data.settings).filter(l => l.quien && l.quien.g !== 'nadie');
+    const ls = C.limpiezasSemana(S.limpieza, monday, stW()).filter(l => l.quien && l.quien.g !== 'nadie');
     if (!ls.length) return null;
     const nombres = [...new Set(ls.map(l => nombreQuien(l.quien)))];
     const dias = [...new Set([].concat(...ls.map(l => l.dias)))].sort();
@@ -1361,7 +1363,7 @@
     const diasTxt = (l) => esc(l.dias.map(fmtCorto).reduce((t, x, i, a) => t + (i === 0 ? '' : i === a.length - 1 ? ' y ' : ', ') + x, '')) + (l.tipo.modo === 'semana' && l.tipo.hora ? ' · ' + esc(l.tipo.hora) : '');
     // Varias congregaciones: cada semana, una línea por limpieza y congregación (la que se turnan, una sola).
     const rowsMulti = () => semanas.map(m => {
-      const ls = C.limpiezasSalon(L, m, data.settings);
+      const ls = C.limpiezasSalon(L, m, stW());
       const lineas = ls.map(l => {
         const q = l.quien;
         const gn = !q ? '' : q.g === 'nadie' ? 'Sin limpieza' : l.cong === 'local' ? nombreQuien(q) : C.nombreGrupoCong(L, l.cong, q.g);
@@ -1372,7 +1374,7 @@
       return `<div class="sl-wk lz-wk${vac ? ' vac' : ''}${m === hoyM ? ' hoy' : ''}" id="lz-${m}"><div class="sl-wkm" style="cursor:default"><span class="d">${m === hoyM ? 'ESTA' : 'SEM'}<b>${fmtSem(m)}</b></span><span class="tx">${lineas}</span></div></div>`;
     }).join('');
     const rows = multi() ? rowsMulti() : semanas.map(m => {
-      const ls = C.limpiezasSemana(L, m, data.settings);
+      const ls = C.limpiezasSemana(L, m, stW());
       const qg = C.quienLimpia(L, m, 'g');
       const conG = ls.filter(l => l.clave === 'g'), solos = ls.filter(l => l.clave !== 'g');
       const lineas = conG.map(l => `<span class="sl-l2"><i>${esc(etq(l))}</i>${qg && (qg.g === 'otra' || qg.g === 'nadie') ? '' : esc(l.dias.map(fmtCorto).reduce((t, x, i, a) => t + (i === 0 ? '' : i === a.length - 1 ? ' y ' : ', ') + x, ''))}${l.tipo.modo === 'semana' && l.tipo.hora && qg && qg.g !== 'otra' && qg.g !== 'nadie' ? ' · ' + esc(l.tipo.hora) : ''}</span>`).join('');
@@ -1398,7 +1400,7 @@
   // Elegir quién limpia una semana (con esa clave).
   function pickSemana(m, clave) {
     const L = S.limpieza || {};
-    const ls = C.limpiezasSemana(L, m, data.settings).filter(l => l.clave === clave);
+    const ls = C.limpiezasSemana(L, m, stW()).filter(l => l.clave === clave);
     const actual = C.cargado(L, m, clave);
     const w = (L.semanas || {})[m] || {};
     const otrasClaves = claves().filter(k => k !== clave).map(k => C.cargado(L, m, k)).filter(Boolean).map(q => q.g);
@@ -1428,10 +1430,10 @@
   function diasSemana(m, ts) {
     const L = S.limpieza || {};
     const md = openModal(`<h3>Días de la semana del ${fmtSem(m)}</h3><p class="modal-sub" style="margin:0 0 10px;">Solo para esta semana (por ejemplo, si hay asamblea o se cambia la reunión).</p>
-      ${ts.map(t => { const d = C.diasDe(L, m, t, data.settings); const n = t.modo === 'reunion' ? 2 : 1; return `<div class="tf"><span class="tlbl">${esc(t.nombre)}</span><div class="trow2">${Array.from({ length: n }, (_, i) => `<input type="date" data-t="${esc(t.id)}" value="${esc(d[i] || '')}" min="${m}" max="${C.addDays(m, 6)}">`).join('')}</div></div>`; }).join('')}
+      ${ts.map(t => { const d = C.diasDe(L, m, t, stW()); const n = t.modo === 'reunion' ? 2 : 1; return `<div class="tf"><span class="tlbl">${esc(t.nombre)}</span><div class="trow2">${Array.from({ length: n }, (_, i) => `<input type="date" data-t="${esc(t.id)}" value="${esc(d[i] || '')}" min="${m}" max="${C.addDays(m, 6)}">`).join('')}</div></div>`; }).join('')}
       <div class="tfoot"><button type="button" class="btn" id="lzDef">Volver a los de siempre</button><button type="button" class="btn" data-tclose>Cancelar</button><button type="button" class="btn btn-primary" id="lzDok">Guardar</button></div>`);
     const save = (def) => {
-      const pairs = ts.map(t => { const vals = [...md.qa(`input[data-t="${t.id}"]`)].map(x => x.value).filter(Boolean).sort(); const std = C.diasLimpieza({ modo: t.modo, dia: t.dia }, m, data.settings); return [['semanas', m, 'd', t.id], def || !vals.length || JSON.stringify(vals) === JSON.stringify(std) ? undefined : vals]; });
+      const pairs = ts.map(t => { const vals = [...md.qa(`input[data-t="${t.id}"]`)].map(x => x.value).filter(Boolean).sort(); const std = C.diasLimpieza({ modo: t.modo, dia: t.dia }, m, stW()); return [['semanas', m, 'd', t.id], def || !vals.length || JSON.stringify(vals) === JSON.stringify(std) ? undefined : vals]; });
       md.close(); saveLimpieza(pairs, def ? 'Días de siempre' : 'Días guardados');
     };
     md.q('#lzDok').addEventListener('click', () => save(false));
@@ -1490,7 +1492,7 @@
     const ord = C.ordenCong(L, idc, m, pt);
     const sug = (ord.find(o => !otro || o.g !== otro.g) || ord[0] || {}).g;
     const dd = C.diasCong(cg, m);
-    const semanal = pt === 'sem' ? C.limpiezasSalon(L, m, data.settings).filter(l => l.turno && l.cong === idc) : [];
+    const semanal = pt === 'sem' ? C.limpiezasSalon(L, m, stW()).filter(l => l.turno && l.cong === idc) : [];
     const dias = (pt === 'sem' ? [].concat(...semanal.map(l => l.dias)) : pt === 'semana' ? dd.slice(0, 1) : pt === 'finde' ? dd.slice(1) : dd).map(fmtCorto).join(' y ');
     const hace = (ult) => { if (!ult) return 'Todavía no limpió'; const n = Math.round((new Date(m + 'T12:00:00') - new Date(ult + 'T12:00:00')) / 604800000); return n <= 0 ? 'Ya limpia más adelante' : `Limpió hace ${n} ${n === 1 ? 'semana' : 'semanas'}`; };
     const gr = (gid) => (cg.grupos || []).find(g => g.id === gid) || {};
@@ -1510,7 +1512,7 @@
     const L = S.limpieza || {};
     const cg = congsL().find(c => c.id === idc); const g = cg && (cg.grupos || []).find(x => x.id === gid);
     if (!g || !g.tel) return;
-    const ls = C.limpiezasSalon(L, m, data.settings).filter(l => l.cong === idc && l.quien && l.quien.g === gid);
+    const ls = C.limpiezasSalon(L, m, stW()).filter(l => l.cong === idc && l.quien && l.quien.g === gid);
     const partes = ls.map(l => `${l.tipo.modo === 'reunion' ? 'después de las reuniones del ' : (l.tipo.nombre || 'limpieza').toLowerCase() + ' del '}${l.dias.map(fmtCorto).join(' y ')}${l.tipo.modo === 'semana' && l.tipo.hora ? ' a las ' + l.tipo.hora : ''}`);
     const tareas = [...new Set([].concat(...ls.map(l => l.tipo.tareas || [])))];
     const lines = [`Hola ${String(g.encargado || '').split(' ')[0] || 'hermano'}, la semana del ${fmtSem(m)} le toca la limpieza del Salón al ${g.nombre} de ${cg.nombre}:`, partes.join('; ') + '.'];
@@ -1637,11 +1639,11 @@
     let y = 86;
     const dd = (arr) => arr.map(fmtCorto).join(' · ');
     if (opts.limpieza && (multi() || C.porReunion(L)) && window.FichaPdf && window.FichaPdf.limpieza) {
-      y = window.FichaPdf.limpieza(doc, C.tablaLimpieza(L, sem, data.settings, { local: cong, grupo: grupoName }), { y, color: congColor, fmtSem });
+      y = window.FichaPdf.limpieza(doc, C.tablaLimpieza(L, sem, stW(), { local: cong, grupo: grupoName }), { y, color: congColor, fmtSem });
     } else if (opts.limpieza) {
       const head = ['Semana'].concat(ts.map(t => t.nombre + (t.modo === 'semana' && t.hora ? ` (${t.hora})` : ''))).concat(ks.map(k => k === 'g' ? (ks.length > 1 ? `Limpia (${cortoDe(ts[0])})` : 'Limpia') : `Limpia (${cortoDe(ts.find(t => t.id === k))})`));
       const body = sem.map(mm => {
-        const ls = C.limpiezasSemana(L, mm, data.settings);
+        const ls = C.limpiezasSemana(L, mm, stW());
         return [`${fmtSem(mm)}`].concat(ls.map(l => l.quien && (l.quien.g === 'otra' || l.quien.g === 'nadie') ? '—' : dd(l.dias))).concat(ks.map(k => { const q = C.quienLimpia(L, mm, k); return q ? nombreQuien(q) : ''; }));
       });
       doc.autoTable({ startY: y, margin: { left: 32, right: 32 }, theme: 'grid', head: [head], body,
