@@ -3452,7 +3452,7 @@
       html += `<div class="program-row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);"><label>🎵 Canción intermedia</label>${SONG_INPUT('cancionIntermedia', program.cancionIntermedia)}</div>`;
       html += programRowHTML('atalayaConductor', 'Atalaya — Conductor', program.atalayaConductor, vis ? '30 min' : '60 min');
       html += programRowHTML('atalayaLector', 'Atalaya — Lector', program.atalayaLector);
-      if (vis) html += `<div class="esp-card" id="espConclusion"><small>30 min · 🧳 VISITA</small><b>Discurso de conclusión del superintendente de circuito</b>Lo da ${esp.so ? escapeHtml(esp.so) : 'el superintendente'}, después del Estudio de La Atalaya.</div>`;
+      if (vis) html += `<div class="esp-card" id="espConclusion"><small>30 min · 🧳 VISITA</small><b>Discurso de conclusión del superintendente de circuito</b>Lo da ${esp.so ? escapeHtml(esp.so) : 'el superintendente'}, después del Estudio de La Atalaya.<div class="program-row" style="margin:8px 0 0; border:none; padding:0;"><label>Tema del discurso</label><input type="text" data-program-field="temaConclusion" value="${escapeHtml(program.temaConclusion || '')}" placeholder="Tema (opcional)"></div></div>`;
       html += `<div class="program-row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);"><label>🎵 Canción final</label>${SONG_INPUT('cancionFinal', program.cancionFinal)}</div>`;
       html += programRowHTML('oracionFinal', 'Oración final', program.oracionFinal);
       html += '</div>';
@@ -3512,7 +3512,7 @@
         </div>`;
       });
       html += '<button type="button" class="add-part-btn" id="addVidaPartBtn">+ Agregar parte</button>';
-      if (vis) html += `<div class="esp-card" id="espServicio"><small>${n} · 30 min · 🧳 VISITA</small><b>Discurso de servicio del superintendente de circuito</b>Lo da ${esp.so ? escapeHtml(esp.so) : 'el superintendente'}. En la visita no hay Estudio bíblico de la congregación: no se asigna conductor ni lector.</div>`;
+      if (vis) html += `<div class="esp-card" id="espServicio"><small>${n} · 30 min · 🧳 VISITA</small><b>Discurso de servicio del superintendente de circuito</b>Lo da ${esp.so ? escapeHtml(esp.so) : 'el superintendente'}. En la visita no hay Estudio bíblico de la congregación: no se asigna conductor ni lector.<div class="program-row" style="margin:8px 0 0; border:none; padding:0;"><label>Tema del discurso</label><input type="text" data-program-field="temaServicio" value="${escapeHtml(program.temaServicio || '')}" placeholder="Tema (opcional)"></div></div>`;
       else {
         html += `<div class="program-row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);"><label>${numTag(n)} Estudio bíblico — Conductor<span class="min-tag">30 min</span></label><select data-program-field="estudioConductor">${allPubOptionsHTML(program.estudioConductor, 'prog:estudioConductor')}</select></div>`;
         html += `<div class="program-row"><label>Estudio bíblico — Lector</label><select data-program-field="estudioLector">${allPubOptionsHTML(program.estudioLector, 'prog:estudioLector')}</select></div>`;
@@ -4760,7 +4760,7 @@
       entries.push({ label: 'Discurso público', name: vis ? so : (publicSpeakerName(program) || null), tema: program.temaPublico, min: 30 });
       entries.push({ label: 'Atalaya — Conductor', name: nameOf(program.atalayaConductor), min: vis ? 30 : 60 });
       entries.push({ label: 'Atalaya — Lector', name: nameOf(program.atalayaLector) });
-      if (vis) entries.push({ label: 'Discurso de conclusión', name: so, min: 30 });
+      if (vis) entries.push({ label: 'Discurso de conclusión', name: so, tema: program.temaConclusion, min: 30 });
       entries.push({ label: 'Oración final', name: nameOf(program.oracionFinal) });
       return entries.filter(e => e.name);
     }
@@ -4796,7 +4796,7 @@
       n++;
     });
     const estudioNm = pairName(program.estudioConductor, program.estudioLector);
-    if (vis) vidaGroup.push({ num: n, label: 'Discurso de servicio', name: so, min: 30 });
+    if (vis) vidaGroup.push({ num: n, label: 'Discurso de servicio', name: so, tema: program.temaServicio, min: 30 });
     else if (estudioNm) vidaGroup.push({ num: n, label: 'Estudio bíblico', name: estudioNm, min: 30 });
     const vidaFilled = vidaGroup.filter(e => e.name);
     if (vidaFilled.length) { entries.push({ section: 'NUESTRA VIDA CRISTIANA' }); entries.push(...vidaFilled); }

@@ -6,6 +6,11 @@ actualización, revisá primero qué se agregó en la versión más reciente.
 
 ---
 
+## Tema de los discursos del superintendente — 12 oct 2026 (caché asignaciones-salon-v67 y ver-salon-v53)
+
+- En la semana de la visita, el **Discurso de servicio** y el **Discurso de conclusión** tienen su campo "Tema del discurso" (opcional), dentro de su recuadro en Programa. El del discurso público sigue en "Tema del discurso", debajo del recuadro.
+- Los temas salen en la vista, la lista del mes, el PDF y WhatsApp.
+
 ## Semana especial: visita del superintendente de circuito, asamblea y cambios de día — 12 oct 2026 (caché asignaciones-salon-v66 y ver-salon-v52)
 
 - En Programa, debajo del título de la reunión, **"🧳 Semana especial"** abre una ventana para esa semana: *Visita del superintendente de circuito*, *Asamblea* u *Otro cambio de día*, con el día y la hora de cada reunión y el nombre del superintendente (opcional). "Cambiar" la edita y "Quitar" la vuelve normal.

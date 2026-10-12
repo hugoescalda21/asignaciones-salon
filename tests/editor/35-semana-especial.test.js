@@ -61,12 +61,17 @@ const M = '2026-09-21';
   let pr = await p.evaluate(() => ({ serv: ($('espServicio') || {}).innerText || '', est: !!document.querySelector('[data-program-field="estudioConductor"]'), lec: !!document.querySelector('[data-program-field="estudioLector"]') }));
   check('entre semana: "Discurso de servicio del superintendente" en lugar del Estudio bíblico', /Discurso de servicio del superintendente de circuito/.test(pr.serv) && /Rubén Acosta/.test(pr.serv) && !pr.est && !pr.lec, pr);
   await p.screenshot({ path: SHOTS + '/35-programa-semana.png', fullPage: true });
+  await p.fill('[data-program-field="temaServicio"]', 'Sigamos firmes en la fe'); await p.press('[data-program-field="temaServicio"]', 'Tab'); await p.waitForTimeout(150);
+  const tS = await p.evaluate(() => ({ g: data.weeks['2026-09-21'].semana.program.temaServicio, e: programEntries(weekView('2026-09-21').semana.program, 'semana', especialDe('2026-09-21')).find(x => x.label === 'Discurso de servicio') }));
+  check('tema del discurso de servicio: se guarda y sale en el programa', tS.g === 'Sigamos firmes en la fe' && tS.e && tS.e.tema === 'Sigamos firmes en la fe', tS);
   const parts = await p.evaluate(() => meetingTimedParts().map(x => x.label + '|' + x.who + '|' + x.min));
   check('cronómetro: discurso de servicio, 30 min, Rubén Acosta', parts.includes('Discurso de servicio|Rubén Acosta|30'), parts);
   await p.evaluate(() => goToMeeting('2026-09-27', 'finde')); await p.waitForTimeout(150);
   await p.evaluate(() => renderProgramSection()); await p.waitForTimeout(100);
   pr = await p.evaluate(() => ({ dp: ($('espDiscursoPublico') || {}).innerText || '', conc: ($('espConclusion') || {}).innerText || '', orador: !!document.querySelector('[data-program-field="oradorPublico"]'), at: [...document.querySelectorAll('.program-row')].map(r => r.innerText).find(t => /Atalaya — Conductor/.test(t)) || '' }));
   check('fin de semana: discurso público del superintendente (sin orador), Atalaya 30 min y discurso de conclusión', /Discurso público/.test(pr.dp) && /Rubén Acosta/.test(pr.dp) && !pr.orador && /30 min/.test(pr.at) && /Discurso de conclusión del superintendente/.test(pr.conc), pr);
+  await p.fill('[data-program-field="temaConclusion"]', 'Mantengámonos alerta'); await p.press('[data-program-field="temaConclusion"]', 'Tab'); await p.waitForTimeout(150);
+  check('tema del discurso de conclusión: se guarda', await p.evaluate(() => data.weeks['2026-09-21'].finde.program.temaConclusion === 'Mantengámonos alerta' && !!document.querySelector('[data-program-field="temaPublico"]')));
   const ent = await p.evaluate(() => programEntries(weekView('2026-09-21').finde.program, 'finde', especialDe('2026-09-21')).map(e => e.label + '|' + (e.name || '') + '|' + (e.min || '')));
   check('partes del fin de semana: Discurso público (superintendente), Atalaya 30, Discurso de conclusión 30', ent.includes('Discurso público|Rubén Acosta|30') && ent.includes('Discurso de conclusión|Rubén Acosta|30'), ent);
   const comp = await p.evaluate(() => { const pr = { presidente: 'p0', oracionInicial: 'p1', atalayaConductor: 'p2', atalayaLector: 'p3', oracionFinal: 'p4' }; return [programCompleteness(pr, 'finde', especialDe('2026-09-21')), programCompleteness(pr, 'finde', null)]; });
@@ -111,7 +116,7 @@ const M = '2026-09-21';
   dv.settings.viewerEmails = ['martin@x.com']; dv.publishers[1].email = 'martin@x.com';
   const me = dv.publishers[1].id;
   dv.weeks[M] = { especial: { tipo: 'visita', semana: { dia: 2 }, so: 'Rubén Acosta' },
-    semana: { roles: { sonido: me }, program: { presidente: dv.publishers[2].id, estudioConductor: me } },
+    semana: { roles: { sonido: me }, program: { presidente: dv.publishers[2].id, estudioConductor: me, temaServicio: 'Sigamos firmes' } },
     finde: { roles: {}, program: { atalayaConductor: dv.publishers[3].id, oradorPublico: dv.publishers[4].id } } };
   const c2 = await b.newContext({ viewport: { width: 390, height: 844 } });
   await c2.route(/googleapis|tile\.openstreetmap/, r => r.abort());
@@ -129,9 +134,9 @@ const M = '2026-09-21';
   await v.waitForTimeout(300);
   const vb = await v.evaluate(() => ({ ban: $('espBannerV').innerText.replace(/\s+/g, ' '), hid: $('espBannerV').classList.contains('hidden') }));
   check('Inicio: "Esta semana nos visita el superintendente de circuito" con el martes 22 a las 19:30', !vb.hid && /Esta semana nos visita el superintendente de circuito/.test(vb.ban) && /martes 22 a las 19:30/.test(vb.ban) && /no el jueves/.test(vb.ban), vb);
-  const vd = await v.evaluate((m) => ({ s: dateForType(m, 'semana', data.settings), h: meetingTimeOf('semana', '2026-09-22'), ent: programEntries(data.weeks[m].semana.program, 'semana', especialDe(m)).map(e => e.label + '|' + (e.name || '')), fin: programEntries(data.weeks[m].finde.program, 'finde', especialDe(m)).map(e => e.label + '|' + (e.name || '')) }), M);
+  const vd = await v.evaluate((m) => ({ s: dateForType(m, 'semana', data.settings), h: meetingTimeOf('semana', '2026-09-22'), ent: programEntries(data.weeks[m].semana.program, 'semana', especialDe(m)).map(e => e.label + '|' + (e.name || '') + (e.tema ? '|' + e.tema : '')), fin: programEntries(data.weeks[m].finde.program, 'finde', especialDe(m)).map(e => e.label + '|' + (e.name || '')) }), M);
   check('vista: la reunión de entre semana es el martes 22, 19:30', vd.s === '2026-09-22' && vd.h === '19:30', vd);
-  check('vista: discurso de servicio en lugar del Estudio bíblico', vd.ent.includes('Discurso de servicio del superintendente|Rubén Acosta') && !vd.ent.some(x => /Estudio bíblico/.test(x)), vd.ent);
+  check('vista: discurso de servicio (con su tema) en lugar del Estudio bíblico', vd.ent.includes('Discurso de servicio del superintendente|Rubén Acosta|Sigamos firmes') && !vd.ent.some(x => /Estudio bíblico/.test(x)), vd.ent);
   check('vista: discurso público y de conclusión del superintendente', vd.fin.includes('Discurso público|Rubén Acosta') && vd.fin.includes('Discurso de conclusión|Rubén Acosta'), vd.fin);
   const up = await v.evaluate(() => $('thisWeek').innerText.replace(/\s+/g, ' '));
   check('próximas reuniones: con "🧳 VISITA"', /VISITA/.test(up), up.slice(0, 300));
